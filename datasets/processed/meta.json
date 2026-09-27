@@ -1,0 +1,114 @@
+{
+  "build": {
+    "built_at_utc": "2026-09-27T12:14:43.367632+00:00",
+    "non_overlap": {
+      "ids": 0,
+      "normalisation": "lowercase, collapse whitespace, SHA-256",
+      "queries_vs_nq_text": 0,
+      "sciq_vs_nq_text": 0
+    },
+    "nq": {
+      "cohorts_big": 101670,
+      "cohorts_small": 51350,
+      "corpus_seed": {
+        "label": "corpus",
+        "seed": 42,
+        "value": 17497888457110469931
+      },
+      "corpus_total": 2681468,
+      "judged_passages": 4201,
+      "judgements": 4201,
+      "queries": 3452,
+      "rng": "numpy PCG64 permutation of non-judged rows in corpus order",
+      "size_big": 1000000,
+      "size_small": 100000,
+      "small_is_prefix_of_big": true,
+      "text_rule": "title + ' ' + text"
+    },
+    "sciq": {
+      "passages": 13679,
+      "question_fallbacks": 1427,
+      "splits": [
+        "train",
+        "validation",
+        "test"
+      ],
+      "text_rule": "support, else question"
+    },
+    "seconds": 28.9
+  },
+  "encode": {
+    "queries": {
+      "dim": 384,
+      "dtype": "float32 little-endian",
+      "file": "embeddings.npy",
+      "max_abs_norm_deviation": 1.313230806321286e-07,
+      "rows": 3452,
+      "seconds": 0.1,
+      "sha256_rows": "1cdaec2e29083da56f1e1402612754aa45dfa41ecdf1ce15eb1db5a5a61fcd5e",
+      "truncated_rows": 0,
+      "truncation_rate": 0.0
+    },
+    "sciq": {
+      "dim": 384,
+      "dtype": "float32 little-endian",
+      "file": "embeddings.npy",
+      "max_abs_norm_deviation": 1.391115751481209e-07,
+      "rows": 13679,
+      "seconds": 1.2,
+      "sha256_rows": "51df7c4d8b499d418e0427dab90d49f1a41db1759aac4de154af1905f6167d42",
+      "truncated_rows": 960,
+      "truncation_rate": 0.07018056875502596
+    },
+    "settings": {
+      "batch_size": 64,
+      "device": "cpu",
+      "fake": false,
+      "max_tokens": 256,
+      "model": "sentence-transformers/all-MiniLM-L6-v2",
+      "normalize_embeddings": true,
+      "shard_rows": 50000,
+      "threads": 4,
+      "truncate": true
+    },
+    "versions": {
+      "cpu_count": 8,
+      "huggingface_hub": "1.33.0",
+      "machine": "AMD64",
+      "numpy": "2.5.3",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "pyarrow": "25.0.1",
+      "python": "3.13.9",
+      "sentence_transformers": "6.1.0",
+      "tokenizers": "0.23.2",
+      "torch": "2.14.0+cpu",
+      "transformers": "5.17.0"
+    }
+  },
+  "format_version": "data-1.0",
+  "pins": {
+    "pinned_at_utc": "2026-09-27T12:11:37.457403+00:00",
+    "repos": {
+      "encoder": {
+        "repo_id": "sentence-transformers/all-MiniLM-L6-v2",
+        "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "type": "model"
+      },
+      "nq": {
+        "repo_id": "BeIR/nq",
+        "revision": "b7253e6c379163d024ddb1d6948152a91a2e3b46",
+        "type": "dataset"
+      },
+      "nq_qrels": {
+        "repo_id": "BeIR/nq-qrels",
+        "revision": "519acd4e48bb3e5da22b2b888ce36c614f4f2bc9",
+        "type": "dataset"
+      },
+      "sciq": {
+        "repo_id": "allenai/sciq",
+        "revision": "2c94ad3e1aafab77146f384e23536f97a4849815",
+        "type": "dataset"
+      }
+    }
+  }
+}

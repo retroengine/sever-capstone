@@ -1,0 +1,25 @@
+{
+  "pinned_at_utc": "2026-09-27T12:11:37.457403+00:00",
+  "repos": {
+    "encoder": {
+      "repo_id": "sentence-transformers/all-MiniLM-L6-v2",
+      "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+      "type": "model"
+    },
+    "nq": {
+      "repo_id": "BeIR/nq",
+      "revision": "b7253e6c379163d024ddb1d6948152a91a2e3b46",
+      "type": "dataset"
+    },
+    "nq_qrels": {
+      "repo_id": "BeIR/nq-qrels",
+      "revision": "519acd4e48bb3e5da22b2b888ce36c614f4f2bc9",
+      "type": "dataset"
+    },
+    "sciq": {
+      "repo_id": "allenai/sciq",
+      "revision": "2c94ad3e1aafab77146f384e23536f97a4849815",
+      "type": "dataset"
+    }
+  }
+}
