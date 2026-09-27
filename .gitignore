@@ -1,0 +1,26 @@
+# Environments
+.venv/
+.venv-*/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Data: regenerated from pins, verified by datasets/MANIFEST.sha256
+datasets/raw/
+datasets/processed/**
+!datasets/processed/meta.json
+datasets/processed/**/*_shards/
+
+#datasets in self test too 
+_selftest/
+
+# Demo runtime state: holds ciphertext, keys and the user's secret r_t values — never commit
+demo_db/
+client_keychain/
+*.cert
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
