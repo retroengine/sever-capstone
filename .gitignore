@@ -4,6 +4,7 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.benchmarks/
 
 # Data: regenerated from pins, verified by datasets/MANIFEST.sha256
 datasets/raw/
@@ -14,10 +15,11 @@ datasets/processed/**/*_shards/
 #datasets in self test too 
 _selftest/
 
-# Demo runtime state: holds ciphertext, keys and the user's secret r_t values — never commit
-demo_db/
-client_keychain/
+# Runtime state (databases, key files, certificates) holds ciphertext, keys and the user's
+# secret r_t values — never commit. Golden vectors (spec Appendix B) are committed.
 *.cert
+*.key
+!golden/**
 
 # OS / editor
 .DS_Store
