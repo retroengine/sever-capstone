@@ -1,6 +1,6 @@
 {
   "build": {
-    "built_at_utc": "2026-09-27T12:14:43.367632+00:00",
+    "built_at_utc": "2026-09-27T21:08:23.819781+00:00",
     "non_overlap": {
       "ids": 0,
       "normalisation": "lowercase, collapse whitespace, SHA-256",
@@ -35,9 +35,20 @@
       ],
       "text_rule": "support, else question"
     },
-    "seconds": 28.9
+    "seconds": 26.5
   },
   "encode": {
+    "nq": {
+      "dim": 384,
+      "dtype": "float32 little-endian",
+      "file": "embeddings.npy",
+      "max_abs_norm_deviation": 1.8363731468795663e-07,
+      "rows": 1000000,
+      "seconds": 30023.4,
+      "sha256_rows": "7f6c141911fefc07a796c27e96bf7a05fe57020fbb9be080de8efe361a115a2d",
+      "truncated_rows": 49148,
+      "truncation_rate": 0.049148
+    },
     "queries": {
       "dim": 384,
       "dtype": "float32 little-endian",
