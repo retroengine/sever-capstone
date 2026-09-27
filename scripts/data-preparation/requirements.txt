@@ -1,0 +1,10 @@
+# SEVER-DB P0 data preparation. Python 3.13 (numpy 2.5 needs >= 3.12).
+# Install the CPU build of torch FIRST, from PyTorch's CPU index:
+#   pip install "torch==2.14.*" --index-url https://download.pytorch.org/whl/cpu
+# then:
+#   pip install -r requirements.txt
+# Exact installed versions are recorded in datasets/processed/meta.json by the script.
+numpy==2.5.*
+pyarrow==25.0.*
+sentence-transformers==6.1.*
+huggingface_hub
