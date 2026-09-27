@@ -1,0 +1,63 @@
+# SEVER-DB Python environment (development, WSL). Not an installable package: the packages under
+# python/ (C-15 builder, C-18 reference model, test kit) are put on the path by pytest.
+# Versions follow spec §20.2; exact versions and hashes live in uv.lock. Part 1 packages only —
+# later parts add theirs when they start. The P0 encoder environment is separate (CLAUDE.md §8).
+
+[project]
+name = "sever-db"
+version = "0.0.0"
+description = "SEVER-DB: a vector database with provable deletion"
+requires-python = "==3.13.*"
+dependencies = [
+    "numpy==2.5.*",
+    "scikit-learn==1.9.*",
+    "pyarrow==25.0.*",
+]
+
+[dependency-groups]
+# Build §1.2 (code quality) and §2.1 (test levels L1, L2, L12, L13, L14).
+dev = [
+    "pytest",
+    "pytest-cov",
+    "hypothesis",
+    "ruff",
+    "mypy",
+    "import-linter",
+    "mutmut",
+    "pytest-benchmark",
+]
+
+[tool.uv]
+package = false
+# The repo lives on /mnt/c and uv's cache on ext4, so hardlinks are impossible.
+link-mode = "copy"
+
+[tool.pytest.ini_options]
+pythonpath = ["python"]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+markers = [
+    "mustfail: sabotage test; names the SB item it covers (Build §2.6)",
+    "spec(ids): requirement IDs SR-<section>-<n> this test checks (Build §2.2)",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["python"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["python", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "PT"]
+
+[tool.mypy]
+strict = true
+python_version = "3.13"
+mypy_path = "python"
+
+[[tool.mypy.overrides]]
+module = ["sklearn.*", "pyarrow.*"]
+ignore_missing_imports = true
