@@ -12,6 +12,8 @@ dependencies = [
     "numpy==2.5.*",
     "scikit-learn==1.9.*",
     "pyarrow==25.0.*",
+    "pandas>=3.0.6",
+    "rich>=15.0.0",
 ]
 
 [dependency-groups]
