@@ -686,3 +686,6 @@ measured and recorded as found, and the final deliverables complete. Tag: `part-
 | DB-52 | `expand_message_xmd` implemented in `sever-crypto`, if the pinned library lacks it | This plan, §1.4 |
 | DB-53 | EP-10 `Witness` and EP-11 `PlatformProbe` | This plan, §1.5 and §2.4 |
 | DB-54 | The evaluation's build variants (`key-export`, `noerase`, `softdelete`) | This plan, §2.7 |
+
+**Status (4 October 2026).** DB-44, DB-45, DB-47, DB-49 and DB-50 are accepted (overview §6.8); the rest
+remain proposals. Overview DB-56 … DB-59 are new decisions, not build-plan proposals.

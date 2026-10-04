@@ -121,8 +121,8 @@ recorded in the run ledger, including its proof spikes (Build §3.4). Then it is
 - **One repository.** The Rust crates, the partition builder C-15 (`sever_partition`) and the
   reference model C-18 live together. The reference model is the oracle the engine is tested against
   (Overview DB-4, Build §2.2); a second repository would create two copies that drift apart.
-- **Layout:** spec §19.2, with the crate and package names of Build §3.2. The two differ; this is gap
-  G-5, to be settled before Part 1's first crate.
+- **Layout:** spec §19.2, which follows the crate and package map of Build §3.2 (G-5 closed by
+  DB-56). The review prototype lives in `demo/`, self-contained; nothing outside it depends on it.
 - **Branches:** trunk-based (Build §1.3). `main` is always green. Short-lived branches, one per module
   or change (for example `p1-sever-quant`). Every change goes through a pull request with the
   Build §6.1 checklist, even when working alone.
@@ -263,10 +263,12 @@ they name exists.
 | Python must-fail tests only | `PYTHONHASHSEED=0 uv run pytest -q -m mustfail` |
 | Lint, format, types | `uv run ruff check`, `uv run ruff format`, `uv run mypy python` |
 | Add a package | `uv add <pkg>` (a dev tool: `uv add --dev <pkg>`); commit `pyproject.toml` and `uv.lock` together |
-| All Rust tests *(planned)* | `cargo test --workspace` |
+| All Rust tests | `cargo test --workspace` |
+| Rust format, lint | `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings` |
 | Build the partition (C-15) *(planned)* | `uv run python -m sever_partition.build` |
 | Part 1 demo *(planned)* | `sever-demo idea --data nq-10k --seed 42` (offline: `--data synthetic`) |
 | P0 data check (P0 environment, PowerShell) | `python scripts/data-preparation/prepare_data.py verify --root .` |
+| Review demo (self-contained in `demo/`, own env; DB-56) | `demo/scripts/demo.sh setup\|test\|run\|repl`; container: `demo/scripts/demo.sh docker-build`, then `docker test\|run\|repl` (see `demo/README.md`) |
 
 ---
 

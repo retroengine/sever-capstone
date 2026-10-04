@@ -43,8 +43,11 @@
 
 ### 0.1 Normative words
 
-**MUST**, **MUST NOT**, **SHOULD** and **MAY** have their usual RFC 2119 meanings. A statement
-without one of these words is explanatory.
+**MUST**, **MUST NOT**, **SHOULD** and **MAY** have their usual RFC 2119 meanings. In §2–§21 and the
+appendices, these are also normative, with the force of MUST: numbered algorithm steps, formulas,
+byte layouts, parser rejection rules, rows of normative tables, and definitions. Rationale ("Why …",
+notes, soundness notes, explanations that follow a rule) and illustrative examples are explanatory.
+Every normative statement has a requirement ID `SR-<section>-<n>` (overview DB-58).
 
 ### 0.2 Encodings
 
@@ -176,6 +179,10 @@ delete; and the **engine** described in this document.
 | Record ID length | 1 to 256 bytes | §3.2 |
 | Page size | 16,384 bytes | §14.2 |
 | Key-file slot | 512 bytes | §14.7 |
+
+The code accepts any dimension `d` that is a multiple of 8 and any number of frozen groups ≥ 1; the
+values above are the v1 configuration, and every size in Appendix A and every golden vector uses them
+(overview DB-49).
 
 ### 2.3 Domain strings (all ASCII, exact bytes)
 
@@ -381,6 +388,12 @@ per member, ascending by record-ID bytes:
 A parser MUST reject: `member_count ≠ n`, unsorted or duplicate IDs, empty IDs, and trailing bytes.
 This layout is identical to the earlier SEVER prototype's, so its blobs can be compared directly.
 
+**Extension region and core form (overview DB-47).** The bytes between `S` and `member_count` are the
+group extension's region, and the extension chooses the magic. The layout above is the **full form**
+(magic `SEVERG`, region `C_S ‖ r_agg`), produced once commitments exist (build Part 3). Before that,
+the **core form** has magic `b"SEVERC"` and an empty region; every other field is as above. A parser
+MUST reject a magic that does not match the form it expects.
+
 **Exactness relation.** Two group states are *equivalent* if and only if all five of these are equal:
 (1) `S`, (2) `n`, (3) `C_S`, (4) the canonical blob byte for byte, (5) the member ID list.
 
@@ -424,8 +437,9 @@ and `k_frozen = 128`.
 1. **Quantise and dequantise** every reference row (§4.2–4.3), giving `X̂_ref` in float64. All later
    steps use `X̂_ref`, so the threshold is computed on exactly the representation the engine routes.
 2. **k-means** on `X̂_ref` with scikit-learn `KMeans(n_clusters=128, init="k-means++", n_init=10,
-   max_iter=300, tol=1e-4, algorithm="lloyd", random_state=seed_kmeans)`, where `seed_kmeans` is
-   derived from the run seed (overview §10.6). Outputs: centroids `μ_0 … μ_127` (float64) and each
+   max_iter=300, tol=1e-4, algorithm="lloyd", random_state=seed_kmeans mod 2^32)`, where
+   `seed_kmeans` is the `u64` derived from the run seed (overview §10.6); scikit-learn accepts only
+   seeds below 2^32 (overview DB-57). Outputs: centroids `μ_0 … μ_127` (float64) and each
    row's label `c(j)`. Group `frozen-NNNN` is label `NNNN`.
 3. **Pooled residuals.** `R_j = x̂_j − μ_{c(j)}` for every reference row, stacked into one
    `m × d` matrix.
@@ -1184,6 +1198,7 @@ insert_leaf_index ‖ u8 has_rt ‖ r_t (32) ‖ x̃ as d × i32be`.
 | `CERT_REF` | `database_lsn ‖ store segment ‖ offset ‖ length ‖ SHA-256` of the certificate |
 | `PAYLOAD_REF` | `scrambled_id ‖ store segment ‖ offset ‖ length` |
 | `COUNTERS` | `N`, `k`, next `database_lsn` per collection |
+| `EXTENSION` | `u16be participant_id ‖ bytes`, carried for a transaction participant and never interpreted by the storage engine (overview DB-45) |
 | `COMMIT` | — |
 
 Append-store bytes (certificates, payloads, leaves) are written and `fsync`ed **before** the `COMMIT`
@@ -1596,27 +1611,44 @@ build.
 
 ### 19.2 Repository layout
 
+The crate and package map follows the build plan (Build §3.2), one crate per responsibility, grouped
+by the part that adds it (DB-56).
+
 ```
 sever-db/
   Cargo.toml                     workspace: crates/*
   rust-toolchain.toml            channel = "1.98.1"
   deny.toml                      licence and advisory policy
   crates/
-    sever-vfs/  sever-format/  sever-crypto/  sever-store/  sever-index/
-    sever-log/  sever-engine/  sever-py/  sever-server/
+    Part 1  sever-types/  sever-quant/  sever-partition/  sever-index/  sever-search/
+            sever-tracekit/  sever-p1/ (composition root, sever-demo CLI)
+    Part 2  sever-vfs/  sever-format/  sever-wal/  sever-appendstore/  sever-checkpoint/
+            sever-txn/  sever-engine/  sever-crashkit/  sever-py-p2/  sever-p2/
+    Part 3  sever-crypto/  sever-commit/  sever-log/  sever-cert/  sever-py-p3/  sever-p3/
+    Part 4  sever-keys/  sever-seal/  sever-erasure/  sever-platform/  sever-scan/  sever-py/
+            sever-db/ (final composition root)
   verifier/                      separate workspace, own Cargo.lock, no path dependencies on crates/
-  audit/                         separate crate
+  audit/                         separate workspace
   python/
-    sever_db/                    SDK wrapper
     sever_partition/             C-15
-    sever_refmodel/              C-18
-    sever_experiments/           C-19
+    sever_refmodel_core/  sever_refmodel_durable/  sever_refmodel_certs/
+                                 C-18, one package per part
+    sever_testkit/               synthetic data, dataset slices, seeds, trace writing
+    sever_demo/                  renders the sever-demo output (Build §4.4)
+    sever_db_p2/  sever_db_p3/  sever_db/
+                                 SDK modules (C-13)
+    sever_experiments/  sever_report/
+                                 C-19
   configs/                       engine.yaml, partition.yaml, experiments.yaml
   golden/                        generator vectors, proof challenge vectors, RFC KATs
   datasets/MANIFEST.sha256       data files are regenerated, not committed
   tests/                         crash/, forensic/, differential/, attack/, property/
   docs/                          these two documents, RUN_LEDGER.md, SOUNDNESS.md
+  demo/                          the review prototype (Python, 5 Oct 2026): own environment, tests
+                                 and container; not part of any part; nothing above depends on it
 ```
+
+The optional server (C-14) has no crate in the build plan; it is added, if ever, after Part 4.
 
 ---
 
@@ -1751,9 +1783,9 @@ All at `d = 384`, recomputed by script on 27 Sep 2026.
 
 ---
 
-## Appendix B — golden vectors to generate in P1
+## Appendix B — golden vectors
 
-Each is generated once, committed under `golden/`, and checked by both the engine and the verifier
+Each is generated by the build part that owns it (overview DB-44; Build 3-4 §3.4), once, committed under `golden/`, and checked by both the engine and the verifier
 with independent code. A golden vector detects *drift* (a library bump, an edit, a corrupted build);
 correctness of the underlying primitives rests on the third-party RFC test vectors.
 
@@ -1767,6 +1799,7 @@ correctness of the underlying primitives rests on the third-party RFC test vecto
 6. A complete honest certificate (group deletion) and one holding-area certificate, with all
    intermediate values.
 7. A spawn ID for a fixed 200-ID cohort.
-8. A canonical group blob for a fixed three-member group.
+8. A canonical group blob for a fixed three-member group, in the core form (`SEVERC`, Part 1) and the
+   full form (`SEVERG`, Part 3) (§5.5).
 9. RFC 9162 inclusion and consistency proofs for a fixed 7-leaf tree.
 

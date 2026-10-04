@@ -170,8 +170,10 @@ of them a test, in five ways.
 
 **1. Requirement IDs and a traceability matrix.**
 
-- Every MUST or MUST NOT in the specification gets a stable ID, `SR-<section>-<n>`. For example,
-  `SR-4.1-3` is "`|norm − 1| ≤ 8·2^−23` MUST hold".
+- Every normative statement in the specification gets a stable ID, `SR-<section>-<n>`: every MUST
+  or MUST NOT, and every numbered step, formula, byte layout, parser rejection rule, row of a
+  normative table and definition (spec §0.1, overview DB-58). For example, `SR-4.1-3` is
+  "`|norm − 1| ≤ 8·2^−23` MUST hold".
 - The IDs, the requirement text and the part that owns each one are kept in `spec/requirements.yaml`.
   A script extracts candidates from the specification, so a new MUST cannot go unnoticed.
 - Every test names the requirements it checks: `#[spec("SR-4.1-3")]` in Rust (a small attribute
@@ -474,6 +476,9 @@ system: with Parts 3 and 4 plugged in, the bytes come out exactly as the specifi
 | **DB-48** | Every storage file records a `sealer_id`. A database written with `PlaintextSealer` is refused by an encrypting build, and the reverse. Part 2 alone makes **no** confidentiality claim; the ciphertext-only rule (INV-11) applies from Part 4 |
 | **DB-49** | The code accepts any dimension that is a multiple of 8 and any number of frozen groups ≥ 1; the v1 configuration fixes 384 and 128. Small dimensions are used only by fast tests |
 | **DB-50** | The `SecretMemory` provider is installed once, by the composition root, at startup |
+
+**Status (4 October 2026).** DB-44, DB-45, DB-47, DB-49 and DB-50 are accepted and recorded in overview
+§6.8. DB-46 and DB-48 remain proposals until Part 2's design review.
 
 ---
 
