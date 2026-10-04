@@ -1,0 +1,23 @@
+{
+ "vector": "spec \u00a79.7 scrambled_id = HMAC-SHA-512(k_scramble, collection_id \u2016 record_id_bytes), Python hmac",
+ "k_scramble_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+ "collection_id_hex": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+ "rows": [
+  {
+   "record_id": "doc0",
+   "scrambled_id": "6f9bc53ad77817080254762fbfbc52cf95c8ccca5970c1c9b9edd93756058f9c65bec4f3611ec5b2b20c5c90f1ad7dd2d067587b74754267be7574a3ee268cc3"
+  },
+  {
+   "record_id": "nq-1234",
+   "scrambled_id": "eeefb230a785c2a1b383ffbfc96e7590b7540a42ff58b9f5fa761b098d50312979f6c709cd7c49250442450a40a6c6c447fa69d63b570231b8c8d9d0ca860daa"
+  },
+  {
+   "record_id": "\u00e9",
+   "scrambled_id": "aa0303eb39f4b338cba76730a27787d9421522afe527941abd5bc050e3f4968a8cd99871d7e1e96f152c30ba9b3cc41154a4d82255322b7e0e4faeb7bf12bb4c"
+  },
+  {
+   "record_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "scrambled_id": "0d8195a1e416e1f5eb8bb9ff4f129a65a2bfa23dd1d5f35e9d0812efa1fe6d9f480f1b72557b3bfe4c82dd93b62fb00eab1e70d7d07edbb80ece248361985a3f"
+  }
+ ]
+}

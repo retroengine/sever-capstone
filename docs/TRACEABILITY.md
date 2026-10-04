@@ -59,3 +59,23 @@ requirement of a finished part has no test.
 | SR-8.1-2 | probe count ⌈k/4⌉ | `test_p1_model_probe_count[*]` | L1 | SB-6 | 1 |
 | SR-8.1-4 | deleted never returned | `test_p1_model_deleted_records_never_returned` | L1 | SB-5 | 1 |
 | SR-8.2-1 | pinned kernel (model) | `test_p1_model_kernel_matches_explicit_lanes` | L1 | SB-9 | 1 |
+| SR-5.3-1, SR-5.4-1 | exact deletion (Rust) | `p1_index_delete_restores_survivors_state`, `p1_index_prop_survivors_check_after_any_sequence` | L1, L2 | SB-1, SB-2 | 1 |
+| SR-5.4-2 | idempotent delete (Rust) | `p1_index_delete_is_idempotent`, `p1_index_delete_user_across_groups_with_repeats` | L1 | SB-3 | 1 |
+| SR-5.4-3, SR-5.2-1 | empty group (Rust) | `p1_index_empty_group_is_initial_state_and_stays` | L1 |  | 1 |
+| SR-5.5-1, SR-5.5-2 | blob + parser (Rust) | `p1_index_blob_parser_rejections`, `p1_index_golden_core_blob` (golden 8) | L1, L3 |  | 1 |
+| SR-5.5-3 | equivalence helper (Rust) | `p1_index_equivalence_helper_catches_each_field` | L12 | SB-1 | 1 |
+| SR-5.5-4 | order independence (Rust) | `p1_index_prop_insertion_order_independent` | L2 |  | 1 |
+| SR-5.6-1 | room test (Rust) | `p1_index_room_test_boundaries` | L1 |  | 1 |
+| SR-3.2-3, SR-3.2-4, SR-4.1-0 | duplicates, re-insert, §15.1 order (Rust) | `p1_index_insert_validation_order_and_duplicates` | L1 |  | 1 |
+| SR-7.4-1 … SR-7.6-1 | holding, flush, centroid, counters (Rust) | `p1_index_holding_flushes_exactly_at_target`, `p1_index_holding_record_deletable_not_searchable` | L1 |  | 1 |
+| SR-7.3-2 | spillover first (Rust) | `p1_index_spillover_before_holding` | L1 | SB-8 | 1 |
+| SR-7.7-1, SR-7.7-2 | routing pure (Rust) | `p1_index_routing_ignores_creation_order` | L6 | SB-7 | 1 |
+| SR-7.5-1 | spawn ID (Rust) | `p1_index_golden_spawn_id` (golden 7) | L3 |  | 1 |
+| §14.4 swap-with-last | locator follows moved slot | `p1_index_locator_follows_moved_slot` | L1 | SB-4 | 1 |
+| SR-8.1-4 | mirror excision (Rust) | `p1_index_deleted_record_leaves_the_mirror`, `p1_search_results_order_and_deletion` | L1 | SB-5 | 1 |
+| SR-9.7-1 | HMAC scrambler | `p1_index_scrambler_matches_python_hmac`, `p1_index_contracts` (EP-2) | L1, L7 |  | 1 |
+| Build §3.4 EP-1, EP-2, EP-4 | contract suites | `p1_index_contracts`, `p1_types_ep4_*` | L7 |  | 1 |
+| Build §4.7 L6 | whole-index twin; delete-reinsert | `p1_index_whole_index_twin`, `p1_index_delete_then_reinsert_is_identity` | L6 |  | 1 |
+| SR-8.1-2 | probe budget counts empty groups | `p1_search_probe_count`, `p1_search_empty_groups_count_in_the_budget` | L1 | SB-6 | 1 |
+| SR-8.2-1 | pinned kernel, scalar = AVX2 | `p1_search_kernel_lane_layout_by_hand`, `p1_search_kernel_scalar_equals_avx2`, `p1_search_prop_kernels_agree` | L1, L2 | SB-9 | 1 |
+| SR-8.1-3 | result order | `p1_search_results_order_and_deletion` | L1 |  | 1 |

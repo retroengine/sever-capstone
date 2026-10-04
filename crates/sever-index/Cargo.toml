@@ -1,0 +1,36 @@
+[package]
+name = "sever-index"
+version = "0.1.0"
+description = "Groups, exact accumulators, routing, holding area, flush, plan/apply (Part 1, spec §5, §7, §9.7)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[features]
+# §16.1 group_snapshot; never enabled in measured builds (Build §1.1).
+test-hooks = []
+# Build §3.4: the EP-1 and EP-2 contract suites, for implementations in later parts.
+contract-tests = []
+# Build §2.6: each builds the index with exactly one deliberate bug. A test must go red.
+sabotage-SB-1 = [] # flip one bit of a group sum
+sabotage-SB-2 = [] # skip the count decrement on deletion
+sabotage-SB-3 = [] # subtract twice on a retried deletion
+sabotage-SB-4 = [] # forget the locator update after a slot move
+sabotage-SB-5 = [] # keep a deleted vector in the search mirror
+sabotage-SB-7 = [] # route to the most recently created group with room
+sabotage-SB-8 = [] # put a vector in the holding area before checking spillover
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-quant = { path = "../sever-quant" }
+sever-partition = { path = "../sever-partition" }
+sha2 = "=0.10.9" # spec §20.1
+hmac = "=0.12.1" # spec §20.1
+
+[dev-dependencies]
+sever-index = { path = ".", features = ["test-hooks", "contract-tests"] }
+proptest = "1"
+serde_json = "1"
+
+[lints]
+workspace = true

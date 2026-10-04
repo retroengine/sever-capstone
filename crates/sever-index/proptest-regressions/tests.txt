@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 39e170e54217c5a5fd8eba98e3295386cf2252567cb168e0760c3ff30a47c23d # shrinks to ops = [InsRef(34), DelUser([34])]
+cc 654ba43d8603703bf5ec4d48a130e2b8d4d6fde2c1f973e1e73956e88e9b5a66 # shrinks to ops = [InsLive(36), DelUser([36, 36])]
