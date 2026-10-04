@@ -112,3 +112,75 @@
   kind: must-not
   part: 1
   technique: [table-driven, property]
+
+# --- §4 vector arithmetic (sever-quant, 4 Oct 2026) ---
+
+- id: SR-4.1-0
+  section: "4.1"
+  text: "The input MUST have exactly d components. Otherwise reject with WrongDimension."
+  kind: must
+  part: 1
+  technique: [boundary]
+  error: WrongDimension
+  related: [DB-60]
+
+- id: SR-4.1-1
+  section: "4.1"
+  text: "Every component MUST be finite."
+  kind: must
+  part: 1
+  technique: [equivalence]
+  error: NonFinite
+  related: [INV-1]
+
+- id: SR-4.1-2
+  section: "4.1"
+  text: "Compute norm = sqrt(Σ_{i=0}^{d−1} (f64)x_i²) in float64, summing sequentially from i = 0."
+  kind: step
+  part: 1
+  technique: [table-driven]
+
+- id: SR-4.1-3
+  section: "4.1"
+  text: "|norm − 1| ≤ 8 · 2^−23 MUST hold. Otherwise reject with NotNormalised."
+  kind: must
+  part: 1
+  technique: [boundary]
+  error: NotNormalised
+  notes: "Boundaries: exactly ±8 ULPs and one ULP beyond, both sides (below 1.0 that is 16 and 17 steps of 2^−24)."
+
+- id: SR-4.2-1
+  section: "4.2"
+  text: "x̃_i = round_half_to_even( (f64)x_i · 2^24 ), stored as i32."
+  kind: formula
+  part: 1
+  technique: [table-driven, boundary]
+  related: [golden-5]
+
+- id: SR-4.2-2
+  section: "4.2"
+  text: "Bound: |x̃_i| ≤ 2^24 + 16 = 16,777,232 < 2^31."
+  kind: formula
+  part: 1
+  technique: [boundary]
+
+- id: SR-4.2-3
+  section: "4.2"
+  text: "The SDK on the application backend and the engine MUST use the same quantiser."
+  kind: must
+  part: 3
+  notes: "Part 3 SDK (sever_db_p3) calls sever-quant through the binding."
+
+- id: SR-4.3-1
+  section: "4.3"
+  text: "x̂_i = x̃_i / 2^24. For routing it is computed in float64 (exact)."
+  kind: formula
+  part: 1
+  technique: [table-driven]
+
+- id: SR-4.3-2
+  section: "4.3"
+  text: "For search it is converted to float32 (exact whenever |x̃_i| ≤ 2^24, otherwise rounded to nearest even)."
+  kind: formula
+  part: 1
+  technique: [boundary]

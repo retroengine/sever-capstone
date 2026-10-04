@@ -24,3 +24,11 @@ requirement of a finished part has no test.
 | SR-9.7-1 | scrambled_id is 64 bytes (HMAC in sever-index) | `p1_types_fixed_width_ids` | L1 | | 1 |
 | SR-17-1 | every error typed | `p1_types_every_spec_17_row_is_a_variant` | L3 | | 1 |
 | SR-17-2 | no ID, vector, key, r_t or text in errors | `p1_types_error_messages_are_fixed_text`, `p1_types_record_id_never_leaks_into_text`, `p1_types_secret_buf_debug_is_redacted` | L1 | | 1 |
+| SR-4.1-0 | dimension check (step 0) | `p1_quant_wrong_dimension_is_rejected_first`, `p1_quant_quantise_runs_the_check` | L1 | | 1 |
+| SR-4.1-1 | every component finite | `p1_quant_non_finite_is_rejected` | L1 | | 1 |
+| SR-4.1-2 | f64 sequential norm | `p1_quant_norm_is_summed_in_f64_sequentially` | L1 | | 1 |
+| SR-4.1-3 | 8-ULP tolerance | `p1_quant_tolerance_boundaries`, `p1_quant_prop_unit_vectors_pass` | L1, L2 | | 1 |
+| SR-4.2-1 | Q24, ties to even | `p1_quant_golden_half_steps_round_to_even` (golden 5), `p1_quant_ties_to_even_by_hand`, `p1_quant_prop_round_trip_within_half_step` | L1, L2, L3 | | 1 |
+| SR-4.2-2 | |x̃| ≤ 2^24 + 16 | `p1_quant_bound_is_reached_at_tolerance_edge`, `p1_quant_from_stored_checks_dimension_and_bound` | L1 | | 1 |
+| SR-4.3-1 | dequantise f64 exact | `p1_quant_dequantise`, `p1_quant_prop_round_trip_within_half_step` | L1, L2 | | 1 |
+| SR-4.3-2 | dequantise f32, ties to even above 2^24 | `p1_quant_dequantise` | L1 | | 1 |
