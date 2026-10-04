@@ -1,0 +1,4 @@
+# Spec §20.1: the pinned toolchain.
+[toolchain]
+channel = "1.98.1"
+components = ["rustfmt", "clippy"]

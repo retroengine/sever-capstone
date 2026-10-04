@@ -1,0 +1,5 @@
+# Build §1.2: unwrap, expect, panic and unchecked indexing are denied in library code only.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-indexing-slicing-in-tests = true

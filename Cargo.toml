@@ -1,0 +1,24 @@
+# SEVER-DB Rust workspace. Layout: spec §19.2 (DB-56); crate map per part: Build §3.2.
+# Code quality rules (Build §1.2) are set once here and inherited by every crate through
+# `[lints] workspace = true`.
+
+[workspace]
+members = ["crates/*"]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.85" # workspace MSRV, spec §20.1 (zeroize 1.9.0)
+publish = false
+
+[workspace.lints.rust]
+unsafe_code = "forbid" # Build §1.2; the listed exceptions (SIMD kernels, mlock) opt out per crate
+missing_docs = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+# Denied in library code; clippy.toml allows them inside tests.
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
