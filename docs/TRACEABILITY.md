@@ -32,3 +32,11 @@ requirement of a finished part has no test.
 | SR-4.2-2 | |x̃| ≤ 2^24 + 16 | `p1_quant_bound_is_reached_at_tolerance_edge`, `p1_quant_from_stored_checks_dimension_and_bound` | L1 | | 1 |
 | SR-4.3-1 | dequantise f64 exact | `p1_quant_dequantise`, `p1_quant_prop_round_trip_within_half_step` | L1, L2 | | 1 |
 | SR-4.3-2 | dequantise f32, ties to even above 2^24 | `p1_quant_dequantise` | L1 | | 1 |
+| SR-6.2-1 … SR-6.2-6 | builder steps 1–6 | `test_p1_partition_small_build_is_consistent`, `test_p1_partition_build_refuses_unnormalised_reference_rows`, `test_p1_partition_build_is_deterministic` | L1 |  | 1 |
+| SR-6.2-4 | one pooled LW fit | `test_p1_partition_sb10_per_group_averaging_is_refused` | L12 | SB-10 | 1 |
+| SR-6.2-7 | independent LW oracle | `test_p1_partition_oracle_agrees_with_sklearn`, `test_p1_partition_real_seed42_rebuild_is_byte_identical` (slow) | L1, L8 | SB-10 | 1 |
+| SR-6.3-1 | artefact layout | `test_p1_partition_artefact_layout_by_offset`, `p1_partition_parses_the_python_builders_file` | L3, L8 |  | 1 |
+| SR-6.3-2 | hash, d, finite P checked | `test_p1_partition_artefact_decoder_rejects_bad_files`, `p1_partition_every_bit_flip_is_detected`, `p1_partition_rejects_bad_fields_even_with_valid_hash` | L1, L2 |  | 1 |
+| SR-7.2-1 | pinned Mahalanobis order | `test_p1_partition_mahalanobis_is_the_pinned_sequential_order` | L1 |  | 1 |
+| SR-7.2-2 | q < 0 → IntegrityViolation | `test_p1_partition_negative_q_is_an_integrity_violation` | L1 |  | 1 |
+| SR-OV-10.6-1 | sub-seed derivation | `test_p1_seeds_sub_seed_reproduces_the_p0_corpus_seed` | L1 |  | 1 |

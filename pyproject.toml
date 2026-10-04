@@ -35,13 +35,14 @@ link-mode = "copy"
 
 [tool.pytest.ini_options]
 pythonpath = ["python"]
-testpaths = ["tests"]
+testpaths = ["tests", "python"]
 # Until tests/ exists pytest falls back to the repo root; never collect the demo's own suite or data.
 norecursedirs = [".*", "build", "dist", "venv", "demo", "src", "datasets", "docs"]
 addopts = "--strict-markers"
 markers = [
     "mustfail: sabotage test; names the SB item it covers (Build §2.6)",
     "spec(ids): requirement IDs SR-<section>-<n> this test checks (Build §2.2)",
+    "slow: minutes on real data; Extended CI tier only (deselect with -m 'not slow')",
 ]
 
 [tool.coverage.run]
@@ -57,8 +58,8 @@ extend-exclude = ["demo", "src", "docs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "PT"]
-# ℓ is the spec's own symbol for the ristretto255 group order (§2.1).
-allowed-confusables = ["ℓ"]
+# The spec's own symbols: ℓ (group order, §2.1), en dash for ranges, − and × in formulas.
+allowed-confusables = ["ℓ", "–", "−", "×"]
 
 [tool.mypy]
 strict = true
@@ -66,5 +67,5 @@ python_version = "3.13"
 mypy_path = "python"
 
 [[tool.mypy.overrides]]
-module = ["sklearn.*", "pyarrow.*"]
+module = ["sklearn.*", "pyarrow.*", "scipy.*", "threadpoolctl"]
 ignore_missing_imports = true

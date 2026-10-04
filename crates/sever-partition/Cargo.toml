@@ -1,0 +1,17 @@
+[package]
+name = "sever-partition"
+version = "0.1.0"
+description = "Parse and validate the partition artefact partition.svp (Part 1, spec §6.3)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sha2 = "=0.10.9" # spec §20.1
+
+[dev-dependencies]
+serde_json = "1"
+
+[lints]
+workspace = true

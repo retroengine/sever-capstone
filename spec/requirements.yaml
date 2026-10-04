@@ -184,3 +184,18 @@
   kind: formula
   part: 1
   technique: [boundary]
+
+# --- §6 partition, §7.2 distance, overview §10.6 seeds (sever_partition, sever-partition) ---
+
+- {id: SR-6.2-1, section: "6.2", kind: step, part: 1, text: "Quantise and dequantise every reference row (§4.2–4.3), giving X̂_ref in float64. All later steps use X̂_ref."}
+- {id: SR-6.2-2, section: "6.2", kind: step, part: 1, text: "k-means on X̂_ref: KMeans(n_clusters=128, init=k-means++, n_init=10, max_iter=300, tol=1e-4, algorithm=lloyd, random_state=seed_kmeans mod 2^32). Group frozen-NNNN is label NNNN."}
+- {id: SR-6.2-3, section: "6.2", kind: step, part: 1, text: "Pooled residuals R_j = x̂_j − μ_{c(j)} for every reference row, stacked into one m × d matrix."}
+- {id: SR-6.2-4, section: "6.2", kind: step, part: 1, text: "One Ledoit–Wolf shrinkage estimate over all rows of R (assume_centered = False), not an average of per-group fits.", related: [SB-10]}
+- {id: SR-6.2-5, section: "6.2", kind: step, part: 1, text: "P = Σ^{-1}, computed by Cholesky factorisation in float64. Stored explicitly and used as stored."}
+- {id: SR-6.2-6, section: "6.2", kind: step, part: 1, text: "τ = percentile_99(d_M(x̂_j, μ_{c(j)})) over all reference rows, with §7.2's summation order and linear interpolation."}
+- {id: SR-6.2-7, section: "6.2", kind: must, part: 1, text: "The builder computes Ledoit–Wolf from the published formula in plain NumPy and refuses to write the artefact unless shrinkage agrees to 1e-12 and thresholds to 1e-9.", related: [SB-10, P1-T6]}
+- {id: SR-6.3-1, section: "6.3", kind: layout, part: 1, text: "partition.svp layout: SVDBPART, u16be version 1, u16be d, u16be k_frozen, u64be seed, f64be tau, f64be lw_shrinkage, u64be m, sha256_reference (32), u16be encoder_len ‖ encoder, centroids f64be row-major, P f64be row-major, sha256_artefact."}
+- {id: SR-6.3-2, section: "6.3", kind: must, part: 1, text: "create_collection MUST verify sha256_artefact, d, and that P has finite entries."}
+- {id: SR-7.2-1, section: "7.2", kind: formula, part: 1, text: "δ = x̂ − μ_{j*}; y_a = Σ_b P[a][b]·δ_b (sequential in b); q = Σ_a δ_a·y_a (sequential in a); d_M = sqrt(q)."}
+- {id: SR-7.2-2, section: "7.2", kind: must, part: 1, text: "q < 0 MUST raise IntegrityViolation."}
+- {id: SR-OV-10.6-1, section: "overview 10.6", kind: formula, part: 1, text: "Sub-seeds: u64 from the first 8 bytes of SHA-256(u64be(seed) ‖ label), big-endian; labels kmeans, stream, cohort-order; corpus seed from 42."}

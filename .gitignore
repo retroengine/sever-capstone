@@ -30,3 +30,6 @@ demo/results/certs/
 Thumbs.db
 .vscode/
 .idea/
+
+# Partition artefacts: rebuilt by sever_partition.build, identified by hash in the ledger
+/artefacts/
