@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-43)](#6-decision-register-db-1--db-43)
+6. [Decision register (DB-1 … DB-43, DB-55)](#6-decision-register-db-1--db-43-db-55)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -40,6 +40,7 @@ evaluate SEVER-DB.
 18. [Recommendations](#18-recommendations)
 19. [Glossary](#19-glossary)
 20. [References](#20-references)
+- [Changelog](#changelog)
 
 ---
 
@@ -85,7 +86,21 @@ recovery, transactions, key management, index and search.
 into groups, each with a summary such as a centroid. When a person asks to be deleted, most systems
 only hide the record. The summaries still carry that person's contribution, and so do the write-ahead
 log, old storage files, freed disk blocks and backups. We call these surviving traces **the ghost**.
-And nobody outside the company can check that a deletion really happened.
+And nobody outside the company can check even the accounting of a deletion: that the record's numbers
+really left the summaries.
+
+SEVER-DB changes what an outsider can check, and it is precise about the limits. Anyone can check a
+deletion's **accounting** from its certificate. **Erasure** is guaranteed against anyone who later
+obtains the disks, not against the operator, who runs the service and holds its keys.
+
+> **What SEVER-DB proves, and what it does not**
+>
+> **Proves:** the record was inserted under the account's key in a signed, witnessed log; the group's
+> accounting moved by exactly that record; after deletion, anyone who later obtains the disks cannot
+> recover the record, its `r_t`, or two accumulator versions straddling the deletion.
+>
+> **Does not prove:** that the operator kept no copy (no cryptography can); that the user personally
+> authorised the deletion (DB-55, L-2, L-27).
 
 **Why no existing system solves it:**
 
@@ -118,7 +133,7 @@ To our knowledge, no existing system makes vector deletion simultaneously:
 The storage engine itself is a contribution: it is designed around a leak specific to exact
 accumulators. If two versions of a group's total survive on disk, one before and one after a deletion,
 subtracting them gives back the deleted vector exactly (`S_pre − S_post = x̃`), and the same
-subtraction on the blinding totals gives back the user's secret (`r_agg_pre − r_agg_post = r_t`).
+subtraction on the blinding totals gives back the record's blinding value (`r_agg_pre − r_agg_post = r_t`).
 Exactness, the system's strength, turns any retained old version into a perfect leak. SEVER-DB's key
 rotation rule (spec §13.3) closes it.
 
@@ -142,6 +157,8 @@ rotation rule (spec §13.3) closes it.
 - Removing data from model weights. SEVER-DB deletes from the search index only, and assumes the
   encoder model was trained on public data.
 - An erasure guarantee against the **operator**, who can always copy a key (§4).
+- Cryptographic user control over deletion. The application backend holds every account's signing key,
+  and the engine holds every `r_t`; deletion is authorised by the service's account check (DB-55, L-27).
 - Beating other vector databases on speed. Speed is measured, not claimed.
 - 768-dimensional vectors and 10^7-vector scale (future work, §17).
 
@@ -216,7 +233,7 @@ Two methodological lessons from the prototype shaped SEVER-DB directly:
 - **RQ-1 — Exactness under failure.** Does a transactional engine keep deletion exact, and lose no
   acknowledged operation, when it crashes at any point of any protocol?
 - **RQ-2 — Physical erasure.** After a deletion is acknowledged, can the deleted vector, record ID,
-  passage text, the user's blinding value, or a pair of accumulator versions from which they follow by
+  passage text, the record's blinding value, or a pair of accumulator versions from which they follow by
   subtraction, be recovered from raw storage, including free space?
 - **RQ-3 — Faithfulness and verifiability.** Does the engine match an independent, obviously correct
   reference model byte for byte, and does every certificate it issues verify, while every attack is
@@ -241,6 +258,9 @@ Two methodological lessons from the prototype shaped SEVER-DB directly:
 - Only deletion is exact; search results are approximate.
 - No erasure guarantee against the operator; no guarantee that SSD firmware or copy-on-write
   filesystems honour an overwrite of the key file (confined to one small file, L-1).
+- A certificate does not prove that the operator kept no copy (no cryptography can), nor that the user
+  personally authorised the deletion: the service holds the account keys and decides who may delete
+  (L-2, L-27).
 - No claim about a memory image taken before a deletion is acknowledged.
 - The shape of the index — which groups exist and where spawned centroids sit — is not restored by
   deletion. This residue is disclosed in every certificate (`group_emptied_by_this_deletion`).
@@ -279,7 +299,7 @@ fastest way to go green.
 
 | Adversary | Capabilities | What SEVER-DB defends |
 |---|---|---|
-| **Dishonest operator** | Controls memory, disk and network; may fabricate state, rewrite history, or reuse proofs | Public certificates: the commitment transition check, the proof of knowledge bound to the deletion's full context, the user's insert signature under a key published in the log, and witnessed log checkpoints. **Physical erasure is not a defence against the operator** |
+| **Dishonest operator** | Controls memory, disk and network, and runs the application backend, so it holds every account's signing key and every `r_t`; may fabricate state, rewrite history, or reuse proofs | Public certificates: the commitment transition check, the proof of knowledge bound to the deletion's full context, and witnessed log checkpoints. The insert signature only records that the service acted for an authenticated account; it does not constrain the operator (L-27). **Physical erasure is not a defence against the operator** |
 | **Verifier** | Holds a certificate and the verifier's bundled trust anchors; has no database access and no knowledge of any group's total | Can check everything in spec §11.3 unaided |
 | **Forensic storage adversary** | At any time after a deletion is acknowledged, obtains a complete raw image of every storage device the engine uses — free space, deleted files, old storage checkpoints, WAL segments and the key file as it is then. Knows all public parameters and formats | Cannot recover deleted vectors, IDs, text, `r_t`, or any pair of accumulator versions straddling the deletion |
 | **Forensic adversary holding `k_scramble`** | The above plus the operator's ID-scrambling key | Can test whether a *candidate* record ID once existed (L-4); still cannot recover content |
@@ -293,15 +313,25 @@ fastest way to go green.
 3. An overwrite plus `fsync` of a 512-byte key-file slot destroys the old key on that device (L-1).
 4. Swap, hibernation images and core dumps do not capture secrets (enforced by startup checks, DB-35).
 5. At least four of the five witnesses are honest (simulated in v1, L-7).
+6. The operator runs the application backend, which authenticates the account before every insert and
+   every deletion. SEVER-DB does not check this (DB-55, L-27).
 
 ### 4.3 Out of scope
 
 Timing and cache side channels; hardware attacks; a compromised kernel; SSD firmware; the encoder
-model; availability (an operator can always refuse service).
+model; availability (an operator can always refuse service); account authentication between the user
+app and the application backend.
 
 ---
 
 ## 5. The design in plain words
+
+**Who does what.** Three parties take part (spec §3.3). The **user app** is thin: it sends text and
+signs in to the user's account. The **application backend** (the AI server) embeds the text with the
+exact encoder pinned in the partition artefact, prepares each insert (quantises, draws `r_t`, computes
+and signs `C_t`) and calls the engine; it keeps every account's signing key in its own key store. The
+**engine**, SEVER-DB itself, checks and stores records, keeps the sums, writes the log, deletes, and
+issues certificates.
 
 **Turning vectors into integers.** Every embedding is checked to have length 1 (within 8 float32 ULPs),
 multiplied by 2^24 and rounded to the nearest integer (ties to even). Integer addition and subtraction
@@ -329,9 +359,12 @@ IDs, and its centre is their mean at that moment.
 coverage constant as groups multiply.
 
 **Receipts.** Each record carries a Pedersen commitment `C_t` to its integer vector, blinded by a
-random value `r_t` that the user generates and keeps; possessing `r_t` is the right to delete. The user
-signs `C_t` at insert, and the signature and the user's public key go into a public, append-only Merkle
-log, cosigned by witnesses. On deletion, the group's commitment drops by exactly `C_t`, and the operator
+random value `r_t` that the application backend draws. The engine stores `r_t` with the record,
+encrypted under the record's key, so it is erased with the record. The backend signs `C_t` at insert
+with the account's key, and the signature and the account's public key go into a public, append-only
+Merkle log, cosigned by witnesses. The signature records that the service acted for an authenticated
+account; it is not the user's own consent, because the service holds the key (L-27). Deletion is
+authorised the same way: the backend checks the account, then calls `delete`. On deletion, the group's commitment drops by exactly `C_t`, and the operator
 attaches a proof that it knows the whole new group state (not just part of it), bound to this specific
 deletion. A certificate carries everything needed to check all this offline.
 
@@ -346,18 +379,20 @@ group key is overwritten. Every older copy of the deleted data — in the log, o
 free space — then becomes permanently unreadable.
 
 ```
+user app ─text─► backend: authenticate account, embed, prepare_insert (quantise, draw r_t, sign C_t)
 insert ─► check & quantise ─► route ──► frozen group ─┐
-                                 ├────► spawned group ─┼─► encrypt, update sums & commitment,
+                                 ├────► spawned group ─┼─► encrypt (with r_t), update sums & commitment,
                                  └────► holding area ──┘   log the insert, commit
                                           (200 ⇒ new spawned group)
 
-delete ─► find ─► check r_t opens C_t ─► subtract ─► prove ─► certificate
+user app ─request─► backend: authenticate account ─► delete(collection_id, record_id)
+delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─► subtract ─► prove ─► certificate
         ─► new key (phase A) ─► commit (phase B) ─► wipe memory ─► erase old key (phase C) ─► acknowledge
 ```
 
 ---
 
-## 6. Decision register (DB-1 … DB-43)
+## 6. Decision register (DB-1 … DB-43, DB-55)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -414,7 +449,7 @@ yet four orders of magnitude tighter than any un-normalised embedding. With the 
 `|x̃|` is `2^24 + 16`, so the sum at 10^6 members fits in 44 bits, leaving 19 bits spare. **Rejected.**
 Floating-point sums (not exactly reversible); ties away from zero (biased); storing `x̃` as `i64` (twice
 the space for no benefit). **Consequence.** The quantiser is shared by the SDK and the engine, because
-clients commit to `x̃`.
+the application backend commits to `x̃`.
 
 #### DB-6 — What "exact deletion" means
 
@@ -551,6 +586,9 @@ deletion only if the supplied `r_t` opens the logged `C_t` (spec §3.3, §9.4). 
 authentication scheme. **Consequence.** Losing `r_t` means the user cannot delete through the API;
 the SDK makes storing it the caller's explicit duty.
 
+**Superseded by DB-55 (2 October 2026).** The application backend now draws `r_t`, the engine stores
+it for every record, and deletion is authorised by the backend's account check.
+
 #### DB-19 — Scrambled record IDs
 
 **Decision.** `HMAC-SHA-512(k_scramble, collection_id ‖ record_id)`, with a non-rotating operator key
@@ -576,6 +614,10 @@ leaves and on demand; five witnesses with threshold four, each verifying consist
 keys at insert stops an operator from signing a fabricated commitment with its own key. **Rejected.**
 A Merkle Mountain Range (no equally authoritative standard). **Consequence.** L-7.
 
+**Rationale qualified by DB-55 (2 October 2026).** The operator now holds every account's key, so a
+published user key records which account the service acted for; it no longer stops a dishonest
+operator (L-27).
+
 #### DB-22 — A self-sufficient certificate in a deterministic encoding
 
 **Decision.** 13 TLV fields plus an operator signature (spec §11.1). Field 6 carries the record's insert
@@ -587,6 +629,10 @@ keys, and cosignatures did not attest a real log checkpoint). TLV replaces proto
 must be canonical. **Rejected.** Protobuf (not canonical); proving inclusion of the deletion's own leaf (a
 certificate cannot contain a proof about itself). **Consequence.** About 14.1 KB per certificate; that
 the deletion leaf itself was logged is an auditor's check (C-17, L-13).
+
+**Rationale qualified by DB-55 (2 October 2026).** "User authorisation" now means that the insert was
+signed under the account's key by the service acting for an authenticated account; it is not the
+user's own consent to the deletion (L-27). The certificate format is unchanged.
 
 #### DB-23 — `database_lsn` is the leaf index
 
@@ -741,6 +787,37 @@ reference partition; a commercial use would need another reference set (L-19).
 must be independently checkable, and aggregation reduces verifier computation, not stored bytes.
 **Consequence.** A retention policy is future work (O-7); L-15.
 
+### 6.8 Amendments
+
+DB-44 … DB-54 are reserved for the amendments proposed in the build plans (Build §3.5, Build 3-4 §3.5)
+and are recorded here once accepted.
+
+#### DB-55 — Service-side custody of `r_t` and user keys (2 October 2026)
+
+**Decision.** Three parties (spec §3.3). The **user app** is thin: it sends text, authenticates to the
+user's account, and holds no SEVER-DB secret. The **application backend** embeds text with the exact
+encoder pinned in the partition artefact, never in the engine and never on the user's device; runs
+`prepare_insert` (Q24 quantisation, `r_t` drawn from the OS CSPRNG, `C_t`, signature); calls the
+engine; and holds each account's Ed25519 signing key in its own key store. The **engine** keeps its
+role: it recomputes and checks `C_t`, stores, updates `S`, `r_agg` and `C_S`, writes the log, deletes
+and issues certificates. The engine stores `r_t` for **every** record (`has_rt = 1` always), encrypted
+under the record key `RK_t` inside the slot payload, so the record-key destruction that already happens
+at deletion erases `r_t`. A flush keeps `has_rt = 1` and no longer re-encrypts the payload. The delete
+API is `delete(collection_id, record_id)`, with no `r_t` argument. The recomputation of `C_t` at
+deletion stays, as an **integrity** check: the stored `x̃` and `r_t` must reproduce the logged `C_t`,
+otherwise `IntegrityViolation`. `AuthorisationFailed` is removed. Deletion is authorised by the
+application backend, which authenticates the account and then calls `delete`; SEVER-DB no longer
+claims that only the user can delete. The user signatures in insert leaves remain, and the leaf format,
+the certificate format and the verifier are unchanged. The signatures now record that the service acted
+for an authenticated account; they do not constrain a dishonest operator, who holds the keys.
+**Why.** A simpler build; no lost-device problem (a lost `r_t` or key no longer makes a record
+undeletable); and it matches standard RAG practice, where embedding happens on the backend.
+**Rejected.** (A) Embedding and `r_t` on the user device (every device would have to run the pinned
+encoder, and a lost device would leave its records undeletable). (B) The backend embeds while the
+device holds `r_t`: this adds a round trip and protects only against a later breach, since the engine
+sees `r_t` at insert anyway. **Consequence.** Supersedes DB-18; qualifies the rationale of DB-21 and
+DB-22; retires L-16; adds L-27. What a certificate proves is restated in §1.2 and spec §11.3.
+
 ---
 
 ## 7. Components at a glance
@@ -762,7 +839,7 @@ brief:
 | C-10 | Search | IVF-flat with a pinned kernel |
 | C-11 | Log and certificates | RFC 9162 log, log checkpoints, witnesses, certificate builder |
 | C-12 | Engine API | The stable Rust surface |
-| C-13 | Python SDK | Bindings plus client-side quantise, commit and sign |
+| C-13 | Python SDK | Bindings plus backend-side quantise, commit and sign (runs on the application backend) |
 | C-14 | Server | Optional gRPC front end |
 | C-15 | Partition builder | Offline k-means, pooled Ledoit–Wolf, threshold, independent oracle |
 | C-16 | Verifier | Separate program, no shared code, checks a certificate alone |
@@ -1200,7 +1277,9 @@ declared surface.
   out of scope.
 - **L-16 A flushed record's `r_t` survives in old ciphertext until the record is deleted.** Its old
   holding-area slot copies stay encrypted under its still-live record key; deleting the record destroys
-  that key.
+  that key. *Retired by DB-55 (2 October 2026):* every record now stores `r_t` under its record key until
+  deletion, by design, so this is no longer a leftover; deleting the record destroys that key (spec
+  §13.5).
 - **L-17 No replication and no backups in v1.** A backup that includes the key file defeats erasure.
 - **L-18 The forensic scan is evidence, not proof.** It detects known encodings and formats. The
   argument in spec §13.5 is the reasoning; EX-2 is the test.
@@ -1230,6 +1309,9 @@ declared surface.
 - **L-21 No independent cryptographic review.** The soundness argument is the author's own, and the
   verifier, though sharing no code, shares an author. Mitigations: citable constructions only, third-party
   test vectors, a written soundness argument.
+- **L-27 Service-held keys.** The operator holds every account's signing key and every `r_t`, so insert
+  signatures and deletion authorisation do not constrain a dishonest operator; they record that the
+  service acted on an authenticated account.
 
 **Scope and method**
 
@@ -1329,8 +1411,10 @@ About eight months full time, after the earlier SEVER paper is submitted.
 ## 19. Glossary
 
 - **Accumulator** — a group's integer sum `S`, count `n`, commitment `C_S` and blinding total `r_agg`.
-- **Blinding value (`r_t`)** — a random scalar inside a record's commitment; generated by the user; also
-  the capability to delete.
+- **Application backend** — the service (for example an AI server) that authenticates accounts, embeds
+  text, prepares and signs inserts, holds the account keys and calls the engine (DB-55).
+- **Blinding value (`r_t`)** — a random scalar inside a record's commitment; drawn by the application
+  backend and stored, encrypted, by the engine with every record; erased with the record (DB-55).
 - **Bucket key** — the middle level of the key hierarchy; 64 per group.
 - **Canonical group blob** — the byte encoding of a group that the exactness claim is about.
 - **Certificate** — the public receipt for a deletion (spec §11).
@@ -1354,6 +1438,8 @@ About eight months full time, after the earlier SEVER paper is submitted.
 - **Spawned group** — a group created from 200 holding-area vectors, frozen at creation.
 - **Spillover** — routing an out-of-distribution vector to the nearest spawned group with room.
 - **Storage checkpoint** — a durable image of the engine's state.
+- **User key** — an account's Ed25519 signing key; generated and held by the application backend; never
+  rotates (DB-20, DB-55).
 - **Witness** — a party that checks log consistency and cosigns log checkpoints.
 
 ---
@@ -1430,3 +1516,20 @@ Links checked on 27 September 2026 unless noted.
 - [R48] Rust release channels: https://releases.rs/ ; Rust 2024 edition guide: https://doc.rust-lang.org/edition-guide/rust-2024/index.html
 - [R49] Intel Core Ultra 200V series datasheet, instruction-set extensions (the page may require an Intel account). https://edc.intel.com/content/www/us/en/secure/design/confidential/products/platforms/details/lunar-lake-mx/core-ultra-200v-series-processors-datasheet-volume-1-of-2/intel-advanced-vector-extensions-2-intel-avx2/
 - [R50] e2fsprogs (includes `fuse2fs`). https://e2fsprogs.sourceforge.net/
+
+---
+
+## Changelog
+
+- **2 October 2026 — Service-side custody of `r_t` and user keys (DB-55).** Three parties: a thin user
+  app, an application backend and the engine. Text is embedded on the backend with the pinned encoder,
+  never in the engine or on the device. The engine stores `r_t` for every record under its record key
+  (`has_rt = 1` always); the flush no longer clears it; `delete` takes no `r_t`; the delete-time `C_t`
+  check is an integrity check (`IntegrityViolation`); `AuthorisationFailed` is removed. The backend
+  authorises deletion after authenticating the account. Insert signatures, the leaf and certificate
+  formats and the verifier are unchanged, but the signatures now record service action. The claims are
+  restated in a "Proves / Does not prove" box in §1.2, and the problem statement no longer overclaims.
+  L-27 is added and L-16 retired. DB-55 supersedes DB-18 and qualifies DB-21 and DB-22. Specification
+  sections touched: spec §1, §2.1, §3.3, §4.2, §5.4, §7.4, §9.3, §9.4, §9.8, §10.2, §11.1, §11.3,
+  §13.2, §13.3, §13.5, §14.4, §15.1–15.4, §16.1, §16.2, §17, §19.1. Build plans: Build §0.2, §3.3, §3.4,
+  §5.7; Build 3-4 §1.1, §1.2, §1.4, §1.5, §1.8, §1.10, §2.5, §3.2.

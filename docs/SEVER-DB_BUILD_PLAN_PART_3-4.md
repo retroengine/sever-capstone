@@ -49,7 +49,7 @@ extension points the earlier parts declared.
   participant in Part 2;
 - deletion certificates;
 - an independent verifier and an auditor;
-- the client-side SDK helpers.
+- the SDK helpers that run on the application backend (spec §3.3).
 
 **Why it exists.** Parts 1 and 2 make deletion exact and durable, but only the operator can see that.
 Part 3 lets anyone check a deletion from the certificate alone.
@@ -57,9 +57,8 @@ Part 3 lets anyone check a deletion from the certificate alone.
 **What Part 3 may claim, once its gates pass.** Every deletion from a group yields a certificate that a
 program sharing no code with the engine accepts. The certificate proves:
 
-1. the user authorised this exact commitment at insert time, under a key published in a signed,
-   witnessed log;
-2. the group's commitment moved by exactly that commitment;
+1. the record was inserted under the account's key in a signed, witnessed log;
+2. the group's accounting moved by exactly that record (its commitment moved by exactly `C_t`);
 3. the operator knows an opening of the new group state.
 
 Every tampered certificate is rejected, and a certificate, its log leaf and its state change commit
@@ -68,20 +67,22 @@ atomically. Exactness now covers all five fields of the equivalence relation, in
 
 **What Part 3 does not claim.** Anything about erasure or confidentiality: the database is still
 plaintext on disk (first plan, DB-48). It also cannot protect against an operator who keeps a copy
-(overview L-2). The witnesses are simulated (L-7).
+(overview L-2), and it does not prove that the user personally authorised a deletion, because the
+application backend holds the account keys and decides who may delete (overview L-27). The witnesses
+are simulated (L-7).
 
 ### 1.2 Goals
 
 | ID | Goal |
 |---|---|
 | **P3-G1** | The cryptographic primitives of spec §9, each checked against third-party test vectors |
-| **P3-G2** | `CommitmentExtension` (EP-1): `C_S` and `r_agg` updated in lockstep with `S`; deletion authorised by `r_t` |
+| **P3-G2** | `CommitmentExtension` (EP-1): `C_S` and `r_agg` updated in lockstep with `S`; each deletion integrity-checked against the stored `r_t` |
 | **P3-G3** | The transparency log (spec §10) as a transaction participant (EP-7), with on-demand log checkpoints |
 | **P3-G4** | Simulated witnesses behind a new extension point (EP-10) |
 | **P3-G5** | Deletion certificates (spec §11.1–11.2), committed atomically with their deletion |
 | **P3-G6** | The verifier (spec §11.3) in a separate workspace that shares no code with the engine |
 | **P3-G7** | The auditor, for what a certificate cannot prove by itself |
-| **P3-G8** | The client SDK helpers (spec §16.2): user keys, `prepare_insert`, and no way to inject randomness |
+| **P3-G8** | The SDK helpers for the application backend (spec §16.2): account (user) keys, `prepare_insert`, and no way to inject randomness |
 | **P3-G9** | `docs/SOUNDNESS.md`: completeness, special soundness with an extractor, and honest-verifier zero-knowledge with a simulator, each backed by an executable test |
 
 ### 1.3 Scope
@@ -101,7 +102,7 @@ plaintext on disk (first plan, DB-48). It also cannot protect against an operato
 | `sever-log` | The RFC 9162 tree, leaves, inclusion and consistency proofs, log checkpoints, and `LogParticipant` (EP-7); declares EP-10 `Witness` and ships `SimulatedWitness` | §10 |
 | `sever-cert` | Certificate TLV encoding and parsing; the builder, which works from the `ChangeSet`, the proof and the inclusion data; operator signing by epoch | §11.1–11.2 |
 | `sever-p3` | Composition root `Engine<CommitmentExtension, PlaintextSealer, (LogParticipant)>` and its CLI | — |
-| `sever-py-p3` / `sever_db_p3` | SDK: `UserKey`, `prepare_insert` (quantise, draw `r_t`, compute `C_t`, sign) | §16.2 |
+| `sever-py-p3` / `sever_db_p3` | SDK, run on the application backend: `UserKey`, `prepare_insert` (quantise, draw `r_t`, compute `C_t`, sign) | §16.2 |
 | `verifier/` (separate workspace) | `sever-verify`: its own parser, generator derivation, proof check, Merkle check, signature checks and bundled trust anchors | §11.3 |
 | `audit/` (separate crate) | `sever-audit`: deletion leaves, certificate chains, log consistency. Reuses verifier code by **copying** it, not by a path dependency | §11.3 "what it does not prove" |
 | `sever_refmodel_certs` (Python) | Model of the certificate arithmetic, commitments and chaining | §5.3, §9.3, §11.3 |
@@ -116,7 +117,7 @@ decision entry (proposed DB-52).
 
 | Extension point | Part 3 implementation | What it does |
 |---|---|---|
-| EP-1 `GroupExtension` | `CommitmentExtension` | Group public state `C_S`; group secret state `r_agg`; record secret `insert_leaf_index ‖ has_rt ‖ r_t` (41 bytes). Admission checks `C_t` against the quantised vector and `r_t`, and the user signature. Removal is authorised only if `r_t` opens the `C_t` in the record's insert leaf, which it reads through a handle to the leaf store. A flush folds each founder's `r_t` into `r_agg` and clears `has_rt`. Blob magic `SEVERG`, with blob fields `C_S ‖ r_agg` |
+| EP-1 `GroupExtension` | `CommitmentExtension` | Group public state `C_S`; group secret state `r_agg`; record secret `insert_leaf_index ‖ has_rt ‖ r_t` (41 bytes). Admission checks `C_t` against the quantised vector and `r_t`, and the user signature. Removal checks integrity: the stored `x̃` and `r_t` must reproduce the `C_t` in the record's insert leaf, which it reads through a handle to the leaf store; otherwise `IntegrityViolation`. A flush folds each founder's `r_t` into `r_agg` and leaves `has_rt = 1`. Blob magic `SEVERG`, with blob fields `C_S ‖ r_agg` |
 | EP-3 `ChangeSet` | Read by `LogParticipant` | The pre-state and post-state of the touched group give `C_S_pre`, `C_S_post` and the secrets for the proof |
 | EP-7 `TxnParticipant` | `LogParticipant` | `pre_transaction`: create an on-demand log checkpoint if the insert leaf is not yet covered by a witnessed one. `prepare`: build the insert or delete leaf, the proof and the certificate. `wal_records`: `LOG_LEAF`, `CERT_REF`, `LOG_CHECKPOINT`. `replay` rebuilds the tree. `check_invariants`: INV-15 |
 | EP-8 `AppendStore` | Leaf, hash, log-checkpoint and certificate stores | Written and `fsync`ed before the `COMMIT` that references them |
@@ -195,7 +196,8 @@ with a 21-hash path).
   (overview EX-3b).
 
 **L5 Model-based stateful.** Part 2's state machine with the Part 3 build, adding the operations
-"delete with a wrong `r_t`", "advance the clock across an epoch" and "issue an on-demand checkpoint".
+"corrupt a stored `r_t` through a test hook, then delete" (a terminal step: `IntegrityViolation`, and
+nothing changes), "advance the clock across an epoch" and "issue an on-demand checkpoint".
 After every deletion, the certificate is passed to the verifier binary.
 
 **L6 Metamorphic**
@@ -223,11 +225,11 @@ After every deletion, the certificate is passed to the verifier binary.
 
 | ID | Given | When | Then |
 |---|---|---|---|
-| E2E-3.1 | A user inserted records through the SDK | One record is deleted | The certificate is accepted by `sever-verify` in a separate process, with only the bundled anchors and no database access |
+| E2E-3.1 | The application backend inserted records for an authenticated account through the SDK | One record is deleted | The certificate is accepted by `sever-verify` in a separate process, with only the bundled anchors and no database access |
 | E2E-3.2 | An honest certificate | Any single byte is changed | `sever-verify` rejects it and names the failed check |
 | E2E-3.3 | A record in the holding area | It is deleted | A holding-area certificate (`deletion_kind = 1`) that verifies |
 | E2E-3.4 | A cohort across several groups | `delete_user` runs | The certificates chain, and `sever-audit` confirms the chains |
-| E2E-3.5 | A live record | Deletion is attempted with a wrong `r_t` | `AuthorisationFailed`; nothing changes |
+| E2E-3.5 | A live record whose stored `r_t` was altered through a `test-hooks` build | It is deleted | `IntegrityViolation`; nothing changes, and the engine stops serving |
 | E2E-3.6 | A log with one deletion leaf removed from an export | `sever-audit` runs | It reports the missing leaf |
 | E2E-3.7 | A certificate signed in a later operator epoch | An older verifier checks it | It is rejected with an "unknown epoch" reason (overview L-14) |
 | E2E-3.8 | The Python SDK | A caller tries to pass an RNG, a seed or a nonce | `SeededNonceForbidden` |
@@ -299,12 +301,14 @@ checkpoint time.
 
 `sever-demo receipt --data nq-10k --seed 42`:
 
-1. A user inserts records through the SDK; the demo shows the insert leaf in the log.
-2. The user deletes one record; the certificate is saved as a file.
+1. The application backend inserts records for an authenticated account through the SDK; the demo
+   shows the insert leaf in the log.
+2. The backend deletes one of the account's records; the certificate is saved as a file.
 3. `sever-verify certificate.bin` runs in a separate directory with only its bundled anchors. It prints
    each of the checks in spec §11.3 and **ACCEPT**.
 4. One byte of the certificate is flipped. The verifier prints **REJECT** and names the failed check.
-5. The user tries to delete another record with the wrong `r_t`: `AuthorisationFailed`.
+5. The demo prints what the certificate does not prove: that the operator kept no copy (overview L-2),
+   and that the user personally authorised the deletion (overview L-27).
 6. `delete_user` on a cohort produces chained certificates; `sever-audit` confirms the chains.
 
 ### 1.11 Exit gate and freeze
@@ -400,7 +404,7 @@ the order `LogParticipant`, then `KeyRotationParticipant`.
 
 | Spec §15.3 step | Protocol step (first plan §5.4) | Who |
 |---|---|---|
-| 1–2 Look up; check that `r_t` opens `C_t` | `plan` | Part 1 index + EP-1 `CommitmentExtension` |
+| 1–2 Look up; check that the stored `x̃` and `r_t` reproduce `C_t` (integrity) | `plan` | Part 1 index + EP-1 `CommitmentExtension` |
 | 3 On-demand log checkpoint | `pre_transaction` | `LogParticipant` |
 | 4 Post-state, proof, certificate | `prepare` | `LogParticipant` |
 | 4 (keys) New group key and bucket keys; re-wraps; re-sealed accumulator | `prepare` | `KeyRotationParticipant` |
@@ -631,7 +635,7 @@ measured and recorded as found, and the final deliverables complete. Tag: `part-
 |---|---|---|---|
 | C-1 Storage I/O | 2 | C-11 Log and certificates | 3 |
 | C-2 Formats | 2 (and 3 for certificates, 4 for the key file) | C-12 Engine API | 2 (generic); 4 (final composition) |
-| C-3 WAL | 2 | C-13 Python SDK | 2 (basic), 3 (client crypto), 4 (final) |
+| C-3 WAL | 2 | C-13 Python SDK | 2 (basic), 3 (backend crypto helpers), 4 (final) |
 | C-4 Storage checkpointer | 2 | C-14 Server | Not in any part (optional, DB-38) |
 | C-5 Transaction manager | 2 | C-15 Partition builder | 1 |
 | C-6 Key manager | 4 | C-16 Verifier | 3 |

@@ -351,7 +351,7 @@ Report the exact measured numbers. If the float baseline difference is 1e-8, say
 4. **Architecture:** the four parts and what each adds; the freeze rule in one line.
 5. **What is done:** Phase 0 data (counts, hashes), spec and plan, the Part 1 demo.
 6. **Demo results:** survivors check, ghost table, sabotage red/green, ledger.
-7. **Honest limits:** what is not built; what the design cannot do (Overview §14: SSD firmware, dishonest operator, index shape persists, witnesses simulated, no independent crypto review).
+7. **Honest limits:** what is not built; what the design cannot do (Overview §14: SSD firmware, dishonest operator, service-held keys (L-27), index shape persists, witnesses simulated, no independent crypto review).
 8. **Roadmap:** Part 1 remainder, Parts 2 to 4, Rust engine, timeline (about 8 months full time in the plan).
 
 ---

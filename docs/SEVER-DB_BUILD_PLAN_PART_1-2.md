@@ -55,7 +55,7 @@ decision (§3.5, DB-44).
 |---|---|---|---|
 | 1 | C-7 (quantiser, ID scrambling only), C-8, C-9, C-10, C-15, C-18 (core model), C-19 (demo and trace harness) | §2–§8, §9.7 | P0, P1, index part of P5, P7 |
 | 2 | C-1, C-2, C-3, C-4, C-5, C-12, C-13 (basic SDK), C-18 (durable oracle), C-19 (crash kit) | §12, §14 (except §14.5, §14.7), §15, §16.1, §17 | P3, storage part of P5, P8 |
-| 3 | C-7 (rest), C-11, C-13 (client crypto), C-16, C-17, C-18 (certificate model) | §9, §10, §11, §16.2–16.3 | P2, P6 |
+| 3 | C-7 (rest), C-11, C-13 (backend crypto helpers), C-16, C-17, C-18 (certificate model) | §9, §10, §11, §16.2–16.3 | P2, P6 |
 | 4 | C-6, C-7 (AEAD), C-13 (final SDK), C-19 (full), forensic scanner | §12.8–12.9, §13, §14.5, §14.7, §15.3–15.4, §15.8–15.9 | P4, P9 |
 
 The optional gRPC server (C-14) is outside all four parts. It adds no claim (overview DB-38).
@@ -387,14 +387,17 @@ and then frozen.
 
 1. hold extra group state, split into a **public** part (stored in plaintext; Part 3's `C_S`) and a
    **secret** part (stored sealed with `S`; Part 3's `r_agg`);
-2. hold a fixed-size **secret per record** (Part 3: `r_t` for holding-area records, and the insert
-   leaf index);
+2. hold a fixed-size **secret per record** (Part 3: `r_t` for every record, and the insert leaf
+   index);
 3. admit or reject an insert, given an extension-defined credential (Part 3: check `C_t` and the user
    signature);
 4. update its state on every add and remove, in lockstep with `S` and `n`, inside the same `ChangeSet`;
-5. authorise or refuse a removal, given an extension-defined credential (Part 3: `r_t` must open `C_t`);
-6. transform a record's secret when a flush moves it from the holding area into a new group (Part 3:
-   fold `r_t` into `r_agg`, then clear `has_rt`);
+5. check a removal against the record's stored secret, and refuse it as an integrity failure if they
+   disagree (Part 3: the stored `x̃` and `r_t` must reproduce the logged `C_t`, otherwise
+   `IntegrityViolation`); removal takes no credential, because the application backend authorises
+   deletion (spec §3.3, overview DB-55);
+6. read a record's secret when a flush moves it from the holding area into a new group (Part 3: fold
+   `r_t` into `r_agg`; `has_rt` stays 1);
 7. contribute the extension fields of the canonical blob, and its 6-byte magic (DB-47);
 8. check its own invariants for a group (Part 3: INV-3);
 9. decide whether a duplicate insert is a harmless retry (`DuplicateRecord { same_commitment }`).
@@ -443,8 +446,8 @@ Part 2 carries participant records in the WAL as an `EXTENSION` record type
 **Contract suites.** Every extension point ships a contract suite in its declaring crate, behind a
 `contract-tests` feature. Any implementation, including one written after the declaring part froze,
 must pass it. For example, the EP-1 suite checks that add-then-remove restores the extension state
-exactly, that removal is refused without authorisation, and that the blob fields are
-order-independent. This is how frozen code checks code written after it froze.
+exactly, that a removal that fails the extension's integrity check is refused, and that the blob
+fields are order-independent. This is how frozen code checks code written after it froze.
 
 **Proof spikes.** An extension point that cannot express what a later part needs would force an edit
 to a frozen part. So, before a part freezes, a **throwaway** prototype of each later user of its
@@ -865,8 +868,8 @@ state. Two collections never influence each other's blobs.
 |---|---|---|---|
 | E2E-2.1 | A database with `nq-10k` loaded | It is closed and reopened | Every blob, count and search result is unchanged |
 | E2E-2.2 | A `delete_user` spanning several groups in flight | The process is killed (`SIGKILL`) and restarted | Either every record is gone or none is; the invariant check passes |
-| E2E-2.3 | An insert whose acknowledgement was lost | The client retries | `DuplicateRecord { same_commitment: true }`, which the SDK treats as success |
-| E2E-2.4 | A deletion whose acknowledgement was lost | The client retries | `AlreadyAbsent` |
+| E2E-2.3 | An insert whose acknowledgement was lost | The application backend retries | `DuplicateRecord { same_commitment: true }`, which the SDK treats as success |
+| E2E-2.4 | A deletion whose acknowledgement was lost | The application backend retries | `AlreadyAbsent` |
 | E2E-2.5 | A `Vfs` that fails an `fsync` | Any write runs | The process aborts; the restart recovers a valid state |
 | E2E-2.6 | A database on a disk image | The image is unmounted and remounted | The state is unchanged |
 | E2E-2.7 | Two collections | One is dropped | The other is byte-for-byte unaffected |

@@ -40,7 +40,9 @@ heading instead. Headings do not change without a recorded decision.
 and each group keeps a summary, such as its average. When someone asks for their data to be deleted, most
 systems only hide the record. The group's summary still carries that person's contribution, and so do
 the log files, old backups and freed disk blocks. The project calls these leftovers **the ghost**. And
-nobody outside the company can check that a deletion really happened.
+nobody outside the company can check even the accounting of a deletion. SEVER-DB lets anyone check that
+accounting from a certificate; its erasure holds against anyone who later obtains the disks, but not
+against the operator, who runs the service and holds its keys (Overview §1.2, L-27).
 
 **The idea, in three parts:**
 
@@ -76,7 +78,7 @@ to be right early: a mistake found after a freeze costs a formal erratum.
 
 ### A.2 The idea in numbers (a toy example)
 
-**Turning floats into integers (Q24, spec §4.2, L255–265).** Multiply each float by 2^24 = 16,777,216
+**Turning floats into integers (Q24, spec §4.2, L281–292).** Multiply each float by 2^24 = 16,777,216
 and round to the nearest integer; exact halves round to the even neighbour ("ties to even").
 
 | Float `x_i` | `x_i · 2^24` | Stored integer `x̃_i` |
@@ -86,7 +88,7 @@ and round to the nearest integer; exact halves round to the even neighbour ("tie
 | 3.5 / 2^24 | 3.5 | 4 (tie → even) |
 | −2.5 / 2^24 | −2.5 | −2 (tie → even) |
 
-**Exact deletion (spec §5.3, L305–323).** A toy group with 2 dimensions (the real system has 384):
+**Exact deletion (spec §5.3, L332–350).** A toy group with 2 dimensions (the real system has 384):
 
 | Step | Members | Sum `S` | Count `n` |
 |---|---|---|---|
@@ -98,9 +100,9 @@ and round to the nearest integer; exact halves round to the even neighbour ("tie
 
 The last two rows are identical. That is the whole claim of Part 1. With float averages, "removing" b
 means recomputing an average from an already-rounded average, and the bits generally no longer match.
-Part 1's demo measures that difference (Build §4.9, L689–722).
+Part 1's demo measures that difference (Build §4.9, L692–725).
 
-The **canonical group blob** (spec §5.5, L336–370) is a fixed byte layout of a group: its sum, its count,
+The **canonical group blob** (spec §5.5, L363–397) is a fixed byte layout of a group: its sum, its count,
 the commitment fields and its members sorted by ID. Two groups are "the same" only if their blobs are
 byte-identical and four other fields match too (the five-field *exactness relation*).
 
@@ -136,10 +138,10 @@ The 128 frozen groups are fitted once, offline, on a public dataset (SciQ) by th
 
 | Priority | File | Lines | What it is |
 |---|---|---|---|
-| 1 | `docs/SEVER-DB_SPECIFICATION.md` ("spec §N") | 1,720 | **Normative.** What the software must do, byte for byte. It wins every disagreement |
-| 2 | `docs/SEVER-DB_PROJECT_OVERVIEW.md` ("Overview §N") | 1,432 | Why: goals, decisions DB-1…DB-43, phases, targets, datasets, limits, risks, references |
-| 3 | `docs/SEVER-DB_BUILD_PLAN_PART_1-2.md` ("Build §N") | 964 | How it's built: the four parts, the freeze rule, engineering and test standards, extension points, Parts 1–2 |
-| 4 | `docs/SEVER-DB_BUILD_PLAN_PART_3-4.md` ("Build 3-4 §N") | 684 | Parts 3–4 and the cross-part registers |
+| 1 | `docs/SEVER-DB_SPECIFICATION.md` ("spec §N") | 1,772 | **Normative.** What the software must do, byte for byte. It wins every disagreement |
+| 2 | `docs/SEVER-DB_PROJECT_OVERVIEW.md` ("Overview §N") | 1,535 | Why: goals, decisions DB-1…DB-43 and DB-55, phases, targets, datasets, limits, risks, references |
+| 3 | `docs/SEVER-DB_BUILD_PLAN_PART_1-2.md` ("Build §N") | 967 | How it's built: the four parts, the freeze rule, engineering and test standards, extension points, Parts 1–2 |
+| 4 | `docs/SEVER-DB_BUILD_PLAN_PART_3-4.md` ("Build 3-4 §N") | 688 | Parts 3–4 and the cross-part registers |
 | 5 | `docs/PROGRESS.md` | 52 | Where the project is right now |
 | — | `docs/SPEC_GAPS.md` | 12 | Known spec problems G-1…G-5 |
 | — | `docs/TRACEABILITY.md` | 13 | Requirement → test table (empty so far) |
@@ -169,30 +171,30 @@ From `docs/PROGRESS.md`:
 | ID | Meaning | Defined in | Example |
 |---|---|---|---|
 | `SR-<section>-<n>` | A spec requirement | Build §2.2 (L166); list to live in `spec/requirements.yaml` (not created yet; WP-5) | `SR-4.1-3` |
-| `DB-N` | A design decision | Overview §6 (L360–744), DB-1…DB-43; proposed DB-44…DB-50 in Build §3.5 (L460), DB-51…DB-54 in Build 3-4 §3.5 (L670) | `DB-42` licences |
+| `DB-N` | A design decision | Overview §6 (L395–821), DB-1…DB-43, DB-55 (§6.8); proposed DB-44…DB-50 in Build §3.5 (L463), DB-51…DB-54 in Build 3-4 §3.5 (L674) | `DB-42` licences |
 | `G-N` | A spec gap | `docs/SPEC_GAPS.md` | `G-1` |
-| `C-N` | A software component | Spec §19.1 (L1517); brief list in Overview §7 (L746) | `C-18` reference model |
-| `INV-N` | An invariant the engine checks | Spec §21 (L1638) | `INV-4` group cap |
-| `T-N` | A pre-registered target | Overview §3.4 (L252) | `T-6` |
-| `EX-N` | An experiment | Overview §11 (L1024) | `EX-4` |
-| `RQ-N` | A research question | Overview §3.1 (L214) | `RQ-2` |
-| `L-N` | A known limit | Overview §14 (L1176) | `L-19` |
-| `R-N` | A risk | Overview §15 (L1250) | `R-1` |
-| `[RN]` | A reference | Overview §20 (L1361); R1…R55 | `[R25]` |
-| `O-N` | An open item | Overview §17 (L1286) | `O-2` |
-| `G1`…`G8` | A project goal | Overview §1.4 (L125) | `G7` |
-| `P0`…`P9` | An overview phase; `P1.G3` is phase P1's goal 3 | Overview §8 (L775) | `P1.G3` |
+| `C-N` | A software component | Spec §19.1 (L1569); brief list in Overview §7 (L823) | `C-18` reference model |
+| `INV-N` | An invariant the engine checks | Spec §21 (L1690) | `INV-4` group cap |
+| `T-N` | A pre-registered target | Overview §3.4 (L272) | `T-6` |
+| `EX-N` | An experiment | Overview §11 (L1101) | `EX-4` |
+| `RQ-N` | A research question | Overview §3.1 (L231) | `RQ-2` |
+| `L-N` | A known limit | Overview §14 (L1253) | `L-19` |
+| `R-N` | A risk | Overview §15 (L1332) | `R-1` |
+| `[RN]` | A reference | Overview §20 (L1447); R1…R55 | `[R25]` |
+| `O-N` | An open item | Overview §17 (L1368) | `O-2` |
+| `G1`…`G8` | A project goal | Overview §1.4 (L140) | `G7` |
+| `P0`…`P9` | An overview phase; `P1.G3` is phase P1's goal 3 | Overview §8 (L852) | `P1.G3` |
 | Part 1…4 | A build part | Build §0.1 (L30) | Part 1 |
-| `P1-Gn`, `P1-Tn` | A Part 1 goal or target (also `P2-…`, `P3-…`, `P4-…`) | Build §4.2 (L496), §4.8 (L670) | `P1-T7` |
+| `P1-Gn`, `P1-Tn` | A Part 1 goal or target (also `P2-…`, `P3-…`, `P4-…`) | Build §4.2 (L499), §4.8 (L673) | `P1-T7` |
 | `F-1`…`F-6` | Freeze rules | Build §0.3 (L63) | `F-6` errata |
-| `E-N` | An erratum to a frozen part | `ERRATA.md` (created when needed); template in Build §6.3 (L954) | — |
+| `E-N` | An erratum to a frozen part | `ERRATA.md` (created when needed); template in Build §6.3 (L957) | — |
 | `L1`…`L14` | A test level | Build §2.1 (L140) | `L3` spec conformance |
 | `SB-N` | A sabotage (a deliberately broken build) | Build §2.6 (L248) | `SB-9` |
-| `EP-N` | An extension point | Build §3.3 (L362), EP-1…EP-9; EP-10 in Build 3-4 §1.5 (L115); EP-11 in Build 3-4 §2.4 (L369) | `EP-1` |
-| `E2E-n.m` | An end-to-end scenario | Build §4.7 (L582), E2E-1.1…1.7 | `E2E-1.5` |
-| `AT-N` | An attack certificate | Build 3-4 §1.8 (L240–256) | `AT-17` |
-| `AF-N` | An auditor failure case | Build 3-4 §1.8 (L262–266) | `AF-2` |
-| `DST_…` | A domain string | Spec §2.3 (L173) | `DST_POSK` |
+| `EP-N` | An extension point | Build §3.3 (L362), EP-1…EP-9; EP-10 in Build 3-4 §1.5 (L116); EP-11 in Build 3-4 §2.4 (L373) | `EP-1` |
+| `E2E-n.m` | An end-to-end scenario | Build §4.7 (L585), E2E-1.1…1.7 | `E2E-1.5` |
+| `AT-N` | An attack certificate | Build 3-4 §1.8 (L242–258) | `AT-17` |
+| `AF-N` | An auditor failure case | Build 3-4 §1.8 (L264–268) | `AF-2` |
+| `DST_…` | A domain string | Spec §2.3 (L180) | `DST_POSK` |
 
 **Names that collide. Always write the full form.**
 
@@ -207,16 +209,16 @@ From `docs/PROGRESS.md`:
 
 ### A.7 Words from the build plans
 
-The overview's glossary (Overview §19, L1329–1360) covers the system's vocabulary. These build-plan words
+The overview's glossary (Overview §19, L1411–1446) covers the system's vocabulary. These build-plan words
 are not in it:
 
 | Word | Meaning | Where |
 |---|---|---|
 | **Plan / apply** | Every change is first computed by a pure `plan` step (which can fail and changes nothing), then installed by an `apply` step that cannot fail | Build §1.1 (L94) |
-| **ChangeSet** | What `plan` returns: every field before and after, every slot move, every created group | Build §3.3, EP-3 (L362–439) |
+| **ChangeSet** | What `plan` returns: every field before and after, every slot move, every created group | Build §3.3, EP-3 (L362–442) |
 | **Extension point** | A declared interface a later part plugs into without editing frozen code | Build §3.3 |
 | **Composition root** | The small crate that wires one part's pieces together (`sever-p1` …) | Build §1.1 |
-| **Contract suite** | Shared tests every implementation of an extension point must pass | Build §3.4 (L441) |
+| **Contract suite** | Shared tests every implementation of an extension point must pass | Build §3.4 (L444) |
 | **Proof spike** | A throwaway prototype showing an extension point can express a later part's needs | Build §3.4 |
 | **Gate / measure** | A gate is pass/fail (a miss is a bug). A measure is recorded as found and never "fixed" | Build §2.5 (L237) |
 | **Sabotage** | A build with one deliberate bug; some test must go red | Build §2.6 (L248) |
@@ -255,7 +257,7 @@ are not in it:
 - One branch per work package: `docs-wp<N>-<topic>`, for example `docs-wp4-audit`.
 - Commit messages: `docs(<area>): <what>`, for example `docs(audit): compare sabotage registers`.
 - Every change goes through a pull request the owner reviews. Paste this checklist into the description
-  (adapted from Build §6.1, L938–946):
+  (adapted from Build §6.1, L941–949):
 
 ```
 - [ ] Work package: WP-__. Which part does it serve (1–4)?
@@ -270,10 +272,10 @@ are not in it:
 
 Always name the document, the section and the lines:
 
-- `spec §4.2 (L255–265)`
-- `Overview §10.4 (L953–962)`
+- `spec §4.2 (L281–292)`
+- `Overview §10.4 (L1030–1039)`
 - `Build §2.6 (L248–289)`
-- `Build 3-4 §3.4 (L656–668)`
+- `Build 3-4 §3.4 (L660–672)`
 
 Quote the exact words when the wording matters. Never paraphrase a rule into something stronger or
 weaker than it is.
@@ -350,17 +352,17 @@ work package):
    §4.1's *step* number 3, although step 3 is only the second MUST. So which rules get an ID is
    ambiguous in both documents. → WP-4, WP-5 (proposed gap G-6).
 2. **`nq-10k` is never defined.** The build plan uses it everywhere in Part 1 (Build §2.7 L291–304, §4.7,
-   §4.9 demo, E2E-1.x) and says it comes "from overview §10". But Overview §10.4 (L953–962) defines only
+   §4.9 demo, E2E-1.x) and says it comes "from overview §10". But Overview §10.4 (L1030–1039) defines only
    `nq-100k` and `nq-1m`, and `meta.json` builds only those two. → WP-4, WP-7.
-3. **Golden vector ownership disagrees.** Spec Appendix B is titled "to generate in P1" (L1702); Overview
-   phase P1 generates items 4, 5, 7 and 8 (L798–811); Build 3-4 §3.4 (L656–668) puts items 5, 7 and 8
+3. **Golden vector ownership disagrees.** Spec Appendix B is titled "to generate in P1" (L1754); Overview
+   phase P1 generates items 4, 5, 7 and 8 (L875–888); Build 3-4 §3.4 (L660–672) puts items 5, 7 and 8
    (core form) in Part 1 and item 4 in Part 3. → WP-4.
 4. **The sabotage register is not a superset.** Build §2.6 (L252–253) says it "contains every item of
    overview §9.2 plus the phase-level must-fail tests of overview §8", but some phase must-fails in
    Overview §8 have no SB item (details in C.4.2). → WP-4.
-5. **Spec §9.2 (L596–598) cites the wrong RFC for one set of test vectors.** It says to "run the RFC 9496
+5. **Spec §9.2 (L623–625) cites the wrong RFC for one set of test vectors.** It says to "run the RFC 9496
    known-answer tests for … `expand_message_xmd`", but those vectors are in RFC 9380. Spec §20.3 check 3
-   (L1618–1619) has it right. → WP-3.
+   (L1670–1671) has it right. → WP-3.
 
 ---
 
@@ -374,10 +376,10 @@ so the owner can decide each one in minutes rather than hours. This is the owner
 
 **Inputs.**
 
-- The decision register format: Overview §6 (L360–744). Read DB-1 (L367–375) and DB-42 (L730–736) as
-  models. Entries use **Decision. Why. Rejected. Consequence.** Register rule (L362–363): "A decision is
+- The decision register format: Overview §6 (L395–821). Read DB-1 (L402–410) and DB-42 (L776–782) as
+  models. Entries use **Decision. Why. Rejected. Consequence.** Register rule (L397–398): "A decision is
   changed only by a new, dated entry that names the one it supersedes."
-- The proposals: Build §3.5 (L460–476) for DB-44…DB-50; Build 3-4 §3.5 (L670–684) for all eleven, with
+- The proposals: Build §3.5 (L463–479) for DB-44…DB-50; Build 3-4 §3.5 (L674–688) for all eleven, with
   their source sections.
 - The gaps: `docs/SPEC_GAPS.md`.
 
@@ -396,32 +398,32 @@ so the owner can decide each one in minutes rather than hours. This is the owner
 
 | ID | Plain words | Source (read in full) | Likely affected text | Needed for Part 1? |
 |---|---|---|---|---|
-| DB-44 | Build in four frozen parts; erasure after certificates | Build §0.1–0.3 (L30–90) | Overview §8 phase order (L775–889), §16 timeline (L1267–1284); spec App. B title "to generate in P1" (L1702) | Yes (it is the plan of record) |
-| DB-45 | Plan/apply with a `ChangeSet`; extension points EP-1…EP-9; a WAL `EXTENSION` record | Build §1.1 (L94–110), §3.3 (L362–439) | Spec §14.6 WAL record (L1128), §12.3 (L880) | Yes (Part 1 declares EP-1…EP-4) |
-| DB-46 | New slot payload order; `seal_version` in the group header | Build §3.5 row DB-46 | Spec §14.4 payload line (L1118–1119), §14.3 `group_key_version` row (L1092–1103), Appendix A slot rows | Partly (Part 1 keeps slots in memory only) |
-| DB-47 | The canonical blob gets an extension region; magic `SEVERC` without commitments, `SEVERG` with | Build §3.5 row DB-47; Build 3-4 §3.4 item 8 | Spec §5.5 blob layout (L338–352), App. B item 8 (L1718) | **Yes** (Part 1 builds the `SEVERC` blob) |
-| DB-48 | Every storage file records a `sealer_id`; no confidentiality claim before Part 4 | Build §3.5 row DB-48 | Spec §14.1 (L1060), §13.2 plaintext list (L986–988) | No (Part 2) |
-| DB-49 | Any dimension that is a multiple of 8, and any number of frozen groups; v1 fixes 384 and 128 | Build §3.5 row DB-49; Build §2.7 (L291–304) | Spec §2.2 "Fixed parameters (v1)" (L153–171), §6.2 `k_frozen` (L392–395) | **Yes** (Part 1 tests use `d = 16`) |
-| DB-50 | The `SecretMemory` provider is installed once, at startup | Build §1.1 (L106–107), EP-4 row | Spec §12.8 (L934) | **Yes** (`sever-types` declares EP-4; it is the first module) |
-| DB-51 | The certificate reference model uses a small pure-Python ristretto255 | Build 3-4 §1.6 (L131–145) | Spec §19.1 row C-18 (about L1540); closes G-3 | No (Part 3) |
-| DB-52 | Implement `expand_message_xmd` if the pinned curve library lacks it | Build 3-4 §1.4 (L110–114) | Spec §9.1 "No primitive is implemented by this project" (L583) | No (Part 3; but WP-3 can check the library now) |
-| DB-53 | Extension points EP-10 `Witness` and EP-11 `PlatformProbe` | Build 3-4 §1.5 (L115–130), §2.4 (L369–388) | Spec §10.4 (L741–747), §12.9 (L943) | No |
-| DB-54 | Evaluation build variants `key-export`, `noerase`, `softdelete` | Build 3-4 §2.7 (L426–442) | Overview §11 EX-2 (L1031) and EX-7 (L1037) | No |
+| DB-44 | Build in four frozen parts; erasure after certificates | Build §0.1–0.3 (L30–90) | Overview §8 phase order (L852–966), §16 timeline (L1349–1366); spec App. B title "to generate in P1" (L1754) | Yes (it is the plan of record) |
+| DB-45 | Plan/apply with a `ChangeSet`; extension points EP-1…EP-9; a WAL `EXTENSION` record | Build §1.1 (L94–110), §3.3 (L362–442) | Spec §14.6 WAL record (L1169), §12.3 (L919) | Yes (Part 1 declares EP-1…EP-4) |
+| DB-46 | New slot payload order; `seal_version` in the group header | Build §3.5 row DB-46 | Spec §14.4 payload line (L1157–1161), §14.3 `group_key_version` row (L1131–1142), Appendix A slot rows | Partly (Part 1 keeps slots in memory only) |
+| DB-47 | The canonical blob gets an extension region; magic `SEVERC` without commitments, `SEVERG` with | Build §3.5 row DB-47; Build 3-4 §3.4 item 8 | Spec §5.5 blob layout (L365–379), App. B item 8 (L1770) | **Yes** (Part 1 builds the `SEVERC` blob) |
+| DB-48 | Every storage file records a `sealer_id`; no confidentiality claim before Part 4 | Build §3.5 row DB-48 | Spec §14.1 (L1099), §13.2 plaintext list (L1025–1027) | No (Part 2) |
+| DB-49 | Any dimension that is a multiple of 8, and any number of frozen groups; v1 fixes 384 and 128 | Build §3.5 row DB-49; Build §2.7 (L291–304) | Spec §2.2 "Fixed parameters (v1)" (L160–178), §6.2 `k_frozen` (L419–422) | **Yes** (Part 1 tests use `d = 16`) |
+| DB-50 | The `SecretMemory` provider is installed once, at startup | Build §1.1 (L106–107), EP-4 row | Spec §12.8 (L973) | **Yes** (`sever-types` declares EP-4; it is the first module) |
+| DB-51 | The certificate reference model uses a small pure-Python ristretto255 | Build 3-4 §1.6 (L132–146) | Spec §19.1 row C-18 (about L1592); closes G-3 | No (Part 3) |
+| DB-52 | Implement `expand_message_xmd` if the pinned curve library lacks it | Build 3-4 §1.4 (L111–115) | Spec §9.1 "No primitive is implemented by this project" (L610) | No (Part 3; but WP-3 can check the library now) |
+| DB-53 | Extension points EP-10 `Witness` and EP-11 `PlatformProbe` | Build 3-4 §1.5 (L116–131), §2.4 (L373–392) | Spec §10.4 (L772–778), §12.9 (L982) | No |
+| DB-54 | Evaluation build variants `key-export`, `noerase`, `softdelete` | Build 3-4 §2.7 (L430–446) | Overview §11 EX-2 (L1108) and EX-7 (L1114) | No |
 
 **The gaps.**
 
 | Gap | Where | What to draft | Needed for Part 1? |
 |---|---|---|---|
-| G-1 | Spec §6.2 step 2 (L399–403); Overview §10.6 (L971–976) | `random_state = seed_kmeans mod 2^32`, in both places, plus a decision entry | **Yes** (partition builder) |
-| G-2 | Spec §13.2 table (L974–980; the three rows at L978–980) | Write "`group_id` (32, zero-padded)" in all three AD rows | No (Part 4) |
+| G-1 | Spec §6.2 step 2 (L426–430); Overview §10.6 (L1048–1053) | `random_state = seed_kmeans mod 2^32`, in both places, plus a decision entry | **Yes** (partition builder) |
+| G-2 | Spec §13.2 table (L1013–1019; the three rows at L1017–1019) | Write "`group_id` (32, zero-padded)" in all three AD rows | No (Part 4) |
 | G-3 | Spec §19.1 row C-18 | Text that goes with DB-51 | No (Part 3) |
-| G-4 | Spec §11.3 inputs (L814–815); §10.3–10.4 | Define the genesis log checkpoint (tree_size 0, root = SHA-256 of the empty string, which is RFC 9162's empty-tree hash), or remove it from the inputs | No (Part 3) |
-| G-5 | Spec §19.2 (L1545–1569) against Build §3.2 (L353–360) | A replacement §19.2 tree using Build §3.2's crate and package names; the `tests/` subfolders of Build §2.1's "Lives in" column (L142–157); and a `docs/` line that names all four documents | **Yes, urgent** (before the first crate) |
+| G-4 | Spec §11.3 inputs (L848–849); §10.3–10.4 | Define the genesis log checkpoint (tree_size 0, root = SHA-256 of the empty string, which is RFC 9162's empty-tree hash), or remove it from the inputs | No (Part 3) |
+| G-5 | Spec §19.2 (L1597–1621) against Build §3.2 (L353–360) | A replacement §19.2 tree using Build §3.2's crate and package names; the `tests/` subfolders of Build §2.1's "Lives in" column (L142–157); and a `docs/` line that names all four documents | **Yes, urgent** (before the first crate) |
 
 **Output template** (`docs/drafts/DECISION_PACKET.md`, one block per item):
 
 ```
-#### DB-?? — <short title>            (proposed as DB-47; source: Build §3.5, L460–476)
+#### DB-?? — <short title>            (proposed as DB-47; source: Build §3.5, L463–479)
 
 **Decision.** <one paragraph, present tense>
 **Why.** <the reason, from the source>
@@ -429,7 +431,7 @@ so the owner can decide each one in minutes rather than hours. This is the owner
 **Consequence.** <what follows, including any limit (L-N) or later work>
 **Supersedes / amends.** <DB-N or spec §, or "none">
 **Spec and overview text that changes.**
-  - spec §5.5, L338: before "b\"SEVERG\"   6 bytes"  →  after "<new text>"
+  - spec §5.5, L365: before "b\"SEVERG\"   6 bytes"  →  after "<new text>"
   - …
 **Needed for Part 1:** yes / no — <why>
 **Questions for the owner:** <anything the source leaves open>
@@ -460,16 +462,16 @@ Writing these files is also the fastest way for you to learn the project.
 **Files and their outlines.**
 
 1. **`README.md`** (repo root, about one page)
-   - What SEVER-DB is: three sentences, from A.1 and spec §1 (L82–126).
+   - What SEVER-DB is: three sentences, from A.1 and spec §1 (L82–133).
    - Status: "Part 1 of 4 in progress; nothing runnable yet", with a link to `docs/PROGRESS.md`.
    - The four parts table (Build §0.1).
    - Where to start reading: link to `docs/READING_GUIDE.md`.
-   - Licence: `MIT OR Apache-2.0` for code; data under upstream licences (Overview DB-42, L730–736).
+   - Licence: `MIT OR Apache-2.0` for code; data under upstream licences (Overview DB-42, L776–782).
 2. **`CONTRIBUTING.md`**
    - Setup: WSL or Linux, `uv sync`, Python 3.13 (`CLAUDE.md` §9; `pyproject.toml`).
    - The rule of truth: spec first; gaps and decisions go in the same commit (`CLAUDE.md` §2; Overview
-     §13.4, L1161–1166).
-   - Branches, commits, PRs, with the checklist (Build §1.3 L124–136, §6.1 L938–946).
+     §13.4, L1238–1243).
+   - Branches, commits, PRs, with the checklist (Build §1.3 L124–136, §6.1 L941–949).
    - The never-commit list (`CLAUDE.md` §5, last bullets): raw and processed data files, `.venv*`, any
      database directory, key file, keychain or certificate from a run.
    - Test conventions for later (Build §2.1, §2.2, §6.2): the levels, `SR-…` annotations, test names, no
@@ -483,8 +485,8 @@ Writing these files is also the fastest way for you to learn the project.
      - "crypto reviewer": spec §9–§11; Overview §4, DB-14…DB-25.
    - The identifier table and the collisions table (A.6), expanded with more examples.
 4. **`docs/GLOSSARY.md`**
-   - Merge the overview glossary (L1329–1360, 25 terms), the spec symbols (spec §2.1, L130–151), the fixed
-     parameters (spec §2.2, L153–171) and the build-plan words (A.7).
+   - Merge the overview glossary (L1411–1446, 25 terms), the spec symbols (spec §2.1, L137–158), the fixed
+     parameters (spec §2.2, L160–178) and the build-plan words (A.7).
    - Each entry: a plain-words definition first, then the precise term and its source section.
    - Where two documents define a word differently, don't choose. Record both as a finding for WP-4.
 
@@ -500,7 +502,7 @@ Writing these files is also the fastest way for you to learn the project.
 
 **Goal.** Check that every place the spec relies on an external standard (RFCs, FIPS) matches that
 standard exactly, and list the official test vectors the project must run. The spec says (Appendix B,
-L1704–1707) that correctness of the primitives "rests on the third-party RFC test vectors", so this list
+L1756–1759) that correctness of the primitives "rests on the third-party RFC test vectors", so this list
 matters.
 
 **Who.** The crypto / math teammate.
@@ -512,20 +514,20 @@ expensive after a freeze.
 
 | # | Spec text | Standard to compare | What to verify | Part |
 |---|---|---|---|---|
-| 1 | §9.7 scrambled IDs (L682–690): `HMAC-SHA-512(k_scramble, collection_id ‖ record_id_bytes)`, 64-byte key | RFC 2104; test vectors in **RFC 4231** (HMAC-SHA-512) | Key length against SHA-512's 128-byte block (no key hashing needed); that the input is unambiguous (`collection_id` is fixed at 16 bytes); that RFC 4231 is missing from Overview §20 (propose adding it) | **1** |
-| 2 | §2.1 value of ℓ (L146) | RFC 9496 §4; RFC 8032 | The digits of `2^252 + 27742317777372353535851937790883648493` | 1 and 3 |
-| 3 | §2.3 domain strings (L173–187) | — (internal) | Lengths already checked by Claude: 41, 15, 21, 17, 14, 17, 15 all match. Note the mixed `_` / `-` separators; ask the owner whether that is deliberate | 3 |
-| 4 | §4.5 `scalar(v)` (L279–284) | Math | That it maps negative integers correctly mod ℓ and is additive (so commitments subtract exactly); golden vector 4 inputs `0, 1, −1, 2^44, −2^44` | 3 |
-| 5 | §9.2 generators (L585–598) | RFC 9380 §5.3.1 (`expand_message_xmd`), RFC 9380 Appendix B (hash to ristretto255), RFC 9496 §4.3.4 (element derivation) | Output length 64, DST length ≤ 255, one call per generator; that the KAT sentence at L596–598 cites RFC 9380 (not RFC 9496) for `expand_message_xmd` vectors | 3 |
-| 6 | DB-52 question (Build 3-4 L110–114) | docs.rs for `curve25519-dalek` **4.1.3** exactly | Does 4.1.3 expose `from_uniform_bytes`? Does it expose `expand_message_xmd`? Record the exact API names | 3 |
-| 7 | §9.9 canonical encoding (L705–708); identity = 32 zero bytes (spec §5.2, L303) | RFC 9496 §4.3.1 (decode), §4.3.2 (encode) | That "canonical" decoding in the RFC rejects everything the spec wants rejected; that the identity encodes to 32 zero bytes | 3 |
-| 8 | §9.4 blinding values (L609–614), 64-byte wide reduction | RFC 9496 / general practice | Bias of reducing 512 bits mod ℓ (negligible?); state it with numbers | 3 |
-| 9 | §9.5 proof (L616–652) | Schnorr / Okamoto / Camenisch–Stadler; Fiat–Shamir | The verification equation; the 231-byte preimage (15 + 32 + 32 + 152); `ctx` = 32 + 32 + 64 + 8 + 16 = 152; the soundness note's extraction formula | 3 |
-| 10 | §9.6 hedged nonces (L654–680) | Merlin 3.0.0 API docs (merlin.cool, docs.rs) | That `Transcript::new`, `append_message`, `build_rng`, `rekey_with_witness_bytes` and `finalize` exist with these meanings in merlin 3.0.0 | 3 |
-| 11 | §9.8 signatures (L691–703) | RFC 8032 §5.1 (Ed25519), §7.1 (test vectors); `ed25519-dalek` 2.2.0 `verify_strict` docs | Message lengths 65, 66, 83; what `verify_strict` rejects compared with RFC 8032 §5.1.7 (which allows a choice between cofactored and cofactorless checks) | 3 |
-| 12 | §10.1 Merkle log (L714–719) | RFC 9162 §2.1.1 (hashes), §2.1.3 (inclusion), §2.1.4 (consistency) | The `0x00`/`0x01` prefixes; "largest complete left subtree" matches the RFC's split rule; the empty-tree hash (links to G-4) | 3 |
-| 13 | §13.2 AES-256-GCM-SIV (L968–988) | RFC 8452 (algorithm; Appendix C test vectors; security considerations) | 12-byte nonce, 16-byte tag, 32-byte key, 28-byte overhead; the RFC's limits on messages per key with random nonces, compared with how many ciphertexts one key protects here (spec §13.1–13.3) | 4 |
-| 14 | SHA-256 / SHA-512 uses (§9.1 table, L569–581) | FIPS 180-4; NIST CAVP vectors | Where each hash is used and which vectors apply | 1, 3 |
+| 1 | §9.7 scrambled IDs (L711–719): `HMAC-SHA-512(k_scramble, collection_id ‖ record_id_bytes)`, 64-byte key | RFC 2104; test vectors in **RFC 4231** (HMAC-SHA-512) | Key length against SHA-512's 128-byte block (no key hashing needed); that the input is unambiguous (`collection_id` is fixed at 16 bytes); that RFC 4231 is missing from Overview §20 (propose adding it) | **1** |
+| 2 | §2.1 value of ℓ (L153) | RFC 9496 §4; RFC 8032 | The digits of `2^252 + 27742317777372353535851937790883648493` | 1 and 3 |
+| 3 | §2.3 domain strings (L180–194) | — (internal) | Lengths already checked by Claude: 41, 15, 21, 17, 14, 17, 15 all match. Note the mixed `_` / `-` separators; ask the owner whether that is deliberate | 3 |
+| 4 | §4.5 `scalar(v)` (L306–311) | Math | That it maps negative integers correctly mod ℓ and is additive (so commitments subtract exactly); golden vector 4 inputs `0, 1, −1, 2^44, −2^44` | 3 |
+| 5 | §9.2 generators (L612–625) | RFC 9380 §5.3.1 (`expand_message_xmd`), RFC 9380 Appendix B (hash to ristretto255), RFC 9496 §4.3.4 (element derivation) | Output length 64, DST length ≤ 255, one call per generator; that the KAT sentence at L623–625 cites RFC 9380 (not RFC 9496) for `expand_message_xmd` vectors | 3 |
+| 6 | DB-52 question (Build 3-4 L111–115) | docs.rs for `curve25519-dalek` **4.1.3** exactly | Does 4.1.3 expose `from_uniform_bytes`? Does it expose `expand_message_xmd`? Record the exact API names | 3 |
+| 7 | §9.9 canonical encoding (L734–737); identity = 32 zero bytes (spec §5.2, L330) | RFC 9496 §4.3.1 (decode), §4.3.2 (encode) | That "canonical" decoding in the RFC rejects everything the spec wants rejected; that the identity encodes to 32 zero bytes | 3 |
+| 8 | §9.4 blinding values (L636–643), 64-byte wide reduction | RFC 9496 / general practice | Bias of reducing 512 bits mod ℓ (negligible?); state it with numbers | 3 |
+| 9 | §9.5 proof (L645–681) | Schnorr / Okamoto / Camenisch–Stadler; Fiat–Shamir | The verification equation; the 231-byte preimage (15 + 32 + 32 + 152); `ctx` = 32 + 32 + 64 + 8 + 16 = 152; the soundness note's extraction formula | 3 |
+| 10 | §9.6 hedged nonces (L683–709) | Merlin 3.0.0 API docs (merlin.cool, docs.rs) | That `Transcript::new`, `append_message`, `build_rng`, `rekey_with_witness_bytes` and `finalize` exist with these meanings in merlin 3.0.0 | 3 |
+| 11 | §9.8 signatures (L720–732) | RFC 8032 §5.1 (Ed25519), §7.1 (test vectors); `ed25519-dalek` 2.2.0 `verify_strict` docs | Message lengths 65, 66, 83; what `verify_strict` rejects compared with RFC 8032 §5.1.7 (which allows a choice between cofactored and cofactorless checks) | 3 |
+| 12 | §10.1 Merkle log (L743–748) | RFC 9162 §2.1.1 (hashes), §2.1.3 (inclusion), §2.1.4 (consistency) | The `0x00`/`0x01` prefixes; "largest complete left subtree" matches the RFC's split rule; the empty-tree hash (links to G-4) | 3 |
+| 13 | §13.2 AES-256-GCM-SIV (L1007–1027) | RFC 8452 (algorithm; Appendix C test vectors; security considerations) | 12-byte nonce, 16-byte tag, 32-byte key, 28-byte overhead; the RFC's limits on messages per key with random nonces, compared with how many ciphertexts one key protects here (spec §13.1–13.3) | 4 |
+| 14 | SHA-256 / SHA-512 uses (§9.1 table, L596–608) | FIPS 180-4; NIST CAVP vectors | Where each hash is used and which vectors apply | 1, 3 |
 
 **Outputs.**
 
@@ -533,7 +535,7 @@ expensive after a freeze.
    standard's quote (with section number), and a verdict: *matches* / *mismatch* / *spec is silent*.
    Mismatches become findings (B.5) and proposed gaps (B.6).
 2. `docs/TEST_VECTOR_SOURCES.md`: a table with columns primitive, standard, exact appendix or section,
-   number of vectors, which spec check uses it (spec §9.2 L596–598, §20.3 check 3 L1618–1619), and which
+   number of vectors, which spec check uses it (spec §9.2 L623–625, §20.3 check 3 L1670–1671), and which
    part needs it.
 
 **Done when.**
@@ -573,34 +575,34 @@ build plan claims it says.
 
 | # | List | Locations to compare | Leads already found |
 |---|---|---|---|
-| 1 | Sabotage | Overview §9.2 (L906–914, 23 items) and Overview §8 phase "Must-fail" lines (L775–889) against Build §2.6 (L248–289, SB-1…SB-30) | Build says the register "contains every item of overview §9.2 plus the phase-level must-fail tests of overview §8" (L252–253). Phase must-fails with no SB item: phase P0 "changing one corpus row changes the manifest hash" (L795); phase P1 "corrupting each of the five exactness fields is caught separately" (L810–811); phase P2 "a seeded RNG passed to proof generation (a compile-fail test)" and "skipping the witness rekeying step" (L823–825); phase P6 "a proof reused in another certificate" and "cosignatures over a different log checkpoint" (L863–864). Some may be covered by AT-2, AT-10 (Build 3-4 L241, L249) or by P3 test plans. Record which, and whether the Build §2.6 sentence should change |
-| 2 | Components | Spec §19.1 (L1517–1543), Overview §7 (L746–773), Build §0.2 (L52–61), Build 3-4 §3.2 (L628–641) | Spec C-18 (about L1540) "depends on C-7 via Python binding" (that is G-3); C-7 in the spec includes the quantiser, but Build puts it in `sever-quant` (Part 1) |
-| 3 | Invariants | Spec §21 (L1638–1662) against Build 3-4 §3.3 (L643–654) | Check all 16, both the wording and the parts |
-| 4 | Golden vectors | Spec App. B (L1702–1720), Overview phase P1 (L800–802), Build §4.3 (L508–520), Build 3-4 §3.4 (L656–668) | Item 4 `scalar(v)`: phase P1 per the overview, Part 3 per Build 3-4. The App. B title says "to generate in P1". Follows from DB-44's reorder; propose the edit |
-| 5 | Phases and parts | Overview §8 (L775–889), Build §0.2 (L52–61), `CLAUDE.md` §6.1 | Every phase's work lands in exactly one part |
-| 6 | Targets | Overview §3.4 (L252–274), Build 3-4 §3.1 (L617–626), each part's targets table | Every T-N is established somewhere |
-| 7 | Certificate attacks | Overview §11 EX-4 list (L1040–1046, 16 attacks) against Build 3-4 AT-1…AT-17 (L240–256) | AT-17 (duplicate witness) is new in the build plan; should the overview list gain it? |
-| 8 | Test folders | Spec §19.2 `tests/` line (L1565), Build §2.1 "Lives in" column (L142–157), `CLAUDE.md` §6.2 | They differ: part of G-5 |
-| 9 | Identifier tables | Spec §0.3 (L60–70), Overview §0 (L55–57) | Neither lists SR, SB, EP, F, G-N, E-N, E2E, AT, AF; both say "the two documents" |
-| 10 | Errors | Spec §17 (L1341–1361) against every "reject with …" / "raise …" in the spec | Every raised error is in the table, and every table row is raised somewhere. Lead: `WrongDimension` is raised when "§4.1 fails", but §4.1 (L244–253) has no explicit dimension rule |
+| 1 | Sabotage | Overview §9.2 (L983–991, 23 items) and Overview §8 phase "Must-fail" lines (L852–966) against Build §2.6 (L248–289, SB-1…SB-30) | Build says the register "contains every item of overview §9.2 plus the phase-level must-fail tests of overview §8" (L252–253). Phase must-fails with no SB item: phase P0 "changing one corpus row changes the manifest hash" (L872); phase P1 "corrupting each of the five exactness fields is caught separately" (L887–888); phase P2 "a seeded RNG passed to proof generation (a compile-fail test)" and "skipping the witness rekeying step" (L900–902); phase P6 "a proof reused in another certificate" and "cosignatures over a different log checkpoint" (L940–941). Some may be covered by AT-2, AT-10 (Build 3-4 L243, L251) or by P3 test plans. Record which, and whether the Build §2.6 sentence should change |
+| 2 | Components | Spec §19.1 (L1569–1595), Overview §7 (L823–850), Build §0.2 (L52–61), Build 3-4 §3.2 (L632–645) | Spec C-18 (about L1592) "depends on C-7 via Python binding" (that is G-3); C-7 in the spec includes the quantiser, but Build puts it in `sever-quant` (Part 1) |
+| 3 | Invariants | Spec §21 (L1690–1714) against Build 3-4 §3.3 (L647–658) | Check all 16, both the wording and the parts |
+| 4 | Golden vectors | Spec App. B (L1754–1772), Overview phase P1 (L877–879), Build §4.3 (L511–523), Build 3-4 §3.4 (L660–672) | Item 4 `scalar(v)`: phase P1 per the overview, Part 3 per Build 3-4. The App. B title says "to generate in P1". Follows from DB-44's reorder; propose the edit |
+| 5 | Phases and parts | Overview §8 (L852–966), Build §0.2 (L52–61), `CLAUDE.md` §6.1 | Every phase's work lands in exactly one part |
+| 6 | Targets | Overview §3.4 (L272–294), Build 3-4 §3.1 (L621–630), each part's targets table | Every T-N is established somewhere |
+| 7 | Certificate attacks | Overview §11 EX-4 list (L1117–1123, 16 attacks) against Build 3-4 AT-1…AT-17 (L242–258) | AT-17 (duplicate witness) is new in the build plan; should the overview list gain it? |
+| 8 | Test folders | Spec §19.2 `tests/` line (L1617), Build §2.1 "Lives in" column (L142–157), `CLAUDE.md` §6.2 | They differ: part of G-5 |
+| 9 | Identifier tables | Spec §0.3 (L60–70), Overview §0 (L56–58) | Neither lists SR, SB, EP, F, G-N, E-N, E2E, AT, AF; both say "the two documents" |
+| 10 | Errors | Spec §17 (L1394–1413) against every "reject with …" / "raise …" in the spec | Every raised error is in the table, and every table row is raised somewhere. Lead: `WrongDimension` is raised when "§4.1 fails", but §4.1 (L270–279) has no explicit dimension rule |
 
 #### C.4.3 Specific leads to write up
 
 | # | Lead | Where | Suggested severity |
 |---|---|---|---|
-| a | **Normative words.** Spec §0.1 makes any sentence without MUST/SHOULD/MAY "explanatory"; only 37 lines contain MUST; formulas, layouts and algorithm steps (e.g. §4.2 L257, §5.5 L338–352, §6.2 L396–419, §14.4 L1105–1119) have none. Build §2.2 gives IDs to "Every MUST or MUST NOT" (L173) but also wants every table and byte layout tested (L192–198), and its example `SR-4.1-3` (L173–174) matches §4.1's step number, not its MUST count. Propose gap **G-6** with the two options in WP-5 | Spec §0.1 (L44–47); Build §2.2 (L166–205) | **Blocker** (blocks WP-5 and Part 1's traceability gate P1-T9) |
-| b | **`nq-10k` undefined.** Used by Build §2.7 (L298), §4.7 (L582–668, the L4 and L9 items), §4.9 (L691), the demo command, `CLAUDE.md` §9. Build says the slices come "from overview §10", but Overview §10.4 (L953–962) defines only `nq-100k` and `nq-1m`; EX-1 (L1030) uses "the first 10,000 passages of the seed's stream order", which differs per seed. `meta.json` builds only 100k and 1M (`size_small`, `size_big`). Propose a definition (for example, the first 10,000 rows of `nq-100k`, or a per-seed stream prefix), and let the owner choose | See left | **Blocker** (Part 1 demo and differential tests) |
+| a | **Normative words.** Spec §0.1 makes any sentence without MUST/SHOULD/MAY "explanatory"; only 37 lines contain MUST; formulas, layouts and algorithm steps (e.g. §4.2 L283, §5.5 L365–379, §6.2 L423–446, §14.4 L1144–1161) have none. Build §2.2 gives IDs to "Every MUST or MUST NOT" (L173) but also wants every table and byte layout tested (L192–198), and its example `SR-4.1-3` (L173–174) matches §4.1's step number, not its MUST count. Propose gap **G-6** with the two options in WP-5 | Spec §0.1 (L44–47); Build §2.2 (L166–205) | **Blocker** (blocks WP-5 and Part 1's traceability gate P1-T9) |
+| b | **`nq-10k` undefined.** Used by Build §2.7 (L298), §4.7 (L585–671, the L4 and L9 items), §4.9 (L694), the demo command, `CLAUDE.md` §9. Build says the slices come "from overview §10", but Overview §10.4 (L1030–1039) defines only `nq-100k` and `nq-1m`; EX-1 (L1107) uses "the first 10,000 passages of the seed's stream order", which differs per seed. `meta.json` builds only 100k and 1M (`size_small`, `size_big`). Propose a definition (for example, the first 10,000 rows of `nq-100k`, or a per-seed stream prefix), and let the owner choose | See left | **Blocker** (Part 1 demo and differential tests) |
 | c | Golden-vector ownership (C.4.2 row 4) | | Minor |
 | d | Sabotage superset claim (C.4.2 row 1) | | Major |
-| e | "These two documents": spec header "Companion" (L7) lists only the overview; §19.2 `docs/` line (L1566); Overview L15–16 "Together, these two documents are self-contained"; Overview header "Team: One person" (L11) | | Editorial |
-| f | Overview §6 heading "DB-1 … DB-43" (L360) must change when DB-44+ are accepted | | Editorial |
-| g | Checkpoint qualifier: spec §0.4 (L72–80) says "checkpoint" never appears bare. Build 3-4 EP-10 row (L129) says "its last cosigned checkpoint". Search all four documents for other bare uses | | Minor |
-| h | Spec §9.2 KAT sentence cites RFC 9496 for `expand_message_xmd` vectors (L596–598); §20.3 check 3 (L1618–1619) correctly cites RFC 9380 | | Minor (shared with WP-3) |
-| i | Build §0.2 says Part 1 covers "§2–§8, §9.7" (L56), but §3.3, §3.4, §4.5 and the `C_S`/`r_agg` halves of §5.2–5.3 belong to Part 3 (Build §4.3 L508–520 is more precise). Propose that §0.2 cite §4.3 | | Minor |
+| e | "These two documents": spec header "Companion" (L7) lists only the overview; §19.2 `docs/` line (L1618); Overview L15–16 "Together, these two documents are self-contained"; Overview header "Team: One person" (L11) | | Editorial |
+| f | Overview §6 heading "DB-1 … DB-43" (L395) must change when DB-44+ are accepted | | Editorial |
+| g | Checkpoint qualifier: spec §0.4 (L72–80) says "checkpoint" never appears bare. Build 3-4 EP-10 row (L130) says "its last cosigned checkpoint". Search all four documents for other bare uses | | Minor |
+| h | Spec §9.2 KAT sentence cites RFC 9496 for `expand_message_xmd` vectors (L623–625); §20.3 check 3 (L1670–1671) correctly cites RFC 9380 | | Minor (shared with WP-3) |
+| i | Build §0.2 says Part 1 covers "§2–§8, §9.7" (L56), but §3.3, §3.4, §4.5 and the `C_S`/`r_agg` halves of §5.2–5.3 belong to Part 3 (Build §4.3 L511–523 is more precise). Propose that §0.2 cite §4.3 | | Minor |
 
 #### C.4.4 Recompute Appendix A (crypto / math teammate)
 
-Spec Appendix A (L1664–1700) derives 27 sizes and bounds. Claude recomputed all of them by hand on
+Spec Appendix A (L1716–1752) derives 27 sizes and bounds. Claude recomputed all of them by hand on
 28 Sep 2026, and they all agree, with one note. **Confirm independently** (it takes about an hour, and a
 second check is the point), then record the result in the audit.
 
@@ -676,7 +678,7 @@ the table-shaped ones.
   status: active                # active | retired (never delete an entry)
 ```
 
-**Worked example: spec §4.1–4.2 (L244–265) fully catalogued.**
+**Worked example: spec §4.1–4.2 (L270–292) fully catalogued.**
 
 ```yaml
 - id: SR-4.1-1
@@ -711,10 +713,10 @@ the table-shaped ones.
   related: [golden-5]
 - id: SR-4.2-2
   section: "4.2"
-  text: "The client SDK and the engine MUST use the same quantiser, because the client builds C_t from x̃."
+  text: "The SDK on the application backend and the engine MUST use the same quantiser, because the application backend builds C_t from x̃."
   kind: must
   part: 3
-  notes: "The SDK's client-side quantiser arrives in Part 3 (Build 3-4 §1.4, sever_db_p3)."
+  notes: "The SDK's quantiser on the application backend arrives in Part 3 (Build 3-4 §1.4, sever_db_p3)."
 ```
 
 The bullets "The float32-to-float64 conversion … are both exact" and "Bound: |x_i| ≤ …" in §4.2 are
@@ -726,7 +728,7 @@ explanations (why the rule is safe). List them in your "not requirements" list (
 2. **One testable claim per entry.** Split a sentence with two claims into two entries.
 3. **Tables:** one entry per row (for example, each §17 error row, each §5.1 group kind).
 4. **Byte layouts:** one entry for the whole layout (`kind: layout`), plus one entry per parser rejection
-   rule (for example, §5.5 L354 lists five rejections, so five entries).
+   rule (for example, §5.5 L381 lists five rejections, so five entries).
 5. **Mixed ownership:** where a sentence covers Part 1 and Part 3 fields (for example §5.3's `S`, `n`
    and `r_agg`, `C_S`), split it and give each entry its own `part`.
 6. **Anything you're unsure about:** catalogue it, and add `notes: "QUESTION: …"`.
@@ -739,17 +741,17 @@ explanations (why the rule is safe). List them in your "not requirements" list (
 
 | Assignee | Sections | Lines |
 |---|---|---|
-| Crypto / math | §4 vector arithmetic (4.1–4.4; 4.5 is Part 3 but catalogue it with `part: 3`) | L242–284 |
-| Crypto / math | §6 partition builder and artefact | L383–444 |
-| Crypto / math | §7.1–7.2 nearest group, Mahalanobis drift | L446–468 |
-| Crypto / math | §9.7 scrambled IDs | L682–690 |
-| Newcomer A | §0.2 encodings; §2.2 fixed parameters; §2.3 domain strings (catalogue with `part: 3`) | L49–58, L153–190 |
-| Newcomer A | §3.1–3.5 data model (3.2 and 3.5 are Part 1; 3.1, 3.3, 3.4 mostly later parts) | L192–240 |
-| Newcomer A | §17 errors: every row, with a `part` each | L1341–1361 |
-| Newcomer B | §5 groups, accumulators, exact deletion | L286–381 |
-| Newcomer B | §7.3–7.7 destination rule, holding area, spawn, counters, determinism | L469–525 |
-| Newcomer B | §8 search, including the kernel | L527–565 |
-| Anyone | §21 invariants owned by Part 1: INV-1, INV-2 (partly), INV-4…INV-9, INV-16 (Build 3-4 §3.3) | L1638–1662 |
+| Crypto / math | §4 vector arithmetic (4.1–4.4; 4.5 is Part 3 but catalogue it with `part: 3`) | L268–311 |
+| Crypto / math | §6 partition builder and artefact | L410–471 |
+| Crypto / math | §7.1–7.2 nearest group, Mahalanobis drift | L473–495 |
+| Crypto / math | §9.7 scrambled IDs | L711–719 |
+| Newcomer A | §0.2 encodings; §2.2 fixed parameters; §2.3 domain strings (catalogue with `part: 3`) | L49–58, L160–197 |
+| Newcomer A | §3.1–3.5 data model (3.2 and 3.5 are Part 1; 3.1, 3.3, 3.4 mostly later parts) | L199–266 |
+| Newcomer A | §17 errors: every row, with a `part` each | L1394–1413 |
+| Newcomer B | §5 groups, accumulators, exact deletion | L313–408 |
+| Newcomer B | §7.3–7.7 destination rule, holding area, spawn, counters, determinism | L496–552 |
+| Newcomer B | §8 search, including the kernel | L554–592 |
+| Anyone | §21 invariants owned by Part 1: INV-1, INV-2 (partly), INV-4…INV-9, INV-16 (Build 3-4 §3.3) | L1690–1714 |
 
 **Sabotage mapping** (for the `related` field and the traceability table, from Build §2.6):
 
@@ -761,7 +763,7 @@ explanations (why the rule is safe). List them in your "not requirements" list (
 | SB-4 forget the locator update | §14.4 last bullet (in-memory semantics, Build §4.3) |
 | SB-5 keep a deleted vector in the mirror | §8.1 last paragraph, INV-9 |
 | SB-6 skip empty groups in the probe budget | §8.1 step 2 |
-| SB-7 route to "most recent group with room" | §7 intro (L448–449), INV-16 |
+| SB-7 route to "most recent group with room" | §7 intro (L475–476), INV-16 |
 | SB-8 holding area before spillover | §7.3 |
 | SB-9 FMA in the SIMD kernel | §8.2 |
 | SB-10 average per-group Ledoit–Wolf fits | §6.2 step 4 |
@@ -801,11 +803,11 @@ still wins.
 | # | File | Shows | Source | Mermaid type |
 |---|---|---|---|---|
 | D1 | `record-lifecycle.md` | ABSENT / HOLDING / IN_GROUP and every transition, including the non-transitions (delete when absent) | Build §2.3 (L207–221); spec §5.4, §7.4 | `stateDiagram-v2` |
-| D2 | `routing.md` | The destination rule: nearest frozen group → drift test → spillover → holding area → flush at 200 | Spec §7.1–7.4 (L451–495) | `flowchart` |
-| D3 | `canonical-blob.md` | The byte layout with offsets at d = 384 | Spec §5.5 (L338–352) | Table plus a `packet-beta` or block diagram |
-| D4 | `partition-artefact.md` | `partition.svp` layout with offsets | Spec §6.3 (L423–440) | Table |
+| D2 | `routing.md` | The destination rule: nearest frozen group → drift test → spillover → holding area → flush at 200 | Spec §7.1–7.4 (L478–522) | `flowchart` |
+| D3 | `canonical-blob.md` | The byte layout with offsets at d = 384 | Spec §5.5 (L365–379) | Table plus a `packet-beta` or block diagram |
+| D4 | `partition-artefact.md` | `partition.svp` layout with offsets | Spec §6.3 (L450–467) | Table |
 | D5 | `crate-layers.md` | The four-part crate layering and extension points | Build §3.1–3.2 (L336–360) | `flowchart TB` |
-| D6 | `search.md` | Rank centroids → probe budget (empty groups count) → kernel → top-k, plus the 8-lane kernel reduction tree | Spec §8.1–8.2 (L529–557) | `flowchart` + a tree |
+| D6 | `search.md` | Rank centroids → probe budget (empty groups count) → kernel → top-k, plus the 8-lane kernel reduction tree | Spec §8.1–8.2 (L556–584) | `flowchart` + a tree |
 | D7 | `four-parts.md` | The four parts, their claims and the freeze rule | Build §0.1, §0.3 (L30–90) | `flowchart LR` |
 
 **Check your offsets.**
@@ -818,9 +820,9 @@ still wins.
   `1,572,976 + encoder_len` at d = 384, k = 128. Derive this yourself, and show your arithmetic in the
   file.
 
-**Later (Parts 2–4).** Insert and delete protocols (spec §15.1, §15.3, L1170–1222); the key hierarchy
-(§13.1, L956–966); slot and group-header layouts (§14.3–14.4, L1092–1122); the certificate TLV (§11.1,
-L759–797); the overview's end-to-end sketch (Overview §5, L346–356).
+**Later (Parts 2–4).** Insert and delete protocols (spec §15.1, §15.3, L1211–1268); the key hierarchy
+(§13.1, L995–1005); slot and group-header layouts (§14.3–14.4, L1131–1163); the certificate TLV (§11.1,
+L790–831); the overview's end-to-end sketch (Overview §5, L379–391).
 
 **Done when.**
 
@@ -855,7 +857,7 @@ licence, and what is known about it.
 | Encode environment | Windows 11, Python 3.13.9, torch 2.14.0+cpu, sentence-transformers 6.1.0, numpy 2.5.3; CPU, 4 threads, batch 64 | `meta.json` `encode.versions`, `settings` |
 | Embedding hashes | `sha256_rows` per set | `meta.json`; `datasets/MANIFEST.sha256` |
 
-**Licences to verify** (Overview DB-42, L730–736; Overview §10.1–10.3, L929–951; limit L-19, L1238):
+**Licences to verify** (Overview DB-42, L776–782; Overview §10.1–10.3, L1006–1028; limit L-19, L1320):
 
 | Artefact | Licence the docs claim | What to check |
 |---|---|---|
@@ -876,8 +878,8 @@ licence, and what is known about it.
 4. Known issues:
    - the open question about `sciq_reference/passages.parquet` being overwritten on 27 Sep
      (`PROGRESS.md`);
-   - encoding ran on Windows, while spec §20.4 (L1626–1636) says experiments run on native Linux. This is
-     fine because embeddings are pinned by hash (risk R-6, L1260), but record it;
+   - encoding ran on Windows, while spec §20.4 (L1678–1688) says experiments run on native Linux. This is
+     fine because embeddings are pinned by hash (risk R-6, L1342), but record it;
    - `nq-10k` is undefined (C.4.3 lead b).
 5. Any difference between the overview's claims and the facts, written as a finding (B.5).
 
@@ -896,18 +898,18 @@ credibility.
 
 **Who.** Research writing.
 
-**Part 1: verify all 55 references** (Overview §20, L1361–1432). They are grouped by topic, not in
+**Part 1: verify all 55 references** (Overview §20, L1447–1518). They are grouped by topic, not in
 numeric order:
 
 | Group | IDs | Lines |
 |---|---|---|
-| Standards and primitives | R1–R20, R52 | L1365–1386 |
-| Secure and verifiable deletion | R21–R28, R51 | L1388–1397 |
-| Storage engines and durability | R29–R34, R40–R42 | L1399–1408 |
-| Vector search | R35–R39 | L1410–1415 |
-| Data and models | R43–R46 | L1417–1421 |
-| Statistics | R53–R54 | L1423–1425 |
-| Tooling and platform | R47–R50, R55 | L1427–1432 |
+| Standards and primitives | R1–R20, R52 | L1451–1472 |
+| Secure and verifiable deletion | R21–R28, R51 | L1474–1483 |
+| Storage engines and durability | R29–R34, R40–R42 | L1485–1494 |
+| Vector search | R35–R39 | L1496–1501 |
+| Data and models | R43–R46 | L1503–1507 |
+| Statistics | R53–R54 | L1509–1511 |
+| Tooling and platform | R47–R50, R55 | L1513–1518 |
 
 For each reference:
 
@@ -918,12 +920,12 @@ For each reference:
 
 Claims to check first:
 
-- Overview §2.3 (L187–210): NIST SP 800-88 Rev. 2 "singles out" cryptographic erasure [R21], and its date
-  "final 26 September 2025" (L1389); flash drives don't reliably overwrite in place [R25]; FreshDiskANN
+- Overview §2.3 (L204–227): NIST SP 800-88 Rev. 2 "singles out" cryptographic erasure [R21], and its date
+  "final 26 September 2025" (L1475); flash drives don't reliably overwrite in place [R25]; FreshDiskANN
   "repairs graphs approximately rather than exactly" [R38]; the Garg–Goldwasser–Vasudevan notion that
   post-deletion state looks as if the data never arrived [R27]; Boneh–Lipton revocable backups [R22];
   key trees bounding re-encryption [R24].
-- Overview §14 (L1176–1246): the claims behind [R25] and [R21] in L-1.
+- Overview §14 (L1253–1328): the claims behind [R25] and [R21] in L-1.
 - [R18]: is the draft really expired? [R13]: what is the draft's current status?
 - [R49] needs an Intel account. Find a public source for the Core Ultra 5 226V instruction sets.
 - **Missing standards:** RFC 4231 (HMAC-SHA-512 test vectors) is not in the list (see WP-3).
@@ -947,7 +949,7 @@ is relevant before recommending it:
 ### [R25] Wei et al., "Reliably erasing data from flash-based SSDs", FAST 2011
 Link:         ✓ resolves (checked 2026-10-__)
 Details:      ✓ / ✗ <correction>
-Cited at:     Overview §2.3 L190; Overview §14 L-1 L1185
+Cited at:     Overview §2.3 L207; Overview §14 L-1 L1262
 Claim made:   "flash drives do not reliably overwrite in place"
 Source says:  <quote or page reference>
 Verdict:      supported / overstated / wrong / cannot verify
@@ -979,109 +981,111 @@ section it belongs in. Don't edit Overview §20. The owner adds references.
 | 0.3 | Identifiers used across the two documents | 60 | — |
 | 0.4 | Two kinds of checkpoint | 72 | 2, 3 |
 | 1 | The system on one page | 82 | — |
-| 2.1 | Symbols | 130 | 1 |
-| 2.2 | Fixed parameters (v1) | 153 | 1 |
-| 2.3 | Domain strings | 173 | 3 |
-| 3.1 | Collections | 194 | 2 |
-| 3.2 | Records (ID rules) | 201 | **1** |
-| 3.3 | Users and blinding values | 220 | 3 |
-| 3.4 | Passage text | 230 | 4 |
-| 3.5 | Cohorts | 235 | **1** |
-| 4.1 | Normalisation check | 244 | **1** |
-| 4.2 | Quantisation (Q24) | 255 | **1** |
-| 4.3 | Dequantisation | 267 | **1** |
-| 4.4 | Accumulator bounds | 272 | **1** |
-| 4.5 | Integer-to-scalar mapping | 279 | 3 |
-| 5.1 | Group kinds | 288 | **1** |
-| 5.2 | Group state | 298 | **1** (+3) |
-| 5.3 | Insert and delete arithmetic | 305 | **1** (+3) |
-| 5.4 | Membership, idempotency and excision | 325 | **1** |
-| 5.5 | Canonical group blob and exactness relation | 336 | **1** (+3) |
-| 5.6 | Capacity | 372 | **1** |
-| 6.1 | Purpose (partition) | 385 | **1** |
-| 6.2 | Builder algorithm | 392 | **1** |
-| 6.3 | Artefact format (`partition.svp`) | 423 | **1** |
-| 7 | Routing, drift detection and spawning | 446 | **1** |
-| 7.1 | Nearest frozen group | 451 | **1** |
-| 7.2 | Mahalanobis drift test | 456 | **1** |
-| 7.3 | Destination rule | 469 | **1** |
-| 7.4 | Holding area and flush | 485 | **1** |
-| 7.5 | A spawned group's identity and centroid | 497 | **1** |
-| 7.6 | Counters | 509 | **1** |
-| 7.7 | Determinism claim | 515 | **1** |
-| 8.1 | Search algorithm | 529 | **1** |
-| 8.2 | The pinned distance kernel | 546 | **1** |
-| 8.3 | Why IVF-flat | 559 | **1** |
-| 9.1 | Primitive set | 569 | 3 |
-| 9.2 | Generators | 585 | 3 |
-| 9.3 | Commitments | 600 | 3 |
-| 9.4 | Blinding values | 609 | 3 |
-| 9.5 | Proof of knowledge | 616 | 3 |
-| 9.6 | Hedged nonce derivation | 654 | 3 |
-| 9.7 | Scrambled record IDs | 682 | **1** |
-| 9.8 | Signatures and key epochs | 691 | 3 |
-| 9.9 | Encoding rules | 705 | 3 |
-| 10.1–10.5 | Transparency log, log checkpoints, witnesses | 714–750 | 3 |
-| 11.1 | Certificate encoding | 759 | 3 |
-| 11.2 | `insert_inclusion` field | 799 | 3 |
-| 11.3 | Verification algorithm | 812 | 3 |
-| 12.1–12.7 | Storage engine | 858–925 | 2 |
-| 12.8 | Memory hygiene | 934 | 4 |
-| 12.9 | Platform checks at startup | 943 | 4 |
-| 13.1–13.6 | Key hierarchy and physical erasure | 956–1047 | 4 |
-| 14.1–14.4 | Directory layout, pages, group header, slot | 1060–1105 | 2 |
-| 14.5 | Bucket block | 1124 | 4 |
-| 14.6 | WAL record | 1128 | 2 |
-| 14.7 | Key file | 1151 | 4 |
-| 14.8 | Append stores | 1160 | 2 |
-| 15.1–15.2 | Insert, flush protocols | 1170, 1191 | 2 |
-| 15.3–15.4 | Delete protocol, crash table | 1201, 1224 | 4 |
-| 15.5–15.7 | Search, storage checkpoint, recovery | 1234–1247 | 2 |
-| 15.8–15.9 | Acknowledgement, drop collection | 1261, 1268 | 4 |
-| 16.1 | Engine API (Rust) | 1278 | 2 |
-| 16.2–16.3 | Python SDK, command-line tools | 1312, 1330 | 3 |
-| 17 | Errors | 1341 | all |
-| 18.1–18.2 | `engine.yaml`, `partition.yaml` | 1368, 1486 | all |
-| 19.1 | Components | 1517 | — |
-| 19.2 | Repository layout | 1545 | — (G-5) |
-| 20.1–20.4 | Toolchain, dependencies, compatibility checks, hardware | 1573–1626 | all |
-| 21 | Invariants checklist | 1638 | all |
-| App. A | Derived sizes and bounds | 1664 | all |
-| App. B | Golden vectors | 1702 | 1, 3 |
+| 2.1 | Symbols | 137 | 1 |
+| 2.2 | Fixed parameters (v1) | 160 | 1 |
+| 2.3 | Domain strings | 180 | 3 |
+| 3.1 | Collections | 201 | 2 |
+| 3.2 | Records (ID rules) | 208 | **1** |
+| 3.3 | Users and blinding values | 227 | 3 |
+| 3.4 | Passage text | 256 | 4 |
+| 3.5 | Cohorts | 261 | **1** |
+| 4.1 | Normalisation check | 270 | **1** |
+| 4.2 | Quantisation (Q24) | 281 | **1** |
+| 4.3 | Dequantisation | 294 | **1** |
+| 4.4 | Accumulator bounds | 299 | **1** |
+| 4.5 | Integer-to-scalar mapping | 306 | 3 |
+| 5.1 | Group kinds | 315 | **1** |
+| 5.2 | Group state | 325 | **1** (+3) |
+| 5.3 | Insert and delete arithmetic | 332 | **1** (+3) |
+| 5.4 | Membership, idempotency and excision | 352 | **1** |
+| 5.5 | Canonical group blob and exactness relation | 363 | **1** (+3) |
+| 5.6 | Capacity | 399 | **1** |
+| 6.1 | Purpose (partition) | 412 | **1** |
+| 6.2 | Builder algorithm | 419 | **1** |
+| 6.3 | Artefact format (`partition.svp`) | 450 | **1** |
+| 7 | Routing, drift detection and spawning | 473 | **1** |
+| 7.1 | Nearest frozen group | 478 | **1** |
+| 7.2 | Mahalanobis drift test | 483 | **1** |
+| 7.3 | Destination rule | 496 | **1** |
+| 7.4 | Holding area and flush | 512 | **1** |
+| 7.5 | A spawned group's identity and centroid | 524 | **1** |
+| 7.6 | Counters | 536 | **1** |
+| 7.7 | Determinism claim | 542 | **1** |
+| 8.1 | Search algorithm | 556 | **1** |
+| 8.2 | The pinned distance kernel | 573 | **1** |
+| 8.3 | Why IVF-flat | 586 | **1** |
+| 9.1 | Primitive set | 596 | 3 |
+| 9.2 | Generators | 612 | 3 |
+| 9.3 | Commitments | 627 | 3 |
+| 9.4 | Blinding values | 636 | 3 |
+| 9.5 | Proof of knowledge | 645 | 3 |
+| 9.6 | Hedged nonce derivation | 683 | 3 |
+| 9.7 | Scrambled record IDs | 711 | **1** |
+| 9.8 | Signatures and key epochs | 720 | 3 |
+| 9.9 | Encoding rules | 734 | 3 |
+| 10.1–10.5 | Transparency log, log checkpoints, witnesses | 743–781 | 3 |
+| 11.1 | Certificate encoding | 790 | 3 |
+| 11.2 | `insert_inclusion` field | 833 | 3 |
+| 11.3 | Verification algorithm | 846 | 3 |
+| 12.1–12.7 | Storage engine | 897–964 | 2 |
+| 12.8 | Memory hygiene | 973 | 4 |
+| 12.9 | Platform checks at startup | 982 | 4 |
+| 13.1–13.6 | Key hierarchy and physical erasure | 995–1086 | 4 |
+| 14.1–14.4 | Directory layout, pages, group header, slot | 1099–1144 | 2 |
+| 14.5 | Bucket block | 1165 | 4 |
+| 14.6 | WAL record | 1169 | 2 |
+| 14.7 | Key file | 1192 | 4 |
+| 14.8 | Append stores | 1201 | 2 |
+| 15.1–15.2 | Insert, flush protocols | 1211, 1232 | 2 |
+| 15.3–15.4 | Delete protocol, crash table | 1243, 1270 | 4 |
+| 15.5–15.7 | Search, storage checkpoint, recovery | 1280–1293 | 2 |
+| 15.8–15.9 | Acknowledgement, drop collection | 1307, 1314 | 4 |
+| 16.1 | Engine API (Rust) | 1324 | 2 |
+| 16.2–16.3 | Python SDK, command-line tools | 1358, 1383 | 3 |
+| 17 | Errors | 1394 | all |
+| 18.1–18.2 | `engine.yaml`, `partition.yaml` | 1420, 1538 | all |
+| 19.1 | Components | 1569 | — |
+| 19.2 | Repository layout | 1597 | — (G-5) |
+| 20.1–20.4 | Toolchain, dependencies, compatibility checks, hardware | 1625–1678 | all |
+| 21 | Invariants checklist | 1690 | all |
+| App. A | Derived sizes and bounds | 1716 | all |
+| App. B | Golden vectors | 1754 | 1, 3 |
 
 ### D.2 Overview (`docs/SEVER-DB_PROJECT_OVERVIEW.md`)
 
 | § | Title | Line |
 |---|---|---|
-| 0 | How to read this document (identifier list at L55–57) | 46 |
-| 1.1–1.5 | What SEVER-DB is, why, what's new, goals G1–G8, non-goals | 75–138 |
-| 2.1–2.3 | Origins, prior evidence, related work | 152–187 |
-| 3.1 | Research questions RQ-1…RQ-5 | 214 |
-| 3.2–3.3 | Claims and non-claims | 229, 239 |
-| 3.4 | Pre-registered targets T-1…T-6 | 252 |
-| 4.1–4.3 | Threat model | 278–297 |
-| 5 | The design in plain words | 304 |
-| 6.1 | Decisions: foundations (DB-1…) | 365 |
-| 6.2 | Decisions: arithmetic and data model | 405 |
-| 6.3 | Decisions: partition, drift, spawning, search | 446 |
-| 6.4 | Decisions: cryptography | 503 |
-| 6.5 | Decisions: log and certificates | 569 |
-| 6.6 | Decisions: storage, keys, erasure | 609 |
-| 6.7 | Decisions: process (… DB-42 at L730, DB-43) | 699 |
-| 7 | Components at a glance | 746 |
-| 8 | Phases P0–P9 (P0 L781, P1 L798, P2 L813, P3 L827, P4 L837, P5 L847, P6 L858, P7 L866, P8 L874, P9 L880) | 775 |
-| 9.1–9.3 | Oracles; sabotage list; techniques | 893, 906, 916 |
-| 10.1–10.9 | Datasets: reference set, live set, encoder, corpora, splits, seeds, streams and arms, cohorts and rungs, metrics | 929–1006 |
-| 11 | Evaluation plan EX-1…EX-8 (attack list L1040) | 1024 |
-| 12 | Experiment configuration (`experiments.yaml` draft) | 1056 |
-| 13.1–13.5 | Repository, CI, run ledger, documentation rules, release | 1136–1168 |
-| 14 | Known limits L-1…L-26 | 1176 |
-| 15 | Risks R-1…R-10 | 1250 |
-| 16 | Timeline | 1267 |
-| 17 | Open items O-1…O-9 | 1286 |
-| 18 | Recommendations | 1302 |
-| 19 | Glossary | 1329 |
-| 20 | References R1…R55 | 1361 |
+| 0 | How to read this document (identifier list at L56–58) | 47 |
+| 1.1–1.5 | What SEVER-DB is, why, what's new, goals G1–G8, non-goals | 76–153 |
+| 2.1–2.3 | Origins, prior evidence, related work | 169–204 |
+| 3.1 | Research questions RQ-1…RQ-5 | 231 |
+| 3.2–3.3 | Claims and non-claims | 246, 256 |
+| 3.4 | Pre-registered targets T-1…T-6 | 272 |
+| 4.1–4.3 | Threat model | 298–319 |
+| 5 | The design in plain words | 327 |
+| 6.1 | Decisions: foundations (DB-1…) | 400 |
+| 6.2 | Decisions: arithmetic and data model | 440 |
+| 6.3 | Decisions: partition, drift, spawning, search | 481 |
+| 6.4 | Decisions: cryptography | 538 |
+| 6.5 | Decisions: log and certificates | 607 |
+| 6.6 | Decisions: storage, keys, erasure | 655 |
+| 6.7 | Decisions: process (… DB-42 at L776, DB-43) | 745 |
+| 6.8 | Amendments (DB-55; DB-44…DB-54 reserved) | 790 |
+| 7 | Components at a glance | 823 |
+| 8 | Phases P0–P9 (P0 L858, P1 L875, P2 L890, P3 L904, P4 L914, P5 L924, P6 L935, P7 L943, P8 L951, P9 L957) | 852 |
+| 9.1–9.3 | Oracles; sabotage list; techniques | 970, 983, 993 |
+| 10.1–10.9 | Datasets: reference set, live set, encoder, corpora, splits, seeds, streams and arms, cohorts and rungs, metrics | 1006–1083 |
+| 11 | Evaluation plan EX-1…EX-8 (attack list L1117) | 1101 |
+| 12 | Experiment configuration (`experiments.yaml` draft) | 1133 |
+| 13.1–13.5 | Repository, CI, run ledger, documentation rules, release | 1213–1245 |
+| 14 | Known limits L-1…L-27 (L-16 retired) | 1253 |
+| 15 | Risks R-1…R-10 | 1332 |
+| 16 | Timeline | 1349 |
+| 17 | Open items O-1…O-9 | 1368 |
+| 18 | Recommendations | 1384 |
+| 19 | Glossary | 1411 |
+| 20 | References R1…R55 | 1447 |
+| — | Changelog | 1522 |
 
 ### D.3 Build plan, Parts 1–2 (`docs/SEVER-DB_BUILD_PLAN_PART_1-2.md`)
 
@@ -1103,37 +1107,37 @@ section it belongs in. Don't edit Overview §20. The owner adds references.
 | 3.1 | Layering | 336 |
 | 3.2 | Crate and package map | 353 |
 | 3.3 | Extension points EP-1…EP-9 | 362 |
-| 3.4 | Contract suites and proof spikes | 441 |
-| 3.5 | Spec amendments DB-44…DB-50 | 460 |
-| 4.1–4.10 | Part 1: announcement, goals, scope, modules, public surface, requirements, test plan, targets, demo, exit gate | 479–724 |
-| 5.1–5.10 | Part 2: the same structure | 734–928 |
-| 6.1 | PR checklist | 938 |
-| 6.2 | Test naming | 948 |
-| 6.3 | Erratum template | 954 |
+| 3.4 | Contract suites and proof spikes | 444 |
+| 3.5 | Spec amendments DB-44…DB-50 | 463 |
+| 4.1–4.10 | Part 1: announcement, goals, scope, modules, public surface, requirements, test plan, targets, demo, exit gate | 482–727 |
+| 5.1–5.10 | Part 2: the same structure | 737–931 |
+| 6.1 | PR checklist | 941 |
+| 6.2 | Test naming | 951 |
+| 6.3 | Erratum template | 957 |
 
 ### D.4 Build plan, Parts 3–4 (`docs/SEVER-DB_BUILD_PLAN_PART_3-4.md`)
 
 | § | Title | Line |
 |---|---|---|
 | 0 | Relation to the first plan | 21 |
-| 1.1–1.3 | Part 3: announcement, goals (P3-G9 `SOUNDNESS.md` at L85), scope | 41–87 |
-| 1.4 | Part 3 modules (DB-52 note at L110) | 95 |
-| 1.5 | How Part 3 plugs in; EP-10 | 115 |
-| 1.6 | Independence rules (DB-51) | 131 |
-| 1.7 | Requirements owned by Part 3 | 146 |
-| 1.8 | Test plan (AT-1…AT-17 at L240; AF-1…AF-5 at L262) | 160 |
-| 1.9–1.11 | Targets, demo, exit gate | 280–310 |
-| 2.1–2.3 | Part 4: announcement, goals, scope | 322–361 |
-| 2.4 | Part 4 modules; EP-11 | 369 |
-| 2.5 | How Part 4 plugs in | 389 |
-| 2.6 | Requirements owned by Part 4 | 413 |
-| 2.7 | Build variants (DB-54) | 426 |
-| 2.8–2.13 | Test plan, evaluation, targets, demo, deliverables, final freeze | 443–608 |
-| 3.1 | Targets mapped to T-1…T-6 | 617 |
-| 3.2 | Components mapped to parts | 628 |
-| 3.3 | Invariants mapped to parts | 643 |
-| 3.4 | Golden vectors mapped to parts | 656 |
-| 3.5 | Proposed decisions DB-44…DB-54 | 670 |
+| 1.1–1.3 | Part 3: announcement, goals (P3-G9 `SOUNDNESS.md` at L86), scope | 41–88 |
+| 1.4 | Part 3 modules (DB-52 note at L111) | 96 |
+| 1.5 | How Part 3 plugs in; EP-10 | 116 |
+| 1.6 | Independence rules (DB-51) | 132 |
+| 1.7 | Requirements owned by Part 3 | 147 |
+| 1.8 | Test plan (AT-1…AT-17 at L242; AF-1…AF-5 at L264) | 161 |
+| 1.9–1.11 | Targets, demo, exit gate | 282–314 |
+| 2.1–2.3 | Part 4: announcement, goals, scope | 326–365 |
+| 2.4 | Part 4 modules; EP-11 | 373 |
+| 2.5 | How Part 4 plugs in | 393 |
+| 2.6 | Requirements owned by Part 4 | 417 |
+| 2.7 | Build variants (DB-54) | 430 |
+| 2.8–2.13 | Test plan, evaluation, targets, demo, deliverables, final freeze | 447–612 |
+| 3.1 | Targets mapped to T-1…T-6 | 621 |
+| 3.2 | Components mapped to parts | 632 |
+| 3.3 | Invariants mapped to parts | 647 |
+| 3.4 | Golden vectors mapped to parts | 660 |
+| 3.5 | Proposed decisions DB-44…DB-54 | 674 |
 
 ### D.5 Handy searches
 
@@ -1173,5 +1177,5 @@ cross-check its pins against `PINS.json`), `docs/PROGRESS.md`, and every edit to
 documents.
 
 **Not now:** `docs/SOUNDNESS.md`, the proof write-up (completeness, special soundness, zero-knowledge),
-is a Part 3 gate (Build 3-4 P3-G9, L85). A crypto teammate could start reading for it once Part 2 is
+is a Part 3 gate (Build 3-4 P3-G9, L86). A crypto teammate could start reading for it once Part 2 is
 frozen.

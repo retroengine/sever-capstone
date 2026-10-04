@@ -133,8 +133,8 @@ recorded in the run ledger, including its proof spikes (Build §3.4). Then it is
   commit as its gap entry. A new design choice goes in the same commit as its `DB-N` entry in the
   overview.
 - **Never commit:** `datasets/raw/`, `datasets/processed/` data files, `.venv*`, and any database
-  directory, key file, keychain or certificate written by a run (they hold ciphertext, keys and the
-  user's secret `r_t` values). **Do commit:** `datasets/PINS.json`, `datasets/MANIFEST.sha256`,
+  directory, key file, keychain or certificate written by a run (they hold ciphertext, keys and each
+  record's `r_t`). **Do commit:** `datasets/PINS.json`, `datasets/MANIFEST.sha256`,
   `datasets/processed/meta.json`, `pyproject.toml`, `uv.lock`, `.python-version`, `golden/`,
   `tests/traces/` with its `MANIFEST.sha256`, and `freeze/`.
 - A private GitHub remote is recommended as a backup.
