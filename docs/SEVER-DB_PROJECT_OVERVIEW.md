@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-45, DB-47, DB-49, DB-50, DB-55 … DB-59)](#6-decision-register-db-1--db-45-db-47-db-49-db-50-db-55--db-59)
+6. [Decision register (DB-1 … DB-45, DB-47, DB-49, DB-50, DB-55 … DB-60)](#6-decision-register-db-1--db-45-db-47-db-49-db-50-db-55--db-60)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-45, DB-47, DB-49, DB-50, DB-55 … DB-59)
+## 6. Decision register (DB-1 … DB-45, DB-47, DB-49, DB-50, DB-55 … DB-60)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -857,6 +857,15 @@ without editing Part 1. **Rejected.** Passing a provider through every API (it w
 signatures); a global that can be replaced later (one secret could then straddle two providers).
 **Consequence.** A second installation attempt is an error. Tests use a provider that checks every
 released buffer is all zero (Build 3-4 §2.8).
+
+#### DB-60 — The dimension check (4 October 2026)
+
+**Decision.** Spec §4.1 gains step 0: the input MUST have exactly `d` components, otherwise
+`WrongDimension`; the search query of spec §8.1 is checked by the same steps. **Why.** §17 listed
+`WrongDimension` as raised "when §4.1 fails", but §4.1 had no rule that could raise it; without one,
+a short vector would be read out of bounds or silently padded. **Rejected.** Leaving the check to each
+caller (the engine API, the SDK and the reference model would each invent their own). **Consequence.**
+Closes G-8. Step 0 runs first, so a wrong-length vector is never scanned for NaN.
 
 #### DB-55 — Service-side custody of `r_t` and user keys (2 October 2026)
 

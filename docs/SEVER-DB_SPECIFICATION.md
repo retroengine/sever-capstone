@@ -278,7 +278,8 @@ person contributed). The engine does not store cohorts; the caller supplies the 
 
 Input: `x` as `d` float32 values.
 
-1. Every component MUST be finite.
+0. The input MUST have exactly `d` components. Otherwise reject with `WrongDimension` (overview DB-60).
+1. Every component MUST be finite. Otherwise reject with `NonFinite`.
 2. Compute `norm = sqrt(Σ_{i=0}^{d−1} (f64)x_i²)` in float64, summing sequentially from `i = 0`.
 3. `|norm − 1| ≤ 8 · 2^−23` MUST hold. Otherwise reject with `NotNormalised`.
 
@@ -569,7 +570,7 @@ spawn. Tests MUST check three things:
 
 ### 8.1 Algorithm
 
-Input: a query `q` (float32, `d` values, normalised per §4.1) and `k_results`.
+Input: a query `q` (float32, `d` values, checked per §4.1 steps 0–3: dimension, finiteness and normalisation) and `k_results`.
 
 1. **Rank groups.** For every frozen and spawned group (holding area excluded), compute
    `D_g = Σ_i ((f64)q_i − μ_{g,i})²` in float64 with a sequential sum. Sort ascending by
