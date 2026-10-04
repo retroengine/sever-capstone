@@ -32,7 +32,7 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
 
 | Part | Status | Tag | Notes |
 |---|---|---|---|
-| 1 The Idea | Rust workspace started (`sever-types` empty); demo prototype in `demo/` | | G-1 handled in the demo code (seed mod 2^32), decision entry still owed; G-5 closed (DB-56) |
+| 1 The Idea | `sever-types` built; next `sever-quant`; demo prototype in `demo/` | | G-1 closed (DB-57), G-5 closed (DB-56). Open for Part 1: G-8 (`sever-quant`), G-10 (`sever-index`), G-11 (limit only) |
 | 2 The Database | not started | | Starts when Part 1 is frozen |
 | 3 The Receipt | **preview** built in the demo | | Commitments, proof of knowledge (§9.5), signed certificates (§11), offline verifier. Not built: transparency log, witnesses, insert signatures, Merlin nonces. Resolve G-3 (DB-51) and G-4 |
 | 4 The Erasure | not started | | Apply G-2 |
@@ -56,7 +56,7 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
 | Module | Status | Branch | Notes |
 |---|---|---|---|
 | P0 verify | done | — | SciQ passages restored by `build` (was corrupt); manifest committed (2c17fb8) |
-| `sever-types` | **step 1: read** | | §2, §3.2, §17 (subset); declares EP-4. Crate skeleton exists (4 Oct) |
+| `sever-types` | **built** (write mode, 4 Oct); review open | `p1-sever-types` | IDs, constants, all §17 errors, `SecretBuf` + EP-4 with contract suite; 25 tests (3 property); 2 manual sabotages went red, then reverted. Your two check questions are open |
 | `sever-quant` | not started | | §4.1–4.3 (Python prototype exists: `sever_demo/quant.py`) |
 | `sever_partition` (Python builder) | not started | | §6.2; independent Ledoit–Wolf oracle; G-1 |
 | `sever-partition` (Rust importer) | not started | | §6.3 |
