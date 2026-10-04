@@ -1,0 +1,114 @@
+# Requirement catalogue (Build §2.2; which statements count: spec §0.1, overview DB-58).
+# One entry per normative statement. IDs are never reused or renumbered; retired entries stay.
+# Schema: Team Handbook WP-5. Catalogue in progress: sections are added module by module.
+# Entries below were drafted in write mode on 4 Oct 2026 for the sever-types module (owner review).
+
+- id: SR-0.2-3
+  section: "0.2"
+  text: "Strings are UTF-8. \"Ascending by bytes\" means lexicographic order of the raw UTF-8 bytes."
+  kind: definition
+  part: 1
+  technique: [table-driven, property]
+
+- id: SR-2.2-1
+  section: "2.2"
+  text: "Dimension d = 384; fractional bits f = 24 (scale 2^24 = 16,777,216); normalisation tolerance 8 float32 ULPs at 1.0 = 8 · 2^−23; 128 frozen groups; hard cap 1,000,000 members per group; spawn target size 200; capacity multiplier 1.5; probe coverage 25 %, rounded up; record ID length 1 to 256 bytes."
+  kind: table-row
+  part: 1
+  technique: [table-driven]
+  notes: "The Part 1 rows of the §2.2 table, asserted against code constants. Parts 2–4 own the other rows. v1 values; the code accepts other d and k (DB-49)."
+
+- id: SR-3.1-1
+  section: "3.1"
+  text: "A collection is identified by a collection_id: 16 random bytes generated from the OS CSPRNG at creation."
+  kind: definition
+  part: 1
+  technique: [table-driven]
+  notes: "Part 1 owns the 16-byte type; generation from the OS CSPRNG is Part 2 (create_collection)."
+
+- id: SR-3.2-1
+  section: "3.2"
+  text: "A UTF-8 string of 1 to 256 bytes."
+  kind: must
+  part: 1
+  technique: [equivalence, boundary]
+  error: InvalidRecordId
+  notes: "Classes: 0 bytes, 1, 256, 257 bytes, invalid UTF-8; multi-byte characters count in bytes, not chars."
+
+- id: SR-3.2-2
+  section: "3.2"
+  text: "It MUST NOT match ^[+-]?[0-9]+$ (a bare decimal integer, with or without sign or leading zeros)."
+  kind: must-not
+  part: 1
+  technique: [equivalence, table-driven]
+  error: InvalidRecordId
+  notes: "Full match; [0-9] is ASCII only (U+0663 passes). Spec examples: doc0, nq-1234, UUIDs accepted; 1, 007, -3, +3 rejected."
+
+- id: SR-3.2-3
+  section: "3.2"
+  text: "It MUST NOT equal the ID of a record currently live in the same collection."
+  kind: must-not
+  part: 1
+  technique: [state]
+  error: DuplicateRecord
+  notes: "Needs index state: owned by sever-index, not sever-types."
+
+- id: SR-3.2-4
+  section: "3.2"
+  text: "A record ID MAY be inserted again after its record has been deleted."
+  kind: must
+  part: 1
+  technique: [state]
+  notes: "sever-index."
+
+- id: SR-5.1-1
+  section: "5.1"
+  text: "Frozen group ID: frozen-NNNN (4-digit, zero-padded partition label)."
+  kind: table-row
+  part: 1
+  technique: [table-driven, boundary]
+  notes: "See G-11: 4 digits cap the label at 9999, while DB-49 and the u16 k_frozen allow more."
+
+- id: SR-5.1-2
+  section: "5.1"
+  text: "Spawned group ID: spawn- followed by 16 lowercase hex characters (§7.5)."
+  kind: table-row
+  part: 1
+  technique: [table-driven]
+
+- id: SR-5.1-3
+  section: "5.1"
+  text: "Holding area ID: holding (one per collection)."
+  kind: table-row
+  part: 1
+  technique: [table-driven]
+
+- id: SR-5.1-4
+  section: "5.1"
+  text: "Group IDs are at most 32 bytes."
+  kind: must
+  part: 1
+  technique: [boundary]
+
+- id: SR-9.7-1
+  section: "9.7"
+  text: "scrambled_id = HMAC-SHA-512(k_scramble, collection_id ‖ record_id_bytes) — 64 bytes."
+  kind: formula
+  part: 1
+  technique: [table-driven]
+  notes: "sever-types owns the 64-byte type; the HMAC (EP-2 HmacSha512Scrambler) is sever-index."
+
+- id: SR-17-1
+  section: "17"
+  text: "Every error is typed."
+  kind: must
+  part: 1
+  technique: [table-driven]
+  notes: "Every row of the §17 table is a variant of sever_types::Error."
+
+- id: SR-17-2
+  section: "17"
+  text: "No error message may contain a record ID, a vector value, a key, r_t or passage text. Group sizes MAY appear."
+  kind: must-not
+  part: 1
+  technique: [table-driven, property]
