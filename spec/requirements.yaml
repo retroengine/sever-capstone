@@ -199,3 +199,34 @@
 - {id: SR-7.2-1, section: "7.2", kind: formula, part: 1, text: "δ = x̂ − μ_{j*}; y_a = Σ_b P[a][b]·δ_b (sequential in b); q = Σ_a δ_a·y_a (sequential in a); d_M = sqrt(q)."}
 - {id: SR-7.2-2, section: "7.2", kind: must, part: 1, text: "q < 0 MUST raise IntegrityViolation."}
 - {id: SR-OV-10.6-1, section: "overview 10.6", kind: formula, part: 1, text: "Sub-seeds: u64 from the first 8 bytes of SHA-256(u64be(seed) ‖ label), big-endian; labels kmeans, stream, cohort-order; corpus seed from 42."}
+
+# --- §5 groups, §7 routing, §8 search (sever_refmodel_core; then sever-index, sever-search) ---
+
+- {id: SR-5.2-1, section: "5.2", kind: definition, part: 1, text: "Initial state: S = 0, n = 0 (r_agg = 0, C_S = identity in Part 3)."}
+- {id: SR-5.3-1, section: "5.3", kind: formula, part: 1, text: "Insert: S ← S + x̃_t, n ← n + 1. Delete: S ← S − x̃_t, n ← n − 1. All fields change together in one transaction (INV-2).", related: [SB-1, SB-2]}
+- {id: SR-5.4-1, section: "5.4", kind: must, part: 1, text: "Physical excision: a deleted record is removed from the member list; no deletion markers."}
+- {id: SR-5.4-2, section: "5.4", kind: must, part: 1, text: "Idempotent deletion: if the record is absent, return AlreadyAbsent, change nothing, issue no certificate.", related: [SB-3]}
+- {id: SR-5.4-3, section: "5.4", kind: must, part: 1, text: "When n reaches 0, S = 0 exactly; the group stays forever and still occupies a probe slot. Anything dividing by n handles n = 0."}
+- {id: SR-5.5-1, section: "5.5", kind: layout, part: 1, text: "Canonical group blob layout (core form SEVERC, DB-47): magic, u16be version 1, u16be d, u64be n, i64be×d S, extension region, u64be member_count, members ascending by ID bytes: u16be id_len ‖ id ‖ i64be×d x̃.", related: [golden-8]}
+- {id: SR-5.5-2, section: "5.5", kind: must, part: 1, text: "A parser MUST reject member_count ≠ n, unsorted or duplicate IDs, empty IDs, and trailing bytes (and a magic of the wrong form)."}
+- {id: SR-5.5-3, section: "5.5", kind: must, part: 1, text: "assert_state_equivalent compares S, n, C_S, the blob and the member ID list independently; a corruption of any one field MUST be caught.", related: [SB-1]}
+- {id: SR-5.5-4, section: "5.5", kind: must, part: 1, text: "Inserting the same set of records in any order MUST yield an identical canonical blob.", related: [P1-T3]}
+- {id: SR-5.6-1, section: "5.6", kind: formula, part: 1, text: "A spawned group has room when 2·k·n < 3·N (exact integers)."}
+- {id: SR-5.6-2, section: "5.6", kind: must, part: 1, text: "An insert that would make n > 1,000,000 MUST be rejected with GroupCapacityExceeded (INV-4)."}
+- {id: SR-7.1-1, section: "7.1", kind: formula, part: 1, text: "j* = argmin_j Σ_i (x̂_i − μ_{j,i})² over frozen groups, f64, sequential; ties to the smaller label."}
+- {id: SR-7.3-1, section: "7.3", kind: step, part: 1, text: "Destination: in-distribution (d_M ≤ τ) → frozen j*; OOD → nearest spawned group with room (ties → smaller group-ID bytes) → else holding. k and N are values before this insert."}
+- {id: SR-7.3-2, section: "7.3", kind: must, part: 1, text: "Spillover is checked first, on every OOD vector.", related: [SB-8]}
+- {id: SR-7.4-1, section: "7.4", kind: must, part: 1, text: "A holding-area record is not added to any accumulator, not counted in N, and not searchable."}
+- {id: SR-7.4-2, section: "7.4", kind: must, part: 1, text: "When an insert brings the holding area to exactly 200 records, the same transaction flushes exactly those records into exactly one new spawned group; no clustering."}
+- {id: SR-7.4-3, section: "7.4", kind: must, part: 1, text: "A holding-area record is always deletable immediately; deletion is never queued."}
+- {id: SR-7.5-1, section: "7.5", kind: formula, part: 1, text: "Spawn ID: 'spawn-' + first 16 lowercase hex of SHA-256(‖_{ids ascending by bytes} u16be(len) ‖ id); an existing ID MUST fail the flush with IntegrityViolation.", related: [golden-7]}
+- {id: SR-7.5-2, section: "7.5", kind: formula, part: 1, text: "Centroid μ_i = ((f64)S_i / 2^24) / n at creation, then frozen."}
+- {id: SR-7.6-1, section: "7.6", kind: definition, part: 1, text: "N +1 per group insert, +200 per flush, −1 per group deletion; unchanged for holding; k +1 per flush."}
+- {id: SR-7.7-1, section: "7.7", kind: must, part: 1, text: "Tests: the same (x̃, state) gives the same destination.", related: [INV-16, SB-7]}
+- {id: SR-7.7-2, section: "7.7", kind: must, part: 1, text: "Tests: two states that differ only in group creation order give the same destination.", related: [INV-16, SB-7]}
+- {id: SR-7.7-3, section: "7.7", kind: must, part: 1, text: "Tests: the same seed and input order give a byte-identical index."}
+- {id: SR-8.1-1, section: "8.1", kind: step, part: 1, text: "Rank frozen and spawned groups by D_g = Σ((f64)q_i − μ_{g,i})², sequential; sort by (D_g, group-ID bytes)."}
+- {id: SR-8.1-2, section: "8.1", kind: step, part: 1, text: "Probe p = ⌈0.25·k⌉ groups, empty ones included.", related: [SB-6]}
+- {id: SR-8.1-3, section: "8.1", kind: step, part: 1, text: "Score every member of every probed group with the §8.2 kernel on the float32 mirror; return the k smallest by (score, record-ID bytes)."}
+- {id: SR-8.1-4, section: "8.1", kind: must-not, part: 1, text: "A deleted record MUST NOT appear in any result produced after its deletion is acknowledged (INV-9).", related: [SB-5, P1-T5]}
+- {id: SR-8.2-1, section: "8.2", kind: must, part: 1, text: "Pinned kernel: 8 float32 lanes, lane i mod 8, t = q_i − x̂_i, L_j = L_j + t·t (no FMA), reduction ((L0+L1)+(L2+L3))+((L4+L5)+(L6+L7)); scalar and SIMD bit-identical.", related: [SB-9, P1-T4]}

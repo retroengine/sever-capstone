@@ -40,3 +40,22 @@ requirement of a finished part has no test.
 | SR-7.2-1 | pinned Mahalanobis order | `test_p1_partition_mahalanobis_is_the_pinned_sequential_order` | L1 |  | 1 |
 | SR-7.2-2 | q < 0 → IntegrityViolation | `test_p1_partition_negative_q_is_an_integrity_violation` | L1 |  | 1 |
 | SR-OV-10.6-1 | sub-seed derivation | `test_p1_seeds_sub_seed_reproduces_the_p0_corpus_seed` | L1 |  | 1 |
+| SR-3.2-3, SR-3.2-4 | not live; re-insert (model) | `test_p1_model_duplicate_live_id_and_reinsert_after_delete` | L1 |  | 1 |
+| SR-5.3-1 | insert/delete arithmetic | `test_p1_model_delete_restores_survivors_state`, `test_p1_model_prop_survivors_check_after_any_sequence` | L1, L2, L6 | SB-1, SB-2 | 1 |
+| SR-5.4-1 | physical excision | `test_p1_model_delete_restores_survivors_state` | L1 |  | 1 |
+| SR-5.4-2 | idempotent delete | `test_p1_model_delete_is_idempotent` | L1 | SB-3 | 1 |
+| SR-5.4-3 | empty group = initial state, stays | `test_p1_model_empty_group_returns_to_initial_state_and_stays` | L1 |  | 1 |
+| SR-5.5-1 | SEVERC blob layout | `test_p1_model_blob_layout_and_parser_rejections`, `test_p1_model_golden_core_blob` (golden 8) | L1, L3 |  | 1 |
+| SR-5.5-2 | blob parser rejections | `test_p1_model_blob_layout_and_parser_rejections` | L1 |  | 1 |
+| SR-5.5-3 | five-field equivalence helper | `test_p1_model_equivalence_helper_catches_each_field_alone[*]` | L12 | SB-1 | 1 |
+| SR-5.5-4 | insertion-order independence | `test_p1_model_insertion_order_independence` | L6 |  | 1 |
+| SR-5.6-1 | room test 2kn < 3N | `test_p1_model_room_test_boundaries` | L1 |  | 1 |
+| SR-7.3-1, SR-7.4-1, SR-7.4-2, SR-7.5-2 | holding, flush at target, centroid | `test_p1_model_holding_flushes_exactly_at_target` | L1 |  | 1 |
+| SR-7.3-2 | spillover before holding | `test_p1_model_spillover_is_checked_before_holding` | L1 | SB-8 | 1 |
+| SR-7.4-3 | holding deletable, not searchable | `test_p1_model_holding_record_is_deletable_and_never_searched` | L1 |  | 1 |
+| SR-7.5-1 | spawn ID | `test_p1_model_golden_spawn_id` (golden 7) | L3 |  | 1 |
+| SR-7.7-1, SR-7.7-2 | routing pure; creation order irrelevant | `test_p1_model_routing_is_pure_and_ignores_creation_order` | L6 | SB-7 | 1 |
+| SR-7.7-3 | same input order → identical index | `test_p1_model_same_input_order_gives_identical_index` | L6 |  | 1 |
+| SR-8.1-2 | probe count ⌈k/4⌉ | `test_p1_model_probe_count[*]` | L1 | SB-6 | 1 |
+| SR-8.1-4 | deleted never returned | `test_p1_model_deleted_records_never_returned` | L1 | SB-5 | 1 |
+| SR-8.2-1 | pinned kernel (model) | `test_p1_model_kernel_matches_explicit_lanes` | L1 | SB-9 | 1 |
