@@ -149,7 +149,10 @@ Kind = Literal["frozen", "spawned"]
 
 @dataclass
 class Group:
-    """§5.2 core state: S, n, centroid, members (x̃ by record ID). C_S and r_agg join in Part 3."""
+    """§5.2 core state: S, n, centroid, members (x̃ by record ID). C_S and r_agg join in Part 3.
+
+    ``enc`` caches each member's blob encoding (u16be id_len ‖ id ‖ i64be × d), so a group's blob
+    is a sort and a join; the layout is exactly ``core_blob``'s (tested)."""
 
     gid: str
     kind: Kind
@@ -157,6 +160,7 @@ class Group:
     d: int
     members: dict[str, tuple[int, ...]] = field(default_factory=dict)
     s: list[int] = field(default_factory=list)
+    enc: dict[str, bytes] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.s:
@@ -170,11 +174,20 @@ class Group:
         """§5.3 insert: S ← S + x̃, n ← n + 1."""
         self.members[rid] = xq
         self.s = [a + b for a, b in zip(self.s, xq, strict=True)]
+        b = id_bytes(rid)
+        self.enc[rid] = struct.pack(">H", len(b)) + b + np.asarray(xq, dtype=">i8").tobytes()
 
     def remove(self, rid: str) -> None:
         """§5.3 delete: S ← S − x̃, n ← n − 1; §5.4 physical excision (no marker)."""
         xq = self.members.pop(rid)
+        del self.enc[rid]
         self.s = [a - b for a, b in zip(self.s, xq, strict=True)]
+
+    def blob(self) -> bytes:
+        """§5.5 core blob from the cached member encodings."""
+        head = b"SEVERC" + struct.pack(">HHQ", 1, self.d, self.n)
+        head += struct.pack(f">{self.d}q", *self.s) + struct.pack(">Q", self.n)
+        return head + b"".join(self.enc[r] for r in sorted(self.members, key=id_bytes))
 
 
 def core_blob(d: int, s: list[int], members: dict[str, tuple[int, ...]]) -> bytes:
@@ -478,8 +491,7 @@ class RefIndex:
 
     # -- observation --
     def blob(self, gid: str) -> bytes:
-        g = self.groups[gid]
-        return core_blob(self.d, g.s, g.members)
+        return self.groups[gid].blob()
 
     def stats(self) -> dict[str, int]:
         spawned = sum(1 for g in self.groups.values() if g.kind == "spawned")

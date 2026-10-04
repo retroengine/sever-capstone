@@ -397,6 +397,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-tracekit"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sever-index",
+ "sever-partition",
+ "sever-quant",
+ "sever-search",
+ "sever-types",
+ "sha2",
+]
+
+[[package]]
 name = "sever-types"
 version = "0.1.0"
 dependencies = [

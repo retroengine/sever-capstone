@@ -355,3 +355,14 @@ def test_p1_model_prop_survivors_check_after_any_sequence(seq: list[tuple[str, i
     idx.check_invariants()
     for gid in idx.groups:
         m.assert_state_equivalent(m.snapshot(idx.groups[gid]), survivors_snapshot(idx, gid))
+
+
+@pytest.mark.spec("SR-5.5-1")
+def test_p1_model_cached_blob_equals_plain_encoder() -> None:
+    idx = fresh(spawn_target=8)
+    for i in range(40):
+        idx.insert(f"doc{i}", REF[i])
+        idx.insert(f"live{i}", LIVE[i])
+    idx.delete("doc3")
+    for gid, g in idx.groups.items():
+        assert idx.blob(gid) == m.core_blob(D, g.s, g.members)
