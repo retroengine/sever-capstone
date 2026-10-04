@@ -53,8 +53,9 @@ source = ["python"]
 line-length = 100
 target-version = "py313"
 src = ["python", "tests"]
-# demo/ is its own project with its own ruff settings; src/ holds practice files.
-extend-exclude = ["demo", "src", "docs"]
+# demo/ is its own project with its own ruff settings; src/ holds practice files;
+# scripts/data-preparation/ is the P0 tool, run in the P0 environment and left as it was used.
+extend-exclude = ["demo", "src", "docs", "scripts/data-preparation"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "PT"]

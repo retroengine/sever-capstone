@@ -250,9 +250,11 @@ part adds exactly one claim and is built on the frozen parts before it.
 
 ## 9. Commands (WSL bash, from the repo root)
 
+The working copy is `~/sever-db` on the WSL ext4 filesystem (moved from `C:\Users\saiki\Vector
+Database` on 4 Oct 2026; the copy on `C:` is a backup only). Open it with `code ~/sever-db` from WSL.
 The project environment is `.venv/`, managed by `uv` from `pyproject.toml` and `uv.lock` (Python
 3.13). `uv run` uses it without activating. Commands marked *(planned)* work once the crate or package
-they name exists.
+they name exists. Python modules under `python/` need `PYTHONPATH=python`.
 
 | Purpose | Command |
 |---|---|
@@ -267,7 +269,9 @@ they name exists.
 | Rust format, lint | `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings` |
 | Build the partition (C-15) *(planned)* | `uv run python -m sever_partition.build` |
 | Part 1 demo *(planned)* | `sever-demo idea --data nq-10k --seed 42` (offline: `--data synthetic`) |
-| P0 data check (P0 environment, PowerShell) | `python scripts/data-preparation/prepare_data.py verify --root .` |
+| P0 data check (WSL) | `(cd datasets && sha256sum -c MANIFEST.sha256)` |
+| P0 data check (P0 environment, PowerShell, on the `C:` backup) | `python scripts/data-preparation/prepare_data.py verify --root .` |
+| P1-T2/T5 gate (Full tier; writes the run ledger) | `PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit.gates p1-differential --data nq-10k --all-seeds` |
 | Review demo (self-contained in `demo/`, own env; DB-56) | `demo/scripts/demo.sh setup\|test\|run\|repl`; container: `demo/scripts/demo.sh docker-build`, then `docker test\|run\|repl` (see `demo/README.md`) |
 
 ---
