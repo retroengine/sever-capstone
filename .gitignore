@@ -1,5 +1,7 @@
 # Environments
 .venv/
+# Rust build output
+/target/
 .venv-*/
 __pycache__/
 *.pyc
@@ -18,6 +20,8 @@ _selftest/
 # Runtime state (databases, key files, certificates) holds ciphertext, keys and the user's
 # secret r_t values — never commit. Golden vectors (spec Appendix B) are committed.
 *.cert
+# Per-session demo receipts (public by design, but tied to one session's keys)
+demo/results/certs/
 *.key
 !golden/**
 

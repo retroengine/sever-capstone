@@ -1,5 +1,6 @@
 # SEVER-DB Python environment (development, WSL). Not an installable package: the packages under
-# python/ (C-15 builder, C-18 reference model, test kit) are put on the path by pytest.
+# python/ (C-15 builder, C-18 reference model, test kit; none written yet) are put on the path by
+# pytest. The review demo is separate: demo/ has its own pyproject.toml and uv.lock (DB-56).
 # Versions follow spec §20.2; exact versions and hashes live in uv.lock. Part 1 packages only —
 # later parts add theirs when they start. The P0 encoder environment is separate (CLAUDE.md §8).
 
@@ -12,8 +13,6 @@ dependencies = [
     "numpy==2.5.*",
     "scikit-learn==1.9.*",
     "pyarrow==25.0.*",
-    "pandas>=3.0.6",
-    "rich>=15.0.0",
 ]
 
 [dependency-groups]
@@ -37,6 +36,8 @@ link-mode = "copy"
 [tool.pytest.ini_options]
 pythonpath = ["python"]
 testpaths = ["tests"]
+# Until tests/ exists pytest falls back to the repo root; never collect the demo's own suite or data.
+norecursedirs = [".*", "build", "dist", "venv", "demo", "src", "datasets", "docs"]
 addopts = "--strict-markers"
 markers = [
     "mustfail: sabotage test; names the SB item it covers (Build §2.6)",
@@ -51,9 +52,13 @@ source = ["python"]
 line-length = 100
 target-version = "py313"
 src = ["python", "tests"]
+# demo/ is its own project with its own ruff settings; src/ holds practice files.
+extend-exclude = ["demo", "src", "docs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "PT"]
+# ℓ is the spec's own symbol for the ristretto255 group order (§2.1).
+allowed-confusables = ["ℓ"]
 
 [tool.mypy]
 strict = true

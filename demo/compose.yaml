@@ -1,0 +1,18 @@
+# The demo container (Dockerfile). Use through scripts/demo.sh docker-build / docker <cmd>.
+services:
+  demo:
+    build:
+      context: .
+      args:
+        SEVER_GIT_COMMIT: ${SEVER_GIT_COMMIT:-unknown}
+        SEVER_GIT_DIRTY: ${SEVER_GIT_DIRTY:-}
+    image: sever-demo:local
+    stdin_open: true
+    tty: true
+    volumes:
+      - ../datasets:/data:ro            # the one outside input; never written (CLAUDE.md §8)
+      - ./results:/demo/results         # result files, certificates, screenshots
+      - ./docs:/demo/docs               # the run ledger (docs/RUN_LEDGER.jsonl) and notes
+      - sever-cache:/root/.cache/sever  # quantised-data cache between runs
+volumes:
+  sever-cache:

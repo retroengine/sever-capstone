@@ -1,0 +1,39 @@
+verify_data
+save 01-verify-data
+load
+save 02-load
+group 3
+ids 3
+save 03-group-before
+delete doc2015226
+verify 3
+save 04-delete-and-verify
+cert last
+save 05-certificate-accepted
+tamper last
+save 06-forged-certificate-rejected
+delete_user 5
+cert all
+save 07-delete-user
+delete doc2015226
+save 08-retry-already-absent
+ghost
+save 09-ghost
+sabotage SB-2
+delete doc273331
+verify 3
+save 10-sb2-red
+sabotage off
+verify 3
+save 11-sb2-off-green
+sabotage SB-4
+delete doc273331
+verify 3
+cert last
+save 12-sb4-proof-fails
+sabotage off
+verify 3
+save 13-sb4-off-green
+ledger 20
+save 14-ledger
+quit
