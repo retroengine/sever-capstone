@@ -18,7 +18,7 @@ sever-index = { path = "../sever-index" }
 
 [dev-dependencies]
 sever-partition = { path = "../sever-partition" }
-proptest = "1"
+proptest = { version = "~1.6", default-features = false, features = ["std", "bit-set"] } # rand 0.8, no fork: one rand_core and one getrandom (spec §20.3 check 1)
 serde_json = "1"
 
 # Build §1.2: the workspace lints, except that `unsafe_code` is `deny` rather than `forbid`, because
