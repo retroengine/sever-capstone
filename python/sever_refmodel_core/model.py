@@ -161,6 +161,10 @@ class Group:
     members: dict[str, tuple[int, ...]] = field(default_factory=dict)
     s: list[int] = field(default_factory=list)
     enc: dict[str, bytes] = field(default_factory=dict)
+    #: Search cache: member IDs and their float32 mirror rows (§4.3), cleared by add and remove.
+    _mirror: tuple[list[str], NDArray[np.float32]] | None = field(
+        default=None, init=False, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         if not self.s:
@@ -173,6 +177,7 @@ class Group:
     def add(self, rid: str, xq: tuple[int, ...]) -> None:
         """§5.3 insert: S ← S + x̃, n ← n + 1."""
         self.members[rid] = xq
+        self._mirror = None
         self.s = [a + b for a, b in zip(self.s, xq, strict=True)]
         b = id_bytes(rid)
         self.enc[rid] = struct.pack(">H", len(b)) + b + np.asarray(xq, dtype=">i8").tobytes()
@@ -180,8 +185,17 @@ class Group:
     def remove(self, rid: str) -> None:
         """§5.3 delete: S ← S − x̃, n ← n − 1; §5.4 physical excision (no marker)."""
         xq = self.members.pop(rid)
+        self._mirror = None
         del self.enc[rid]
         self.s = [a - b for a, b in zip(self.s, xq, strict=True)]
+
+    def mirror(self) -> tuple[list[str], NDArray[np.float32]]:
+        """Member IDs and the float32 mirror x̂ = x̃ / 2^24 of each (§4.3), row for row."""
+        if self._mirror is None:
+            ids = list(self.members)
+            rows = np.array([self.members[r] for r in ids], dtype=np.float64).reshape(-1, self.d)
+            self._mirror = (ids, (rows / float(SCALE)).astype(np.float32))
+        return self._mirror
 
     def blob(self) -> bytes:
         """§5.5 core blob from the cached member encodings."""
@@ -467,26 +481,29 @@ class RefIndex:
     # -- search (§8) --
     def search(self, q: NDArray[np.float32], k_results: int) -> list[tuple[str, float]]:
         check_vector(q, self.d)
+        if k_results <= 0:
+            return []
         q64 = q.astype(np.float64)
-        ranked = sorted(
-            self.groups.values(),
-            key=lambda g: (
-                float(seq_sqdist_f64(q64, g.centroid[np.newaxis, :])[0]),
-                id_bytes(g.gid),
-            ),
-        )
+        groups = list(self.groups.values())
+        # §8.1 step 1: D_g for every group; each row is its own sequential sum (seq_sqdist_f64).
+        dist = seq_sqdist_f64(q64, np.stack([g.centroid for g in groups]))
+        ranked = sorted(range(len(groups)), key=lambda i: (float(dist[i]), id_bytes(groups[i].gid)))
         p = probe_count(self.k)  # empty groups included
         ids: list[str] = []
-        rows: list[tuple[int, ...]] = []
-        for g in ranked[:p]:
-            for rid, xq in g.members.items():
-                ids.append(rid)
-                rows.append(xq)
+        parts: list[NDArray[np.float32]] = []
+        for i in ranked[:p]:
+            gids, rows = groups[i].mirror()
+            ids.extend(gids)
+            parts.append(rows)
         if not ids:
             return []
-        mirror = (np.array(rows, dtype=np.float64) / float(SCALE)).astype(np.float32)  # §4.3
-        scores = kernel_scores(q, mirror)
-        order = sorted(range(len(ids)), key=lambda i: (float(scores[i]), id_bytes(ids[i])))
+        scores = kernel_scores(q, np.concatenate(parts))
+        # §8.1 step 4: the k smallest by (score, ID bytes). Every member of that list scores at most
+        # the k-th smallest score, so only those candidates need the exact tie-break sort.
+        kk = min(k_results, len(ids))
+        threshold = np.partition(scores, kk - 1)[kk - 1]
+        candidates = np.flatnonzero(scores <= threshold).tolist()
+        order = sorted(candidates, key=lambda i: (float(scores[i]), id_bytes(ids[i])))
         return [(ids[i], float(scores[i])) for i in order[:k_results]]
 
     # -- observation --
