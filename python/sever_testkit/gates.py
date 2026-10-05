@@ -126,14 +126,17 @@ def p1_quant_recall(root: Path, data: str) -> int:
     hits = 0
     t0 = time.time()
 
-    # Brute force by exact float64 squared distance, chunked; ties broken by row index (stable).
+    # Brute force by float64 squared distance |q|² − 2q·x + |x|², in blocks of 10,000 rows (peak
+    # memory about 1.5 GB at nq-100k); ties broken by row index.
+    block = 10_000
+
     def topk(mat_rows: np.ndarray) -> np.ndarray:
         best_d = np.full((len(q), k), np.inf)
         best_i = np.full((len(q), k), -1, dtype=np.int64)
         q64 = q.astype(np.float64)
         qn = (q64 * q64).sum(axis=1)[:, None]
-        for s in range(0, n, 50_000):
-            blk = np.asarray(mat_rows[s : s + 50_000], dtype=np.float64)
+        for s in range(0, n, block):
+            blk = np.asarray(mat_rows[s : s + block], dtype=np.float64)
             dist = qn - 2.0 * q64 @ blk.T + (blk * blk).sum(axis=1)[None, :]
             idx = np.arange(s, s + blk.shape[0])
             cand_d = np.concatenate([best_d, dist], axis=1)
@@ -158,7 +161,7 @@ def p1_quant_recall(root: Path, data: str) -> int:
         "target_pre_registered": 0.999,
         "met": recall >= 0.999,
         "seconds": round(time.time() - t0, 1),
-        "method": "exact float64 brute force; ties by row index; "
+        "method": "float64 brute force, |q|^2 - 2 q.x + |x|^2; ties by row index; "
         "dequantised = round_half_even(x*2^24)/2^24",
     }
     path, sha = ledger.result_file(
