@@ -267,8 +267,10 @@ they name exists. Python modules under `python/` need `PYTHONPATH=python`.
 | Add a package | `uv add <pkg>` (a dev tool: `uv add --dev <pkg>`); commit `pyproject.toml` and `uv.lock` together |
 | All Rust tests | `cargo test --workspace` |
 | Rust format, lint | `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings` |
-| Build the partition (C-15) *(planned)* | `uv run python -m sever_partition.build` |
-| Part 1 demo *(planned)* | `sever-demo idea --data nq-10k --seed 42` (offline: `--data synthetic`) |
+| Build the partition (C-15) | `PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_partition.build --all-seeds` (writes `artefacts/`) |
+| Export IDs and cohorts for the demo (once) | `PYTHONPATH=python uv run python -m sever_testkit.slices` (writes `artefacts/nq_1m.ids.jsonl`) |
+| Part 1 demo | `cargo run --release -p sever-p1 --bin sever-demo -- idea --data nq-10k --seed 42` (offline: `--data synthetic`); report page: `PYTHONPATH=python uv run python -m sever_demo.render artefacts/demo/idea-nq-10k-seed42.json` |
+| P1-T7 measure (writes the run ledger) | `PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit.gates p1-quant-recall --data nq-100k` |
 | P0 data check (WSL) | `(cd datasets && sha256sum -c MANIFEST.sha256)` |
 | P0 data check (P0 environment, PowerShell, on the `C:` backup) | `python scripts/data-preparation/prepare_data.py verify --root .` |
 | P1-T2/T5 gate (Full tier; writes the run ledger) | `PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit.gates p1-differential --data nq-10k --all-seeds` |
