@@ -87,6 +87,37 @@ def cohort_rungs(slice_: Slice, seed: int) -> list[list[list[str]]]:
     return out
 
 
+def op_insert(idx: m.RefIndex, rid: str, row: int, x: NDArray[np.float32]) -> dict[str, Any]:
+    """One insert through the model, as its trace line (placement or §17 error; touched blob)."""
+    line: dict[str, Any] = {"t": "i", "id": rid, "row": row}
+    try:
+        _kind, gid = idx.insert(rid, np.asarray(x, dtype=np.float32))
+        line["p"] = gid
+        if gid != m.HOLDING:
+            line["g"] = {gid: blob_hash(idx, gid)}
+    except m.SeverError as e:
+        line["e"] = e.kind
+    return line
+
+
+def op_delete(idx: m.RefIndex, ids: list[str]) -> tuple[dict[str, Any], int]:
+    """One delete_user through the model, as its trace line; and how many records it deleted."""
+    outcomes = idx.delete_user(ids)
+    touched = sorted({o.gid for o in outcomes if isinstance(o, m.Deleted) and o.gid != m.HOLDING})
+    line = {
+        "t": "d",
+        "ids": ids,
+        "o": [o.gid if isinstance(o, m.Deleted) else "absent" for o in outcomes],
+        "g": {g: blob_hash(idx, g) for g in touched},
+    }
+    return line, sum(isinstance(o, m.Deleted) for o in outcomes)
+
+
+def checkpoint(idx: m.RefIndex, rung: int, queries: NDArray[np.float32]) -> dict[str, Any]:
+    """A checkpoint line: stats, every group's blob hash, top-k for every query."""
+    return _checkpoint(idx, rung, queries)
+
+
 def _checkpoint(idx: m.RefIndex, rung: int, queries: NDArray[np.float32]) -> dict[str, Any]:
     results = []
     for q in queries:
@@ -144,33 +175,14 @@ def write_trace(
 
     emit(header)
     for r in order:
-        rid = slice_.ids[int(r)]
-        line: dict[str, Any] = {"t": "i", "id": rid, "row": int(r)}
-        try:
-            _kind, gid = idx.insert(rid, np.asarray(vectors[int(r)], dtype=np.float32))
-            line["p"] = gid
-            if gid != m.HOLDING:
-                line["g"] = {gid: blob_hash(idx, gid)}
-        except m.SeverError as e:
-            line["e"] = e.kind
-        emit(line)
+        emit(op_insert(idx, slice_.ids[int(r)], int(r), vectors[int(r)]))
     emit(_checkpoint(idx, 0, queries))
     deleted = 0
     for j, rung in enumerate(cohort_rungs(slice_, seed), start=1):
         for cohort in rung:
-            outcomes = idx.delete_user(cohort)
-            touched = sorted(
-                {o.gid for o in outcomes if isinstance(o, m.Deleted) and o.gid != m.HOLDING}
-            )
-            emit(
-                {
-                    "t": "d",
-                    "ids": cohort,
-                    "o": [o.gid if isinstance(o, m.Deleted) else "absent" for o in outcomes],
-                    "g": {g: blob_hash(idx, g) for g in touched},
-                }
-            )
-            deleted += sum(isinstance(o, m.Deleted) for o in outcomes)
+            line, n_deleted = op_delete(idx, cohort)
+            emit(line)
+            deleted += n_deleted
         emit(_checkpoint(idx, j, queries))
     idx.check_invariants()
     return {

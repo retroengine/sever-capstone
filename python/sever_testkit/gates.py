@@ -4,12 +4,15 @@
     uv run python -m sever_testkit.gates p1-differential --data nq-100k --all-seeds
     uv run python -m sever_testkit.gates p1-quant-recall --data nq-100k
     uv run python -m sever_testkit.gates p1-fuzz --runs 100000000
+    uv run python -m sever_testkit.gates p1-synthetic --streams 1000 --ops 1000 --jobs 5
 
 ``p1-differential`` is gates P1-T2 and P1-T5, plus the P1-T1 survivors check after every deletion
 and the P1-T4 kernel check on every scored query–vector pair: the model writes a trace per seed,
 the Rust replayer compares every value, and the gate passes only when every failure count is 0.
 Seeds run in ``--jobs`` parallel processes (about 0.2 GB each at nq-10k, 2 GB at nq-100k).
 ``p1-quant-recall`` is the measure P1-T7 (overview T-6, first size): reported as found.
+``p1-synthetic`` is the L4 synthetic differential (Build §4.7; evidence for P1-T1, P1-T2 and P1-T5):
+seeded random streams at the small fixture size, model against engine after every operation.
 ``p1-fuzz`` is gate P1-T12: each Part 1 parser runs ``--runs`` libFuzzer executions (both at once)
 from the committed seeds, and the gate passes only with 0 crashes.
 """
@@ -26,8 +29,8 @@ from typing import Any
 
 import numpy as np
 
-from sever_testkit import ledger, traces
-from sever_testkit.seeds import SEEDS
+from sever_testkit import ledger, streams, traces
+from sever_testkit.seeds import SEEDS, sub_seed
 
 
 def _differential_seed(
@@ -197,6 +200,84 @@ def p1_quant_recall(root: Path, data: str) -> int:
     return 0
 
 
+def _synthetic_seed(
+    root: Path, fixture: Path, seed: int, n_streams: int, n_ops: int, replayer: Path
+) -> dict[str, Any]:
+    """``n_streams`` streams for one overview seed; one replayer call for all of them."""
+    out_dir = fixture / f"seed{seed}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    paths = []
+    for i in range(n_streams):
+        rng = np.random.Generator(np.random.PCG64([sub_seed(seed, "stream"), i]))
+        path = out_dir / f"stream{i:04d}.jsonl"
+        with path.open("w", encoding="utf-8") as f:
+            streams.write_stream_trace(fixture, f, streams.random_ops(rng, n_ops))
+        paths.append(str(path))
+    rep = subprocess.run(
+        [str(replayer), "replay", *paths, "--root", str(fixture)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    rows = [json.loads(ln) for ln in rep.stdout.splitlines() if ln.startswith("{")]
+    keys = ("ops", "compared", "mismatches", "deleted_returned", "survivor_groups_checked",
+            "survivor_failures", "kernel_pairs", "kernel_mismatches")  # fmt: skip
+    total: dict[str, Any] = {k: sum(int(r[k]) for r in rows) for k in keys}
+    total["streams_replayed"] = len(rows)
+    total["streams_failed"] = sum(r["result"] != "PASS" for r in rows)
+    total["stderr"] = rep.stderr[-1500:]
+    print(json.dumps({"seed": seed} | total), flush=True)
+    return {"seed": seed} | total
+
+
+def p1_synthetic(root: Path, n_streams: int, n_ops: int, jobs: int) -> int:
+    """L4: ``n_streams`` streams of ``n_ops`` operations, split evenly over the five seeds."""
+    cmd = f"gates p1-synthetic --streams {n_streams} --ops {n_ops}"
+    started = ledger.start(root, cmd, gate="L4 synthetic differential (P1-T1, P1-T2, P1-T5)")
+    target_dir = root / f"target/gate-{started['commit'][:12]}"
+    subprocess.run(
+        ["cargo", "build", "-q", "--release", "-p", "sever-tracekit", "--target-dir",
+         str(target_dir)],
+        cwd=root,
+        check=True,
+    )  # fmt: skip
+    replayer = target_dir / "release/sever-tracekit"
+    fixture = root / "traces/synthetic"
+    streams.write_fixture(root, fixture)
+    per = n_streams // len(SEEDS)
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max(1, jobs)) as pool:
+        futures = [
+            pool.submit(_synthetic_seed, root, fixture, seed, per, n_ops, replayer)
+            for seed in SEEDS
+        ]
+        per_seed = [f.result() for f in futures]
+    failures = ("mismatches", "deleted_returned", "survivor_failures", "kernel_mismatches",
+                "streams_failed")  # fmt: skip
+    passed = all(s["streams_replayed"] == per for s in per_seed) and all(
+        s[k] == 0 for s in per_seed for k in failures
+    )
+    data_out = {"gate": "L4: 0 of every failure count", "streams": per * len(SEEDS),
+                "ops_per_stream": n_ops, "seeds": per_seed,
+                "outcome": "PASS" if passed else "FAIL"}  # fmt: skip
+    path, sha = ledger.result_file(
+        root, f"p1-synthetic-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(
+            root,
+            cmd,
+            gate="L4 synthetic differential (P1-T1, P1-T2, P1-T5)",
+            outcome=data_out["outcome"],
+            run_commit=started["commit"],
+            result_file=str(path.relative_to(root)),
+            result_sha256=sha,
+            summary={str(s["seed"]): {k: s[k] for k in ("compared", *failures)} for s in per_seed},
+        ),
+    )
+    return 0 if passed else 1
+
+
 FUZZ_TARGETS = ("artefact_parse", "blob_parse")
 
 
@@ -251,7 +332,11 @@ def p1_fuzz(root: Path, runs: int) -> int:
 
 def _main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="gates", description=__doc__)
-    ap.add_argument("gate", choices=["p1-differential", "p1-quant-recall", "p1-fuzz"])
+    ap.add_argument(
+        "gate", choices=["p1-differential", "p1-quant-recall", "p1-fuzz", "p1-synthetic"]
+    )
+    ap.add_argument("--streams", type=int, default=1000, help="p1-synthetic: streams in all")
+    ap.add_argument("--ops", type=int, default=1000, help="p1-synthetic: operations per stream")
     ap.add_argument("--runs", type=int, default=100_000_000, help="p1-fuzz: executions per parser")
     ap.add_argument("--data", default="nq-10k", choices=sorted(traces.SLICES))
     ap.add_argument("--seed", type=int, action="append")
@@ -263,6 +348,8 @@ def _main(argv: list[str]) -> int:
     seeds = list(SEEDS) if a.all_seeds else (a.seed or [42])
     if a.gate == "p1-differential":
         return p1_differential(a.root.resolve(), a.data, seeds, a.queries, a.jobs)
+    if a.gate == "p1-synthetic":
+        return p1_synthetic(a.root.resolve(), a.streams, a.ops, a.jobs)
     if a.gate == "p1-fuzz":
         return p1_fuzz(a.root.resolve(), a.runs)
     return p1_quant_recall(a.root.resolve(), a.data)
