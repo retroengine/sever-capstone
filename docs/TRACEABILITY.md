@@ -79,3 +79,9 @@ requirement of a finished part has no test.
 | SR-8.1-2 | probe budget counts empty groups | `p1_search_probe_count`, `p1_search_empty_groups_count_in_the_budget` | L1 | SB-6 | 1 |
 | SR-8.2-1 | pinned kernel, scalar = AVX2 | `p1_search_kernel_lane_layout_by_hand`, `p1_search_kernel_scalar_equals_avx2`, `p1_search_prop_kernels_agree` | L1, L2 | SB-9 | 1 |
 | SR-8.1-3 | result order | `p1_search_results_order_and_deletion` | L1 |  | 1 |
+| Build §4.7 L9 E2E-1.1, 1.4, 1.5, 1.6 | survivors check per touched group; nothing else changes; second delete; no deleted result | `p1_e2e_demo_synthetic_deletion_is_exact`, `p1_e2e_demo_nq10k` (Full tier) | L9 |  | 1 |
+| Build §4.7 L9 E2E-1.2; SR-7.4-2, SR-7.5-1 | flush at exactly the spawn target; spawn ID from the spec formula | `p1_e2e_flush_at_exactly_the_spawn_target` | L9 |  | 1 |
+| Build §4.7 L9 E2E-1.3; SR-7.4-1, SR-7.4-3 | holding-area record deleted at once; no accumulator or N change | `p1_e2e_holding_record_deleted_at_once` | L9 |  | 1 |
+| Build §4.7 L9 E2E-1.5; SR-5.4-2 | delete of an absent record changes nothing | `p1_e2e_delete_absent_is_already_absent` | L9 | SB-3 | 1 |
+| Build §4.7 L9 E2E-1.7; SR-17-1, SR-17-2, SR-3.2-1…3, SR-4.1-0…3 | malformed inputs give typed errors naming no ID or value | `p1_e2e_malformed_inputs_typed_errors_without_secrets` | L9 |  | 1 |
+| Build §4.9 step 6, P1-T14 | ghost baselines (measure) | `p1_ghost_*`, `p1_e2e_demo_synthetic_ghost_rows` | L1, L9 |  | 1 |

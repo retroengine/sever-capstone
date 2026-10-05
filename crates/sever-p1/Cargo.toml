@@ -1,0 +1,29 @@
+[package]
+name = "sever-p1"
+version = "0.1.0"
+description = "Part 1 composition root (Index<NoExtension>), the ghost baselines and the sever-demo CLI (Build §4.4, §4.9)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "sever-demo"
+path = "src/bin/sever-demo.rs"
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-quant = { path = "../sever-quant" }
+sever-partition = { path = "../sever-partition" }
+sever-index = { path = "../sever-index" }
+sever-search = { path = "../sever-search" }
+sha2 = "=0.10.9" # spec §20.1
+zeroize = "=1.9.0" # spec §20.1
+rand_core = { version = "=0.6.4", features = ["getrandom"] } # spec §20.1: the OsRng source
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+sever-types = { path = "../sever-types" }
+
+[lints]
+workspace = true
