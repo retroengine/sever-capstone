@@ -314,7 +314,7 @@ def p1_spikes(root: Path) -> int:
             tests=results,
         ),
     )
-    print(json.dumps(data_out["tests"] + [data_out["outcome"]]))
+    print(json.dumps([*results, data_out["outcome"]]))
     return 0 if passed else 1
 
 
