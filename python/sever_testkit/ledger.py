@@ -52,15 +52,17 @@ def _sha(path: Path) -> str:
 def entry(root: Path, command: str, **fields: Any) -> dict[str, Any]:
     """A ledger entry with the provenance fields filled in."""
     manifest = root / "datasets/MANIFEST.sha256"
+    status = _git(root, "status", "--porcelain", "--", ".", f":!{LEDGER}", ":!results")
+    dirty = [line[3:] for line in status.splitlines()]
     return {
         "utc": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
         "command": command,
         "commit": _git(root, "rev-parse", "HEAD"),
         # A run's own outputs are excluded: the ledger (a running gate's "started" line is
-        # uncommitted by design) and results/ (written just before the final entry).
-        "git_dirty": bool(
-            _git(root, "status", "--porcelain", "--", ".", f":!{LEDGER}", ":!results")
-        ),
+        # uncommitted by design) and results/ (written just before the final entry). When the tree
+        # is dirty, the entry names the paths, so a reader can see what differed.
+        "git_dirty": bool(dirty),
+        "dirty_paths": dirty[:50],
         "dataset_manifest_sha256": _sha(manifest) if manifest.exists() else None,
         "platform": _platform(),
         "pythonhashseed": os.environ.get("PYTHONHASHSEED"),
