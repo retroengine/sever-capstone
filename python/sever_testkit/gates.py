@@ -6,6 +6,7 @@
     uv run python -m sever_testkit.gates p1-fuzz --runs 100000000
     uv run python -m sever_testkit.gates p1-synthetic --streams 1000 --ops 1000 --jobs 5
     uv run python -m sever_testkit.gates p1-spikes
+    uv run python -m sever_testkit.gates p1-coverage
 
 ``p1-differential`` is gates P1-T2 and P1-T5, plus the P1-T1 survivors check after every deletion
 and the P1-T4 kernel check on every scored query–vector pair: the model writes a trace per seed,
@@ -16,6 +17,9 @@ Seeds run in ``--jobs`` parallel processes (about 0.2 GB each at nq-10k, 2 GB at
 seeded random streams at the small fixture size, model against engine after every operation.
 ``p1-spikes`` runs the throwaway proof spikes of Build §3.4 (part of gate P1-T13) and records the
 result; the spike code is deleted afterwards.
+``p1-coverage`` is gate P1-T10: the whole Rust suite with the Full-tier ignored tests (release,
+``cargo llvm-cov --branch``), line and branch coverage of sever-quant, sever-index and sever-search
+(test modules excluded); the whole Python suite, line coverage of the model and the builder.
 ``p1-fuzz`` is gate P1-T12: each Part 1 parser runs ``--runs`` libFuzzer executions (both at once)
 from the committed seeds, and the gate passes only with 0 crashes.
 """
@@ -318,6 +322,79 @@ def p1_spikes(root: Path) -> int:
     return 0 if passed else 1
 
 
+COVERED_CRATES = ("crates/sever-quant/src/", "crates/sever-index/src/", "crates/sever-search/src/")
+
+
+def p1_coverage(root: Path) -> int:
+    """P1-T10: Rust lines >= 90 %, branches >= 85 %; Python model and builder lines >= 90 %."""
+    cmd = "gates p1-coverage"
+    started = ledger.start(root, cmd, gate="P1-T10")
+    rust = subprocess.run(
+        ["cargo", "+nightly", "llvm-cov", "--branch", "--release", "-q", "--workspace", "--json",
+         "--summary-only", "--", "--include-ignored"],
+        cwd=root, capture_output=True, text=True, check=False,
+    )  # fmt: skip
+    files = json.loads(rust.stdout)["data"][0]["files"]
+    lines = [0, 0]
+    branches = [0, 0]
+    per_file = {}
+    for f in files:
+        name = f["filename"].split(str(root) + "/", 1)[-1]
+        if not name.startswith(COVERED_CRATES) or name.endswith("/tests.rs"):
+            continue
+        sm = f["summary"]
+        lines[0] += sm["lines"]["covered"]
+        lines[1] += sm["lines"]["count"]
+        branches[0] += sm["branches"]["covered"]
+        branches[1] += sm["branches"]["count"]
+        per_file[name] = {"lines": sm["lines"]["percent"], "branches": sm["branches"]["percent"]}
+    report = root / "traces/coverage-python.json"
+    py = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "--cov=sever_refmodel_core", "--cov=sever_partition",
+         f"--cov-report=json:{report}"],
+        cwd=root, capture_output=True, text=True, check=False,
+    )  # fmt: skip
+    totals = json.loads(report.read_text(encoding="utf-8"))["totals"]
+    py_lines = totals["covered_lines"] / max(totals["num_statements"], 1)
+    rust_lines, rust_branches = lines[0] / max(lines[1], 1), branches[0] / max(branches[1], 1)
+    passed = (
+        rust.returncode == 0
+        and py.returncode == 0
+        and rust_lines >= 0.90
+        and rust_branches >= 0.85
+        and py_lines >= 0.90
+    )
+    data_out = {
+        "gate": "P1-T10: Rust lines >= 90 %, branches >= 85 %; Python model+builder lines >= 90 %",
+        "rust": {"lines": [*lines, rust_lines], "branches": [*branches, rust_branches],
+                 "files": per_file, "tests_ok": rust.returncode == 0},
+        "python": {"lines": [totals["covered_lines"], totals["num_statements"], py_lines],
+                   "tests_ok": py.returncode == 0, "tail": py.stdout.splitlines()[-2:]},
+        "outcome": "PASS" if passed else "FAIL",
+    }  # fmt: skip
+    path, sha = ledger.result_file(
+        root, f"p1-coverage-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(
+            root,
+            cmd,
+            gate="P1-T10",
+            outcome=data_out["outcome"],
+            run_commit=started["commit"],
+            result_file=str(path.relative_to(root)),
+            result_sha256=sha,
+            rust_lines=rust_lines,
+            rust_branches=rust_branches,
+            python_lines=py_lines,
+        ),
+    )
+    print(json.dumps({"rust_lines": rust_lines, "rust_branches": rust_branches,
+                      "python_lines": py_lines, "outcome": data_out["outcome"]}))  # fmt: skip
+    return 0 if passed else 1
+
+
 FUZZ_TARGETS = ("artefact_parse", "blob_parse")
 
 
@@ -374,7 +451,14 @@ def _main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="gates", description=__doc__)
     ap.add_argument(
         "gate",
-        choices=["p1-differential", "p1-quant-recall", "p1-fuzz", "p1-synthetic", "p1-spikes"],
+        choices=[
+            "p1-differential",
+            "p1-quant-recall",
+            "p1-fuzz",
+            "p1-synthetic",
+            "p1-spikes",
+            "p1-coverage",
+        ],
     )
     ap.add_argument("--streams", type=int, default=1000, help="p1-synthetic: streams in all")
     ap.add_argument("--ops", type=int, default=1000, help="p1-synthetic: operations per stream")
@@ -389,6 +473,8 @@ def _main(argv: list[str]) -> int:
     seeds = list(SEEDS) if a.all_seeds else (a.seed or [42])
     if a.gate == "p1-differential":
         return p1_differential(a.root.resolve(), a.data, seeds, a.queries, a.jobs)
+    if a.gate == "p1-coverage":
+        return p1_coverage(a.root.resolve())
     if a.gate == "p1-spikes":
         return p1_spikes(a.root.resolve())
     if a.gate == "p1-synthetic":

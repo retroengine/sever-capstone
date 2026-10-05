@@ -410,6 +410,10 @@ impl<E: GroupExtension, S: IdScrambler> Index<E, S> {
                     }
                 }
                 SlotOp::DrainInto { from, to } => {
+                    // Take the slots only when the destination exists, so nothing is ever lost.
+                    if self.group(&to).is_none() {
+                        continue;
+                    }
                     let moved = self.group_mut(&from).map(|g| std::mem::take(&mut g.slots));
                     if let (Some(moved), Some(g)) = (moved, self.group_mut(&to)) {
                         for slot in moved {

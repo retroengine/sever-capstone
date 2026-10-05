@@ -365,4 +365,21 @@ mod tests {
             prop_assert!(q.as_slice().iter().all(|&v| i64::from(v).abs() <= MAX_ABS_QUANTISED));
         }
     }
+
+    // Stored x̃ read back (Part 2 loads it): the length must be d and every value within the §4.2
+    // bound, otherwise the stored state is corrupt.
+    #[spec("SR-4.2-2")]
+    #[test]
+    fn p1_quant_from_stored_checks_length_and_bound() {
+        assert_eq!(
+            QVec::from_stored(vec![0; 3], 4).unwrap_err(),
+            Error::WrongDimension
+        );
+        let edge = 16_777_232;
+        assert!(QVec::from_stored(vec![edge, -edge], 2).is_ok());
+        assert!(matches!(
+            QVec::from_stored(vec![edge + 1, 0], 2),
+            Err(Error::IntegrityViolation { .. })
+        ));
+    }
 }

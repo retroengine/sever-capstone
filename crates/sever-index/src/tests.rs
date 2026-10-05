@@ -803,3 +803,497 @@ fn p1_index_hard_cap_at_one_million() {
     assert_eq!(ix.group_len(&g), Some(cap as usize));
     ix.check_invariants().unwrap();
 }
+
+// --- rules and defences found untested by branch coverage (P1-T10) --------------------------
+
+use crate::changeset::{ChangeSet, Counters, CreatedGroup, GroupChange, LocatorOp, SlotOp};
+use crate::scramble::IdScrambler;
+
+/// An empty change set on `ix`'s counters: the base for forged ones.
+fn forged(ix: &Ix) -> ChangeSet<NoExtension> {
+    let c = Counters {
+        big_n: ix.stats().big_n,
+        k: ix.k(),
+    };
+    ChangeSet {
+        created: vec![],
+        groups: vec![],
+        slots: vec![],
+        locator: vec![],
+        counters_before: c,
+        counters_after: c,
+        departures: vec![],
+        arrivals: vec![],
+        outcomes: vec![],
+    }
+}
+
+fn state_of(ix: &Ix, g: &GroupId) -> GroupState<NoExtension> {
+    let snap = ix.group_snapshot(g).unwrap();
+    let mut st = GroupState::<NoExtension>::empty(16);
+    st.s = snap.s;
+    st.n = snap.n;
+    st
+}
+
+/// Sets a spawned group's `n` without members: enough for routing, which reads only `n` (§5.6).
+fn set_n(ix: &mut Ix, g: GroupId, n: u64) {
+    let mut cs = forged(ix);
+    let before = state_of(ix, &g);
+    let mut after = before.clone();
+    after.n = n;
+    cs.groups.push(GroupChange {
+        group: g,
+        before,
+        after,
+    });
+    ix.apply(cs);
+}
+
+fn create_spawned(ix: &mut Ix, text: &str, centroid: Vec<f64>) -> GroupId {
+    let id = GroupId::parse(text).unwrap();
+    let mut cs = forged(ix);
+    cs.created.push(CreatedGroup { id, centroid });
+    ix.apply(cs);
+    id
+}
+
+// §7.4: a spawn target of 0 could never flush; the index refuses it.
+#[test]
+fn p1_index_spawn_target_zero_is_refused() {
+    let r = Index::new(
+        &artefact(),
+        IndexConfig {
+            spawning_enabled: true,
+            spawn_target: 0,
+        },
+        NoExtension,
+        HmacSha512Scrambler::new(&[7; 64]),
+        CollectionId::from_bytes([1; 16]),
+    );
+    assert!(matches!(
+        r,
+        Err(sever_types::Error::IntegrityViolation { .. })
+    ));
+}
+
+// §7.3: out of distribution, the nearest spawned group *with room*; equal distances go to the
+// smaller group-ID bytes; no group with room means the holding area.
+#[spec("SR-7.3-1", "SR-5.6-1")]
+#[test]
+fn p1_index_spillover_skips_full_groups_and_ties_to_smaller_id() {
+    let mut ix = small();
+    for (i, v) in rows("ref").iter().enumerate().take(20) {
+        ins(&mut ix, &format!("doc{i}"), v).unwrap();
+    }
+    let x = sever_quant::quantise(&rows("live")[0], 16).unwrap();
+    assert_eq!(ix.route(&x).unwrap(), (GroupId::Holding, true));
+    let mu = x.dequantise_f64();
+    let b = create_spawned(&mut ix, "spawn-0000000000000002", mu.clone());
+    let a = create_spawned(&mut ix, "spawn-0000000000000001", mu);
+    assert_eq!(ix.route(&x).unwrap(), (a, true), "tie → smaller ID bytes");
+    set_n(&mut ix, a, 1_000);
+    assert_eq!(ix.route(&x).unwrap(), (b, true), "a has no room");
+    set_n(&mut ix, b, 1_000);
+    assert_eq!(
+        ix.route(&x).unwrap(),
+        (GroupId::Holding, true),
+        "no room anywhere"
+    );
+}
+
+// §7.5: a flush whose spawn ID already exists fails with IntegrityViolation and changes nothing.
+#[spec("SR-7.5-1")]
+#[test]
+fn p1_index_spawn_id_collision_fails_the_flush() {
+    let mut ix = small();
+    let live = rows("live");
+    let ids: Vec<String> = (0..8).map(|i| format!("live{i}")).collect();
+    for (id, v) in ids.iter().zip(&live).take(7) {
+        assert_eq!(ins(&mut ix, id, v).unwrap(), Placement::Holding);
+    }
+    let rids: Vec<RecordId> = ids
+        .iter()
+        .map(|s| RecordId::new(s.as_str()).unwrap())
+        .collect();
+    let taken = spawn_id(rids.iter()).as_text();
+    let g = create_spawned(&mut ix, &taken, vec![0.0; 16]);
+    set_n(&mut ix, g, 1_000_000); // no room, so the 8th record goes to the holding area
+    let before = state_hash(&ix);
+    assert!(matches!(
+        ins(&mut ix, &ids[7], &live[7]),
+        Err(sever_types::Error::IntegrityViolation { .. })
+    ));
+    assert_eq!(state_hash(&ix), before);
+}
+
+// §7.2: P is positive definite, so q < 0 means corrupt state: IntegrityViolation.
+#[spec("SR-7.2-2")]
+#[test]
+fn p1_index_negative_mahalanobis_is_an_integrity_violation() {
+    let not_pd = [-1.0, 0.0, 0.0, -1.0];
+    assert!(matches!(
+        crate::route::mahalanobis(&[0.5, 0.0], &[0.0, 0.0], &not_pd),
+        Err(sever_types::Error::IntegrityViolation { .. })
+    ));
+    assert_eq!(
+        crate::route::mahalanobis(&[0.0, 0.0], &[0.0, 0.0], &not_pd),
+        Ok(0.0)
+    );
+}
+
+// §5.5: the parser rejects a wrong format version and an ID that is not UTF-8.
+#[spec("SR-5.5-2")]
+#[test]
+fn p1_index_blob_parser_rejects_version_and_non_utf8() {
+    let mut ix = small();
+    ins(&mut ix, "doc0", &rows("ref")[0]).unwrap();
+    let g = ix.location("doc0").unwrap();
+    let blob = ix.blob(&g).unwrap();
+    let mut v2 = blob.clone();
+    v2[7] = 2; // u16be version at offset 6
+    assert_eq!(parse_blob(&v2, b"SEVERC", 0), Err(BlobReject::Version));
+    let mut bad = blob.clone();
+    let id_at = 18 + 8 * 16 + 8 + 2; // header, S, member_count, id_len
+    bad[id_at] = 0xff;
+    assert_eq!(parse_blob(&bad, b"SEVERC", 0), Err(BlobReject::Truncated));
+    assert!(parse_blob(&blob, b"SEVERC", 0).is_ok());
+}
+
+// §5.5: the equivalence helper compares field (3), C_S, on its own.
+#[spec("SR-5.5-3")]
+#[test]
+fn p1_index_equivalence_helper_catches_the_extension_field() {
+    let a = crate::blob::GroupSnapshot::<Leaky> {
+        s: vec![1, 2],
+        n: 1,
+        ext_public: 7,
+        blob: vec![1],
+        member_ids: vec![],
+    };
+    let mut b = a.clone();
+    b.ext_public = 8;
+    assert_eq!(assert_state_equivalent(&a, &b), Err(Field::CommitmentS));
+}
+
+// §21 INV-4, INV-6, INV-7, INV-8: check_invariants catches each corruption on its own, made here
+// by applying forged change sets.
+#[test]
+fn p1_index_invariant_checks_fire() {
+    let build = || {
+        let mut ix = small();
+        for (i, v) in rows("ref").iter().enumerate().take(30) {
+            ins(&mut ix, &format!("doc{i}"), v).unwrap();
+        }
+        ix.check_invariants().unwrap();
+        ix
+    };
+    let inv = |ix: &Ix| match ix.check_invariants() {
+        Err(sever_types::Error::IntegrityViolation { invariant }) => invariant,
+        other => panic!("expected a violation, got {other:?}"),
+    };
+    let g = build().location("doc0").unwrap();
+    let corrupt = |f: &dyn Fn(&mut GroupState<NoExtension>)| {
+        let mut ix = build();
+        let before = state_of(&ix, &g);
+        let mut after = before.clone();
+        f(&mut after);
+        let mut cs = forged(&ix);
+        cs.groups.push(GroupChange {
+            group: g,
+            before,
+            after,
+        });
+        ix.apply(cs);
+        inv(&ix)
+    };
+    assert_eq!(corrupt(&|s| s.n = 1_000_001), "INV-4");
+    assert_eq!(corrupt(&|s| s.n += 1), "INV-6 n");
+    assert_eq!(corrupt(&|s| s.s[3] += 1), "INV-6 S");
+    // INV-8: N disagrees with the group counts.
+    let mut ix = build();
+    let mut cs = forged(&ix);
+    cs.counters_after.big_n += 1;
+    ix.apply(cs);
+    assert_eq!(inv(&ix), "INV-8");
+    // INV-7: a locator entry removed, or pointing at the wrong slot.
+    let sid = |id: &str| {
+        HmacSha512Scrambler::new(&[7; 64]).scramble(
+            &CollectionId::from_bytes([1; 16]),
+            &RecordId::new(id).unwrap(),
+        )
+    };
+    let mut ix = build();
+    let mut cs = forged(&ix);
+    cs.locator.push(LocatorOp::Delete {
+        scrambled_id: sid("doc0"),
+    });
+    ix.apply(cs);
+    assert_eq!(inv(&ix), "INV-7");
+    let mut ix = build();
+    let mut cs = forged(&ix);
+    cs.locator.push(LocatorOp::Put {
+        scrambled_id: sid("doc0"),
+        group: g,
+        index: 999,
+    });
+    ix.apply(cs);
+    assert!(inv(&ix).starts_with("INV-7"));
+}
+
+// Build §1.1: apply cannot fail. A change set naming groups or slots that do not exist (not one
+// plan could produce) changes nothing and does not panic.
+#[test]
+fn p1_index_apply_ignores_unknown_groups_and_slots() {
+    let mut ix = small();
+    for (i, v) in rows("ref").iter().enumerate().take(10) {
+        ins(&mut ix, &format!("doc{i}"), v).unwrap();
+    }
+    let before = state_hash(&ix);
+    let ghost = GroupId::parse("spawn-00000000000000ff").unwrap();
+    let real = ix.location("doc0").unwrap();
+    let mut cs = forged(&ix);
+    cs.groups.push(GroupChange {
+        group: ghost,
+        before: GroupState::empty(16),
+        after: GroupState::empty(16),
+    });
+    cs.slots.push(SlotOp::MoveLast {
+        group: ghost,
+        from: 0,
+        to: 1,
+    });
+    cs.slots.push(SlotOp::MoveLast {
+        group: real,
+        from: 500,
+        to: 600,
+    });
+    cs.slots.push(SlotOp::Truncate {
+        group: ghost,
+        len: 0,
+    });
+    cs.slots.push(SlotOp::DrainInto {
+        from: ghost,
+        to: real,
+    });
+    cs.slots.push(SlotOp::DrainInto {
+        from: GroupId::Holding,
+        to: ghost,
+    });
+    ix.apply(cs);
+    assert_eq!(state_hash(&ix), before);
+    ix.check_invariants().unwrap();
+}
+
+/// Deliberately wrong extension: its blob region depends on the order of adds.
+#[derive(Clone)]
+struct LastWins;
+impl GroupExtension for LastWins {
+    type GroupPublic = i64;
+    type GroupSecret = ();
+    type RecordSecret = ();
+    type Credential = ();
+    const BLOB_MAGIC: [u8; 6] = *b"LASTW!";
+    fn admit(&self, _: &sever_quant::QVec, _: ()) -> Result<(), sever_types::Error> {
+        Ok(())
+    }
+    fn add(&self, p: &mut i64, _: &mut (), x: &sever_quant::QVec, _: &()) {
+        *p = i64::from(x.as_slice()[0]);
+    }
+    fn remove(&self, p: &mut i64, _: &mut (), _: &sever_quant::QVec, _: &()) {
+        *p = 0;
+    }
+    fn check_removal(&self, _: &sever_quant::QVec, _: &()) -> Result<(), sever_types::Error> {
+        Ok(())
+    }
+    fn blob_region(&self, p: &i64, _: &(), out: &mut Vec<u8>) {
+        out.extend(p.to_be_bytes());
+    }
+    fn check_group(&self, _: &[i64], _: &i64, _: &()) -> Result<(), sever_types::Error> {
+        Ok(())
+    }
+    fn same_commitment(
+        &self,
+        _: &sever_quant::QVec,
+        _: &(),
+        _: &sever_quant::QVec,
+        _: &(),
+    ) -> bool {
+        false
+    }
+}
+
+/// Deliberately wrong extension: it refuses to remove the records it admitted.
+#[derive(Clone)]
+struct Refuses;
+impl GroupExtension for Refuses {
+    type GroupPublic = ();
+    type GroupSecret = ();
+    type RecordSecret = ();
+    type Credential = ();
+    const BLOB_MAGIC: [u8; 6] = *b"REFUSE";
+    fn admit(&self, _: &sever_quant::QVec, _: ()) -> Result<(), sever_types::Error> {
+        Ok(())
+    }
+    fn add(&self, _: &mut (), _: &mut (), _: &sever_quant::QVec, _: &()) {}
+    fn remove(&self, _: &mut (), _: &mut (), _: &sever_quant::QVec, _: &()) {}
+    fn check_removal(&self, _: &sever_quant::QVec, _: &()) -> Result<(), sever_types::Error> {
+        Err(sever_types::Error::IntegrityViolation { invariant: "test" })
+    }
+    fn blob_region(&self, _: &(), _: &(), _: &mut Vec<u8>) {}
+    fn check_group(&self, _: &[i64], _: &(), _: &()) -> Result<(), sever_types::Error> {
+        Ok(())
+    }
+    fn same_commitment(
+        &self,
+        _: &sever_quant::QVec,
+        _: &(),
+        _: &sever_quant::QVec,
+        _: &(),
+    ) -> bool {
+        false
+    }
+}
+
+/// Deliberately wrong scramblers, one per EP-2 rule.
+struct Counting(std::sync::atomic::AtomicU8);
+impl IdScrambler for Counting {
+    fn scramble(&self, _: &CollectionId, _: &RecordId) -> sever_types::ScrambledId {
+        let n = self.0.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        sever_types::ScrambledId::from_bytes([n; 64])
+    }
+}
+struct IgnoresCollection;
+impl IdScrambler for IgnoresCollection {
+    fn scramble(&self, _: &CollectionId, r: &RecordId) -> sever_types::ScrambledId {
+        let mut b = [0u8; 64];
+        for (o, i) in b.iter_mut().zip(r.as_bytes()) {
+            *o = *i;
+        }
+        sever_types::ScrambledId::from_bytes(b)
+    }
+}
+struct Constant;
+impl IdScrambler for Constant {
+    fn scramble(&self, c: &CollectionId, _: &RecordId) -> sever_types::ScrambledId {
+        sever_types::ScrambledId::from_bytes([c.as_bytes()[0]; 64])
+    }
+}
+
+// Build §4.7 L7: each contract rule fails for a wrong implementation of it.
+#[test]
+fn p1_index_contracts_reject_each_wrong_implementation() {
+    let xs: Vec<(sever_quant::QVec, ())> = rows("ref")
+        .iter()
+        .take(6)
+        .map(|v| (sever_quant::quantise(v, 16).unwrap(), ()))
+        .collect();
+    assert_eq!(
+        ep1_contract(&LastWins, &xs),
+        Err(Ep1Violation::OrderDependent)
+    );
+    assert_eq!(
+        ep1_contract(&Refuses, &xs),
+        Err(Ep1Violation::RefusesItsOwnRecord)
+    );
+    use crate::contract::Ep2Violation;
+    assert_eq!(
+        ep2_contract(&Counting(std::sync::atomic::AtomicU8::new(0))),
+        Err(Ep2Violation::NotDeterministic)
+    );
+    assert_eq!(
+        ep2_contract(&IgnoresCollection),
+        Err(Ep2Violation::CollectionIgnored)
+    );
+    assert_eq!(ep2_contract(&Constant), Err(Ep2Violation::IdCollision));
+}
+
+/// Deliberately wrong extensions for the secret half of the EP-1 rules: one keeps an
+/// order-dependent secret, one does not restore its secret on removal.
+#[derive(Clone)]
+struct SecretOrder(bool);
+impl GroupExtension for SecretOrder {
+    type GroupPublic = ();
+    type GroupSecret = i64;
+    type RecordSecret = ();
+    type Credential = ();
+    const BLOB_MAGIC: [u8; 6] = *b"SECRET";
+    fn admit(&self, _: &sever_quant::QVec, _: ()) -> Result<(), sever_types::Error> {
+        Ok(())
+    }
+    fn add(&self, _: &mut (), s: &mut i64, x: &sever_quant::QVec, _: &()) {
+        if self.0 {
+            *s = i64::from(x.as_slice()[0]); // order-dependent
+        } else {
+            *s += 1;
+        }
+    }
+    fn remove(&self, _: &mut (), s: &mut i64, _: &sever_quant::QVec, _: &()) {
+        if self.0 {
+            *s = 0;
+        } // else: the secret is never restored
+    }
+    fn check_removal(&self, _: &sever_quant::QVec, _: &()) -> Result<(), sever_types::Error> {
+        Ok(())
+    }
+    fn blob_region(&self, _: &(), _: &i64, _: &mut Vec<u8>) {}
+    fn check_group(&self, _: &[i64], _: &(), _: &i64) -> Result<(), sever_types::Error> {
+        Ok(())
+    }
+    fn same_commitment(
+        &self,
+        _: &sever_quant::QVec,
+        _: &(),
+        _: &sever_quant::QVec,
+        _: &(),
+    ) -> bool {
+        false
+    }
+}
+
+#[test]
+fn p1_index_contract_checks_the_secret_state_too() {
+    let xs: Vec<(sever_quant::QVec, ())> = rows("ref")
+        .iter()
+        .take(6)
+        .map(|v| (sever_quant::quantise(v, 16).unwrap(), ()))
+        .collect();
+    assert_eq!(
+        ep1_contract(&SecretOrder(true), &xs),
+        Err(Ep1Violation::OrderDependent)
+    );
+    assert_eq!(
+        ep1_contract(&SecretOrder(false), &xs),
+        Err(Ep1Violation::RemoveIsNotInverse)
+    );
+}
+
+// EP-3: a change set that changes nothing says so (every request AlreadyAbsent); any real change
+// does not.
+#[spec("SR-5.4-2")]
+#[test]
+fn p1_index_change_set_is_noop_only_when_nothing_changes() {
+    let mut ix = small();
+    ins(&mut ix, "doc0", &rows("ref")[0]).unwrap();
+    let absent = ix
+        .plan_delete(DeleteRequest {
+            record_id: "nope".into(),
+        })
+        .unwrap();
+    assert!(absent.is_noop());
+    assert_eq!(absent.outcomes, vec![Outcome::AlreadyAbsent]);
+    let real = ix
+        .plan_delete(DeleteRequest {
+            record_id: "doc0".into(),
+        })
+        .unwrap();
+    assert!(!real.is_noop());
+    let insert = ix
+        .plan_insert(InsertRequest {
+            record_id: "doc1".into(),
+            vector: rows("ref")[1].clone(),
+            credential: (),
+        })
+        .unwrap();
+    assert!(!insert.is_noop());
+}
