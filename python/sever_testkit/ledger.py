@@ -52,8 +52,14 @@ def _sha(path: Path) -> str:
 def entry(root: Path, command: str, **fields: Any) -> dict[str, Any]:
     """A ledger entry with the provenance fields filled in."""
     manifest = root / "datasets/MANIFEST.sha256"
-    status = _git(root, "status", "--porcelain", "--", ".", f":!{LEDGER}", ":!results")
-    dirty = [line[3:] for line in status.splitlines()]
+    status = subprocess.run(
+        ["git", "status", "--porcelain", "--", ".", f":!{LEDGER}", ":!results"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout  # not stripped: each line is "XY path", and X may be a space
+    dirty = [line[3:] for line in status.splitlines() if line]
     return {
         "utc": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
         "command": command,
