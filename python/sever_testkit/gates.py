@@ -30,10 +30,28 @@ def p1_differential(root: Path, data: str, seeds: list[int], n_queries: int | No
         s: hashlib.sha256((root / f"artefacts/partition-seed{s}.svp").read_bytes()).hexdigest()
         for s in seeds
     }
-    ledger.start(root, cmd, gate="P1-T2, P1-T5", data=data, seeds=seeds, artefacts=artefacts)
-    subprocess.run(
-        ["cargo", "build", "-q", "--release", "-p", "sever-tracekit"], cwd=root, check=True
+    started = ledger.start(
+        root, cmd, gate="P1-T2, P1-T5", data=data, seeds=seeds, artefacts=artefacts
     )
+    run_commit = started["commit"]
+    # The replayer is built once into a target directory owned by this run, so a build made while
+    # the run is going (it takes hours) cannot change the binary that replays the later seeds.
+    target_dir = root / f"target/gate-{run_commit[:12]}"
+    subprocess.run(
+        [
+            "cargo",
+            "build",
+            "-q",
+            "--release",
+            "-p",
+            "sever-tracekit",
+            "--target-dir",
+            str(target_dir),
+        ],
+        cwd=root,
+        check=True,
+    )
+    replayer = target_dir / "release/sever-tracekit"
     slice_ = traces.load_slice(root, data)
     per_seed: list[dict[str, Any]] = []
     for seed in seeds:
@@ -50,7 +68,7 @@ def p1_differential(root: Path, data: str, seeds: list[int], n_queries: int | No
             )
         summary["trace_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
         rep = subprocess.run(
-            [str(root / "target/release/sever-tracekit"), "replay", str(path), "--root", str(root)],
+            [str(replayer), "replay", str(path), "--root", str(root)],
             cwd=root,
             capture_output=True,
             text=True,
@@ -86,6 +104,8 @@ def p1_differential(root: Path, data: str, seeds: list[int], n_queries: int | No
             seeds=seeds,
             artefacts=artefacts,
             outcome=data_out["outcome"],
+            # The code that ran is the commit at start; "commit" is HEAD when the run ended.
+            run_commit=run_commit,
             result_file=str(path.relative_to(root)),
             result_sha256=sha,
             summary={str(s["seed"]): s["replay"] for s in per_seed},
