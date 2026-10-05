@@ -40,3 +40,4 @@ Thumbs.db
 /fuzz/artifacts/
 /fuzz/target/
 /spikes/*/target/
+/.coverage
