@@ -1,0 +1,31 @@
+{
+ "gate": "Build \u00a73.4 proof spikes",
+ "tests": [
+  "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+  "test spike_admission_rejects_a_wrong_commitment ... ok",
+  "test spike_ep1_contract_passes_with_pedersen_commitments ... ok",
+  "test spike_ep3_rotation_reader_finds_exactly_the_touched_groups ... ok",
+  "test spike_five_field_exactness_holds_with_commitments ... ok",
+  "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.87s",
+  "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+ ],
+ "seconds": 12.4,
+ "outcome": "PASS",
+ "stderr_tail": [
+  "   Compiling getrandom v0.2.17",
+  "   Compiling rand_core v0.6.4",
+  "   Compiling sha2 v0.10.9",
+  "   Compiling hmac v0.12.1",
+  "   Compiling thiserror-impl v2.0.21",
+  "   Compiling curve25519-dalek-derive v0.1.1",
+  "   Compiling sever-types v0.1.0 (/home/saiki/sever-db/crates/sever-types)",
+  "   Compiling sever-quant v0.1.0 (/home/saiki/sever-db/crates/sever-quant)",
+  "   Compiling sever-partition v0.1.0 (/home/saiki/sever-db/crates/sever-partition)",
+  "   Compiling sever-index v0.1.0 (/home/saiki/sever-db/crates/sever-index)",
+  "   Compiling sever-spike-p1-proof v0.0.0 (/home/saiki/sever-db/spikes/p1-proof)",
+  "    Finished `release` profile [optimized] target(s) in 11.48s",
+  "     Running unittests src/lib.rs (spikes/p1-proof/target/release/deps/sever_spike_p1_proof-1005d08c783b4e12)",
+  "     Running tests/spike.rs (spikes/p1-proof/target/release/deps/spike-bcf96069856ca4d4)",
+  "   Doc-tests sever_spike_p1_proof"
+ ]
+}
