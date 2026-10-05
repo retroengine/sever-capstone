@@ -1,0 +1,13 @@
+[package]
+name = "sever-spec"
+version = "0.1.0"
+description = "#[spec(\"SR-…\")]: names the requirements a test checks (Build §2.2); read by spec-trace"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+proc-macro = true
+
+[lints]
+workspace = true

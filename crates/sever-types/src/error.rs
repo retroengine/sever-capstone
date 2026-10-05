@@ -88,6 +88,7 @@ pub enum Error {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sever_spec::spec;
 
     /// One value of every variant, in §17 table order.
     fn every_error() -> Vec<Error> {
@@ -118,7 +119,8 @@ mod tests {
         ]
     }
 
-    // spec: SR-17-1 — each §17 row exists as its own variant (13 rows; three carry details).
+    // each §17 row exists as its own variant (13 rows; three carry details).
+    #[spec("SR-17-1")]
     #[test]
     fn p1_types_every_spec_17_row_is_a_variant() {
         let names: Vec<String> = every_error()
@@ -153,8 +155,9 @@ mod tests {
         }
     }
 
-    // spec: SR-17-2 — no variant stores caller data, so every message is fixed text. The check
+    // no variant stores caller data, so every message is fixed text. The check
     // that a rejected ID never reaches the message is in `id.rs`.
+    #[spec("SR-17-2")]
     #[test]
     fn p1_types_error_messages_are_fixed_text() {
         for e in every_error() {

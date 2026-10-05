@@ -1,4 +1,4 @@
-//! L1 and L2 tests for `sever-search` (Build §4.7). `// spec:` lines name requirement IDs.
+//! L1 and L2 tests for `sever-search` (Build §4.7). `#[spec(...)]` names requirement IDs.
 
 use proptest::prelude::*;
 use sever_index::{
@@ -9,6 +9,7 @@ use sever_types::CollectionId;
 
 use crate::kernel::{score, score_scalar, uses_avx2};
 use crate::{probe_count, search};
+use sever_spec::spec;
 
 type Ix = Index<NoExtension, HmacSha512Scrambler>;
 
@@ -57,9 +58,10 @@ fn ins(ix: &mut Ix, id: &str, v: &[f32]) {
     .unwrap();
 }
 
-// spec: SR-8.2-1 — a hand-computed 16-dimensional example where the lane layout matters:
+// a hand-computed 16-dimensional example where the lane layout matters:
 // t_0 = 4096, t_1 = t_9 = 1. Lanes: L0 = 2^24, L1 = 1 + 1 = 2, so the total is 2^24 + 2 exactly.
 // A plain sequential sum would give 2^24 (each +1 is lost against 2^24 in float32).
+#[spec("SR-8.2-1")]
 #[test]
 fn p1_search_kernel_lane_layout_by_hand() {
     let mut q = [0.0_f32; 16];
@@ -76,8 +78,9 @@ fn p1_search_kernel_lane_layout_by_hand() {
     assert_eq!(naive, 16_777_216.0, "the order really matters here");
 }
 
-// spec: SR-8.2-1 — P1-T4: scalar and AVX2 bit-identical (10^5 pairs here; 10^7 in the ignored
+// P1-T4: scalar and AVX2 bit-identical (10^5 pairs here; 10^7 in the ignored
 // test below, run by the Full tier).
+#[spec("SR-8.2-1")]
 #[test]
 fn p1_search_kernel_scalar_equals_avx2() {
     assert!(
@@ -116,7 +119,8 @@ fn p1_search_kernel_scalar_equals_avx2_ten_million() {
     }
 }
 
-// spec: SR-8.1-2 — ⌈0.25·k⌉ for k mod 4 = 0, 1, 2, 3, and the Appendix A counts.
+// ⌈0.25·k⌉ for k mod 4 = 0, 1, 2, 3, and the Appendix A counts.
+#[spec("SR-8.1-2")]
 #[test]
 fn p1_search_probe_count() {
     for (k, p) in [(4, 1), (5, 2), (6, 2), (7, 2), (8, 2), (128, 32), (263, 66)] {
@@ -124,8 +128,9 @@ fn p1_search_probe_count() {
     }
 }
 
-// spec: SR-8.1-2 — empty groups use probe slots (SB-6): emptying the nearest group must not let
+// empty groups use probe slots (SB-6): emptying the nearest group must not let
 // a farther group into the budget.
+#[spec("SR-8.1-2")]
 #[test]
 fn p1_search_empty_groups_count_in_the_budget() {
     let refs = rows("ref");
@@ -153,8 +158,9 @@ fn p1_search_empty_groups_count_in_the_budget() {
     );
 }
 
-// spec: SR-8.1-3, SR-8.1-4 — results sorted by (score, id); a deleted record never comes back
+// results sorted by (score, id); a deleted record never comes back
 // (E2E-1.6 in miniature); the holding area is never searched.
+#[spec("SR-8.1-3", "SR-8.1-4")]
 #[test]
 fn p1_search_results_order_and_deletion() {
     let (refs, live) = (rows("ref"), rows("live"));
@@ -193,7 +199,8 @@ fn p1_search_results_order_and_deletion() {
     }
 }
 
-// spec: SR-4.1-0 — the query is checked like any vector.
+// the query is checked like any vector.
+#[spec("SR-4.1-0")]
 #[test]
 fn p1_search_rejects_bad_queries() {
     let ix = index(true);
@@ -211,10 +218,47 @@ fn p1_search_rejects_bad_queries() {
 }
 
 proptest! {
-    // spec: SR-8.2-1 — scalar and AVX2 agree bit for bit on arbitrary finite inputs.
+    // scalar and AVX2 agree bit for bit on arbitrary finite inputs.
+    #[spec("SR-8.2-1")]
     #[test]
     fn p1_search_prop_kernels_agree(q in proptest::collection::vec(-4.0f32..4.0, 64),
                                     x in proptest::collection::vec(-4.0f32..4.0, 64)) {
         prop_assert_eq!(score(&q, &x).to_bits(), score_scalar(&q, &x).to_bits());
     }
+}
+
+// §8.1 step 1: D_g = Σ((f64)q_i − μ_{g,i})², sequential from i = 0; groups ascending by
+// (D_g, group-ID bytes). Two pairs tie on D_g; "frozen-…" < "spawn-…" by bytes.
+#[spec("SR-8.1-1")]
+#[test]
+fn p1_search_rank_groups_by_distance_then_id_bytes() {
+    use sever_index::SearchGroup;
+    use sever_types::GroupId;
+    let q = [0.5f32, -0.25, 0.125, 0.0, 0.0, 0.0, 0.0, 0.0];
+    let near = [0.5f64, -0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+    let far = [0.0f64; 8];
+    let spawn = GroupId::parse("spawn-0000000000000001").unwrap();
+    let f = |l: u16| GroupId::frozen(l).unwrap();
+    let groups = [(f(2), &far), (spawn, &near), (f(1), &far), (f(3), &near)];
+    let ranked = crate::rank_groups(
+        &q,
+        groups.iter().map(|(id, c)| SearchGroup {
+            id: *id,
+            centroid: c.as_slice(),
+            ids: &[],
+            rows: &[],
+        }),
+    );
+    let order: Vec<GroupId> = ranked.iter().map(|(_, g)| g.id).collect();
+    assert_eq!(order, vec![f(3), spawn, f(1), f(2)]);
+    let seq = |c: &[f64]| {
+        let mut s = 0.0f64;
+        for (a, m) in q.iter().zip(c) {
+            let t = f64::from(*a) - m;
+            s += t * t;
+        }
+        s
+    };
+    assert_eq!(ranked[0].0.to_bits(), seq(&near).to_bits());
+    assert_eq!(ranked[2].0.to_bits(), seq(&far).to_bits());
 }

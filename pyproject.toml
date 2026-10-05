@@ -26,6 +26,8 @@ dev = [
     "import-linter",
     "mutmut",
     "pytest-benchmark",
+    "pyyaml>=6.0.3",
+    "types-pyyaml>=6.0.12.20260906",
 ]
 
 [tool.uv]

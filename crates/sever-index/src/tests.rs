@@ -1,6 +1,6 @@
 //! L1, L2, L6 and L7 tests for `sever-index` (Build §4.7), on the small fixture: the golden
 //! partition built by the Python builder (d = 16, 4 frozen groups), spawn target 8 (gap G-10).
-//! `// spec:` lines name the requirement IDs each test checks.
+//! `#[spec(...)]` attributes name the requirement IDs each test checks (Build §2.2).
 
 use proptest::prelude::*;
 use sever_partition::PartitionArtefact;
@@ -12,6 +12,7 @@ use crate::contract::{Ep1Violation, ep1_contract, ep2_contract};
 use crate::ext::{GroupExtension, NoExtension};
 use crate::index::{DeleteRequest, Index, IndexConfig, InsertRequest, has_room, spawn_id};
 use crate::scramble::HmacSha512Scrambler;
+use sever_spec::spec;
 
 type Ix = Index<NoExtension, HmacSha512Scrambler>;
 
@@ -96,8 +97,9 @@ fn survivors_ok(ix: &Ix) {
 
 // --- §5 exact deletion -------------------------------------------------------------------------
 
-// spec: SR-5.3-1, SR-5.4-1 — deleting one record: its group equals the survivors-only group, every
+// deleting one record: its group equals the survivors-only group, every
 // other group is untouched, N falls by one (E2E-1.1 in miniature).
+#[spec("SR-5.3-1", "SR-5.4-1")]
 #[test]
 fn p1_index_delete_restores_survivors_state() {
     let refs = rows("ref");
@@ -118,7 +120,8 @@ fn p1_index_delete_restores_survivors_state() {
     assert_eq!(ix.location("doc17"), None);
 }
 
-// spec: SR-5.4-2 — a second delete is AlreadyAbsent and changes nothing (E2E-1.5).
+// a second delete is AlreadyAbsent and changes nothing (E2E-1.5).
+#[spec("SR-5.4-2")]
 #[test]
 fn p1_index_delete_is_idempotent() {
     let refs = rows("ref");
@@ -133,7 +136,8 @@ fn p1_index_delete_is_idempotent() {
     assert_eq!(state_hash(&ix), h);
 }
 
-// spec: SR-5.4-3, SR-5.2-1 — an emptied group is exactly the initial state, and stays.
+// an emptied group is exactly the initial state, and stays.
+#[spec("SR-5.4-3", "SR-5.2-1")]
 #[test]
 fn p1_index_empty_group_is_initial_state_and_stays() {
     let refs = rows("ref");
@@ -147,8 +151,9 @@ fn p1_index_empty_group_is_initial_state_and_stays() {
     assert_eq!(ix.stats().k, 4);
 }
 
-// spec: SR-5.5-3 — the equivalence helper catches each of the five fields on its own (phase P1
+// the equivalence helper catches each of the five fields on its own (phase P1
 // must-fail).
+#[spec("SR-5.5-3")]
 #[test]
 fn p1_index_equivalence_helper_catches_each_field() {
     let refs = rows("ref");
@@ -174,8 +179,9 @@ fn p1_index_equivalence_helper_catches_each_field() {
     assert_eq!(assert_state_equivalent(&snap, &snap), Ok(()));
 }
 
-// spec: SR-5.5-1, SR-5.5-2 — the blob round-trips through the strict parser, and every rejection
+// the blob round-trips through the strict parser, and every rejection
 // rule fires.
+#[spec("SR-5.5-1", "SR-5.5-2")]
 #[test]
 fn p1_index_blob_parser_rejections() {
     let refs = rows("ref");
@@ -231,7 +237,8 @@ fn p1_index_blob_parser_rejections() {
     assert!(parse_blob(&mk(&[b"a", b"b"]), b"SEVERC", 0).is_ok());
 }
 
-// spec: SR-5.5-1 — golden vector 8, core form, written by the reference model.
+// golden vector 8, core form, written by the reference model.
+#[spec("SR-5.5-1")]
 #[test]
 fn p1_index_golden_core_blob() {
     let g: serde_json::Value =
@@ -271,8 +278,9 @@ fn p1_index_golden_core_blob() {
 
 // --- §3.2 and §15.1 order of checks --------------------------------------------------------------
 
-// spec: SR-3.2-3, SR-3.2-4, SR-4.1-0 — duplicate live IDs, retries, re-insert after delete, and
+// duplicate live IDs, retries, re-insert after delete, and
 // the §15.1 order (vector checks before ID checks).
+#[spec("SR-3.2-3", "SR-3.2-4", "SR-4.1-0")]
 #[test]
 fn p1_index_insert_validation_order_and_duplicates() {
     let refs = rows("ref");
@@ -309,8 +317,9 @@ fn p1_index_insert_validation_order_and_duplicates() {
 
 // --- §7 routing, holding, flush, spillover --------------------------------------------------------
 
-// spec: SR-7.4-1, SR-7.4-2, SR-7.5-1, SR-7.5-2, SR-7.6-1 — the holding area flushes at exactly
+// the holding area flushes at exactly
 // the target into exactly one group (E2E-1.2 in miniature).
+#[spec("SR-7.4-1", "SR-7.4-2", "SR-7.5-1", "SR-7.5-2", "SR-7.6-1", "SR-2.1-1")]
 #[test]
 fn p1_index_holding_flushes_exactly_at_target() {
     let live = rows("live");
@@ -344,7 +353,8 @@ fn p1_index_holding_flushes_exactly_at_target() {
     survivors_ok(&ix);
 }
 
-// spec: SR-7.4-1, SR-7.4-3 — holding records are deletable at once, never searchable, not in N.
+// holding records are deletable at once, never searchable, not in N.
+#[spec("SR-7.4-1", "SR-7.4-3")]
 #[test]
 fn p1_index_holding_record_deletable_not_searchable() {
     let live = rows("live");
@@ -364,7 +374,8 @@ fn p1_index_holding_record_deletable_not_searchable() {
     assert_eq!(ix.stats().big_n, 0);
 }
 
-// spec: SR-7.3-2 — spillover is checked before the holding area (SB-8).
+// spillover is checked before the holding area (SB-8).
+#[spec("SR-7.3-2")]
 #[test]
 fn p1_index_spillover_before_holding() {
     let (refs, live) = (rows("ref"), rows("live"));
@@ -380,7 +391,8 @@ fn p1_index_spillover_before_holding() {
     survivors_ok(&ix);
 }
 
-// spec: SR-7.7-1, SR-7.7-2 — routing is pure and does not depend on group creation order (SB-7).
+// routing is pure and does not depend on group creation order (SB-7).
+#[spec("SR-7.7-1", "SR-7.7-2", "SR-7-1")]
 #[test]
 fn p1_index_routing_ignores_creation_order() {
     let (refs, live) = (rows("ref"), rows("live"));
@@ -408,7 +420,8 @@ fn p1_index_routing_ignores_creation_order() {
     }
 }
 
-// spec: SR-5.6-1 — the room test at 2kn = 3N − 1, 3N, 3N + 1.
+// the room test at 2kn = 3N − 1, 3N, 3N + 1.
+#[spec("SR-5.6-1")]
 #[test]
 fn p1_index_room_test_boundaries() {
     assert!(has_room(1, 1, 1)); // 2 = 3 − 1
@@ -418,7 +431,8 @@ fn p1_index_room_test_boundaries() {
     assert!(!has_room(u64::MAX / 2, u64::MAX / 2, u64::MAX)); // huge values: no overflow, no room
 }
 
-// spec: SR-7.5-1 — golden vector 7, written by the reference model.
+// golden vector 7, written by the reference model.
+#[spec("SR-7.5-1")]
 #[test]
 fn p1_index_golden_spawn_id() {
     let g: serde_json::Value =
@@ -438,8 +452,9 @@ fn p1_index_golden_spawn_id() {
 
 // --- delete_user, locator, mirror -----------------------------------------------------------------
 
-// spec: SR-5.4-2, SR-3.5 — delete_user across groups, one unit; a repeated ID is AlreadyAbsent the
+// SR-3.5 — delete_user across groups, one unit; a repeated ID is AlreadyAbsent the
 // second time and subtracts nothing (SB-3; E2E-1.4 in miniature).
+#[spec("SR-5.4-2", "SR-3.5-1")]
 #[test]
 fn p1_index_delete_user_across_groups_with_repeats() {
     let (refs, live) = (rows("ref"), rows("live"));
@@ -473,8 +488,9 @@ fn p1_index_delete_user_across_groups_with_repeats() {
     survivors_ok(&ix);
 }
 
-// spec: SR-5.4-1 (§14.4 swap-with-last) — after a slot move, the moved record is still found and
+// SR-5.4-1 (§14.4 swap-with-last) — after a slot move, the moved record is still found and
 // deletable (SB-4).
+#[spec("SR-5.4-1")]
 #[test]
 fn p1_index_locator_follows_moved_slot() {
     let refs = rows("ref");
@@ -496,7 +512,8 @@ fn p1_index_locator_follows_moved_slot() {
     assert_eq!(ix.group_len(&g), Some(0));
 }
 
-// spec: SR-8.1-4 (INV-9) — a deleted record leaves the search mirror at once (SB-5).
+// SR-8.1-4 (INV-9) — a deleted record leaves the search mirror at once (SB-5).
+#[spec("SR-8.1-4")]
 #[test]
 fn p1_index_deleted_record_leaves_the_mirror() {
     let refs = rows("ref");
@@ -514,7 +531,8 @@ fn p1_index_deleted_record_leaves_the_mirror() {
     ix.check_invariants().unwrap();
 }
 
-// spec: SR-5.5-4, SR-5.3-1 — plan never mutates: the state is identical before and after any plan.
+// plan never mutates: the state is identical before and after any plan.
+#[spec("SR-5.5-4", "SR-5.3-1")]
 #[test]
 fn p1_index_plan_never_mutates() {
     let (refs, live) = (rows("ref"), rows("live"));
@@ -630,7 +648,8 @@ fn p1_index_contracts() {
     assert_eq!(ep2_contract(&HmacSha512Scrambler::new(&[9; 64])), Ok(()));
 }
 
-// spec: SR-9.7-1 — the scrambler against Python's hmac (golden).
+// the scrambler against Python's hmac (golden).
+#[spec("SR-9.7-1")]
 #[test]
 fn p1_index_scrambler_matches_python_hmac() {
     use crate::scramble::IdScrambler;
@@ -708,4 +727,79 @@ proptest! {
         }
         prop_assert_eq!(state_hash(&a), state_hash(&b));
     }
+}
+
+// §7.1: the nearest frozen centroid by a sequential float64 sum, recomputed here from the artefact;
+// label 2 is made an exact copy of label 1, so every vector nearest to them ties and must go to 1.
+#[spec("SR-7.1-1")]
+#[test]
+fn p1_index_nearest_frozen_group_ties_to_smaller_label() {
+    let mut art = artefact();
+    let d = art.d;
+    let c1 = art.centroids[d..2 * d].to_vec();
+    art.centroids[2 * d..3 * d].copy_from_slice(&c1);
+    let ix = Index::new(
+        &art,
+        IndexConfig {
+            spawning_enabled: false,
+            spawn_target: 8,
+        },
+        NoExtension,
+        HmacSha512Scrambler::new(&[7; 64]),
+        CollectionId::from_bytes([1; 16]),
+    )
+    .unwrap();
+    let mut ties = 0;
+    for v in rows("ref").iter().chain(rows("live").iter()) {
+        let x = sever_quant::quantise(v, d).unwrap();
+        let xhat = x.dequantise_f64();
+        let dist = |j: usize| {
+            let mut s = 0.0f64;
+            for (i, xi) in xhat.iter().enumerate() {
+                let t = xi - art.centroids[j * d + i];
+                s += t * t;
+            }
+            s
+        };
+        let mut best = 0;
+        for j in 1..art.k_frozen {
+            if dist(j) < dist(best) {
+                best = j;
+            }
+        }
+        ties += usize::from(best == 1);
+        assert_eq!(
+            ix.route(&x).unwrap().0,
+            GroupId::frozen(best as u16).unwrap()
+        );
+    }
+    assert!(ties > 0, "no vector was nearest to the duplicated centroid");
+}
+
+// §5.6 hard cap at the three boundary points (Build §2.2): 10^6 − 1 and 10^6 members are accepted;
+// the insert that would make 10^6 + 1 is GroupCapacityExceeded and changes nothing.
+#[spec("SR-5.6-2", "SR-4.4-1")]
+#[test]
+#[ignore = "10^6 inserts (about 300 MB): Full tier, run with --release --ignored"]
+fn p1_index_hard_cap_at_one_million() {
+    let mut ix = frozen_only();
+    let v = &rows("ref")[0];
+    let cap = sever_types::constants::MAX_GROUP_MEMBERS;
+    let (g, _) = ix.route(&sever_quant::quantise(v, 16).unwrap()).unwrap();
+    for i in 0..cap {
+        ins(&mut ix, &format!("r{i}"), v).unwrap();
+    }
+    assert_eq!(ix.group_len(&g), Some(cap as usize));
+    let before = ix.stats();
+    assert_eq!(
+        ins(&mut ix, "one-too-many", v),
+        Err(sever_types::Error::GroupCapacityExceeded)
+    );
+    assert_eq!(ix.stats(), before);
+    assert_eq!(ix.location("one-too-many"), None);
+    // One deletion makes room again.
+    assert!(matches!(del(&mut ix, "r0"), Outcome::Deleted { .. }));
+    ins(&mut ix, "one-too-many", v).unwrap();
+    assert_eq!(ix.group_len(&g), Some(cap as usize));
+    ix.check_invariants().unwrap();
 }

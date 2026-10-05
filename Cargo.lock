@@ -280,6 +280,7 @@ dependencies = [
  "sever-index",
  "sever-partition",
  "sever-quant",
+ "sever-spec",
  "sever-types",
  "sha2",
 ]
@@ -295,6 +296,7 @@ dependencies = [
  "sever-partition",
  "sever-quant",
  "sever-search",
+ "sever-spec",
  "sever-types",
  "sha2",
  "zeroize",
@@ -305,6 +307,7 @@ name = "sever-partition"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+ "sever-spec",
  "sever-types",
  "sha2",
 ]
@@ -315,6 +318,7 @@ version = "0.1.0"
 dependencies = [
  "proptest",
  "serde_json",
+ "sever-spec",
  "sever-types",
 ]
 
@@ -327,8 +331,13 @@ dependencies = [
  "sever-index",
  "sever-partition",
  "sever-quant",
+ "sever-spec",
  "sever-types",
 ]
+
+[[package]]
+name = "sever-spec"
+version = "0.1.0"
 
 [[package]]
 name = "sever-tracekit"
@@ -348,6 +357,7 @@ name = "sever-types"
 version = "0.1.0"
 dependencies = [
  "proptest",
+ "sever-spec",
  "thiserror",
  "zeroize",
 ]

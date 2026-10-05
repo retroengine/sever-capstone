@@ -60,8 +60,10 @@ pub const MAX_ACCUMULATOR_BITS: u32 = 44;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sever_spec::spec;
 
-    // spec: SR-2.2-1 — the Part 1 rows of the §2.2 table, value by value.
+    // the Part 1 rows of the §2.2 table, value by value.
+    #[spec("SR-2.2-1")]
     #[test]
     fn p1_types_v1_parameters_match_spec_table() {
         assert_eq!(DIMENSION_V1, 384);
@@ -76,14 +78,16 @@ mod tests {
         assert_eq!((RECORD_ID_MIN_BYTES, RECORD_ID_MAX_BYTES), (1, 256));
     }
 
-    // spec: SR-2.2-1 — Appendix A "Normalisation tolerance: 8 × 2^−23 = 9.54 × 10^−7", exactly.
+    // Appendix A "Normalisation tolerance: 8 × 2^−23 = 9.54 × 10^−7", exactly.
+    #[spec("SR-2.2-1")]
     #[test]
     fn p1_types_tolerance_is_exactly_eight_float32_ulps() {
         assert_eq!(NORM_TOLERANCE, 8.0 * f64::from(f32::EPSILON));
         assert_eq!(NORM_TOLERANCE, 9.5367431640625e-7);
     }
 
-    // spec: SR-2.2-1 — Appendix A rows "Largest |x̃_i|" and "Largest |S_i| at 10^6 members".
+    // Appendix A rows "Largest |x̃_i|" and "Largest |S_i| at 10^6 members".
+    #[spec("SR-2.2-1", "SR-4.4-1")]
     #[test]
     fn p1_types_appendix_a_bounds_hold() {
         assert_eq!(MAX_ABS_QUANTISED, 16_777_232);

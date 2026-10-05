@@ -146,6 +146,7 @@ pub fn dequantise_component_f32(v: i32) -> f32 {
 mod tests {
     use super::*;
     use proptest::prelude::*;
+    use sever_spec::spec;
 
     /// A d-vector with `a` in component 0 and zeros elsewhere: its norm is exactly |a|.
     fn axis(a: f32, d: usize) -> Vec<f32> {
@@ -164,7 +165,8 @@ mod tests {
         1.0 - n as f32 * (f32::EPSILON / 2.0)
     }
 
-    // spec: SR-4.1-0 — step 0: wrong length is WrongDimension, checked before anything else.
+    // step 0: wrong length is WrongDimension, checked before anything else.
+    #[spec("SR-4.1-0")]
     #[test]
     fn p1_quant_wrong_dimension_is_rejected_first() {
         assert_eq!(
@@ -183,7 +185,8 @@ mod tests {
         );
     }
 
-    // spec: SR-4.1-1 — NaN, +inf and −inf are rejected anywhere in the vector.
+    // NaN, +inf and −inf are rejected anywhere in the vector.
+    #[spec("SR-4.1-1")]
     #[test]
     fn p1_quant_non_finite_is_rejected() {
         for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
@@ -199,7 +202,8 @@ mod tests {
         }
     }
 
-    // spec: SR-4.1-3 — the tolerance boundary, exactly at ±8 ULPs and one ULP beyond (Build §4.7).
+    // the tolerance boundary, exactly at ±8 ULPs and one ULP beyond (Build §4.7).
+    #[spec("SR-4.1-3")]
     #[test]
     fn p1_quant_tolerance_boundaries() {
         // Above 1.0 the float32 spacing is 2^−23: 8 steps is exactly the tolerance.
@@ -227,8 +231,9 @@ mod tests {
         );
     }
 
-    // spec: SR-4.1-2 — the norm is a float64 sum: a vector whose float32 sum of squares would
+    // the norm is a float64 sum: a vector whose float32 sum of squares would
     // round away from 1 still passes, because the check never computes in float32.
+    #[spec("SR-4.1-2")]
     #[test]
     fn p1_quant_norm_is_summed_in_f64_sequentially() {
         let d = 384;
@@ -243,7 +248,8 @@ mod tests {
         assert_eq!(check_normalised(&x, d), Ok(()));
     }
 
-    // spec: SR-4.2-1 — golden vector 5 (Appendix B), produced independently by NumPy.
+    // golden vector 5 (Appendix B), produced independently by NumPy.
+    #[spec("SR-4.2-1")]
     #[test]
     fn p1_quant_golden_half_steps_round_to_even() {
         let doc: serde_json::Value =
@@ -258,7 +264,8 @@ mod tests {
         }
     }
 
-    // spec: SR-4.2-1 — ties to even, by hand: ±0.5 → 0, 1.5 → 2, 2.5 → 2, −2.5 → −2, 3.5 → 4.
+    // ties to even, by hand: ±0.5 → 0, 1.5 → 2, 2.5 → 2, −2.5 → −2, 3.5 → 4.
+    #[spec("SR-4.2-1")]
     #[test]
     fn p1_quant_ties_to_even_by_hand() {
         let half = |k2: i32| k2 as f32 / (1 << 25) as f32; // k2 / 2^25, so x · 2^24 = k2 / 2
@@ -270,7 +277,8 @@ mod tests {
         assert_eq!(quantise_component(half(7)), 4);
     }
 
-    // spec: SR-4.2-2 — the bound |x̃| ≤ 2^24 + 16 is reached exactly at the tolerance edge.
+    // the bound |x̃| ≤ 2^24 + 16 is reached exactly at the tolerance edge.
+    #[spec("SR-4.2-2")]
     #[test]
     fn p1_quant_bound_is_reached_at_tolerance_edge() {
         let q = quantise(&axis(above(8), 16), 16).unwrap();
@@ -279,7 +287,8 @@ mod tests {
         assert_eq!(i64::from(q.as_slice()[0]), -MAX_ABS_QUANTISED);
     }
 
-    // spec: SR-4.1-3, INV-1 — quantise refuses what the check refuses: no bypass.
+    // INV-1 — quantise refuses what the check refuses: no bypass.
+    #[spec("SR-4.1-3")]
     #[test]
     fn p1_quant_quantise_runs_the_check() {
         assert_eq!(quantise(&axis(2.0, 16), 16), Err(Error::NotNormalised));
@@ -287,8 +296,9 @@ mod tests {
         assert_eq!(quantise(&axis(1.0, 8), 16), Err(Error::WrongDimension));
     }
 
-    // spec: SR-4.3-1, SR-4.3-2 — dequantisation: exact in f64; f32 exact up to 2^24 and rounded to
+    // dequantisation: exact in f64; f32 exact up to 2^24 and rounded to
     // nearest even above it.
+    #[spec("SR-4.3-1", "SR-4.3-2")]
     #[test]
     fn p1_quant_dequantise() {
         assert_eq!(dequantise_component_f64(1 << 24), 1.0);
@@ -335,14 +345,16 @@ mod tests {
     }
 
     proptest! {
-        // spec: SR-4.1-3 — properly normalised float32 vectors (d = 384) always pass.
+        // properly normalised float32 vectors (d = 384) always pass.
+        #[spec("SR-4.1-3")]
         #[test]
         fn p1_quant_prop_unit_vectors_pass(x in unit_vector(384)) {
             prop_assert_eq!(check_normalised(&x, 384), Ok(()));
         }
 
-        // spec: SR-4.2-1, SR-4.2-2, SR-4.3-1 — round trip within half a step, bound respected,
+        // round trip within half a step, bound respected,
         // deterministic.
+        #[spec("SR-4.2-1", "SR-4.2-2", "SR-4.3-1")]
         #[test]
         fn p1_quant_prop_round_trip_within_half_step(x in unit_vector(64)) {
             let q = quantise(&x, 64).unwrap();

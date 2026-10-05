@@ -188,6 +188,7 @@ impl PartitionArtefact {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sever_spec::spec;
 
     /// The small artefact the Python builder wrote (d = 16, k = 4), and the builder's own summary
     /// of it: an independent cross-check of the byte layout (Build §4.7 L8, builder to importer).
@@ -203,8 +204,9 @@ mod tests {
         body
     }
 
-    // spec: SR-6.3-1, SR-6.3-2 — the Python builder's file parses, and every field matches the
+    // the Python builder's file parses, and every field matches the
     // builder's summary.
+    #[spec("SR-6.3-1", "SR-6.3-2")]
     #[test]
     fn p1_partition_parses_the_python_builders_file() {
         let a = PartitionArtefact::parse(SMALL).unwrap();
@@ -234,7 +236,8 @@ mod tests {
         assert!(a.precision_row(16).is_none());
     }
 
-    // spec: SR-6.3-2 — every single-bit flip anywhere in the file is caught by the hash.
+    // every single-bit flip anywhere in the file is caught by the hash.
+    #[spec("SR-6.3-2")]
     #[test]
     fn p1_partition_every_bit_flip_is_detected() {
         for byte in 0..SMALL.len() {
@@ -249,7 +252,8 @@ mod tests {
         }
     }
 
-    // spec: SR-6.3-2 — with a valid hash, the field checks still refuse bad content.
+    // with a valid hash, the field checks still refuse bad content.
+    #[spec("SR-6.3-2", "SR-8.2-2")]
     #[test]
     fn p1_partition_rejects_bad_fields_even_with_valid_hash() {
         let cases: Vec<(&str, Mutation)> = vec![

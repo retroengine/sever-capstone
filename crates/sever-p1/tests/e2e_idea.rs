@@ -12,6 +12,7 @@ use std::path::PathBuf;
 use sever_index::{DeleteRequest, IndexConfig, InsertRequest, Outcome, Placement};
 use sever_p1::data::{load_nq, load_synthetic};
 use sever_p1::{Dataset, P1Index, new_index, run};
+use sever_spec::spec;
 use sever_types::{Error, GroupId};
 use sha2::{Digest, Sha256};
 
@@ -66,9 +67,10 @@ fn rows<'a>(ds: &'a Dataset, kind: &str) -> Vec<(&'a str, &'a [f32])> {
         .collect()
 }
 
-// spec: SR-5.3-1, SR-5.4-1, SR-5.5-1, SR-8.1-4 — E2E-1.1, E2E-1.4, E2E-1.5, E2E-1.6 through the
+// E2E-1.1, E2E-1.4, E2E-1.5, E2E-1.6 through the
 // demo: every touched group equals its survivors-only rebuild, nothing else changes, N falls by the
 // cohort size, a second delete is AlreadyAbsent, and no search returns a deleted record.
+#[spec("SR-5.3-1", "SR-5.4-1", "SR-5.5-1", "SR-8.1-4")]
 #[test]
 fn p1_e2e_demo_synthetic_deletion_is_exact() {
     let r = run(&fixture()).unwrap();
@@ -99,10 +101,11 @@ fn p1_e2e_demo_synthetic_ghost_rows() {
     assert!(r.ghost.per_group.iter().all(|g| g.sever_max_abs_diff == 0));
 }
 
-// spec: SR-7.4-2, SR-7.5-1 — E2E-1.2: the holding area holds spawn_target − 1 records; the next
+// E2E-1.2: the holding area holds spawn_target − 1 records; the next
 // out-of-distribution record flushes exactly those records into exactly one spawned group whose ID is
 // `spawn-` + the first 16 hex of SHA-256(‖ u16be(len) ‖ id), IDs ascending by bytes (computed here
 // from the spec, not with the engine's function).
+#[spec("SR-7.4-2", "SR-7.5-1")]
 #[test]
 fn p1_e2e_flush_at_exactly_the_spawn_target() {
     let ds = fixture();
@@ -137,8 +140,9 @@ fn p1_e2e_flush_at_exactly_the_spawn_target() {
     }
 }
 
-// spec: SR-7.4-1, SR-7.4-3 — E2E-1.3: a holding-area record is deleted at once; no accumulator and no
+// E2E-1.3: a holding-area record is deleted at once; no accumulator and no
 // N changes.
+#[spec("SR-7.4-1", "SR-7.4-3", "SR-2.1-1")]
 #[test]
 fn p1_e2e_holding_record_deleted_at_once() {
     let ds = fixture();
@@ -168,7 +172,8 @@ fn p1_e2e_holding_record_deleted_at_once() {
     ix.check_invariants().unwrap();
 }
 
-// spec: SR-5.4-2 — E2E-1.5 on its own: deleting an absent record changes nothing.
+// E2E-1.5 on its own: deleting an absent record changes nothing.
+#[spec("SR-5.4-2")]
 #[test]
 fn p1_e2e_delete_absent_is_already_absent() {
     let ds = fixture();
@@ -190,8 +195,11 @@ fn p1_e2e_delete_absent_is_already_absent() {
     assert_eq!(ix.stats().big_n, n);
 }
 
-// spec: SR-17-1, SR-17-2, SR-3.2-1, SR-3.2-2, SR-3.2-3, SR-4.1-0, SR-4.1-1, SR-4.1-3 — E2E-1.7: every
+// E2E-1.7: every
 // malformed input Part 1 owns gets a typed error whose text names no ID and no vector value.
+#[spec(
+    "SR-17-1", "SR-17-2", "SR-3.2-1", "SR-3.2-2", "SR-3.2-3", "SR-4.1-0", "SR-4.1-1", "SR-4.1-3"
+)]
 #[test]
 fn p1_e2e_malformed_inputs_typed_errors_without_secrets() {
     let ds = fixture();

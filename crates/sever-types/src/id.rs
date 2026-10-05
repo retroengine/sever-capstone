@@ -311,6 +311,7 @@ impl fmt::Debug for ScrambledId {
 mod tests {
     use super::*;
     use proptest::prelude::*;
+    use sever_spec::spec;
 
     fn reason(id: &str) -> Option<InvalidRecordIdReason> {
         match RecordId::new(id) {
@@ -320,7 +321,8 @@ mod tests {
         }
     }
 
-    // spec: SR-3.2-2 — the examples written in §3.2 itself.
+    // the examples written in §3.2 itself.
+    #[spec("SR-3.2-2")]
     #[test]
     fn p1_types_record_id_spec_examples() {
         for ok in ["doc0", "nq-1234", "0b8c7e4e-2f0a-4c43-9a43-7d0c8f8b5e10"] {
@@ -335,8 +337,9 @@ mod tests {
         }
     }
 
-    // spec: SR-3.2-2 — equivalence classes around the regex (Build §2.2): full match only, one
+    // equivalence classes around the regex (Build §2.2): full match only, one
     // sign at most, ASCII digits only.
+    #[spec("SR-3.2-2")]
     #[test]
     fn p1_types_record_id_counter_shape_is_a_full_ascii_match() {
         let cases: &[(&str, bool)] = &[
@@ -361,7 +364,8 @@ mod tests {
         }
     }
 
-    // spec: SR-3.2-1 — boundaries in bytes: 0, 1, 256, 257; multi-byte characters count in bytes.
+    // boundaries in bytes: 0, 1, 256, 257; multi-byte characters count in bytes.
+    #[spec("SR-3.2-1")]
     #[test]
     fn p1_types_record_id_length_boundaries_in_bytes() {
         assert_eq!(reason(""), Some(InvalidRecordIdReason::Empty));
@@ -384,7 +388,8 @@ mod tests {
         );
     }
 
-    // spec: SR-3.2-1 — invalid UTF-8 is rejected.
+    // invalid UTF-8 is rejected.
+    #[spec("SR-3.2-1")]
     #[test]
     fn p1_types_record_id_rejects_invalid_utf8() {
         let err = RecordId::from_bytes(&[0x64, 0x6f, 0xff]).unwrap_err();
@@ -392,7 +397,8 @@ mod tests {
         assert!(RecordId::from_bytes(b"doc0").is_ok());
     }
 
-    // spec: SR-0.2-3 — order is by raw UTF-8 bytes: uppercase before lowercase, no numeric sort.
+    // order is by raw UTF-8 bytes: uppercase before lowercase, no numeric sort.
+    #[spec("SR-0.2-3")]
     #[test]
     fn p1_types_record_ids_sort_by_bytes() {
         let mut ids: Vec<RecordId> = ["doc2", "doc10", "Doc2", "doc1", "\u{e9}a", "z"]
@@ -405,7 +411,8 @@ mod tests {
         assert_eq!(got, ["Doc2", "doc1", "doc10", "doc2", "z", "\u{e9}a"]);
     }
 
-    // spec: SR-17-2 — a rejected ID never appears in the error, and Debug never shows an ID.
+    // a rejected ID never appears in the error, and Debug never shows an ID.
+    #[spec("SR-17-2")]
     #[test]
     fn p1_types_record_id_never_leaks_into_text() {
         let err = RecordId::new("98765432").unwrap_err();
@@ -416,14 +423,16 @@ mod tests {
     }
 
     proptest! {
-        // spec: SR-3.2-2 — anything built from the regex is rejected.
+        // anything built from the regex is rejected.
+        #[spec("SR-3.2-2")]
         #[test]
         fn p1_types_prop_counter_shaped_always_rejected(id in "[+-]?[0-9]{1,200}") {
             prop_assert_eq!(reason(&id), Some(InvalidRecordIdReason::CounterShaped));
         }
 
-        // spec: SR-3.2-1, SR-3.2-2 — the rules exactly: accepted iff 1–256 bytes and not a full
+        // the rules exactly: accepted iff 1–256 bytes and not a full
         // regex match (checked against an independent statement of the rule).
+        #[spec("SR-3.2-1", "SR-3.2-2")]
         #[test]
         fn p1_types_prop_record_id_rule_is_exact(id in "\\PC{0,300}") {
             let n = id.len();
@@ -437,7 +446,8 @@ mod tests {
             prop_assert_eq!(RecordId::new(id.clone()).is_ok(), expect_ok);
         }
 
-        // spec: SR-0.2-3 — RecordId order equals raw byte order.
+        // RecordId order equals raw byte order.
+        #[spec("SR-0.2-3")]
         #[test]
         fn p1_types_prop_record_id_order_is_byte_order(a in "[a-zA-Z\u{e0}-\u{ff}]{1,20}",
                                                        b in "[a-zA-Z\u{e0}-\u{ff}]{1,20}") {
@@ -446,7 +456,8 @@ mod tests {
         }
     }
 
-    // spec: SR-5.1-1, SR-5.1-2, SR-5.1-3 — the three text forms.
+    // the three text forms.
+    #[spec("SR-5.1-1", "SR-5.1-2", "SR-5.1-3")]
     #[test]
     fn p1_types_group_id_text_forms() {
         assert_eq!(GroupId::frozen(42).unwrap().as_text(), "frozen-0042");
@@ -458,7 +469,8 @@ mod tests {
         assert_eq!(GroupId::Holding.as_text(), "holding");
     }
 
-    // spec: SR-5.1-4 — at most 32 bytes, stored zero-padded to 32.
+    // at most 32 bytes, stored zero-padded to 32.
+    #[spec("SR-5.1-4")]
     #[test]
     fn p1_types_group_id_fits_32_bytes_zero_padded() {
         for g in [
@@ -474,7 +486,8 @@ mod tests {
         assert_eq!(GroupId::Spawned([0; 8]).to_padded_bytes().1, 22);
     }
 
-    // spec: SR-5.1-1, SR-5.1-2, SR-5.1-3 — strict parsing round-trips and rejects near misses.
+    // strict parsing round-trips and rejects near misses.
+    #[spec("SR-5.1-1", "SR-5.1-2", "SR-5.1-3")]
     #[test]
     fn p1_types_group_id_parse_is_strict() {
         for g in [
@@ -503,7 +516,8 @@ mod tests {
         }
     }
 
-    // spec: SR-0.2-3 — group IDs order by their bytes, not by kind or number.
+    // group IDs order by their bytes, not by kind or number.
+    #[spec("SR-0.2-3")]
     #[test]
     fn p1_types_group_ids_sort_by_bytes() {
         let mut gs = vec![
@@ -525,7 +539,8 @@ mod tests {
         );
     }
 
-    // spec: SR-3.1-1, SR-9.7-1 — fixed widths of 16 and 64 bytes, ordered by bytes.
+    // fixed widths of 16 and 64 bytes, ordered by bytes.
+    #[spec("SR-3.1-1", "SR-9.7-1")]
     #[test]
     fn p1_types_fixed_width_ids() {
         let c = CollectionId::from_bytes([7; 16]);

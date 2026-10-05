@@ -230,3 +230,12 @@
 - {id: SR-8.1-3, section: "8.1", kind: step, part: 1, text: "Score every member of every probed group with the §8.2 kernel on the float32 mirror; return the k smallest by (score, record-ID bytes)."}
 - {id: SR-8.1-4, section: "8.1", kind: must-not, part: 1, text: "A deleted record MUST NOT appear in any result produced after its deletion is acknowledged (INV-9).", related: [SB-5, P1-T5]}
 - {id: SR-8.2-1, section: "8.2", kind: must, part: 1, text: "Pinned kernel: 8 float32 lanes, lane i mod 8, t = q_i − x̂_i, L_j = L_j + t·t (no FMA), reduction ((L0+L1)+(L2+L3))+((L4+L5)+(L6+L7)); scalar and SIMD bit-identical.", related: [SB-9, P1-T4]}
+
+# --- coverage pass with spec-trace candidates (5 Oct 2026, write mode; owner review) ---
+- {id: SR-2.1-1, section: "2.1", kind: definition, part: 1, text: "N (live_vectors) counts records in frozen and spawned groups and k (total_groups) counts frozen plus spawned groups; the holding area is excluded from both."}
+- {id: SR-3.5-1, section: "3.5", kind: definition, part: 1, text: "A cohort is the set of records deleted together by delete_user; the caller supplies the list and the engine stores no cohorts."}
+- {id: SR-4.4-1, section: "4.4", kind: formula, part: 1, text: "With at most 10^6 members, |S_i| ≤ 10^6 · 16,777,232 < 2^44: 19 bits of headroom in i64. The 10^6 cap is enforced on every insert (INV-4, SR-5.6-2)."}
+- {id: SR-4.2-4, section: "4.2", kind: must, part: 2, text: "The SDK on the application backend and the engine MUST use the same quantiser (the commitment is computed from x̃ on the backend).", notes: "Part 2 builds the SDK; Part 1 has one quantiser, sever-quant."}
+- {id: SR-6.1-1, section: "6.1", kind: must, part: 1, text: "The engine never fits anything: it imports the partition artefact produced offline by the builder C-15.", technique: [architecture]}
+- {id: SR-7-1, section: "7", kind: must, part: 1, text: "Routing is a pure function of (x̃, state): no clock, no arrival counter, no most-recent-group rule; the same (x̃, state) MUST always give the same destination.", related: [SR-7.7-1, INV-16, SB-7]}
+- {id: SR-8.2-2, section: "8.2", kind: must, part: 1, text: "d MUST be a multiple of 8 (the kernel's lane layout); an artefact with another d is rejected.", related: [DB-49]}
