@@ -56,7 +56,8 @@ def entry(root: Path, command: str, **fields: Any) -> dict[str, Any]:
         "utc": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
         "command": command,
         "commit": _git(root, "rev-parse", "HEAD"),
-        "git_dirty": bool(_git(root, "status", "--porcelain")),
+        # The ledger itself is excluded: a running gate's "started" line is uncommitted by design.
+        "git_dirty": bool(_git(root, "status", "--porcelain", "--", ".", f":!{LEDGER}")),
         "dataset_manifest_sha256": _sha(manifest) if manifest.exists() else None,
         "platform": _platform(),
         "pythonhashseed": os.environ.get("PYTHONHASHSEED"),
