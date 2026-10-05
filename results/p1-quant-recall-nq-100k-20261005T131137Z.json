@@ -1,0 +1,11 @@
+{
+ "measure": "P1-T7 (overview T-6, first size)",
+ "data": "nq-100k",
+ "queries": 3452,
+ "k": 10,
+ "recall_at_10": 1.0,
+ "target_pre_registered": 0.999,
+ "met": true,
+ "seconds": 86.3,
+ "method": "float64 brute force, |q|^2 - 2 q.x + |x|^2; ties by row index; dequantised = round_half_even(x*2^24)/2^24"
+}

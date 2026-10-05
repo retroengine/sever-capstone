@@ -4,12 +4,15 @@
     uv run python -m sever_testkit.gates p1-differential --data nq-100k --all-seeds
     uv run python -m sever_testkit.gates p1-quant-recall --data nq-100k
 
-``p1-differential`` is gates P1-T2 and P1-T5: the model writes a trace per seed, the Rust replayer
-compares every value, and the gate passes only with 0 mismatches and 0 deleted records returned.
+``p1-differential`` is gates P1-T2 and P1-T5, plus the P1-T1 survivors check after every deletion
+and the P1-T4 kernel check on every scored query–vector pair: the model writes a trace per seed,
+the Rust replayer compares every value, and the gate passes only when every failure count is 0.
+Seeds run in ``--jobs`` parallel processes (about 0.2 GB each at nq-10k, 2 GB at nq-100k).
 ``p1-quant-recall`` is the measure P1-T7 (overview T-6, first size): reported as found.
 """
 
 import argparse
+import concurrent.futures
 import hashlib
 import json
 import subprocess
@@ -24,14 +27,45 @@ from sever_testkit import ledger, traces
 from sever_testkit.seeds import SEEDS
 
 
-def p1_differential(root: Path, data: str, seeds: list[int], n_queries: int | None) -> int:
+def _differential_seed(
+    root: Path, data: str, seed: int, n_queries: int | None, replayer: Path
+) -> dict[str, Any]:
+    """One seed: the model writes the trace, then the run's replayer checks it."""
+    slice_ = traces.load_slice(root, data)
+    path = root / f"traces/p1-{data}-seed{seed}.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        summary = traces.write_trace(
+            root, f, slice_, seed, root / f"artefacts/partition-seed{seed}.svp", n_queries=n_queries
+        )
+    summary["trace_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    rep = subprocess.run(
+        [str(replayer), "replay", str(path), "--root", str(root)],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    summary["replay"] = (
+        json.loads(rep.stdout.strip().splitlines()[-1])
+        if rep.stdout.strip()
+        else {"result": "ERROR", "stderr": rep.stderr[-2000:]}
+    )
+    summary["replay_stderr"] = rep.stderr[-2000:]
+    print(json.dumps(summary), flush=True)
+    return summary
+
+
+def p1_differential(
+    root: Path, data: str, seeds: list[int], n_queries: int | None, jobs: int = 1
+) -> int:
     cmd = f"gates p1-differential --data {data} --seeds {seeds}"
     artefacts = {
         s: hashlib.sha256((root / f"artefacts/partition-seed{s}.svp").read_bytes()).hexdigest()
         for s in seeds
     }
     started = ledger.start(
-        root, cmd, gate="P1-T2, P1-T5", data=data, seeds=seeds, artefacts=artefacts
+        root, cmd, gate="P1-T2, P1-T5, P1-T1, P1-T4", data=data, seeds=seeds, artefacts=artefacts
     )
     run_commit = started["commit"]
     # The replayer is built once into a target directory owned by this run, so a build made while
@@ -52,39 +86,15 @@ def p1_differential(root: Path, data: str, seeds: list[int], n_queries: int | No
         check=True,
     )
     replayer = target_dir / "release/sever-tracekit"
-    slice_ = traces.load_slice(root, data)
-    per_seed: list[dict[str, Any]] = []
-    for seed in seeds:
-        path = root / f"traces/p1-{data}-seed{seed}.jsonl"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("w", encoding="utf-8") as f:
-            summary = traces.write_trace(
-                root,
-                f,
-                slice_,
-                seed,
-                root / f"artefacts/partition-seed{seed}.svp",
-                n_queries=n_queries,
-            )
-        summary["trace_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
-        rep = subprocess.run(
-            [str(replayer), "replay", str(path), "--root", str(root)],
-            cwd=root,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        summary["replay"] = (
-            json.loads(rep.stdout.strip().splitlines()[-1])
-            if rep.stdout.strip()
-            else {"result": "ERROR", "stderr": rep.stderr[-2000:]}
-        )
-        summary["replay_stderr"] = rep.stderr[-2000:]
-        print(json.dumps(summary), flush=True)
-        per_seed.append(summary)
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max(1, jobs)) as pool:
+        futures = [
+            pool.submit(_differential_seed, root, data, seed, n_queries, replayer) for seed in seeds
+        ]
+        per_seed = [f.result() for f in futures]  # in seed order
     passed = all(s["replay"].get("result") == "PASS" for s in per_seed)
     data_out = {
-        "gate": "P1-T2 (0 mismatches), P1-T5 (0 deleted returned)",
+        "gate": "P1-T2 (0 mismatches), P1-T5 (0 deleted returned), P1-T1 (0 survivors-check "
+        "failures), P1-T4 (0 kernel mismatches)",
         "data": data,
         "seeds": per_seed,
         "outcome": "PASS" if passed else "FAIL",
@@ -99,7 +109,7 @@ def p1_differential(root: Path, data: str, seeds: list[int], n_queries: int | No
         ledger.entry(
             root,
             cmd,
-            gate="P1-T2, P1-T5",
+            gate="P1-T2, P1-T5, P1-T1, P1-T4",
             data=data,
             seeds=seeds,
             artefacts=artefacts,
@@ -191,11 +201,12 @@ def _main(argv: list[str]) -> int:
     ap.add_argument("--seed", type=int, action="append")
     ap.add_argument("--all-seeds", action="store_true")
     ap.add_argument("--queries", type=int, default=None)
+    ap.add_argument("--jobs", type=int, default=1, help="seeds run in parallel")
     ap.add_argument("--root", type=Path, default=Path("."))
     a = ap.parse_args(argv)
     seeds = list(SEEDS) if a.all_seeds else (a.seed or [42])
     if a.gate == "p1-differential":
-        return p1_differential(a.root.resolve(), a.data, seeds, a.queries)
+        return p1_differential(a.root.resolve(), a.data, seeds, a.queries, a.jobs)
     return p1_quant_recall(a.root.resolve(), a.data)
 
 

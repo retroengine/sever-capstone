@@ -11,18 +11,21 @@
 // never panics; that is the only indexing this crate does.
 #![allow(clippy::indexing_slicing)]
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
 
 use serde_json::Value;
+use sever_index::blob::{parse_blob, snapshot_from_members};
 use sever_index::{
-    DeleteRequest, HmacSha512Scrambler, Index, IndexConfig, InsertRequest, NoExtension, Outcome,
-    Placement,
+    DeleteRequest, GroupExtension, HmacSha512Scrambler, Index, IndexConfig, InsertRequest,
+    NoExtension, Outcome, Placement,
 };
 use sever_partition::PartitionArtefact;
+use sever_quant::QVec;
+use sever_types::RecordId;
 use sever_types::{CollectionId, Error, GroupId};
 use sha2::{Digest, Sha256};
 
@@ -118,6 +121,15 @@ pub struct Report {
     pub mismatches: u64,
     /// Search results that named a deleted record. Gate P1-T5: must be 0.
     pub deleted_returned: u64,
+    /// Touched groups checked after a deletion against the group rebuilt from its surviving
+    /// members' own vectors (the survivors check, Build §4.7 L6; gate P1-T1).
+    pub survivor_groups_checked: u64,
+    /// Survivors checks that failed. Gate P1-T1: must be 0.
+    pub survivor_failures: u64,
+    /// Query–vector pairs scored by both kernels at the checkpoints (gate P1-T4).
+    pub kernel_pairs: u64,
+    /// Pairs whose scalar and dispatched (AVX2 when present) scores differ in any bit. P1-T4: 0.
+    pub kernel_mismatches: u64,
     /// The first mismatches, for the log.
     pub first: Vec<String>,
 }
@@ -202,6 +214,9 @@ pub fn replay(trace: &Path, root: &Path) -> Result<Report, ReplayError> {
 
     let mut rep = Report::default();
     let mut deleted: HashSet<String> = HashSet::new();
+    // Every live record's x̃, quantised here from its row, for the survivors check.
+    let mut live: HashMap<String, QVec> = HashMap::new();
+    let d = art.d;
     for line in lines {
         let line = line.map_err(|e| fail(format!("read: {e}")))?;
         let op: Value = serde_json::from_str(&line).map_err(|e| fail(format!("line: {e}")))?;
@@ -210,9 +225,11 @@ pub fn replay(trace: &Path, root: &Path) -> Result<Report, ReplayError> {
             Some("i") => {
                 let id = op["id"].as_str().unwrap_or_default().to_owned();
                 let row = op["row"].as_u64().unwrap_or(0) as usize;
+                let vector = vectors.row(row)?;
+                let xq = sever_quant::quantise(&vector, d).ok();
                 let req = InsertRequest {
                     record_id: id.clone(),
-                    vector: vectors.row(row)?,
+                    vector,
                     credential: (),
                 };
                 match (ix.insert(req), op["e"].as_str()) {
@@ -222,6 +239,9 @@ pub fn replay(trace: &Path, root: &Path) -> Result<Report, ReplayError> {
                             format!("insert {id}: placement {} vs {want}", placement_text(&p))
                         });
                         deleted.remove(&id);
+                        if let Some(x) = xq {
+                            live.insert(id.clone(), x);
+                        }
                     }
                     (Err(e), Some(want)) => rep.check(error_kind(&e) == want, || {
                         format!("insert {id}: error {e:?} vs {want}")
@@ -258,6 +278,7 @@ pub fn replay(trace: &Path, root: &Path) -> Result<Report, ReplayError> {
                     let got = match o {
                         Outcome::Deleted { from } => {
                             deleted.insert(id.clone());
+                            live.remove(id);
                             from.as_text()
                         }
                         Outcome::AlreadyAbsent => "absent".to_owned(),
@@ -267,6 +288,11 @@ pub fn replay(trace: &Path, root: &Path) -> Result<Report, ReplayError> {
                     rep.check(got == w, || format!("delete {id}: {got} vs {w}"));
                 }
                 compare_hashes(&ix, &op["g"], &mut rep, "delete_user");
+                if let Some(obj) = op["g"].as_object() {
+                    for g in obj.keys().filter_map(|g| GroupId::parse(g)) {
+                        survivors_check(&ix, &g, &live, d, &mut rep);
+                    }
+                }
             }
             Some("c") => {
                 let rung = op["rung"].as_u64().unwrap_or(0);
@@ -305,6 +331,9 @@ pub fn replay(trace: &Path, root: &Path) -> Result<Report, ReplayError> {
                     });
                 }
                 let results = op["r"].as_array().cloned().unwrap_or_default();
+                for q in queries.iter().take(results.len()) {
+                    kernel_check(&ix, q, &mut rep);
+                }
                 for (qi, (q, want)) in queries.iter().zip(&results).enumerate() {
                     let hits = sever_search::search(&ix, q, top_k)
                         .map_err(|e| fail(format!("search: {e}")))?;
@@ -327,13 +356,58 @@ pub fn replay(trace: &Path, root: &Path) -> Result<Report, ReplayError> {
                         }
                     }
                 }
-                ix.check_invariants()
-                    .map_err(|e| fail(format!("rung {rung}: {e}")))?;
+                // An invariant failure is a mismatch like any other: counted, and the replay goes on.
+                let inv = ix.check_invariants();
+                rep.check(inv.is_ok(), || format!("rung {rung}: {inv:?}"));
             }
             _ => return Err(fail("unknown trace line")),
         }
     }
     Ok(rep)
+}
+
+/// The survivors check (Build §4.7 L6): the group's blob equals the blob of a group built from its
+/// surviving members alone, each member's x̃ quantised here from the row it was inserted with.
+fn survivors_check(ix: &Ix, g: &GroupId, live: &HashMap<String, QVec>, d: usize, rep: &mut Report) {
+    rep.survivor_groups_checked += 1;
+    let rebuilt = ix.blob(g).and_then(|blob| {
+        let parsed = parse_blob(&blob, &<NoExtension as GroupExtension>::BLOB_MAGIC, 0).ok()?;
+        let mut members = Vec::with_capacity(parsed.members.len());
+        for (id, _) in &parsed.members {
+            let rid = RecordId::from_bytes(id).ok()?;
+            let x = live.get(rid.as_str())?;
+            members.push((rid, x));
+        }
+        let refs: Vec<(&RecordId, &QVec, &())> =
+            members.iter().map(|(r, x)| (r, *x, &())).collect();
+        Some(snapshot_from_members(&NoExtension, d, &refs).blob == blob)
+    });
+    if rebuilt != Some(true) {
+        rep.survivor_failures += 1;
+        rep.check(false, || {
+            format!("survivors check failed for {}", g.as_text())
+        });
+    }
+}
+
+/// P1-T4: every query–vector pair the search scores, scored by the scalar kernel and by the
+/// dispatched kernel (AVX2 when the CPU has it), bit for bit.
+fn kernel_check(ix: &Ix, q: &[f32], rep: &mut Report) {
+    let probed: HashSet<GroupId> = sever_search::probed_groups(ix, q).into_iter().collect();
+    let d = q.len();
+    for g in ix.search_groups().filter(|g| probed.contains(&g.id)) {
+        for row in g.rows.chunks_exact(d) {
+            rep.kernel_pairs += 1;
+            let (a, b) = (
+                sever_search::kernel::score_scalar(q, row),
+                sever_search::kernel::score(q, row),
+            );
+            if a.to_bits() != b.to_bits() {
+                rep.kernel_mismatches += 1;
+                rep.check(false, || format!("kernel: scalar {a} vs dispatched {b}"));
+            }
+        }
+    }
 }
 
 fn compare_hashes(ix: &Ix, want: &Value, rep: &mut Report, what: &str) {
