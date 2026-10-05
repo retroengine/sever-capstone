@@ -5,6 +5,7 @@
     uv run python -m sever_testkit.gates p1-quant-recall --data nq-100k
     uv run python -m sever_testkit.gates p1-fuzz --runs 100000000
     uv run python -m sever_testkit.gates p1-synthetic --streams 1000 --ops 1000 --jobs 5
+    uv run python -m sever_testkit.gates p1-spikes
 
 ``p1-differential`` is gates P1-T2 and P1-T5, plus the P1-T1 survivors check after every deletion
 and the P1-T4 kernel check on every scored query–vector pair: the model writes a trace per seed,
@@ -13,6 +14,8 @@ Seeds run in ``--jobs`` parallel processes (about 0.2 GB each at nq-10k, 2 GB at
 ``p1-quant-recall`` is the measure P1-T7 (overview T-6, first size): reported as found.
 ``p1-synthetic`` is the L4 synthetic differential (Build §4.7; evidence for P1-T1, P1-T2 and P1-T5):
 seeded random streams at the small fixture size, model against engine after every operation.
+``p1-spikes`` runs the throwaway proof spikes of Build §3.4 (part of gate P1-T13) and records the
+result; the spike code is deleted afterwards.
 ``p1-fuzz`` is gate P1-T12: each Part 1 parser runs ``--runs`` libFuzzer executions (both at once)
 from the committed seeds, and the gate passes only with 0 crashes.
 """
@@ -278,6 +281,43 @@ def p1_synthetic(root: Path, n_streams: int, n_ops: int, jobs: int) -> int:
     return 0 if passed else 1
 
 
+def p1_spikes(root: Path) -> int:
+    """Build §3.4: the Part 1 proof spikes pass; their only output is this ledger entry."""
+    cmd = "gates p1-spikes"
+    started = ledger.start(root, cmd, gate="P1-T13 proof spikes (Build §3.4)")
+    t0 = time.time()
+    run = subprocess.run(
+        ["cargo", "test", "--release", "--manifest-path", "spikes/p1-proof/Cargo.toml"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    results = [ln for ln in run.stdout.splitlines() if ln.startswith("test ")]
+    passed = run.returncode == 0
+    data_out = {"gate": "Build §3.4 proof spikes", "tests": results,
+                "seconds": round(time.time() - t0, 1), "outcome": "PASS" if passed else "FAIL",
+                "stderr_tail": run.stderr.splitlines()[-15:]}  # fmt: skip
+    path, sha = ledger.result_file(
+        root, f"p1-spikes-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(
+            root,
+            cmd,
+            gate="P1-T13 proof spikes (Build §3.4)",
+            outcome=data_out["outcome"],
+            run_commit=started["commit"],
+            result_file=str(path.relative_to(root)),
+            result_sha256=sha,
+            tests=results,
+        ),
+    )
+    print(json.dumps(data_out["tests"] + [data_out["outcome"]]))
+    return 0 if passed else 1
+
+
 FUZZ_TARGETS = ("artefact_parse", "blob_parse")
 
 
@@ -333,7 +373,8 @@ def p1_fuzz(root: Path, runs: int) -> int:
 def _main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="gates", description=__doc__)
     ap.add_argument(
-        "gate", choices=["p1-differential", "p1-quant-recall", "p1-fuzz", "p1-synthetic"]
+        "gate",
+        choices=["p1-differential", "p1-quant-recall", "p1-fuzz", "p1-synthetic", "p1-spikes"],
     )
     ap.add_argument("--streams", type=int, default=1000, help="p1-synthetic: streams in all")
     ap.add_argument("--ops", type=int, default=1000, help="p1-synthetic: operations per stream")
@@ -348,6 +389,8 @@ def _main(argv: list[str]) -> int:
     seeds = list(SEEDS) if a.all_seeds else (a.seed or [42])
     if a.gate == "p1-differential":
         return p1_differential(a.root.resolve(), a.data, seeds, a.queries, a.jobs)
+    if a.gate == "p1-spikes":
+        return p1_spikes(a.root.resolve())
     if a.gate == "p1-synthetic":
         return p1_synthetic(a.root.resolve(), a.streams, a.ops, a.jobs)
     if a.gate == "p1-fuzz":

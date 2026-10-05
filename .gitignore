@@ -39,3 +39,4 @@ Thumbs.db
 /fuzz/corpus/
 /fuzz/artifacts/
 /fuzz/target/
+/spikes/*/target/
