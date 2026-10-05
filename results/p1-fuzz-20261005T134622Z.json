@@ -1,0 +1,45 @@
+{
+ "gate": "P1-T12 (0 crashes)",
+ "runs_per_target": 100000000,
+ "targets": {
+  "artefact_parse": {
+   "exit": 1,
+   "done": null,
+   "crashed": true,
+   "tail": [
+    "",
+    "Reproduce with:",
+    "",
+    "\tcargo fuzz run artefact_parse artifacts/artefact_parse/oom-dc7fea7f1c9601214cb8abddc897326ae6aaa762",
+    "",
+    "Minimize test case with:",
+    "",
+    "\tcargo fuzz tmin artefact_parse artifacts/artefact_parse/oom-dc7fea7f1c9601214cb8abddc897326ae6aaa762",
+    "",
+    "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+    "",
+    "Error: Fuzz target exited with exit status: 71"
+   ]
+  },
+  "blob_parse": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 906 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"\\000\\000\\000\\000\\000\\000\\000\\005\" # Uses: 253404",
+    "\"2o\\002\\002\\002\" # Uses: 234721",
+    "\"oc\\323\\275******'*******,,,,#\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000RC\\000EVERC\\000\\001\" # Uses: 199752",
+    "\"\\002\\000\\000\\000\\000\\000\\000\\000\" # Uses: 119059",
+    "\"\\377\\377\\377\\377\\377\\377\\377\\177\" # Uses: 119599",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 906 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     110375",
+    "stat::new_units_added:          229",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              462"
+   ]
+  }
+ },
+ "outcome": "FAIL"
+}

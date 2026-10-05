@@ -90,6 +90,12 @@ impl<'a> Reader<'a> {
         Ok(f64::from_be_bytes(self.array()?))
     }
     fn f64s(&mut self, n: usize) -> Result<Vec<f64>, Error> {
+        // Never reserve more than the remaining bytes can fill: the hash is not a secret, so a
+        // crafted header can claim k·d in the billions (found by the fuzzer, P1-T12).
+        let need = n.checked_mul(8).ok_or_else(|| bad("§6.3 artefact truncated"))?;
+        if self.bytes.len().saturating_sub(self.pos) < need {
+            return Err(bad("§6.3 artefact truncated"));
+        }
         let mut out = Vec::with_capacity(n);
         for _ in 0..n {
             out.push(self.f64()?);
@@ -314,4 +320,16 @@ mod tests {
             "integrity violation: §6.3 sha256_artefact mismatch"
         );
     }
+
+    // Regression (fuzzer, P1-T12): an 88-byte file whose header claims d = 65,528 and
+    // k = 10,000, with a correct hash appended, must be refused without reserving gigabytes.
+    #[spec("SR-6.3-2")]
+    #[test]
+    fn p1_partition_huge_header_is_refused_without_allocating() {
+        let mut file = include_bytes!("../../../golden/p1_regression_artefact_oom.bin").to_vec();
+        let h: [u8; 32] = Sha256::digest(&file).into(); // as the fuzz target does
+        file.extend_from_slice(&h);
+        assert!(PartitionArtefact::parse(&file).is_err());
+    }
+
 }
