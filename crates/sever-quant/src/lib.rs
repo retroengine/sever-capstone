@@ -322,6 +322,7 @@ mod tests {
     #[test]
     fn p1_quant_from_stored_checks_dimension_and_bound() {
         assert!(QVec::from_stored(vec![16_777_232, -16_777_232], 2).is_ok());
+        assert_eq!(QVec::from_stored(vec![0; 3], 3).map(|v| v.dim()), Ok(3));
         assert!(matches!(
             QVec::from_stored(vec![16_777_233, 0], 2),
             Err(Error::IntegrityViolation { .. })

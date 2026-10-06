@@ -262,3 +262,14 @@ fn p1_search_rank_groups_by_distance_then_id_bytes() {
     assert_eq!(ranked[0].0.to_bits(), seq(&near).to_bits());
     assert_eq!(ranked[2].0.to_bits(), seq(&far).to_bits());
 }
+
+// §8.2 reduction tree with all eight lanes distinct and non-zero (L_j = (j + 1)²), so every
+// addition of ((L0 + L1) + (L2 + L3)) + ((L4 + L5) + (L6 + L7)) changes the result if altered.
+#[spec("SR-8.2-1")]
+#[test]
+fn p1_search_reduction_uses_every_lane() {
+    let q: Vec<f32> = (1..=8).map(|j| j as f32).collect();
+    let x = [0.0_f32; 8];
+    assert_eq!(score_scalar(&q, &x), 204.0); // (1+4)+(9+16) + (25+36)+(49+64), exact in f32
+    assert_eq!(score(&q, &x), 204.0);
+}

@@ -317,6 +317,40 @@ fn p1_index_insert_validation_order_and_duplicates() {
 
 // --- §7 routing, holding, flush, spillover --------------------------------------------------------
 
+// §7.6: every change set carries the counters the index holds after it is applied (EP-3: the
+// Part 2 log replays them), through holding inserts, a flush, group inserts and deletions.
+#[spec("SR-7.6-1")]
+#[test]
+fn p1_index_change_set_counters_match_the_applied_state() {
+    let live = rows("live");
+    let mut ix = small();
+    let check = |ix: &mut Ix, cs: crate::changeset::ChangeSet<NoExtension>| {
+        let claimed = cs.counters_after;
+        ix.apply(cs);
+        let st = ix.stats();
+        assert_eq!((claimed.big_n, claimed.k), (st.big_n, st.k));
+    };
+    for (i, v) in live.iter().enumerate().take(10) {
+        let cs = ix
+            .plan_insert(InsertRequest {
+                record_id: format!("live{i}"),
+                vector: v.clone(),
+                credential: (),
+            })
+            .unwrap();
+        check(&mut ix, cs);
+    }
+    assert_eq!(ix.stats().k, 5); // the flush happened
+    for i in [0, 9] {
+        let cs = ix
+            .plan_delete(DeleteRequest {
+                record_id: format!("live{i}"),
+            })
+            .unwrap();
+        check(&mut ix, cs);
+    }
+}
+
 // the holding area flushes at exactly
 // the target into exactly one group (E2E-1.2 in miniature).
 #[spec("SR-7.4-1", "SR-7.4-2", "SR-7.5-1", "SR-7.5-2", "SR-7.6-1", "SR-2.1-1")]
@@ -1296,4 +1330,192 @@ fn p1_index_change_set_is_noop_only_when_nothing_changes() {
         })
         .unwrap();
     assert!(!insert.is_noop());
+    // An insert into the holding area changes slots and the locator but no accumulator: still a
+    // change.
+    let held = ix
+        .plan_insert(InsertRequest {
+            record_id: "live0".into(),
+            vector: rows("live")[0].clone(),
+            credential: (),
+        })
+        .unwrap();
+    assert!(held.groups.is_empty() && held.created.is_empty());
+    assert!(!held.is_noop());
+}
+
+// §4.3, §12.6: after inserts, flushes and swap-with-last deletions, every group's float32 mirror
+// row equals x̃ / 2^24 of the member it is listed for (row for row), so search scores real vectors.
+#[spec("SR-4.3-2", "SR-8.1-3")]
+#[test]
+fn p1_index_mirror_rows_follow_their_records() {
+    let mut ix = small();
+    let all: Vec<Vec<f32>> = rows("ref").into_iter().chain(rows("live")).collect();
+    for (i, v) in all.iter().enumerate() {
+        ins(&mut ix, &format!("r{i}"), v).unwrap();
+    }
+    for i in (0..all.len()).step_by(3) {
+        del(&mut ix, &format!("r{i}"));
+    }
+    let mut checked = 0;
+    for g in ix.search_groups() {
+        let blob = ix.blob(&g.id).unwrap();
+        let members: std::collections::HashMap<Vec<u8>, Vec<i64>> = parse_blob(&blob, b"SEVERC", 0)
+            .unwrap()
+            .members
+            .into_iter()
+            .collect();
+        for (row, id) in g.rows.chunks_exact(16).zip(g.ids) {
+            let x = &members[id.as_bytes()];
+            let want: Vec<f32> = x.iter().map(|&v| v as f32 / 16_777_216.0).collect();
+            assert_eq!(
+                row,
+                want.as_slice(),
+                "mirror row of {} in {}",
+                id.as_str(),
+                g.id
+            );
+            checked += 1;
+        }
+    }
+    assert_eq!(checked as u64, ix.stats().big_n);
+}
+
+// Build §1.1: a MoveLast whose positions sit exactly at the slot count (one past the end) is
+// ignored, not a panic.
+#[test]
+fn p1_index_apply_ignores_moves_at_the_slot_count() {
+    let mut ix = small();
+    for (i, v) in rows("ref").iter().enumerate().take(10) {
+        ins(&mut ix, &format!("doc{i}"), v).unwrap();
+    }
+    let g = ix.location("doc0").unwrap();
+    let len = ix.group_len(&g).unwrap();
+    let before = state_hash(&ix);
+    let mut cs = forged(&ix);
+    for (from, to) in [(len, 0), (0, len), (len, len)] {
+        cs.slots.push(SlotOp::MoveLast { group: g, from, to });
+    }
+    ix.apply(cs);
+    assert_eq!(state_hash(&ix), before);
+    ix.check_invariants().unwrap();
+}
+
+// §5.6 hard cap at its boundary without 10^6 inserts: the group's n is set by a forged change set,
+// then plan_insert alone is asked (n = 10^6 − 1 admits one more; n = 10^6 admits none).
+#[spec("SR-5.6-2")]
+#[test]
+fn p1_index_hard_cap_boundary_by_plan() {
+    let mut ix = frozen_only();
+    let v = rows("ref")[0].clone();
+    let (g, _) = ix.route(&sever_quant::quantise(&v, 16).unwrap()).unwrap();
+    let cap = sever_types::constants::MAX_GROUP_MEMBERS;
+    let plan = |ix: &Ix| {
+        ix.plan_insert(InsertRequest {
+            record_id: "x".into(),
+            vector: v.clone(),
+            credential: (),
+        })
+        .map(|_| ())
+    };
+    set_n(&mut ix, g, cap - 1);
+    assert_eq!(plan(&ix), Ok(()));
+    set_n(&mut ix, g, cap);
+    assert_eq!(plan(&ix), Err(sever_types::Error::GroupCapacityExceeded));
+}
+
+// §21: n = 10^6 exactly is within INV-4 (the cap), so a wrong n there is INV-6, not INV-4.
+#[test]
+fn p1_index_inv4_boundary_is_inclusive() {
+    let mut ix = small();
+    ins(&mut ix, "doc0", &rows("ref")[0]).unwrap();
+    let g = ix.location("doc0").unwrap();
+    set_n(&mut ix, g, sever_types::constants::MAX_GROUP_MEMBERS);
+    assert_eq!(
+        ix.check_invariants(),
+        Err(sever_types::Error::IntegrityViolation {
+            invariant: "INV-6 n"
+        })
+    );
+}
+
+// §21 INV-5: ⌊1.5·N/k⌋ ≤ 10^6 holds for a frozen-only index with N·k well above 10^5
+// (N = 42,000, k = 4: ⌊1.5·N/k⌋ = 15,750), so the check passes on a real, larger index.
+#[test]
+fn p1_index_inv5_holds_on_a_larger_index() {
+    let refs = rows("ref");
+    let mut ix = frozen_only();
+    for i in 0..42_000 {
+        let r = ins(&mut ix, &format!("r{i}"), &refs[i % refs.len()]);
+        assert!(matches!(r, Ok(Placement::Frozen(_))));
+    }
+    assert_eq!((ix.stats().big_n, ix.stats().k), (42_000, 4));
+    ix.check_invariants().unwrap();
+}
+
+// §7.3 spillover in both creation orders: the nearest group wins; on equal distance the smaller
+// group-ID bytes win, whichever was created first.
+#[spec("SR-7.3-1")]
+#[test]
+fn p1_index_spillover_nearest_and_tie_in_both_orders() {
+    let x = sever_quant::quantise(&rows("live")[0], 16).unwrap();
+    let mu = x.dequantise_f64();
+    let far: Vec<f64> = mu.iter().map(|m| m + 0.25).collect();
+    let fill = |ix: &mut Ix| {
+        for (i, v) in rows("ref").iter().enumerate().take(20) {
+            ins(ix, &format!("doc{i}"), v).unwrap();
+        }
+    };
+    // Tie, the smaller ID created first.
+    let mut ix = small();
+    fill(&mut ix);
+    let a = create_spawned(&mut ix, "spawn-0000000000000001", mu.clone());
+    create_spawned(&mut ix, "spawn-0000000000000002", mu.clone());
+    assert_eq!(ix.route(&x).unwrap(), (a, true));
+    // The nearest wins over a smaller ID, in either order.
+    for near_first in [true, false] {
+        let mut ix = small();
+        fill(&mut ix);
+        let (near, _far) = if near_first {
+            let n = create_spawned(&mut ix, "spawn-00000000000000f0", mu.clone());
+            (
+                n,
+                create_spawned(&mut ix, "spawn-0000000000000001", far.clone()),
+            )
+        } else {
+            let f = create_spawned(&mut ix, "spawn-0000000000000001", far.clone());
+            (
+                create_spawned(&mut ix, "spawn-00000000000000f0", mu.clone()),
+                f,
+            )
+        };
+        assert_eq!(ix.route(&x).unwrap(), (near, true));
+    }
+}
+
+// §17, §9.7: Debug output of a slot and of the scrambler names the type and never the key.
+#[test]
+fn p1_index_debug_output_is_redacted() {
+    let s = HmacSha512Scrambler::new(&[0x41; 64]);
+    let text = format!("{s:?}");
+    assert!(text.starts_with("HmacSha512Scrambler(") && text.contains("redacted"));
+    assert!(!text.contains("41") && !text.contains('A'));
+    let mut ix = small();
+    ins(&mut ix, "doc0", &rows("ref")[0]).unwrap();
+    let cs = ix
+        .plan_insert(InsertRequest {
+            record_id: "doc1".into(),
+            vector: rows("ref")[1].clone(),
+            credential: (),
+        })
+        .unwrap();
+    let slot = cs
+        .slots
+        .iter()
+        .find_map(|op| match op {
+            SlotOp::Put { slot, .. } => Some(slot),
+            _ => None,
+        })
+        .unwrap();
+    let text = format!("{slot:?}");
+    assert!(text.starts_with("Slot(") && !text.contains("doc1"));
 }
