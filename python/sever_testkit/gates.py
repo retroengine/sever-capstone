@@ -7,6 +7,8 @@
     uv run python -m sever_testkit.gates p1-synthetic --streams 1000 --ops 1000 --jobs 5
     uv run python -m sever_testkit.gates p1-spikes
     uv run python -m sever_testkit.gates p1-coverage
+    uv run python -m sever_testkit.gates p1-mutants --jobs 2
+    uv run python -m sever_testkit.gates p1-checks
 
 ``p1-differential`` is gates P1-T2 and P1-T5, plus the P1-T1 survivors check after every deletion
 and the P1-T4 kernel check on every scored query–vector pair: the model writes a trace per seed,
@@ -20,6 +22,11 @@ result; the spike code is deleted afterwards.
 ``p1-coverage`` is gate P1-T10: the whole Rust suite with the Full-tier ignored tests (release,
 ``cargo llvm-cov --branch``), line and branch coverage of sever-quant, sever-index and sever-search
 (test modules excluded); the whole Python suite, line coverage of the model and the builder.
+``p1-mutants`` is gate P1-T11: cargo-mutants on sever-quant, sever-index and sever-search, each
+mutant tested by the Part 1 suites that exercise them, in a worktree of HEAD (tracked files only);
+score = caught / (caught + missed + timeout) >= 85 %, every survivor triaged in docs/MUTANTS_P1.md.
+``p1-checks`` records ``scripts/ci.sh full-checks`` (P1-T3, P1-T4 at 10^7 pairs, P1-T6, P1-T8,
+P1-T9, P1-T13 contracts, the 10^6 cap, MSRV 1.85, cargo deny, API docs): PASS if every step passes.
 ``p1-fuzz`` is gate P1-T12: each Part 1 parser runs ``--runs`` libFuzzer executions (both at once)
 from the committed seeds, and the gate passes only with 0 crashes.
 """
@@ -28,6 +35,8 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
+import os
+import shutil
 import subprocess
 import sys
 import time
@@ -395,6 +404,113 @@ def p1_coverage(root: Path) -> int:
     return 0 if passed else 1
 
 
+def p1_checks(root: Path) -> int:
+    """``scripts/ci.sh full-checks``, one ledger entry with the outcome of every step."""
+    cmd = "gates p1-checks"
+    started = ledger.start(root, cmd, gate="Full-tier checks (P1-T3, T4, T6, T8, T9, T13)")
+    t0 = time.time()
+    run = subprocess.run(
+        ["scripts/ci.sh", "full-checks"], cwd=root, capture_output=True, text=True, check=False
+    )
+    steps = {
+        ln.split(":")[0].removeprefix("STEP "): ln.split(":", 1)[1].strip().split(" ")[0]
+        for ln in run.stdout.splitlines()
+        if ln.startswith("STEP ")
+    }
+    passed = run.returncode == 0 and steps and all(v == "PASS" for v in steps.values())
+    data_out = {
+        "gate": "scripts/ci.sh full-checks: every step PASS",
+        "steps": steps,
+        "seconds": round(time.time() - t0, 1),
+        "stdout_tail": run.stdout.splitlines()[-40:],
+        "outcome": "PASS" if passed else "FAIL",
+    }
+    path, sha = ledger.result_file(
+        root, f"p1-checks-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(
+            root,
+            cmd,
+            gate="Full-tier checks (P1-T3, T4, T6, T8, T9, T13)",
+            outcome=data_out["outcome"],
+            run_commit=started["commit"],
+            result_file=str(path.relative_to(root)),
+            result_sha256=sha,
+            steps=steps,
+        ),
+    )
+    print(json.dumps(steps | {"outcome": data_out["outcome"]}))
+    return 0 if passed else 1
+
+
+MUTATED = ("sever-quant", "sever-index", "sever-search")
+MUTANT_TESTS = ("sever-quant", "sever-index", "sever-search", "sever-p1")
+
+
+def p1_mutants(root: Path, jobs: int) -> int:
+    """P1-T11: mutation score >= 85 % over the mutated crates, survivors listed for triage."""
+    cmd = f"gates p1-mutants --jobs {jobs}"
+    started = ledger.start(
+        root, cmd, gate="P1-T11", mutated=list(MUTATED), tests=list(MUTANT_TESTS)
+    )
+    tree = Path.home() / f".cache/sever-mutants-{started['commit'][:12]}"
+    tmp = Path.home() / ".cache/mutants-tmp"
+    tmp.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "worktree", "remove", "--force", str(tree)], cwd=root, check=False,
+                   capture_output=True)  # fmt: skip
+    subprocess.run(
+        ["git", "worktree", "add", "--detach", str(tree), started["commit"]], cwd=root, check=True
+    )
+    out_dir = root / "traces/mutants-gate"
+    shutil.rmtree(out_dir, ignore_errors=True)
+    args = ["cargo", "mutants", "-j", str(jobs), "--timeout", "180", "-o", str(out_dir)]
+    for p in MUTATED:
+        args += ["-p", p]
+    for p in MUTANT_TESTS:
+        args += ["--test-package", p]
+    run = subprocess.run(args, cwd=tree, capture_output=True, text=True, check=False,
+                         env={**os.environ, "TMPDIR": str(tmp)})  # fmt: skip
+    subprocess.run(["git", "worktree", "remove", "--force", str(tree)], cwd=root, check=False,
+                   capture_output=True)  # fmt: skip
+    outcomes = json.loads((out_dir / "mutants.out/outcomes.json").read_text(encoding="utf-8"))
+    counts = {
+        k: outcomes.get(k, 0) for k in ("caught", "missed", "timeout", "unviable", "total_mutants")
+    }
+    tested = counts["caught"] + counts["missed"] + counts["timeout"]
+    score = counts["caught"] / max(tested, 1)
+    missed = (out_dir / "mutants.out/missed.txt").read_text(encoding="utf-8").splitlines()
+    triage = (
+        (root / "docs/MUTANTS_P1.md").read_text(encoding="utf-8")
+        if (root / "docs/MUTANTS_P1.md").exists()
+        else ""
+    )
+    untriaged = [m for m in missed if m.split(" in ")[0] not in triage]
+    passed = score >= 0.85 and not untriaged
+    data_out = {
+        "gate": "P1-T11: score >= 85 %, every survivor triaged",
+        "counts": counts,
+        "score": score,
+        "missed": missed,
+        "untriaged": untriaged,
+        "cargo_mutants_exit": run.returncode,
+        "outcome": "PASS" if passed else "FAIL",
+    }
+    path, sha = ledger.result_file(
+        root, f"p1-mutants-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(root, cmd, gate="P1-T11", outcome=data_out["outcome"],
+                     run_commit=started["commit"], result_file=str(path.relative_to(root)),
+                     result_sha256=sha, score=score, counts=counts, untriaged=len(untriaged)),
+    )  # fmt: skip
+    print(json.dumps({"score": score, "counts": counts, "untriaged": len(untriaged),
+                      "outcome": data_out["outcome"]}))  # fmt: skip
+    return 0 if passed else 1
+
+
 FUZZ_TARGETS = ("artefact_parse", "blob_parse")
 
 
@@ -458,6 +574,8 @@ def _main(argv: list[str]) -> int:
             "p1-synthetic",
             "p1-spikes",
             "p1-coverage",
+            "p1-mutants",
+            "p1-checks",
         ],
     )
     ap.add_argument("--streams", type=int, default=1000, help="p1-synthetic: streams in all")
@@ -473,6 +591,10 @@ def _main(argv: list[str]) -> int:
     seeds = list(SEEDS) if a.all_seeds else (a.seed or [42])
     if a.gate == "p1-differential":
         return p1_differential(a.root.resolve(), a.data, seeds, a.queries, a.jobs)
+    if a.gate == "p1-checks":
+        return p1_checks(a.root.resolve())
+    if a.gate == "p1-mutants":
+        return p1_mutants(a.root.resolve(), a.jobs)
     if a.gate == "p1-coverage":
         return p1_coverage(a.root.resolve())
     if a.gate == "p1-spikes":

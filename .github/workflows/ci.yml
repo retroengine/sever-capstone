@@ -1,0 +1,15 @@
+# Fast tier on every push (Build §2.8). The data-dependent and long Full-tier gates run locally
+# (scripts/ci.sh full-checks and python -m sever_testkit.gates …), because the P0 data is not in git.
+name: ci
+on: [push, pull_request]
+jobs:
+  fast:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: rustfmt, clippy
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: scripts/ci.sh fast
