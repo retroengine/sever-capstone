@@ -6,6 +6,22 @@
 set -u
 cd "$(dirname "$0")/../.."
 fail=0
+# Proptest saves each failing case under crates/<crate>/proptest-regressions/. A case that only a
+# sabotage build fails is not a regression of the real code, and those files belong to a frozen
+# part (F-2), so they are put back exactly as they were when the runner exits.
+keep=$(mktemp -d)
+for c in sever-index sever-search; do
+  mkdir -p "$keep/$c"
+  [ -d "crates/$c/proptest-regressions" ] && cp -r "crates/$c/proptest-regressions/." "$keep/$c/"
+done
+restore() {
+  for c in sever-index sever-search; do
+    rm -rf "crates/$c/proptest-regressions"
+    [ -z "$(ls -A "$keep/$c")" ] || cp -r "$keep/$c" "crates/$c/proptest-regressions"
+  done
+  rm -rf "$keep"
+}
+trap restore EXIT
 rust() { # $1 = SB id, $2 = crate. PASS only when the build compiles and a test fails.
   out=$(cargo test -q -p "$2" --features "sabotage-$1" 2>&1)
   if grep -q "test result: FAILED" <<<"$out"; then
