@@ -1,0 +1,38 @@
+{
+ "gate": "P1-T11: score >= 85 %, every survivor triaged",
+ "counts": {
+  "caught": 325,
+  "missed": 22,
+  "timeout": 0,
+  "unviable": 71,
+  "total_mutants": 418
+ },
+ "score": 0.9365994236311239,
+ "missed": [
+  "crates/sever-index/src/changeset.rs:197:13: replace && with || in ChangeSet<E>::is_noop",
+  "crates/sever-index/src/index.rs:271:76: replace < with <= in Index<E, S>::route",
+  "crates/sever-index/src/index.rs:364:67: replace > with == in Index<E, S>::apply",
+  "crates/sever-index/src/index.rs:364:67: replace > with < in Index<E, S>::apply",
+  "crates/sever-index/src/index.rs:364:67: replace > with >= in Index<E, S>::apply",
+  "crates/sever-index/src/index.rs:366:28: replace ^= with |= in Index<E, S>::apply",
+  "crates/sever-index/src/index.rs:366:28: replace ^= with &= in Index<E, S>::apply",
+  "crates/sever-index/src/index.rs:391:55: replace && with || in Index<E, S>::apply",
+  "crates/sever-index/src/index.rs:391:38: replace < with <= in Index<E, S>::apply",
+  "crates/sever-index/src/index.rs:391:60: replace < with <= in Index<E, S>::apply",
+  "crates/sever-index/src/index.rs:582:17: replace && with || in Index<E, S>::check_invariants",
+  "crates/sever-index/src/index.rs:578:17: replace && with || in Index<E, S>::check_invariants",
+  "crates/sever-index/src/index.rs:594:13: replace > with == in Index<E, S>::check_invariants",
+  "crates/sever-index/src/index.rs:594:13: replace > with >= in Index<E, S>::check_invariants",
+  "crates/sever-index/src/index.rs:593:41: replace / with % in Index<E, S>::check_invariants",
+  "crates/sever-index/src/index.rs:593:15: replace * with + in Index<E, S>::check_invariants",
+  "crates/sever-index/src/index.rs:593:46: replace * with + in Index<E, S>::check_invariants",
+  "crates/sever-index/src/index.rs:731:35: replace + with * in Draft<'a, E, S>::put",
+  "crates/sever-search/src/lib.rs:69:57: delete ! in search",
+  "crates/sever-search/src/kernel.rs:40:5: replace uses_avx2 -> bool with true",
+  "crates/sever-search/src/kernel.rs:66:9: replace avx2::available -> bool with true",
+  "crates/sever-search/src/kernel.rs:67:58: replace && with || in avx2::available"
+ ],
+ "untriaged": [],
+ "cargo_mutants_exit": 2,
+ "outcome": "PASS"
+}

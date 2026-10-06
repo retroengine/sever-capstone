@@ -1,0 +1,71 @@
+{
+ "gate": "P1-T10: Rust lines >= 90 %, branches >= 85 %; Python model+builder lines >= 90 %",
+ "rust": {
+  "lines": [
+   1127,
+   1175,
+   0.9591489361702128
+  ],
+  "branches": [
+   134,
+   154,
+   0.8701298701298701
+  ],
+  "files": {
+   "crates/sever-index/src/blob.rs": {
+    "lines": 97.91666666666666,
+    "branches": 96.15384615384616
+   },
+   "crates/sever-index/src/changeset.rs": {
+    "lines": 100.0,
+    "branches": 83.33333333333334
+   },
+   "crates/sever-index/src/contract.rs": {
+    "lines": 88.23529411764706,
+    "branches": 61.111111111111114
+   },
+   "crates/sever-index/src/ext.rs": {
+    "lines": 100.0,
+    "branches": 0.0
+   },
+   "crates/sever-index/src/index.rs": {
+    "lines": 94.73684210526316,
+    "branches": 89.65517241379311
+   },
+   "crates/sever-index/src/route.rs": {
+    "lines": 100.0,
+    "branches": 100.0
+   },
+   "crates/sever-index/src/scramble.rs": {
+    "lines": 93.33333333333333,
+    "branches": 50.0
+   },
+   "crates/sever-quant/src/lib.rs": {
+    "lines": 98.52216748768473,
+    "branches": 100.0
+   },
+   "crates/sever-search/src/kernel.rs": {
+    "lines": 92.68292682926831,
+    "branches": 50.0
+   },
+   "crates/sever-search/src/lib.rs": {
+    "lines": 100.0,
+    "branches": 100.0
+   }
+  },
+  "tests_ok": true
+ },
+ "python": {
+  "lines": [
+   515,
+   521,
+   0.9884836852207294
+  ],
+  "tests_ok": true,
+  "tail": [
+   "Coverage JSON written to file /home/saiki/sever-db/traces/coverage-python.json",
+   "90 passed in 199.42s (0:03:19)"
+  ]
+ },
+ "outcome": "PASS"
+}
