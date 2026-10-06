@@ -1,0 +1,157 @@
+{
+ "gate": "P1-T2 (0 mismatches), P1-T5 (0 deleted returned), P1-T1 (0 survivors-check failures), P1-T4 (0 kernel mismatches)",
+ "data": "nq-100k",
+ "seeds": [
+  {
+   "data": "nq-100k",
+   "seed": 42,
+   "inserts": 100000,
+   "deleted": 90040,
+   "final": {
+    "frozen": 128,
+    "spawned": 189,
+    "N": 9960,
+    "k": 317,
+    "holding": 0
+   },
+   "seconds": 1968.8,
+   "trace_sha256": "4316193b4f20446663989f0529a27cc4f29ae72d9fb068fddefa2ac236df065b",
+   "replay": {
+    "trace": "/home/saiki/sever-db/traces/p1-nq-100k-seed42.jsonl",
+    "ops": 146221,
+    "compared": 2477980,
+    "mismatches": 0,
+    "deleted_returned": 0,
+    "survivor_groups_checked": 85480,
+    "survivor_failures": 0,
+    "kernel_pairs": 450640753,
+    "kernel_mismatches": 0,
+    "avx2": true,
+    "seconds": 415.4,
+    "result": "PASS"
+   },
+   "replay_stderr": ""
+  },
+  {
+   "data": "nq-100k",
+   "seed": 123,
+   "inserts": 100000,
+   "deleted": 90083,
+   "final": {
+    "frozen": 128,
+    "spawned": 190,
+    "N": 9917,
+    "k": 318,
+    "holding": 0
+   },
+   "seconds": 2010.1,
+   "trace_sha256": "d8de4c26f69c5b9d261113d3a0072122972b2a314a9fa115e16873b920f4488d",
+   "replay": {
+    "trace": "/home/saiki/sever-db/traces/p1-nq-100k-seed123.jsonl",
+    "ops": 146221,
+    "compared": 2477918,
+    "mismatches": 0,
+    "deleted_returned": 0,
+    "survivor_groups_checked": 85568,
+    "survivor_failures": 0,
+    "kernel_pairs": 449773845,
+    "kernel_mismatches": 0,
+    "avx2": true,
+    "seconds": 415.7,
+    "result": "PASS"
+   },
+   "replay_stderr": ""
+  },
+  {
+   "data": "nq-100k",
+   "seed": 777,
+   "inserts": 100000,
+   "deleted": 90093,
+   "final": {
+    "frozen": 128,
+    "spawned": 188,
+    "N": 9907,
+    "k": 316,
+    "holding": 0
+   },
+   "seconds": 2002.9,
+   "trace_sha256": "074d3ba3292daaaa906e248aa7d3eb54fbd035f16e5d1728b2bd3d1e5239e744",
+   "replay": {
+    "trace": "/home/saiki/sever-db/traces/p1-nq-100k-seed777.jsonl",
+    "ops": 146221,
+    "compared": 2478350,
+    "mismatches": 0,
+    "deleted_returned": 0,
+    "survivor_groups_checked": 85604,
+    "survivor_failures": 0,
+    "kernel_pairs": 446846742,
+    "kernel_mismatches": 0,
+    "avx2": true,
+    "seconds": 419.7,
+    "result": "PASS"
+   },
+   "replay_stderr": ""
+  },
+  {
+   "data": "nq-100k",
+   "seed": 2024,
+   "inserts": 100000,
+   "deleted": 89846,
+   "final": {
+    "frozen": 128,
+    "spawned": 189,
+    "N": 10134,
+    "k": 317,
+    "holding": 20
+   },
+   "seconds": 2087.7,
+   "trace_sha256": "0b2e560e1aff1437e87b13d0b5aead4a825ddec8df65901954b4ff62851cf099",
+   "replay": {
+    "trace": "/home/saiki/sever-db/traces/p1-nq-100k-seed2024.jsonl",
+    "ops": 146221,
+    "compared": 2477447,
+    "mismatches": 0,
+    "deleted_returned": 0,
+    "survivor_groups_checked": 85310,
+    "survivor_failures": 0,
+    "kernel_pairs": 453306875,
+    "kernel_mismatches": 0,
+    "avx2": true,
+    "seconds": 370.2,
+    "result": "PASS"
+   },
+   "replay_stderr": ""
+  },
+  {
+   "data": "nq-100k",
+   "seed": 9999,
+   "inserts": 100000,
+   "deleted": 89994,
+   "final": {
+    "frozen": 128,
+    "spawned": 189,
+    "N": 10006,
+    "k": 317,
+    "holding": 0
+   },
+   "seconds": 2097.3,
+   "trace_sha256": "bbb87be3660b68e4fe27659233f0f38c9cede55fb432bb216213d8853cfe9a2d",
+   "replay": {
+    "trace": "/home/saiki/sever-db/traces/p1-nq-100k-seed9999.jsonl",
+    "ops": 146221,
+    "compared": 2477947,
+    "mismatches": 0,
+    "deleted_returned": 0,
+    "survivor_groups_checked": 85493,
+    "survivor_failures": 0,
+    "kernel_pairs": 452242457,
+    "kernel_mismatches": 0,
+    "avx2": true,
+    "seconds": 357.9,
+    "result": "PASS"
+   },
+   "replay_stderr": ""
+  }
+ ],
+ "outcome": "PASS"
+}
