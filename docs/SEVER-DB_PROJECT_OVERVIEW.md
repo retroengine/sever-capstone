@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-45, DB-47, DB-49, DB-50, DB-55 … DB-60)](#6-decision-register-db-1--db-45-db-47-db-49-db-50-db-55--db-60)
+6. [Decision register (DB-1 … DB-45, DB-47, DB-49, DB-50, DB-55 … DB-64)](#6-decision-register-db-1--db-45-db-47-db-49-db-50-db-55--db-64)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-45, DB-47, DB-49, DB-50, DB-55 … DB-60)
+## 6. Decision register (DB-1 … DB-45, DB-47, DB-49, DB-50, DB-55 … DB-64)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -844,7 +844,7 @@ fixtures (for example `d = 16` and 4 frozen groups, Build §2.7) let state-machi
 spillover and empty groups quickly. **Rejected.** Compile-time constants (fast tests would need a
 second build of every crate). **Consequence.** Every size in spec Appendix A and every byte-exact
 golden vector is for the v1 configuration. The multiple-of-8 rule is spec §8.2's kernel requirement.
-Whether the spawn target size may also differ in fixtures is open (G-10).
+The spawn target size is a runtime value too (DB-62); frozen groups are at most 10,000 (DB-63).
 
 #### DB-50 — One `SecretMemory` provider, installed once at startup (4 October 2026)
 
@@ -857,6 +857,38 @@ without editing Part 1. **Rejected.** Passing a provider through every API (it w
 signatures); a global that can be replaced later (one secret could then straddle two providers).
 **Consequence.** A second installation attempt is an error. Tests use a provider that checks every
 released buffer is all zero (Build 3-4 §2.8).
+
+#### DB-61 — The ULP sentence of §4.1 (6 October 2026)
+
+**Decision.** Spec §4.1's explanatory sentence says correctly normalised data lands "within about
+2 ULPs of 1.0 (the worst P0 row is 1.54 ULPs)", not "within 1 ULP". **Why.** The P0 data measured
+1.54 ULPs (`meta.json`, NQ 1M). **Rejected.** Leaving a sentence the project's own data contradicts.
+**Consequence.** Closes G-9. The 8-ULP tolerance (the rule) is unchanged.
+
+#### DB-62 — Spawn target size is a runtime value (6 October 2026)
+
+**Decision.** The spawn target size is a configuration value ≥ 1, like `d` and the frozen-group
+count (DB-49). v1 fixes 200 (spec §2.2); the small fixtures use 8 (Build §2.7). **Why.** State-machine
+and stream tests at `d = 16` need many flushes; at 200 they would need tens of thousands of
+operations per flush. **Rejected.** Testing flushes only at 200 (the L4 and L5 suites would rarely
+reach a second flush). **Consequence.** Closes G-10. `IndexConfig::spawn_target` (default 200);
+0 is refused. The `nq-*` runs and every golden vector use 200.
+
+#### DB-63 — At most 10,000 frozen groups (6 October 2026)
+
+**Decision.** A collection has at most 10,000 frozen groups; an artefact with a larger `k_frozen` is
+rejected. **Why.** `frozen-NNNN` has four digits, so labels stop at 9999, while `k_frozen` is a
+`u16be`. **Rejected.** A wider ID form (it changes the 32-byte group-ID bound's examples and the
+golden vectors for no v1 benefit). **Consequence.** Closes G-11. Spec §2.2 and §5.1 state the limit;
+`sever-partition` and `sever-types` already enforce it. v1 uses 128.
+
+#### DB-64 — The error for a bad artefact (6 October 2026)
+
+**Decision.** A failed §6.3 check is rejected with `IntegrityViolation`, naming the check (for
+example `"§6.3 artefact d"`), never a value. **Why.** §6.3 required the checks but §17 had no error
+for them. **Rejected.** A new §17 row `InvalidArtefact` (one more variant with no different handling:
+a bad artefact stops collection creation either way). **Consequence.** Closes G-12; matches the code
+written in Part 1.
 
 #### DB-60 — The dimension check (4 October 2026)
 
@@ -1650,6 +1682,10 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **6 October 2026 — Part 1 gaps closed.** DB-61 (the ULP sentence of §4.1, closes G-9), DB-62
+  (spawn target size is a runtime value, closes G-10), DB-63 (at most 10,000 frozen groups, closes
+  G-11), DB-64 (the error for a bad artefact, closes G-12). Specification sections touched: §2.2,
+  §4.1, §5.1, §6.3. Overview §6.8 (DB-49 consequence).
 - **4 October 2026 — Part 1 decisions accepted.** DB-44 (four frozen parts), DB-45 (plan/apply,
   extension points, the WAL `EXTENSION` record), DB-47 (blob extension region, `SEVERC`/`SEVERG`),
   DB-49 (runtime dimension and group count) and DB-50 (one `SecretMemory` provider) accepted from the

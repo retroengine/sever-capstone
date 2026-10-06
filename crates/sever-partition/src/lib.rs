@@ -259,7 +259,7 @@ mod tests {
     }
 
     // with a valid hash, the field checks still refuse bad content.
-    #[spec("SR-6.3-2", "SR-8.2-2")]
+    #[spec("SR-6.3-2", "SR-8.2-2", "SR-5.1-5", "SR-6.3-3")]
     #[test]
     fn p1_partition_rejects_bad_fields_even_with_valid_hash() {
         let cases: Vec<(&str, Mutation)> = vec![
@@ -309,7 +309,8 @@ mod tests {
         assert!(PartitionArtefact::parse(&[0; 31]).is_err());
     }
 
-    // spec §17 — the error names the rule, never a value.
+    // spec §17, DB-64 — the error names the rule, never a value.
+    #[spec("SR-6.3-3", "SR-17-2")]
     #[test]
     fn p1_partition_errors_name_the_rule() {
         let mut f = SMALL.to_vec();

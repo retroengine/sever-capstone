@@ -180,9 +180,9 @@ delete; and the **engine** described in this document.
 | Page size | 16,384 bytes | §14.2 |
 | Key-file slot | 512 bytes | §14.7 |
 
-The code accepts any dimension `d` that is a multiple of 8 and any number of frozen groups ≥ 1; the
-values above are the v1 configuration, and every size in Appendix A and every golden vector uses them
-(overview DB-49).
+The code accepts any dimension `d` that is a multiple of 8, any number of frozen groups from 1 to
+10,000 (DB-63) and any spawn target size ≥ 1 (DB-62); the values above are the v1 configuration, and
+every size in Appendix A and every golden vector uses them (overview DB-49).
 
 ### 2.3 Domain strings (all ASCII, exact bytes)
 
@@ -283,7 +283,8 @@ Input: `x` as `d` float32 values.
 2. Compute `norm = sqrt(Σ_{i=0}^{d−1} (f64)x_i²)` in float64, summing sequentially from `i = 0`.
 3. `|norm − 1| ≤ 8 · 2^−23` MUST hold. Otherwise reject with `NotNormalised`.
 
-The tolerance is 8 float32 ULPs at 1.0: correctly normalised float32 data lands within 1 ULP of 1.0,
+The tolerance is 8 float32 ULPs at 1.0: correctly normalised float32 data lands within about 2 ULPs of 1.0
+(the worst P0 row is 1.54 ULPs, DB-61),
 while an un-normalised embedding has a norm several orders of magnitude further off.
 
 ### 4.2 Quantisation (Q24)
@@ -328,7 +329,9 @@ For `v ∈ i64`: `scalar(v) = v mod ℓ` if `v ≥ 0`, and `ℓ − (|v| mod ℓ
 | **Spawned** | `spawn-` + 16 lowercase hex characters (§7.5) | By a holding-area flush | Yes | Yes |
 | **Holding area** | `holding` | At collection creation (one per collection) | **No** | **No** |
 
-Group IDs are at most 32 bytes. Groups are never removed, merged, renamed or re-fitted.
+Group IDs are at most 32 bytes. Groups are never removed, merged, renamed or re-fitted. The 4-digit
+form allows at most 10,000 frozen groups (labels 0–9999); an artefact with a larger `k_frozen` is
+rejected (DB-63).
 
 ### 5.2 Group state
 
@@ -480,7 +483,8 @@ f64be × (d × d)                   precision matrix P, row-major
 32 bytes  sha256_artefact         SHA-256 of every preceding byte
 ```
 
-`create_collection` MUST verify `sha256_artefact`, `d`, and that `P` has finite entries. The
+`create_collection` MUST verify `sha256_artefact`, `d`, and that `P` has finite entries; a failed
+check is rejected with `IntegrityViolation` naming the check, never a value (DB-64). The
 artefact's hash is recorded in the collection metadata and in every run ledger entry.
 
 ---

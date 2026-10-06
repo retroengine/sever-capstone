@@ -239,3 +239,7 @@
 - {id: SR-6.1-1, section: "6.1", kind: must, part: 1, text: "The engine never fits anything: it imports the partition artefact produced offline by the builder C-15.", technique: [architecture]}
 - {id: SR-7-1, section: "7", kind: must, part: 1, text: "Routing is a pure function of (x̃, state): no clock, no arrival counter, no most-recent-group rule; the same (x̃, state) MUST always give the same destination.", related: [SR-7.7-1, INV-16, SB-7]}
 - {id: SR-8.2-2, section: "8.2", kind: must, part: 1, text: "d MUST be a multiple of 8 (the kernel's lane layout); an artefact with another d is rejected.", related: [DB-49]}
+
+# --- gaps closed 6 Oct 2026 (DB-61 … DB-64) ---
+- {id: SR-5.1-5, section: "5.1", kind: must, part: 1, text: "At most 10,000 frozen groups (labels 0–9999); an artefact with a larger k_frozen is rejected (DB-63)."}
+- {id: SR-6.3-3, section: "6.3", kind: must, part: 1, text: "A failed §6.3 check is rejected with IntegrityViolation naming the check, never a value (DB-64)."}
