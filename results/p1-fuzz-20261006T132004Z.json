@@ -1,0 +1,45 @@
+{
+ "gate": "P1-T12 (0 crashes)",
+ "runs_per_target": 100000000,
+ "targets": {
+  "artefact_parse": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 1777 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"\\012-\\345\\246\\237\\245\\037\\011\\351\\204\\030\\005\\207\\240bmu\\035\\231\\260$\\225\\240H'\\273\\210\\325\\322\\343U\\205\" # Uses: 394880",
+    "\"\\001\\024\\034\\305wi\\372w\\326C\\016\\0277\\276\\2213E]j8)\\025qj\\342\\307\\001\\321\\230jd\\356\" # Uses: 385424",
+    "\"|\\270\\371\\374~\\267{\\254\\2164uUo-}\\217\\367\\236;\\3615W\\223$\\322\\245J\\356k\\371q#\" # Uses: 297683",
+    "\"\\000_\\347hF\\262\\344\\312\\232\\222\\340g\\340\\205\\277W\\366\\342Yp\\031\\273\\357w\\337\\330|\\015\\350\\022=\\002\" # Uses: 139013",
+    "\"\\256\\356\\307\\212\\320\\265c\\177\\242\\327\\301\\015\\013,\\177\\331`\\004\\266c\\347\\316\\354]\\272Y'\\316\\304\\371\\373\\020\" # Uses: 24912",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 1777 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     56274",
+    "stat::new_units_added:          39",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              423"
+   ]
+  },
+  "blob_parse": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 619 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"-oc-A\" # Uses: 2303008",
+    "\"doc-a\" # Uses: 2295396",
+    "\".\\000\\000\\000\" # Uses: 2174126",
+    "\"\\000\\000\\000\\000\\000\\000\\000\\010\" # Uses: 1390581",
+    "\"\\000\\000\\000\\311\" # Uses: 517488",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 619 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     161550",
+    "stat::new_units_added:          53",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              500"
+   ]
+  }
+ },
+ "outcome": "PASS"
+}
