@@ -52,7 +52,11 @@ pub(crate) mod avx2 {
     //! The AVX2 kernel: one 256-bit register holds the eight lanes, so lane `j` of block `s` is
     //! element `8s + j`, exactly the scalar layout. Built from separate `sub`, `mul` and `add`
     //! intrinsics; FMA is never enabled for it (spec §8.2), except by sabotage SB-9.
-    #![allow(unsafe_code)] // Build §1.2: the listed SIMD exception; every block has a SAFETY note.
+    #![allow(unsafe_code)]
+    // Build §1.2: the listed SIMD exception; every block has a SAFETY note.
+    // Rust 1.85 (the MSRV) needs `unsafe` around value intrinsics inside a `#[target_feature]`
+    // function; from 1.86 they are safe there and the same blocks are "unused". Both compile clean.
+    #![allow(unused_unsafe)]
 
     use core::arch::x86_64::{
         __m256, _mm256_loadu_ps, _mm256_setzero_ps, _mm256_storeu_ps, _mm256_sub_ps,
@@ -74,21 +78,26 @@ pub(crate) mod avx2 {
     #[target_feature(enable = "avx2")]
     #[cfg_attr(feature = "sabotage-SB-9", target_feature(enable = "fma"))]
     unsafe fn kernel(q: &[f32], x: &[f32]) -> f32 {
-        let mut acc: __m256 = _mm256_setzero_ps(); // L_0 … L_7 = +0.0
+        // SAFETY: this function runs only with AVX2 enabled (`#[target_feature]`, checked by
+        // `available()`); the value intrinsics below touch no memory.
+        let mut acc: __m256 = unsafe { _mm256_setzero_ps() }; // L_0 … L_7 = +0.0
         for (qc, xc) in q.chunks_exact(8).zip(x.chunks_exact(8)) {
             // SAFETY: `chunks_exact(8)` yields exactly 8 f32 (32 bytes) per chunk, and
             // `loadu` has no alignment requirement.
             let (a, b) = unsafe { (_mm256_loadu_ps(qc.as_ptr()), _mm256_loadu_ps(xc.as_ptr())) };
-            let t = _mm256_sub_ps(a, b);
+            // SAFETY: AVX2 is enabled here (see above); no memory is touched.
+            let t = unsafe { _mm256_sub_ps(a, b) };
             #[cfg(not(feature = "sabotage-SB-9"))]
             {
                 use core::arch::x86_64::{_mm256_add_ps, _mm256_mul_ps};
-                acc = _mm256_add_ps(acc, _mm256_mul_ps(t, t)); // separate multiply, then add
+                // SAFETY: AVX2 is enabled here (see above); no memory is touched.
+                acc = unsafe { _mm256_add_ps(acc, _mm256_mul_ps(t, t)) }; // separate mul, then add
             }
             #[cfg(feature = "sabotage-SB-9")]
             {
                 // SB-9: a fused multiply-add rounds once instead of twice.
-                acc = core::arch::x86_64::_mm256_fmadd_ps(t, t, acc);
+                // SAFETY: FMA is enabled for this build (SB-9 only); no memory is touched.
+                acc = unsafe { core::arch::x86_64::_mm256_fmadd_ps(t, t, acc) };
             }
         }
         let mut lanes = [0.0_f32; 8];

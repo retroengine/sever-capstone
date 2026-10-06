@@ -92,7 +92,9 @@ impl<'a> Reader<'a> {
     fn f64s(&mut self, n: usize) -> Result<Vec<f64>, Error> {
         // Never reserve more than the remaining bytes can fill: the hash is not a secret, so a
         // crafted header can claim k·d in the billions (found by the fuzzer, P1-T12).
-        let need = n.checked_mul(8).ok_or_else(|| bad("§6.3 artefact truncated"))?;
+        let need = n
+            .checked_mul(8)
+            .ok_or_else(|| bad("§6.3 artefact truncated"))?;
         if self.bytes.len().saturating_sub(self.pos) < need {
             return Err(bad("§6.3 artefact truncated"));
         }
@@ -332,5 +334,4 @@ mod tests {
         file.extend_from_slice(&h);
         assert!(PartitionArtefact::parse(&file).is_err());
     }
-
 }
