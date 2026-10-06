@@ -8,44 +8,48 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
 
 ## Now
 
-- **Phase:** Part 1, The Idea: **every module built**; the gates are being recorded in the run ledger
-  (`docs/RUN_LEDGER.jsonl`). Freeze (`part-1-frozen`) after the last gates pass and you commit.
+- **Phase:** Part 1, The Idea: **done**. Every gate passed in the run ledger on 6 Oct 2026 (clean
+  commits); frozen as `freeze/PART-1.sha256` + tag `part-1-frozen`. **Next: Part 2, The Database.**
 - **Working copy:** `~/sever-db` on the WSL ext4 disk since 4 Oct (the `C:` copy is a backup).
 - **Git:** you commit from now on; Claude only leaves changes in the working tree and hands you the
   commands. The work is on branch `p1-sever-quant` (32 commits ahead of `master`); `master` is the
   trunk (CLAUDE.md says `main`; the repo uses `master`).
 - **Decisions (6 Oct):** DB-61 … DB-64 close the last Part 1 gaps G-9 … G-12 (the ULP sentence, spawn
   size as a runtime value, at most 10,000 frozen groups, `IntegrityViolation` for a bad artefact).
-- **Next:** finish the Part 1 gates still open (below), then the freeze manifest and tag, then Part 2.
+- **Machine:** WSL now has 10 GB (`C:\Users\saiki\.wslconfig`, `memory=10GB`), so the nq-100k
+  gate runs three seeds at once (`--jobs 3`, 80 min).
+- **Next:** Part 2 starts with Build §5: decide its proposals (DB-46, DB-48, DB-51 … DB-54), then
+  `sever-vfs` (`SimVfs`) first. Part 2 adds its own gate runners and tools in new modules; the
+  Part 1 packages (including `sever_testkit`) are frozen (F-3).
 
 ## Part 1 gates (Build §4.8) — status from the ledger
 
 | Target | Status | Evidence |
 |---|---|---|
-| P1-T1 exactness (survivors check) | PASS | nq-10k 5 seeds: 43,562 checks; L4 synthetic: 275,114 checks; 0 failures |
-| P1-T2 engine = model | nq-10k **PASS**; nq-100k **to run** | nq-10k: 10.6 M values, 0 mismatches |
+| P1-T1 exactness (survivors check) | PASS | nq-100k 5 seeds: 427,455 checks; nq-10k: 43,562; L4 synthetic: 275,114; 0 failures |
+| P1-T2 engine = model | PASS | nq-10k 10.6 M values, nq-100k 12.4 M values (5 seeds each), 0 mismatches |
 | P1-T3 order independence | PASS (tests) | proptest, ≥ 256 orders per set |
-| P1-T4 kernels bit-identical | PASS | 10^7 pairs (ignored test); nq-10k: 508 M pairs, 0 mismatches |
-| P1-T5 no deleted record returned | nq-10k PASS; nq-100k with P1-T2 | |
+| P1-T4 kernels bit-identical | PASS | 10^7 pairs (ignored test); nq-10k 508 M and nq-100k 2.25 B pairs, 0 mismatches |
+| P1-T5 no deleted record returned | PASS | 0 on nq-10k and nq-100k, five seeds each |
 | P1-T6 builder oracle | PASS | 5 seeds; slow test in `scripts/ci.sh full-checks` |
 | P1-T7 quantisation recall (measure) | **1.000** at nq-100k (target ≥ 0.999) | ledger 5 Oct |
-| P1-T8 sabotage SB-1 … SB-10 | PASS (run.sh); recorded with `full-checks` | |
+| P1-T8 sabotage SB-1 … SB-10 | PASS | `gates p1-checks` (all 17 steps); a first run failed only because `run.sh` was not executable |
 | P1-T9 traceability | 70/70 | `docs/TRACE_PART_1.md` |
-| P1-T10 coverage | measured 94.6 % lines / 85.1 % branches (Rust), 98 % (Python); **gate run to record** | `gates p1-coverage` |
-| P1-T11 mutation | survivors triaged; **gate run to record** | exploratory 6 Oct: 22 survivors expected, ≈ 93.7 %; `docs/MUTANTS_P1.md` |
+| P1-T10 coverage | PASS | Rust 95.9 % lines, 87.0 % branches; Python 98.8 % |
+| P1-T11 mutation | PASS | 325 / 347 = 93.7 %; 22 survivors, all triaged in `docs/MUTANTS_P1.md` |
 | P1-T12 fuzzing 10^8 per parser | PASS | ledger 6 Oct: 10^8 runs each, `artefact_parse` 1,777 s, `blob_parse` 619 s; the first run found a real bug (fixed) |
 | P1-T13 contracts + proof spikes | PASS | spikes recorded 5 Oct, then deleted |
 | P1-T14 ghost (measure) | recorded by the demo | nq-10k seed 42: IVF 5.0e-3, float mean 1.9e-8, SEVER 0 |
 
-Definition of done (Build §2.9) still to tick: the gates above, the clean-clone demo check (after your
-commit), the freeze manifest `freeze/PART-1.sha256` and the tag.
+Definition of done (Build §2.9): all gates above; the clean-clone demo check passed (6 Oct: the
+report and the rebuilt artefact identical apart from timing); the freeze manifest and tag.
 
 ## Parts
 
 | Part | Status | Tag | Notes |
 |---|---|---|---|
-| 1 The Idea | built; gates being recorded | | All Part 1 gaps closed (G-1, G-5 … G-12) |
-| 2 The Database | not started | | Starts when Part 1 is frozen |
+| 1 The Idea | **frozen** 6 Oct 2026 | `part-1-frozen` | All Part 1 gaps closed (G-1, G-5 … G-12) |
+| 2 The Database | next | | Build §5; follow-up from P1-T11: a test with two inserts into one group in one change set |
 | 3 The Receipt | **preview** built in the demo | | Resolve G-3 (DB-51) and G-4 |
 | 4 The Erasure | not started | | Apply G-2 |
 
@@ -82,6 +86,13 @@ commit), the freeze manifest `freeze/PART-1.sha256` and the tag.
 
 ## Session log
 
+- **6 Oct 2026 (afternoon)**: every Part 1 gate recorded on clean commits: P1-T11 mutants 93.7 %
+  (tests added for the survivors that were real gaps: the change set's `k` after a flush,
+  `QVec::dim`, INV-5 on a larger index), P1-T10 coverage, full checks (sabotage runner made
+  executable; it now restores proptest files a sabotage build writes), P1-T12 fuzz, P1-T2/T5 on
+  nq-100k (five seeds, 12.4 M values, 0 mismatches). Clean-clone demo check passed. Git history
+  rewritten by you to drop co-author trailers (`docs/COMMIT_MAP.txt` maps the old hashes in the
+  ledger). WSL given 10 GB. Part 1 frozen.
 - **5–6 Oct 2026**: moved to `~/sever-db`. Built `sever-p1` (composition root, ghost baselines,
   `sever-demo idea`), `sever_demo` report, `spec_trace` and `#[spec]`, L4/L5/L13 suites, fuzz targets,
   proof spikes (passed, deleted), coverage tests, CI script, one-command demo, `experiments.yaml`.

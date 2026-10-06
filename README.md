@@ -14,8 +14,8 @@ frozen (Build §0.1):
 
 | Part | The claim it adds | Status |
 |---|---|---|
-| **1 The Idea** | Deleting a vector returns its group, bit for bit, to the never-inserted state | **Built; gates being recorded** (see [Part 1 results](#part-1-results)) |
-| 2 The Database | Exactness survives a crash at any point; multi-group deletion is all-or-nothing | Starts when Part 1 is frozen |
+| **1 The Idea** | Deleting a vector returns its group, bit for bit, to the never-inserted state | **Done**: every gate passed on 6 Oct 2026; frozen as `part-1-frozen` (see [Part 1 results](#part-1-results)) |
+| 2 The Database | Exactness survives a crash at any point; multi-group deletion is all-or-nothing | **Next** |
 | 3 The Receipt | Every deletion yields a certificate anyone can verify offline | Not started (a preview exists in `demo/`) |
 | 4 The Erasure | Nothing deleted can be recovered from raw storage | Not started |
 
@@ -72,18 +72,18 @@ Every number below comes from the run ledger, [`docs/RUN_LEDGER.jsonl`](docs/RUN
 
 | Target (Build §4.8) | What | Result |
 |---|---|---|
-| P1-T1 | 0 exactness violations (survivors check on every core field) | nq-10k: 43,562 checks, 0 failures; synthetic L4: 275,114 checks, 0 failures |
-| P1-T2 | 0 engine/model mismatches, nq-10k and nq-100k, five seeds | nq-10k: **PASS**, 10.6 M values, 0 mismatches · nq-100k: see ledger |
+| P1-T1 | 0 exactness violations (survivors check on every core field) | **PASS**: nq-100k 427,455 checks, nq-10k 43,562, synthetic L4 275,114; 0 failures |
+| P1-T2 | 0 engine/model mismatches, nq-10k and nq-100k, five seeds | **PASS**: nq-10k 10.6 M values, nq-100k 12.4 M values; 0 mismatches |
 | P1-T3 | identical blobs across insertion orders | property tests (proptest, ≥ 256 orders) |
-| P1-T4 | scalar and AVX2 kernels bit-identical | 10^7 random pairs; nq-10k: 508 M pairs, 0 mismatches |
-| P1-T5 | 0 deleted records returned by search | nq-10k five seeds: 0 |
+| P1-T4 | scalar and AVX2 kernels bit-identical | **PASS**: 10^7 random pairs; nq-10k 508 M and nq-100k 2.25 B real pairs, 0 mismatches |
+| P1-T5 | 0 deleted records returned by search | **PASS**: 0, on nq-10k and nq-100k, five seeds each |
 | P1-T6 | builder oracle agreement (shrinkage 1e-12, τ 1e-9), five seeds | PASS (largest differences 2e-17 and 1.4e-14) |
 | P1-T7 | Recall@10, dequantised vs float brute force, nq-100k (measure, target ≥ 0.999) | **1.000** |
-| P1-T8 | SB-1 … SB-10 each turn a test red | `tests/sabotage/run.sh`: all ten red |
+| P1-T8 | SB-1 … SB-10 each turn a test red | **PASS**: all ten red (`gates p1-checks`, with MSRV 1.85, cargo deny, docs, all 17 steps) |
 | P1-T9 | traceability 100 % of Part 1's requirements | 70 / 70 (`docs/TRACE_PART_1.md`) |
-| P1-T10 | coverage: Rust lines ≥ 90 %, branches ≥ 85 %; Python lines ≥ 90 % | see ledger (`gates p1-coverage`) |
-| P1-T11 | mutation score ≥ 85 %, every survivor triaged | see ledger and `docs/MUTANTS_P1.md` |
-| P1-T12 | 0 fuzz crashes in ≥ 10^8 executions per parser | see ledger (`gates p1-fuzz`); one real bug found and fixed (below) |
+| P1-T10 | coverage: Rust lines ≥ 90 %, branches ≥ 85 %; Python lines ≥ 90 % | **PASS**: Rust 95.9 % lines, 87.0 % branches; Python 98.8 % |
+| P1-T11 | mutation score ≥ 85 %, every survivor triaged | **PASS**: 325 / 347 caught (93.7 %); 22 survivors, each triaged in [`docs/MUTANTS_P1.md`](docs/MUTANTS_P1.md) |
+| P1-T12 | 0 fuzz crashes in ≥ 10^8 executions per parser | **PASS**: 10^8 each for `artefact_parse` and `blob_parse`; an earlier run found one real bug, fixed (below) |
 | P1-T13 | contract suites pass for every default and fail for a wrong one; proof spikes | PASS (spikes recorded, then deleted, Build §3.4) |
 | P1-T14 | the ghost (measure) | nq-10k seed 42: soft-delete IVF 5.0e-3, float mean 1.9e-8, SEVER 0 |
 
@@ -91,6 +91,11 @@ Every number below comes from the run ledger, [`docs/RUN_LEDGER.jsonl`](docs/RUN
 reserved memory from an untrusted header before checking the file length (found by fuzzing: an
 88-byte file claimed 5 GB); `apply` could drop the holding area's records on a malformed flush
 (found by the forged-change-set tests).
+
+**Definition of done (Build §2.9):** the demo runs from a clean clone with one command
+(`scripts/p1-demo.sh`, checked on 6 Oct 2026: the report and the rebuilt partition artefact were
+identical to the working copy's, apart from timing), and every Part 1 file is hashed into
+[`freeze/PART-1.sha256`](freeze/PART-1.sha256), which CI checks on every run (F-1, F-2).
 
 ---
 
@@ -129,12 +134,15 @@ The specification is the source of truth; tests are written from it, not from th
 | L4 synthetic streams | `… gates p1-synthetic --streams 1000 --ops 1000 --jobs 3` |
 | P1-T7 measure | `… gates p1-quant-recall --data nq-100k` |
 | P1-T10 coverage | `… gates p1-coverage` |
+| P1-T11 mutation (worktree of the commit, survivors checked against `docs/MUTANTS_P1.md`) | `… gates p1-mutants --jobs 2` |
+| P1-T8 and the rest of the Full-tier checks | `… gates p1-checks` |
 | P1-T12 fuzzing | `… gates p1-fuzz --runs 100000000` |
 | Build the partition artefacts | `PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_partition.build --all-seeds` |
 | One demo | `scripts/p1-demo.sh --data nq-10k --seed 42` |
 
-Run Python with `PYTHONHASHSEED=0`. Memory: an `nq-100k` model process needs about 2.3 GB; on an
-8 GB machine run at most two at once (`--jobs 2`) and nothing else heavy beside them.
+Run Python with `PYTHONHASHSEED=0`. Memory: an `nq-100k` model process needs about 2.3 GB; with
+WSL's default 8 GB run at most two at once (`--jobs 2`), with 10 GB (`memory=10GB` in
+`%UserProfile%\.wslconfig`) three, and nothing else heavy beside them.
 
 ---
 
