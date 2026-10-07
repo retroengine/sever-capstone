@@ -148,8 +148,8 @@ impl Wal {
         self.next_txn_id
     }
 
-    /// Bytes appended since the log was opened or [`Wal::reset_appended`] (the storage checkpoint
-    /// trigger, §12.4).
+    /// WAL bytes since the last storage checkpoint: counted from the disk at recovery, then by every
+    /// append, until [`Wal::reset_appended`] (the storage checkpoint trigger, §12.4).
     pub fn appended(&self) -> u64 {
         self.appended
     }
@@ -328,6 +328,9 @@ impl Wal {
         let mut cut = (0usize, SegmentHeader::LEN, first_header.first_wal_seq);
         let mut committed = Vec::new();
         let mut open: Option<Txn> = None;
+        // Bytes of the records from `first_wal_seq` on, up to the cut: the storage checkpoint
+        // trigger counts from the disk, not from a process's memory (§12.4).
+        let (mut since, mut since_at_cut) = (0u64, 0u64);
         let mut last_txn: Option<u64> = None;
         let n = segs.len();
         let mut expect = first_header.first_wal_seq;
@@ -355,6 +358,9 @@ impl Wal {
                 };
                 off += len;
                 expect += 1;
+                if rec.wal_seq >= first_wal_seq {
+                    since += len as u64;
+                }
                 if rec.wal_seq < first_wal_seq {
                     cut = (i, off, expect);
                     continue;
@@ -375,6 +381,7 @@ impl Wal {
                         last_txn = Some(t.txn_id);
                         committed.extend(open.take());
                         cut = (i, off, expect);
+                        since_at_cut = since;
                     }
                     (RecordType::Begin | RecordType::Commit, _) => {
                         return Err(bad("§12.3 transaction structure"));
@@ -424,7 +431,7 @@ impl Wal {
             seg_len: keep_off as u64,
             next_wal_seq,
             next_txn_id,
-            appended: 0,
+            appended: since_at_cut,
             failed: false,
         };
         Ok((wal, committed, report))

@@ -1,0 +1,37 @@
+[package]
+name = "sever-p2"
+version = "0.1.0"
+description = "Part 2 composition root: Engine<NoExtension, PlaintextSealer>, the sever-db-p2 CLI and the durable demo"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[features]
+# The demo (Build §5.9) uses the engine's test hooks (step hook, snapshots); never a measured build.
+demo = ["sever-engine/test-hooks"]
+
+[[bin]]
+name = "sever-db-p2"
+path = "src/bin/sever-db-p2.rs"
+
+[[bin]]
+name = "sever-demo-p2"
+path = "src/bin/sever-demo-p2.rs"
+required-features = ["demo"]
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-index = { path = "../sever-index" }
+sever-partition = { path = "../sever-partition" }
+sever-vfs = { path = "../sever-vfs" }
+sever-txn = { path = "../sever-txn" }
+sever-engine = { path = "../sever-engine" }
+sever-p1 = { path = "../sever-p1" }
+sha2 = "=0.10.9" # spec §20.1
+serde_json = "1"
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+
+[lints]
+workspace = true

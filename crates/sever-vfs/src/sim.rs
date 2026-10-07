@@ -76,11 +76,16 @@ enum DataOp {
     SetLen(u64),
 }
 
+/// File contents are shared copy-on-write (`Arc`): a fork, a restart and an `fsync` share bytes
+/// instead of copying them, so a crash campaign can fork a large disk once per crash point.
 #[derive(Clone, Debug, Default)]
 struct FileNode {
-    current: Vec<u8>,
-    durable: Vec<u8>,
+    current: Arc<Vec<u8>>,
+    durable: Arc<Vec<u8>>,
     pending: Vec<DataOp>,
+    /// True once a failed `fsync` dropped pending writes: from then on `durable + pending` may
+    /// differ from `current`.
+    diverged: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -125,6 +130,9 @@ struct State {
     ops: u64,
     syncs: u64,
     stats: SimStats,
+    /// For each mutating operation since the plan was set: the path the written file was opened
+    /// under and the bytes written (no path and 0 for non-writes).
+    write_log: Vec<(Option<Arc<str>>, usize)>,
 }
 
 fn apply_data(buf: &mut Vec<u8>, op: &DataOp) {
@@ -180,6 +188,7 @@ impl State {
             ops: 0,
             syncs: 0,
             stats: SimStats::default(),
+            write_log: Vec::new(),
         }
     }
 
@@ -205,6 +214,7 @@ impl State {
         self.alive()?;
         self.ops += 1;
         self.stats.mutating_ops += 1;
+        self.write_log.push((None, 0));
         Ok(self.plan.crash_at_op == Some(self.ops))
     }
 
@@ -290,6 +300,7 @@ impl State {
         &mut self,
         generation: u64,
         ino: Ino,
+        path: &Arc<str>,
         at: Option<u64>,
         data: &[u8],
     ) -> Result<u64, VfsError> {
@@ -303,6 +314,9 @@ impl State {
             .filter(|end| *end <= MAX_FILE)
             .ok_or(too_large(VfsOp::Write))?;
         let crash = self.begin_mut()?;
+        if let Some(last) = self.write_log.last_mut() {
+            *last = (Some(Arc::clone(path)), data.len());
+        }
         let landed = if crash {
             data.get(..self.plan.tear_bytes.min(data.len()))
                 .unwrap_or_default()
@@ -316,7 +330,7 @@ impl State {
                 data: landed.to_vec(),
             };
             let f = self.file_mut(ino)?;
-            apply_data(&mut f.current, &op);
+            apply_data(Arc::make_mut(&mut f.current), &op);
             f.pending.push(op);
         }
         if crash { Err(self.die()) } else { Ok(off) }
@@ -345,15 +359,17 @@ impl State {
             }
         }
         // 2. File contents: the durable bytes plus the unsynced writes the policy lets through.
-        let mut files: BTreeMap<Ino, Vec<u8>> = BTreeMap::new();
+        let mut files: BTreeMap<Ino, Arc<Vec<u8>>> = BTreeMap::new();
         for (ino, node) in &self.nodes {
             if let Node::File(f) = node {
-                let mut bytes = f.durable.clone();
+                let mut bytes = Arc::clone(&f.durable);
                 match policy {
                     CrashPolicy::DropAll => {}
-                    CrashPolicy::KeepAll => {
-                        f.pending.iter().for_each(|op| apply_data(&mut bytes, op))
-                    }
+                    CrashPolicy::KeepAll if !f.diverged => bytes = Arc::clone(&f.current),
+                    CrashPolicy::KeepAll => f
+                        .pending
+                        .iter()
+                        .for_each(|op| apply_data(Arc::make_mut(&mut bytes), op)),
                     CrashPolicy::Random(_) => {
                         let mut kept: Vec<DataOp> = f
                             .pending
@@ -370,7 +386,7 @@ impl State {
                                     data.truncate(1 + rng.below(data.len() as u64 - 1) as usize);
                                 }
                             }
-                            apply_data(&mut bytes, &op);
+                            apply_data(Arc::make_mut(&mut bytes), &op);
                         }
                     }
                 }
@@ -415,9 +431,10 @@ impl State {
                 nodes.insert(
                     ino,
                     Node::File(FileNode {
-                        current: b.clone(),
+                        current: Arc::clone(&b),
                         durable: b,
                         pending: Vec::new(),
+                        diverged: false,
                     }),
                 );
             }
@@ -428,6 +445,7 @@ impl State {
         self.plan = FaultPlan::default();
         self.ops = 0;
         self.syncs = 0;
+        self.write_log.clear();
     }
 }
 
@@ -473,6 +491,24 @@ impl SimVfs {
         st.plan = plan;
         st.ops = 0;
         st.syncs = 0;
+        st.write_log.clear();
+    }
+
+    /// For each mutating operation since the plan was set, the bytes it wrote (0 if it was not a
+    /// write).
+    pub fn write_sizes(&self) -> Vec<usize> {
+        self.lock().write_log.iter().map(|(_, n)| *n).collect()
+    }
+
+    /// For each mutating operation since the plan was set, the path its file was opened under and
+    /// the bytes it wrote (`None`, 0 for non-writes): the crash kit tears the WAL writes at every
+    /// 512-byte offset (Build §5.7 L10).
+    pub fn write_log(&self) -> Vec<(Option<String>, usize)> {
+        self.lock()
+            .write_log
+            .iter()
+            .map(|(p, n)| (p.as_deref().map(str::to_owned), *n))
+            .collect()
     }
 
     /// Mutating operations since the fault plan was set (or since the last restart).
@@ -535,6 +571,7 @@ impl Vfs for SimVfs {
             state: Arc::clone(&self.state),
             ino,
             generation: st.generation,
+            path: Arc::from(path),
         }))
     }
 
@@ -666,6 +703,7 @@ struct SimFile {
     state: Arc<Mutex<State>>,
     ino: Ino,
     generation: u64,
+    path: Arc<str>,
 }
 
 impl SimFile {
@@ -690,12 +728,13 @@ impl VfsFile for SimFile {
 
     fn write_at(&mut self, offset: u64, data: &[u8]) -> Result<(), VfsError> {
         self.lock()
-            .write(self.generation, self.ino, Some(offset), data)
+            .write(self.generation, self.ino, &self.path, Some(offset), data)
             .map(|_| ())
     }
 
     fn append(&mut self, data: &[u8]) -> Result<u64, VfsError> {
-        self.lock().write(self.generation, self.ino, None, data)
+        self.lock()
+            .write(self.generation, self.ino, &self.path, None, data)
     }
 
     fn truncate(&mut self, len: u64) -> Result<(), VfsError> {
@@ -710,7 +749,7 @@ impl VfsFile for SimFile {
         }
         let f = st.file_mut(self.ino)?;
         let op = DataOp::SetLen(len);
-        apply_data(&mut f.current, &op);
+        apply_data(Arc::make_mut(&mut f.current), &op);
         f.pending.push(op);
         Ok(())
     }
@@ -735,13 +774,19 @@ impl VfsFile for SimFile {
             // Linux after a write-back error: the pages are marked clean, the data never reaches
             // the disk, and a retried fsync reports success.
             f.pending.clear();
+            f.diverged = true;
             return Err(VfsError::Io {
                 op: VfsOp::Fsync,
                 kind: ErrorKind::Other,
             });
         }
-        for op in std::mem::take(&mut f.pending) {
-            apply_data(&mut f.durable, &op);
+        if f.diverged {
+            for op in std::mem::take(&mut f.pending) {
+                apply_data(Arc::make_mut(&mut f.durable), &op);
+            }
+        } else {
+            f.pending.clear();
+            f.durable = Arc::clone(&f.current);
         }
         Ok(())
     }

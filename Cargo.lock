@@ -345,6 +345,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-crashkit"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sever-engine",
+ "sever-format",
+ "sever-index",
+ "sever-spec",
+ "sever-tracekit",
+ "sever-txn",
+ "sever-types",
+ "sever-vfs",
+ "sever-wal",
+ "sha2",
+]
+
+[[package]]
 name = "sever-engine"
 version = "0.1.0"
 dependencies = [
@@ -408,6 +425,22 @@ dependencies = [
  "sever-types",
  "sha2",
  "zeroize",
+]
+
+[[package]]
+name = "sever-p2"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sever-engine",
+ "sever-index",
+ "sever-p1",
+ "sever-partition",
+ "sever-spec",
+ "sever-txn",
+ "sever-types",
+ "sever-vfs",
+ "sha2",
 ]
 
 [[package]]

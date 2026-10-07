@@ -1,0 +1,25 @@
+[package]
+name = "sever-crashkit"
+version = "0.1.0"
+description = "Crash-campaign driver on SimVfs: crash at every step, at byte offsets, at random points and during recovery (Part 2, overview EX-1)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-index = { path = "../sever-index" }
+sever-vfs = { path = "../sever-vfs" }
+sever-format = { path = "../sever-format" }
+sever-wal = { path = "../sever-wal" }
+sever-txn = { path = "../sever-txn" }
+sever-engine = { path = "../sever-engine", features = ["test-hooks"] }
+sever-tracekit = { path = "../sever-tracekit" }
+sha2 = "=0.10.9" # spec §20.1
+serde_json = "1"
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+
+[lints]
+workspace = true

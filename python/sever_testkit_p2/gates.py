@@ -1,0 +1,159 @@
+"""Part 2 gate runners that write the run ledger (Build §2.5, §2.8 Full tier, §5.8).
+
+    PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit_p2.gates p2-crash \\
+        --data nq-10k --all-seeds --jobs 3
+
+``p2-crash`` is gates P2-T1 (0 exactness violations, 0 lost acknowledged operations, 0 corrupt
+recoveries, 0 startup refusals after an honest crash), P2-T2 (100 % of recovered states equal an
+oracle-allowed state byte for byte) and P2-T3 (0 partial ``delete_user``), on five seeds. Per seed:
+the durable oracle writes the stream and its state digests (``sever_refmodel_durable``); the crash
+kit runs the generic-records campaign first (overview EX-1 step 1), then the index campaign: a crash
+at every VFS operation of all 20,000 operations, every 512-byte offset of 200 sampled WAL writes,
+1,000 random points, and a crash during recovery every 50th point; then the oracle checks every
+recovered state. The crash kit is built once into a target directory owned by this run.
+"""
+
+import argparse
+import concurrent.futures
+import hashlib
+import json
+import subprocess
+import sys
+import time
+from pathlib import Path
+from typing import Any
+
+from sever_refmodel_durable import oracle as durable
+from sever_testkit import ledger
+from sever_testkit.seeds import SEEDS
+
+
+def _sha(p: Path) -> str:
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
+def _build(root: Path, run_commit: str, package: str) -> Path:
+    """Builds ``package`` (release) into a target directory owned by this run, so a build made while
+    the run is going cannot change the binary that runs the later seeds."""
+    target = root / f"target/gate-{run_commit[:12]}"
+    subprocess.run(
+        ["cargo", "build", "-q", "--release", "-p", package, "--target-dir", str(target)],
+        cwd=root,
+        check=True,
+    )
+    return target / "release"
+
+
+def _crash_seed(
+    root: Path, data: str, seed: int, bin_dir: Path, extra: list[str]
+) -> dict[str, Any]:
+    t0 = time.time()
+    out_dir = root / "traces"
+    oracle_path = out_dir / f"p2-oracle-{data}-seed{seed}.jsonl"
+    durable._main(["write", "--data", data, "--seed", str(seed), "--root", str(root)])
+    crashkit = bin_dir / "sever-crashkit"
+    generic_out = out_dir / f"p2-generic-seed{seed}.jsonl"
+    gen = subprocess.run(
+        [str(crashkit), "generic", "--seed", str(seed), "--steps", "2000", "--out",
+         str(generic_out)],
+        cwd=root, capture_output=True, text=True, check=False,
+    )  # fmt: skip
+    campaign_out = out_dir / f"p2-crash-{data}-seed{seed}.jsonl"
+    camp = subprocess.run(
+        [str(crashkit), "campaign", "--oracle", str(oracle_path), "--root", str(root),
+         "--out", str(campaign_out), "--seed", str(seed), *extra],
+        cwd=root, capture_output=True, text=True, check=False,
+    )  # fmt: skip
+    generic = json.loads(generic_out.read_text().splitlines()[-1]) if generic_out.exists() else {}
+    summary_line: dict[str, Any] = {}
+    verdict: dict[str, Any] = {}
+    if campaign_out.exists() and campaign_out.stat().st_size:
+        summary_line = json.loads(campaign_out.read_text().splitlines()[-1])
+        v = durable.check(oracle_path, campaign_out)
+        verdict = {**v.__dict__, "failures": v.failures()}
+    passed = (
+        gen.returncode == 0
+        and camp.returncode == 0
+        and verdict.get("failures") == 0
+        and verdict.get("crash_points", 0) > 0
+        and summary_line.get("main_mismatches") == 0
+        and summary_line.get("skipped") == 0
+    )
+    result = {
+        "seed": seed,
+        "outcome": "PASS" if passed else "FAIL",
+        "oracle_sha256": _sha(oracle_path),
+        "generic": generic,
+        "generic_rc": gen.returncode,
+        "campaign": summary_line,
+        "campaign_rc": camp.returncode,
+        "campaign_stderr": camp.stderr[-2000:],
+        "campaign_results_sha256": _sha(campaign_out) if campaign_out.exists() else None,
+        "verdict": verdict,
+        "seconds": round(time.time() - t0),
+    }
+    print(json.dumps(result), flush=True)
+    return result
+
+
+def p2_crash(root: Path, data: str, seeds: list[int], jobs: int, extra: list[str]) -> int:
+    cmd = f"gates p2-crash --data {data} --seeds {seeds} {' '.join(extra)}".strip()
+    artefacts = {s: _sha(root / f"artefacts/partition-seed{s}.svp") for s in seeds}
+    gate = "P2-T1, P2-T2, P2-T3"
+    started = ledger.start(root, cmd, gate=gate, data=data, seeds=seeds, artefacts=artefacts)
+    run_commit = started["commit"]
+    bin_dir = _build(root, run_commit, "sever-crashkit")
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max(1, jobs)) as pool:
+        futs = [pool.submit(_crash_seed, root, data, s, bin_dir, extra) for s in seeds]
+        per_seed = [f.result() for f in futs]
+    passed = all(s["outcome"] == "PASS" for s in per_seed)
+    data_out = {
+        "gate": "P2-T1 (0 exactness violations, 0 lost acknowledged operations, 0 corrupt "
+        "recoveries, 0 refusals), P2-T2 (100 % oracle-allowed states), P2-T3 (0 partial "
+        "delete_user)",
+        "data": data,
+        "seeds": per_seed,
+        "outcome": "PASS" if passed else "FAIL",
+    }
+    path, sha = ledger.result_file(
+        root, f"p2-crash-{data}-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(
+            root,
+            cmd,
+            gate=gate,
+            data=data,
+            seeds=seeds,
+            artefacts=artefacts,
+            outcome=data_out["outcome"],
+            run_commit=run_commit,
+            result_file=str(path.relative_to(root)),
+            result_sha256=sha,
+            summary={str(s["seed"]): s["verdict"] for s in per_seed},
+        ),
+    )
+    return 0 if passed else 1
+
+
+def _main(argv: list[str]) -> int:
+    ap = argparse.ArgumentParser(prog="gates-p2", description=__doc__)
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    c = sub.add_parser("p2-crash")
+    c.add_argument("--data", default="nq-10k")
+    c.add_argument("--seed", type=int, action="append")
+    c.add_argument("--all-seeds", action="store_true")
+    c.add_argument("--jobs", type=int, default=1)
+    c.add_argument("--root", type=Path, default=Path("."))
+    c.add_argument("--limit-ops", type=int, default=None, help="smoke runs only; not a gate")
+    args = ap.parse_args(argv)
+    seeds = list(SEEDS) if args.all_seeds else (args.seed or [42])
+    if args.cmd == "p2-crash":
+        extra = ["--limit-ops", str(args.limit_ops)] if args.limit_ops else []
+        return p2_crash(args.root, args.data, seeds, args.jobs, extra)
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(_main(sys.argv[1:]))

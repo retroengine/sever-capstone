@@ -90,6 +90,12 @@ fn p2_wal_commit_then_recover_round_trips_across_segments() {
     let ids: Vec<u64> = txns.iter().map(|t| t.txn_id).collect();
     assert_eq!(ids, (1..=12).collect::<Vec<_>>());
     assert_eq!(wal.next_txn_id(), 13);
+    let (mut live, _, _) = open(&fresh(seg), seg).unwrap();
+    assert_eq!(live.appended(), 0);
+    for t in &s {
+        live.commit(t).unwrap();
+    }
+    assert_eq!(wal.appended(), live.appended(), "the checkpoint trigger survives a restart");
     // wal_seq is continuous: BEGIN, records, COMMIT for every transaction.
     let records: u64 = s.iter().map(|t| t.len() as u64 + 2).sum();
     assert_eq!(wal.next_wal_seq(), 1 + records);

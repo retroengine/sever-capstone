@@ -272,6 +272,7 @@ fn p2_vfs_sim_directory_rename_is_durable_only_after_fsync_dir() {
 #[test]
 fn p2_vfs_sim_counts_operations_bytes_and_syncs() {
     let v = SimVfs::new();
+    v.set_faults(FaultPlan::default());
     let mut f = v.open("f", OpenMode::CreateNew).unwrap(); // 1
     f.append(&[0; 10]).unwrap(); // 2
     f.write_at(3, &[1; 5]).unwrap(); // 3
@@ -279,6 +280,12 @@ fn p2_vfs_sim_counts_operations_bytes_and_syncs() {
     v.fsync_dir("").unwrap(); // 5
     let _ = f.len().unwrap();
     let _ = v.list("").unwrap();
+    assert_eq!(
+        v.write_sizes(),
+        vec![0, 10, 5, 0, 0],
+        "per operation, writes only"
+    );
+    assert_eq!(v.write_log()[1], (Some("f".to_owned()), 10));
     assert_eq!(
         v.stats(),
         crate::SimStats {

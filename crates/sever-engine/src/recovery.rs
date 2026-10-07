@@ -158,6 +158,7 @@ pub(crate) fn open_existing<E: StoredExtension, S: Sealer>(
         p.check_invariants()?;
     }
     let checkpoint_id = manifest.checkpoint_id;
+    let wal_bytes = wal.appended();
     Ok(Engine {
         vfs,
         sealer,
@@ -175,7 +176,7 @@ pub(crate) fn open_existing<E: StoredExtension, S: Sealer>(
             hook: None,
         }),
         poisoned: AtomicBool::new(false),
-        wal_bytes: AtomicU64::new(0),
+        wal_bytes: AtomicU64::new(wal_bytes),
         checkpoint_id: AtomicU64::new(checkpoint_id),
     })
 }
