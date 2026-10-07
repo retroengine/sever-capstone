@@ -1,0 +1,83 @@
+{
+ "gate": "P2-T6 (0 crashes)",
+ "runs_per_target": 100000000,
+ "targets": {
+  "wal_record": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 524 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"\\002\\010\\377S\" # Uses: 246294",
+    "\"\\000\\000\\000\\000\\000\\000\\000\\004\" # Uses: 241077",
+    "\"holding\\000\\000 \\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\030\\001\\000\\002#s\\000\\000\\000\\000\" # Uses: 73081",
+    "\"spa47a\\007\" # Uses: 77078",
+    "\"spaw1-n\" # Uses: 72150",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 524 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     190839",
+    "stat::new_units_added:          402",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              507"
+   ]
+  },
+  "manifest": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 580 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"O\\022\\364\\313\" # Uses: 250834",
+    "\"\\231\\327\\245%\" # Uses: 168204",
+    "\"\\022\\306a~\" # Uses: 81703",
+    "\">\\245\\343\\230\" # Uses: 36831",
+    "\"g\\323h\\023\" # Uses: 32552",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 580 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     172413",
+    "stat::new_units_added:          31",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              579"
+   ]
+  },
+  "checkpoint_file": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 1251 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"\\016$@\\300\" # Uses: 533393",
+    "\"\\366=\\341k\" # Uses: 331709",
+    "\"\\213\\247q\\015\" # Uses: 292531",
+    "\"\\035t\\037\\311\" # Uses: 146509",
+    "\"\\267\\267\\012`\" # Uses: 116204",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 1251 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     79936",
+    "stat::new_units_added:          106",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              438"
+   ]
+  },
+  "store_record": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 281 second(s)",
+   "crashed": false,
+   "tail": [
+    "\".\\000\\000\\000\\000\\000\\000\\000\" # Uses: 41361",
+    "\"\\202<\\3413\" # Uses: 41253",
+    "\"\\000\\000\\000\\000\\000\\000\\000\\002\" # Uses: 36563",
+    "\"\\237\\304<\\325\" # Uses: 23366",
+    "\"\\017\\313a\\006\" # Uses: 18401",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 281 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     355871",
+    "stat::new_units_added:          103",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              698"
+   ]
+  }
+ },
+ "outcome": "PASS"
+}
