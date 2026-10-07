@@ -408,6 +408,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-txn"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sever-appendstore",
+ "sever-format",
+ "sever-index",
+ "sever-partition",
+ "sever-quant",
+ "sever-spec",
+ "sever-txn",
+ "sever-types",
+ "sever-vfs",
+ "sever-wal",
+ "zeroize",
+]
+
+[[package]]
 name = "sever-types"
 version = "0.1.0"
 dependencies = [

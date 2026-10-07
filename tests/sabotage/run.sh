@@ -51,4 +51,5 @@ rust SB-11 sever-format
 rust SB-12 sever-vfs
 rust SB-13 sever-wal
 rust SB-14 sever-vfs
+rust SB-15 sever-txn
 exit $fail

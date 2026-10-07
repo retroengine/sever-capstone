@@ -277,3 +277,9 @@
 - {id: SR-15.6-2, section: "15.6", kind: step, part: 2, text: "Rename it to checkpoint/<new>/; fsync checkpoint/.", related: [SB-12]}
 - {id: SR-15.6-3, section: "15.6", kind: step, part: 2, text: "Write MANIFEST.tmp naming the new storage checkpoint and the first WAL position still needed; fsync; rename to MANIFEST; fsync the directory.", related: [SB-12]}
 - {id: SR-12.4-1, section: "12.4", kind: must, part: 2, text: "A storage checkpoint writes the whole in-memory state, in ciphertext form, to a new directory, installs it atomically, and deletes the WAL segments it covers; it runs every 1 GiB of WAL and at clean shutdown."}
+
+# --- Part 2: sever-txn (7 Oct 2026) ---
+- {id: SR-15.1-1, section: "15.1", kind: step, part: 2, text: "Insert (Part 2 steps): validate; quantise; route; seal the payload and the passage text; update the group's accumulator; flush in the same transaction if the holding area reaches the target; fsync append-store bytes, then write the WAL transaction, COMMIT, fsync; apply to memory; return the placement."}
+- {id: SR-15.2-1, section: "15.2", kind: step, part: 2, text: "Flush inside the triggering insert's transaction: the new group is created, each holding record's payload ciphertext moves unchanged and its record key is re-wrapped for the new group; n = 200, N += 200, k += 1."}
+- {id: SR-15.3-1, section: "15.3", kind: step, part: 2, text: "Delete: an absent scrambled_id returns AlreadyAbsent and touches nothing; otherwise one WAL transaction carries the slot move and truncate, locator updates, the new group header and the counters; COMMIT; fsync; apply; acknowledge. delete_user commits one transaction for the whole list."}
+- {id: SR-15.8-1, section: "15.8", kind: must, part: 2, text: "An operation returns success only when its transaction is durable and applied to memory (Part 4 adds the key conditions).", related: [SB-15]}

@@ -1,0 +1,32 @@
+[package]
+name = "sever-txn"
+version = "0.1.0"
+description = "EP-6 Sealer, EP-7 TxnParticipant, EP-9 Clock; change sets as after-images; the commit protocol (Part 2, spec §12.5, §15)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[features]
+# Build §3.4: the EP-6, EP-7 and EP-9 contract suites, for implementations in later parts.
+contract-tests = []
+# Build §2.6: each builds the protocol with exactly one deliberate bug. A test must go red.
+sabotage-SB-15 = [] # apply a change to memory before its COMMIT is durable
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-quant = { path = "../sever-quant" }
+sever-index = { path = "../sever-index" }
+sever-vfs = { path = "../sever-vfs" }
+sever-format = { path = "../sever-format" }
+sever-wal = { path = "../sever-wal" }
+sever-appendstore = { path = "../sever-appendstore" }
+zeroize = "=1.9.0" # spec §20.1
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+sever-txn = { path = ".", features = ["contract-tests"] }
+sever-partition = { path = "../sever-partition" }
+serde_json = "1"
+
+[lints]
+workspace = true
