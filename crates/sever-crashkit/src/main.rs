@@ -4,7 +4,7 @@
 //! sever-crashkit generic --seed 42 --steps 2000 --out results/p2-generic-seed42.jsonl
 //! sever-crashkit campaign --oracle traces/p2-oracle-nq-10k-seed42.jsonl --root . \
 //!     --out results/p2-crash-nq-10k-seed42.jsonl [--seed 42] [--offset-samples 200]
-//!     [--random 1000] [--double-every 50] [--step-every 1] [--limit-ops N]
+//!     [--random 1000] [--double-every 50] [--step-every 1] [--limit-ops N] [--resume 1]
 //! sever-crashkit replay-p1 --trace traces/p1-nq-10k-seed42.jsonl --root . --mode plain|close|crash \
 //!     --out results/p2-replay-....json
 //! sever-crashkit measure --trace traces/p1-nq-100k-seed42.jsonl --root . --out FILE [--work DIR]
@@ -40,13 +40,93 @@ fn num(map: &HashMap<String, String>, k: &str, default: u64) -> Result<u64, Stri
     })
 }
 
+fn progress_path(out: &Path) -> PathBuf {
+    let mut p = out.as_os_str().to_owned();
+    p.push(".progress");
+    PathBuf::from(p)
+}
+
+/// Every argument except `--resume`, sorted: a run resumes only with identical settings.
+fn fingerprint(a: &HashMap<String, String>) -> String {
+    let mut v: Vec<String> = a
+        .iter()
+        .filter(|(k, _)| k.as_str() != "resume")
+        .map(|(k, v)| format!("--{k}={v}"))
+        .collect();
+    v.sort();
+    v.join(" ")
+}
+
+/// Write to a temporary file, fsync it, rename it over `path`, fsync the directory.
+fn write_atomically(path: &Path, bytes: &[u8]) -> Result<(), String> {
+    let tmp = path.with_extension("progress.tmp");
+    let mut f = File::create(&tmp).map_err(|e| e.to_string())?;
+    f.write_all(bytes).map_err(|e| e.to_string())?;
+    f.sync_all().map_err(|e| e.to_string())?;
+    std::fs::rename(&tmp, path).map_err(|e| e.to_string())?;
+    if let Some(dir) = path.parent() {
+        File::open(dir)
+            .and_then(|d| d.sync_all())
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Opens an interrupted campaign's results for appending: cut back to the end recorded with the
+/// last saved progress (anything after it is from operations whose crash points were not all
+/// written), with the same settings, or refuse.
+fn resume_out(
+    out_path: &Path,
+    a: &HashMap<String, String>,
+) -> Result<(File, Option<campaign::Progress>), String> {
+    let text = std::fs::read_to_string(progress_path(out_path))
+        .map_err(|_| "--resume: no progress file (start the run again without --resume)")?;
+    let doc: serde_json::Value =
+        serde_json::from_str(&text).map_err(|e| format!("progress file: {e}"))?;
+    if doc.get("args").and_then(serde_json::Value::as_str) != Some(fingerprint(a).as_str()) {
+        return Err("--resume: the settings differ from the interrupted run's".into());
+    }
+    let p = doc
+        .get("progress")
+        .and_then(campaign::Progress::from_json)
+        .ok_or("progress file: progress")?;
+    let len = doc
+        .get("out_len")
+        .and_then(serde_json::Value::as_u64)
+        .ok_or("progress file: out_len")?;
+    let f = std::fs::OpenOptions::new()
+        .write(true)
+        .open(out_path)
+        .map_err(|e| e.to_string())?;
+    if f.metadata().map_err(|e| e.to_string())?.len() < len {
+        return Err("--resume: the results file is shorter than its saved progress".into());
+    }
+    f.set_len(len).map_err(|e| e.to_string())?;
+    let mut f = f;
+    std::io::Seek::seek(&mut f, std::io::SeekFrom::End(0)).map_err(|e| e.to_string())?;
+    eprintln!(
+        "resuming after operation {} ({} bytes of results kept)",
+        p.done, len
+    );
+    Ok((f, Some(p)))
+}
+
 fn real_main() -> Result<bool, String> {
     let (cmd, a) = args();
     let out_path = PathBuf::from(a.get("out").ok_or("--out is required")?);
     if let Some(dir) = out_path.parent() {
         std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     }
-    let mut out = BufWriter::new(File::create(&out_path).map_err(|e| e.to_string())?);
+    // `campaign --resume` continues an interrupted run (see `resume_out`); everything else
+    // starts a fresh results file.
+    let resuming = cmd == "campaign" && a.contains_key("resume");
+    let (file, resume) = if resuming {
+        resume_out(&out_path, &a)?
+    } else {
+        (File::create(&out_path).map_err(|e| e.to_string())?, None)
+    };
+    let sync_file = file.try_clone().map_err(|e| e.to_string())?;
+    let mut out = BufWriter::new(file);
     let ok = match cmd.as_str() {
         "generic" => {
             let s = generic::run(
@@ -96,7 +176,23 @@ fn real_main() -> Result<bool, String> {
                 step_every: num(&a, "step-every", 1)? as usize,
                 limit_ops: a.get("limit-ops").and_then(|v| v.parse().ok()),
             };
-            let sum = campaign::run(&oracle, rows.as_ref(), &artefact, &s, &mut out)?;
+            let progress_path = progress_path(&out_path);
+            let fingerprint = fingerprint(&a);
+            let mut save = |p: &campaign::Progress, w: &mut dyn Write| -> Result<(), String> {
+                // Results first, durably; then the progress that points at their end.
+                w.flush().map_err(|e| e.to_string())?;
+                sync_file.sync_data().map_err(|e| e.to_string())?;
+                let len = sync_file.metadata().map_err(|e| e.to_string())?.len();
+                let doc = serde_json::json!({"progress": p.to_json(), "out_len": len,
+                    "args": fingerprint});
+                write_atomically(&progress_path, doc.to_string().as_bytes())
+            };
+            let ck = campaign::Checkpointing {
+                from: resume,
+                every: campaign::PROGRESS_EVERY,
+                save: &mut save,
+            };
+            let sum = campaign::run_resumable(&oracle, rows.as_ref(), &artefact, &s, &mut out, ck)?;
             println!("{sum:?}");
             sum.failures() == 0
         }

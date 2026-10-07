@@ -14,6 +14,12 @@ impl SplitMix64 {
         Self(seed)
     }
 
+    /// The internal state: `SplitMix64::new(g.state())` continues exactly where `g` is (used to
+    /// resume an interrupted campaign).
+    pub fn state(&self) -> u64 {
+        self.0
+    }
+
     /// The next 64 output bits.
     pub fn next_u64(&mut self) -> u64 {
         self.0 = self.0.wrapping_add(0x9e37_79b9_7f4a_7c15);

@@ -287,6 +287,93 @@ impl Run<'_> {
     }
 }
 
+/// Where a campaign stands after a whole operation: enough to continue it in a new process with
+/// the same results as an uninterrupted run (the results file is cut back to the same point).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Progress {
+    /// Operations whose crash points are all written.
+    pub done: usize,
+    /// The step-policy rotation counter.
+    pub rotate: u64,
+    /// Crash points so far (drives the double-crash choice).
+    pub points: u64,
+    /// The campaign generator's state.
+    pub rng: u64,
+    /// The summary so far (`seconds` includes earlier attempts).
+    pub sum: Summary,
+}
+
+impl Progress {
+    /// One JSON object.
+    pub fn to_json(&self) -> serde_json::Value {
+        let m = &self.sum;
+        json!({"done": self.done, "rotate": self.rotate, "points": self.points, "rng": self.rng,
+            "sum": [m.ops, m.step, m.offset, m.random, m.double, m.main_mismatches,
+                    m.not_oracle_state, m.refusals, m.bad_retries, m.double_mismatches,
+                    m.skipped, m.seconds]})
+    }
+    /// Parses [`Progress::to_json`].
+    pub fn from_json(v: &serde_json::Value) -> Option<Self> {
+        let u = |k: &str| v.get(k).and_then(serde_json::Value::as_u64);
+        let a: Vec<u64> = v
+            .get("sum")?
+            .as_array()?
+            .iter()
+            .map(serde_json::Value::as_u64)
+            .collect::<Option<_>>()?;
+        let [
+            ops,
+            step,
+            offset,
+            random,
+            double,
+            main_mismatches,
+            not_oracle_state,
+            refusals,
+            bad_retries,
+            double_mismatches,
+            skipped,
+            seconds,
+        ] = a.as_slice()
+        else {
+            return None;
+        };
+        Some(Self {
+            done: usize::try_from(u("done")?).ok()?,
+            rotate: u("rotate")?,
+            points: u("points")?,
+            rng: u("rng")?,
+            sum: Summary {
+                ops: *ops,
+                step: *step,
+                offset: *offset,
+                random: *random,
+                double: *double,
+                main_mismatches: *main_mismatches,
+                not_oracle_state: *not_oracle_state,
+                refusals: *refusals,
+                bad_retries: *bad_retries,
+                double_mismatches: *double_mismatches,
+                skipped: *skipped,
+                seconds: *seconds,
+            },
+        })
+    }
+}
+
+/// Saving and resuming a campaign's progress (see [`run_resumable`]).
+pub struct Checkpointing<'a> {
+    /// Continue from here (the results up to it must already be in `out`'s file).
+    pub from: Option<Progress>,
+    /// Save at most this often (in production [`PROGRESS_EVERY`]), after a whole operation.
+    pub every: std::time::Duration,
+    /// Called with the progress and `out`, so it can flush and sync `out` first.
+    pub save: &'a mut dyn FnMut(&Progress, &mut dyn Write) -> Result<(), String>,
+}
+
+/// How often [`run_resumable`] saves its progress.
+pub const PROGRESS_EVERY: std::time::Duration = std::time::Duration::from_secs(30);
+
 /// Runs the campaign; writes one JSON line per crash point and a final summary line.
 pub fn run(
     oracle: &Oracle,
@@ -295,6 +382,29 @@ pub fn run(
     s: &Settings,
     out: &mut dyn Write,
 ) -> Result<Summary, String> {
+    let mut save = |_: &Progress, _: &mut dyn Write| Ok(());
+    let ck = Checkpointing {
+        from: None,
+        every: PROGRESS_EVERY,
+        save: &mut save,
+    };
+    run_resumable(oracle, rows, artefact, s, out, ck)
+}
+
+/// [`run`] with [`Checkpointing`]: continues from `ck.from` and saves progress as it goes.
+pub fn run_resumable(
+    oracle: &Oracle,
+    rows: &dyn Rows,
+    artefact: &[u8],
+    s: &Settings,
+    out: &mut dyn Write,
+    ck: Checkpointing<'_>,
+) -> Result<Summary, String> {
+    let Checkpointing {
+        from: resume,
+        every,
+        save,
+    } = ck;
     let t0 = Instant::now();
     let cfg = EngineConfig {
         wal_segment_bytes: s.wal_segment,
@@ -353,7 +463,26 @@ pub fn run(
         .collect();
     random.sort_unstable();
     let mut rotate = 0u64;
+    let mut done = 0;
+    let mut earlier_seconds = 0;
+    if let Some(p) = resume {
+        // Every seeded choice above was drawn again identically; restore what came after.
+        done = p.done;
+        rotate = p.rotate;
+        run.points = p.points;
+        run.rng = SplitMix64::new(p.rng);
+        earlier_seconds = p.sum.seconds;
+        run.sum = p.sum;
+    }
+    let mut last_save = Instant::now();
     for i in 0..n {
+        if i < done {
+            // Already done: only rebuild the main line's state (no crash points, no counts).
+            let op = oracle.ops.get(i).ok_or("op")?.clone();
+            run.exec(&db, cid, &op)
+                .map_err(|e| format!("main line (resume), op {i}: {e}"))?;
+            continue;
+        }
         let op = oracle.ops.get(i).ok_or("op")?.clone();
         let base = main.fork();
         // The crash points of op i: the VFS operations it performs. A replay on an engine
@@ -408,8 +537,21 @@ pub fn run(
             };
             run.crash(&base, cid, i, k, tear, policy, "random")?;
         }
+        if last_save.elapsed() >= every {
+            let mut sum = run.sum.clone();
+            sum.seconds = earlier_seconds + t0.elapsed().as_secs();
+            let p = Progress {
+                done: i + 1,
+                rotate,
+                points: run.points,
+                rng: run.rng.state(),
+                sum,
+            };
+            save(&p, run.out)?;
+            last_save = Instant::now();
+        }
     }
-    run.sum.seconds = t0.elapsed().as_secs();
+    run.sum.seconds = earlier_seconds + t0.elapsed().as_secs();
     let sum = run.sum.clone();
     let line = json!({
         "t": "summary", "ops": sum.ops, "step": sum.step, "offset": sum.offset,
