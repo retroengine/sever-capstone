@@ -7,6 +7,7 @@
 //!     [--random 1000] [--double-every 50] [--step-every 1] [--limit-ops N]
 //! sever-crashkit replay-p1 --trace traces/p1-nq-10k-seed42.jsonl --root . --mode plain|close|crash \
 //!     --out results/p2-replay-....json
+//! sever-crashkit measure --trace traces/p1-nq-100k-seed42.jsonl --root . --out FILE [--work DIR]
 //! ```
 //! The oracle header names the artefact, the vectors and the spawn target. The results are
 //! checked by `python -m sever_refmodel_durable.oracle check ORACLE RESULTS`.
@@ -114,7 +115,21 @@ fn real_main() -> Result<bool, String> {
             println!("{line}");
             r.passed()
         }
-        _ => return Err("usage: sever-crashkit generic|campaign|replay-p1 --out FILE ...".into()),
+        "measure" => {
+            // P2-T11, a measure: the result is written whatever it is.
+            let root = PathBuf::from(a.get("root").map_or(".", String::as_str));
+            let trace = PathBuf::from(a.get("trace").ok_or("--trace is required")?);
+            let work = PathBuf::from(a.get("work").map_or("target/measure-p2", String::as_str));
+            let r = sever_crashkit::measure::run(&trace, &root, &work)?;
+            writeln!(out, "{r}").map_err(|e| e.to_string())?;
+            println!("{r}");
+            true
+        }
+        _ => {
+            return Err(
+                "usage: sever-crashkit generic|campaign|replay-p1|measure --out FILE ...".into(),
+            );
+        }
     };
     out.flush().map_err(|e| e.to_string())?;
     Ok(ok)

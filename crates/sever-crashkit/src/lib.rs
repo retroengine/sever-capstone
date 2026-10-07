@@ -13,6 +13,7 @@
 
 pub mod campaign;
 pub mod generic;
+pub mod measure;
 pub mod oracle;
 pub mod replay;
 pub mod rows;
