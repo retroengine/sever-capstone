@@ -3,7 +3,9 @@
 #   scripts/ci.sh fast         every push: format, lint, types, L1, bounded L2, L3 + spec-trace,
 #                              golden vectors, L5, L7, L13 (with the freeze guard), §20.3 check 1
 #   scripts/ci.sh full-checks  fast + the Full-tier ignored tests, the slow Python tests, the sabotage
-#                              register (P1-T8), the MSRV build, cargo deny, the API docs
+#                              register (P1-T8, P2-T8), the MSRV build, cargo deny, the API docs
+# Part 2 adds the SDK's native module and Part 2's spec-trace to fast; its Full-tier gates are
+# python -m sever_testkit_p2.gates p2-crash | p2-replay | p2-fuzz | p2-sabotage | p2-spikes.
 # The long Full-tier gates write the run ledger themselves (python -m sever_testkit.gates …).
 # Prints one "STEP <name>: PASS|FAIL" line per step; exits 1 if any step failed.
 set -u
@@ -29,8 +31,11 @@ fast() {
   step ruff uv run --no-sync ruff check
   step ruff-format uv run --no-sync ruff format --check
   step mypy uv run --no-sync mypy python
+  # The Part 2 SDK's native module (removed by every `uv sync`) must exist before the Python tests.
+  step sdk-native uv run --no-sync maturin develop -q --release --uv -m crates/sever-py-p2/Cargo.toml
   step python-tests uv run --no-sync pytest -q -m "not slow"
   step spec-trace uv run --no-sync python -m sever_testkit.spec_trace check --part 1 --complete
+  step spec-trace-p2 uv run --no-sync python -m sever_testkit_p2.spec_trace check --part 2 --complete
   step crypto-deps no_duplicate_crypto_deps
   step freeze-guard freeze_guard
 }
