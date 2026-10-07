@@ -33,6 +33,10 @@ the operations of the ``nq-100k`` Part 1 trace for seed 42.
 and ``sever-engine``: lines >= 90 %, branches >= 85 % (whole-workspace tests, ignored included);
 mutation score >= 85 % with every survivor triaged in ``docs/MUTANTS_P2.md``.
 
+``p2-checks`` is ``scripts/ci.sh full-checks`` (fast tier, ignored tests, slow Python tests with
+the E2E-2.x suite, sabotage, MSRV, cargo deny, docs) and the freeze guard, which is gate P2-T10
+(the Part 1 freeze manifest is unchanged): one ledger entry with every step's outcome.
+
 ``p2-spikes`` is the proof-spike part of gate P2-T7 (Build §3.4): the throwaway crate
 ``spikes/p2-proof`` passes; its only output is the ledger entry, then it is deleted.
 """
@@ -406,6 +410,38 @@ def p2_mutants(root: Path, jobs: int) -> int:
     return 0 if passed else 1
 
 
+def p2_checks(root: Path) -> int:
+    """``scripts/ci.sh full-checks``: every step PASS (P2-T4, P2-T10 and the Full-tier checks)."""
+    cmd = "gates p2-checks"
+    gate = "Full-tier checks (P2-T4, P2-T10, E2E-2.x, L1-L9)"
+    started = ledger.start(root, cmd, gate=gate)
+    t0 = time.time()
+    run = subprocess.run(
+        ["scripts/ci.sh", "full-checks"], cwd=root, capture_output=True, text=True, check=False
+    )
+    steps = {
+        ln.split(":")[0].removeprefix("STEP "): ln.split(":", 1)[1].strip().split(" ")[0]
+        for ln in run.stdout.splitlines()
+        if ln.startswith("STEP ")
+    }
+    passed = run.returncode == 0 and bool(steps) and all(v == "PASS" for v in steps.values())
+    data_out = {"gate": "scripts/ci.sh full-checks: every step PASS", "steps": steps,
+                "seconds": round(time.time() - t0, 1),
+                "stdout_tail": run.stdout.splitlines()[-40:],
+                "outcome": "PASS" if passed else "FAIL"}  # fmt: skip
+    path, sha = ledger.result_file(
+        root, f"p2-checks-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(root, cmd, gate=gate, outcome=data_out["outcome"],
+                     run_commit=started["commit"], result_file=str(path.relative_to(root)),
+                     result_sha256=sha, steps=steps),
+    )  # fmt: skip
+    print(json.dumps(steps | {"outcome": data_out["outcome"]}))
+    return 0 if passed else 1
+
+
 def p2_spikes(root: Path) -> int:
     """Build §3.4: the Part 2 proof spikes pass; their only output is this ledger entry."""
     cmd = "gates p2-spikes"
@@ -516,6 +552,8 @@ def _main(argv: list[str]) -> int:
     rp.add_argument("--all-seeds", action="store_true")
     rp.add_argument("--jobs", type=int, default=1)
     rp.add_argument("--root", type=Path, default=Path("."))
+    ck = sub.add_parser("p2-checks")
+    ck.add_argument("--root", type=Path, default=Path("."))
     cv = sub.add_parser("p2-coverage")
     cv.add_argument("--root", type=Path, default=Path("."))
     mu = sub.add_parser("p2-mutants")
@@ -533,6 +571,8 @@ def _main(argv: list[str]) -> int:
     if args.cmd == "p2-replay":
         rseeds = list(SEEDS) if args.all_seeds else (args.seed or [42])
         return p2_replay(args.root.resolve(), args.data, rseeds, args.jobs)
+    if args.cmd == "p2-checks":
+        return p2_checks(args.root.resolve())
     if args.cmd == "p2-coverage":
         return p2_coverage(args.root.resolve())
     if args.cmd == "p2-mutants":
