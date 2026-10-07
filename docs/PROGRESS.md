@@ -43,6 +43,16 @@ Check: `ps aux | grep -E "sever-crashkit|cargo-mutants|sever_testkit_p2"`, `tail
 When finished: `git add docs/RUN_LEDGER.jsonl results/` and commit. If WSL restarted, rerun the
 same commands (in CLAUDE.md §9 / gates.py docstring).
 
+**HIGH PRIORITY before the Part 2 freeze (owner's request, 7 Oct 2026): test-oracle audit.**
+Every Part 2 test is classified by where its expected value comes from: (A) spec text or
+Appendix A, (B) an independent oracle (Python model, Part 1 reference-model traces, independent
+CRC/HMAC), (C) Part 1's frozen index, (D) the engine's own code (round trips, error labels). Any
+test guarding a spec rule with only a (D) oracle is rewritten from the spec. To keep it unbiased:
+classify from the test file and the spec only, never opening the implementation; write each
+expected value from the spec before looking at what the code produces; record the table in
+`docs/TEST_ORACLES_P2.md`; and list the rules where the Python oracle and the engine share one
+reading of the spec (same author), so the owner can review those by hand.
+
 **Next steps, in order:**
 1. P2-T9 branch coverage: exploratory measure was lines 91.8 %, branches 71.9 % (gate 85 %) before
    the new tests. Remaining uncovered branches (deduped): sever-wal/src/lib.rs (≈18: recovery
