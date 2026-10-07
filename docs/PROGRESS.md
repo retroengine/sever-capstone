@@ -26,31 +26,34 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `locator.bin`, WAL segment header): expect gap entries. Part 2 adds its own gate runners and tools
   in new modules; the Part 1 packages (including `sever_testkit`) are frozen (F-3).
 
-## RESUME HERE (session paused 7 Oct 2026, ~19:50 UTC)
+## RESUME HERE (updated 7 Oct 2026, ~20:45 UTC, branch p2-fuzz, HEAD da01954)
 
-- **Running in the background:** `gates p2-crash --data nq-10k --all-seeds --jobs 3` (P2-T1…T3),
-  started 19:26 UTC on commit 682bfac, ~7 h. Check: `tail traces/gate-p2-crash.log`,
-  `tail -2 docs/RUN_LEDGER.jsonl`, `ps aux | grep sever-crashkit`. When done: commit
-  `docs/RUN_LEDGER.jsonl` and the new `results/p2-crash-*.json`. If the laptop slept or WSL restarted,
-  rerun the same command (the ledger keeps the aborted "started" line).
-- **Next steps, in order:**
-  1. P2-T6 fuzz: `fuzz-p2/` targets + seeds are committed; run each 10^8 runs:
-     `cargo +nightly fuzz run --fuzz-dir fuzz-p2 -O <wal_record|manifest|checkpoint_file|store_record> fuzz-p2/seeds/<t> -- -runs=100000000`,
-     then add a `p2-fuzz` runner to `python/sever_testkit_p2/gates.py` that records it in the ledger.
-  2. P2-T7 proof spikes (Build §3.4): throwaway `AeadSealer` (aes-gcm-siv =0.11.1) passing
-     `ep6_sealer_contract`, stub `LogParticipant` and `KeyRotationParticipant` (phases A/C) passing
-     `ep7_participant_contract`; record in ledger (`p2-spikes`), then delete the spike code.
-  3. P2-T5: replay Part 1 traces (`sever-trace-1`) through the Part 2 engine, with and without a
-     close/reopen after every rung (new tool in sever-crashkit or sever-p2).
-  4. P2-T9: coverage (cargo llvm-cov ≥90 % lines, ≥85 % branches) and cargo-mutants (≥85 %) on
-     sever-format, sever-wal, sever-txn, sever-engine; triage survivors in `docs/MUTANTS_P2.md`.
-  5. P2-T8: `tests/sabotage/run.sh` already lists SB-11…SB-15; run it. Update `scripts/ci.sh` to
-     add Part 2 spec-trace (`python -m sever_testkit_p2.spec_trace check --part 2 --complete`),
-     e2e, crashkit small test.
-  6. P2-T11 measures (bytes/fsyncs per op, recovery time, RSS at nq-100k); nq-10k demo run;
-     README/API docs; freeze manifest `scripts/freeze.sh 2` (tag stays with the owner).
-- Rebuild the SDK native module after any `uv sync`:
-  `uv run --no-sync maturin develop --release --uv -m crates/sever-py-p2/Cargo.toml`.
+Done this session: P2-T6 fuzz PASS (ledger); P2-T7 proof spikes PASS (ledger; spike deleted);
+`sever-crashkit replay-p1` + `gates p2-replay` (P2-T5); `gates p2-fuzz`, `p2-spikes` runners;
+11 startup-refusal tests (engine) and §14.2 paged conformance tests (format) for P2-T9.
+
+**Detached runs (nohup; each writes its own log/results; nothing needs Claude):**
+1. P2-T1…T3 crash gate (started 19:26 on 682bfac, ~7 h): log `traces/gate-p2-crash.log`,
+   result `results/p2-crash-nq-10k-*.json` + ledger line when done.
+2. P2-T5 replay gate (started 20:07 on 22012b6, 15 runs × ~7 min): log
+   `traces/gate-p2-replay.log`, result `results/p2-replay-nq-10k-*.json` + ledger line.
+3. Exploratory mutants (NOT a gate) on format/wal/txn/engine, 868 mutants, started ~20:40:
+   log `traces/mutants-p2.log`, outcomes `traces/mutants-p2/mutants.out/` (missed.txt, caught.txt).
+Check: `ps aux | grep -E "sever-crashkit|cargo-mutants|sever_testkit_p2"`, `tail -2 docs/RUN_LEDGER.jsonl`.
+When finished: `git add docs/RUN_LEDGER.jsonl results/` and commit. If WSL restarted, rerun the
+same commands (in CLAUDE.md §9 / gates.py docstring).
+
+**Next steps, in order:**
+1. P2-T9 branch coverage: exploratory measure was lines 91.8 %, branches 71.9 % (gate 85 %) before
+   the new tests. Remaining uncovered branches (deduped): sever-wal/src/lib.rs (≈18: recovery
+   refusals), sever-txn/src/contract.rs (≈24: each contract violation needs a deliberately wrong
+   implementation), sever-format image.rs streams order checks (≈13), records.rs, protocol.rs.
+   Write tests FROM THE SPEC (memory: tests-from-spec), re-measure with
+   `cargo +nightly llvm-cov --branch --release -q --workspace --json --summary-only -- --include-ignored`,
+   then add a `p2-coverage` + `p2-mutants` runner (copy p1_coverage/p1_mutants) and run them.
+2. Triage mutants survivors into `docs/MUTANTS_P2.md`.
+3. P2-T8 `tests/sabotage/run.sh`; update `scripts/ci.sh` for Part 2.
+4. P2-T11 measures; nq-10k demo run; README/API docs; `scripts/freeze.sh 2` (tag stays with owner).
 
 ## Part 2 modules (Build §5.5)
 
