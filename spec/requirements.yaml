@@ -274,3 +274,6 @@
 - {id: SR-12.4-2, section: "12.4", kind: must, part: 2, text: "An interrupted storage checkpoint leaves the previous one valid."}
 - {id: SR-15.6-4, section: "15.6", kind: step, part: 2, text: "Delete older storage checkpoints and covered WAL segments."}
 - {id: SR-14.6-3, section: "14.6", kind: must, part: 2, text: "Append-store bytes (certificates, payloads, leaves) are written and fsynced before the COMMIT that references them. Unreferenced bytes after a crash are ignored and overwritten."}
+- {id: SR-15.6-2, section: "15.6", kind: step, part: 2, text: "Rename it to checkpoint/<new>/; fsync checkpoint/.", related: [SB-12]}
+- {id: SR-15.6-3, section: "15.6", kind: step, part: 2, text: "Write MANIFEST.tmp naming the new storage checkpoint and the first WAL position still needed; fsync; rename to MANIFEST; fsync the directory.", related: [SB-12]}
+- {id: SR-12.4-1, section: "12.4", kind: must, part: 2, text: "A storage checkpoint writes the whole in-memory state, in ciphertext form, to a new directory, installs it atomically, and deletes the WAL segments it covers; it runs every 1 GiB of WAL and at clean shutdown."}

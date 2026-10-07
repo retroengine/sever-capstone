@@ -306,6 +306,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-checkpoint"
+version = "0.1.0"
+dependencies = [
+ "sever-format",
+ "sever-spec",
+ "sever-types",
+ "sever-vfs",
+]
+
+[[package]]
 name = "sever-format"
 version = "0.1.0"
 dependencies = [

@@ -1,0 +1,18 @@
+[package]
+name = "sever-checkpoint"
+version = "0.1.0"
+description = "Storage checkpoints: atomic full images, MANIFEST install, cleanup (Part 2, spec §12.4, §15.6)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-vfs = { path = "../sever-vfs" }
+sever-format = { path = "../sever-format" }
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+
+[lints]
+workspace = true
