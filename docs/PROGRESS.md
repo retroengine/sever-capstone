@@ -2,25 +2,44 @@
 
 Updated at the end of every session (CLAUDE.md §3.3). Newest session first in the log.
 
-> **Draft written by Claude on 6 Oct 2026, for you to confirm** (CLAUDE.md §3.3). Part 1 was built in
-> write mode (your temporary rule: build everything first, study the code after). Read it before
-> committing and change anything that is not how you see it.
+> **Draft written by Claude on 7 Oct 2026, for you to confirm** (CLAUDE.md §3.3). Parts 1 and 2 are
+> built in write mode (your temporary rule: build everything first, study the code after). Read it
+> before committing and change anything that is not how you see it.
 
 ## Now
 
-- **Phase:** Part 1, The Idea: **done**. Every gate passed in the run ledger on 6 Oct 2026 (clean
-  commits); frozen as `freeze/PART-1.sha256` + tag `part-1-frozen`. **Next: Part 2, The Database.**
+- **Phase:** **Part 2, The Database** (Build §5), started 7 Oct 2026. Part 1 is frozen
+  (`freeze/PART-1.sha256`, tag `part-1-frozen`); the freeze guard passes.
 - **Working copy:** `~/sever-db` on the WSL ext4 disk since 4 Oct (the `C:` copy is a backup).
 - **Git:** you commit from now on; Claude only leaves changes in the working tree and hands you the
-  commands. The work is on branch `p1-sever-quant` (32 commits ahead of `master`); `master` is the
-  trunk (CLAUDE.md says `main`; the repo uses `master`).
-- **Decisions (6 Oct):** DB-61 … DB-64 close the last Part 1 gaps G-9 … G-12 (the ULP sentence, spawn
-  size as a runtime value, at most 10,000 frozen groups, `IntegrityViolation` for a bad artefact).
+  commands. The trunk is `main`. Part 2 work goes on short branches, one per module
+  (`p2-sever-vfs`, `p2-sever-format`, …).
+- **Decisions (7 Oct, Part 2 design review):** DB-46 (slot payload `id ‖ x̃ ‖ extension secret`;
+  header `seal_version`) and DB-48 (`sealer_id` in every file; plaintext database, no
+  confidentiality claim before Part 4) accepted; DB-65 (`create_dir`/`remove_dir` in the `Vfs`)
+  closes G-13. DB-51 … DB-54 wait for Parts 3 and 4.
 - **Machine:** WSL now has 10 GB (`C:\Users\saiki\.wslconfig`, `memory=10GB`), so the nq-100k
   gate runs three seeds at once (`--jobs 3`, 80 min).
-- **Next:** Part 2 starts with Build §5: decide its proposals (DB-46, DB-48, DB-51 … DB-54), then
-  `sever-vfs` (`SimVfs`) first. Part 2 adds its own gate runners and tools in new modules; the
-  Part 1 packages (including `sever_testkit`) are frozen (F-3).
+- **Next:** `sever-format` (spec §14: pages, group header, slot, WAL records, `MANIFEST`,
+  checkpoint files, append-store records; strict parsers). It must first define the byte layouts
+  §14 leaves open (file headers with `sealer_id`, `MANIFEST`, `meta.bin`, `collections.bin`,
+  `locator.bin`, WAL segment header): expect gap entries. Part 2 adds its own gate runners and tools
+  in new modules; the Part 1 packages (including `sever_testkit`) are frozen (F-3).
+
+## Part 2 modules (Build §5.5)
+
+| Module | Status | Notes |
+|---|---|---|
+| `sever-vfs` | built | EP-5 `Vfs`; `PosixVfs`; `SimVfs` (current/durable views, crash at op N, tear, `DropAll`/`KeepAll`/`Random(seed)`, failed `fsync` loses the data like Linux, `fork`); EP-5 contract suite (functional + crash), 3 wrong backends fail it; 7 hand mutants all killed; MSRV-clean |
+| `sever-format` | next | §14 |
+| `sever-wal` | | §12.3; SB-11, SB-13 |
+| `sever-appendstore` | | EP-8, §14.8 |
+| `sever-checkpoint` | | §12.4, §15.6; SB-12 |
+| `sever-txn` | | EP-6, EP-7, EP-9, §12.5; SB-14, SB-15 |
+| `sever-engine` | | §12.7, §12.9, §15.7, §16.1 |
+| `sever-crashkit`, `sever_refmodel_durable` | | EX-1 campaign, durable oracle |
+| `sever-p2`, `sever-py-p2` / `sever_db_p2` | | composition root, CLI, SDK |
+| Part 2 `spec_trace` | | the frozen tool knows only Part 1's sections; Part 2 needs a new module that reuses it |
 
 ## Part 1 gates (Build §4.8) — status from the ledger
 
@@ -72,6 +91,13 @@ report and the rebuilt artefact identical apart from timing); the freeze manifes
 | CI | built | `scripts/ci.sh fast|full-checks`; `.github/workflows/ci.yml` (fast tier) |
 | P0 pre-registration | written | `configs/experiments.yaml` (Overview §12 verbatim, pins filled from `PINS.json`) — yours to commit |
 
+## Things to explain later (learning pass)
+
+- Why a failed `fsync` is never retried: `SimVfs` models Linux's behaviour (pages marked clean,
+  data silently gone, the retry "succeeds"), which is what SB-14 will exploit.
+- The current/durable views of `SimVfs`, and why a new file needs `fsync_dir` of its parent.
+- Why the EP-5 crash contract must fail a backend that loses nothing.
+
 ## Open questions
 
 - What overwrote `sciq_reference/passages.parquet` at 19:35 UTC on 27 Sep? Not `build`; the
@@ -85,6 +111,10 @@ report and the rebuilt artefact identical apart from timing); the freeze manifes
   out-of-memory killer (all recorded in the ledger as aborted).
 
 ## Session log
+
+- **7 Oct 2026**: Part 2 started. Design review: DB-46, DB-48 accepted; G-13 found and closed by
+  DB-65. `sever-vfs` built (30 tests, contract suite, posix on ext4 and tmpfs); a hand mutation
+  pass found a weak reorder check in the contract, fixed.
 
 - **6 Oct 2026 (afternoon)**: every Part 1 gate recorded on clean commits: P1-T11 mutants 93.7 %
   (tests added for the survivors that were real gaps: the change set's `k` after a flush,

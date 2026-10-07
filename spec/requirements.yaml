@@ -243,3 +243,10 @@
 # --- gaps closed 6 Oct 2026 (DB-61 … DB-64) ---
 - {id: SR-5.1-5, section: "5.1", kind: must, part: 1, text: "At most 10,000 frozen groups (labels 0–9999); an artefact with a larger k_frozen is rejected (DB-63)."}
 - {id: SR-6.3-3, section: "6.3", kind: must, part: 1, text: "A failed §6.3 check is rejected with IntegrityViolation naming the check, never a value (DB-64)."}
+
+# --- Part 2: sever-vfs (7 Oct 2026, write mode; owner review) ---
+- {id: SR-12.2-1, section: "12.2", kind: must, part: 2, text: "Every read and write goes through a Vfs trait: open, read_at, write_at, append, fsync, fsync_dir, rename, unlink, truncate, list, create_dir, remove_dir (DB-65).", technique: [contract]}
+- {id: SR-12.2-2, section: "12.2", kind: definition, part: 2, text: "PosixVfs: real files.", technique: [contract]}
+- {id: SR-12.2-3, section: "12.2", kind: must, part: 2, text: "SimVfs is in memory and seeded and models the POSIX durability contract conservatively: only fsynced data and fsync_dir'ed directory entries survive a simulated crash.", technique: [contract, property]}
+- {id: SR-12.2-4, section: "12.2", kind: must, part: 2, text: "SimVfs can drop any unsynced write, tear a write at any byte, reorder unsynced writes, and make any fsync fail.", technique: [contract]}
+- {id: SR-12.2-5, section: "12.2", kind: must, part: 2, text: "All crash tests run on SimVfs, so they are deterministic.", technique: [property], notes: "sever-vfs: the same seed gives the same disk. That every crash test uses SimVfs is checked by the crash kit and the architecture tests."}
