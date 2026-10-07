@@ -273,3 +273,4 @@
 - {id: SR-12.7-2, section: "12.7", kind: must, part: 2, text: "An fsync error aborts the process; a failed fsync is never retried.", related: [SB-14]}
 - {id: SR-12.4-2, section: "12.4", kind: must, part: 2, text: "An interrupted storage checkpoint leaves the previous one valid."}
 - {id: SR-15.6-4, section: "15.6", kind: step, part: 2, text: "Delete older storage checkpoints and covered WAL segments."}
+- {id: SR-14.6-3, section: "14.6", kind: must, part: 2, text: "Append-store bytes (certificates, payloads, leaves) are written and fsynced before the COMMIT that references them. Unreferenced bytes after a crash are ignored and overwritten."}

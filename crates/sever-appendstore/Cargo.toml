@@ -1,0 +1,23 @@
+[package]
+name = "sever-appendstore"
+version = "0.1.0"
+description = "EP-8 AppendStore: append-only record stores, the payload store for passage text (Part 2, spec §14.8)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[features]
+# Build §3.4: the EP-8 contract suite, for every AppendStore implementation, including later parts'.
+contract-tests = []
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-vfs = { path = "../sever-vfs" }
+sever-format = { path = "../sever-format" }
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+sever-appendstore = { path = ".", features = ["contract-tests"] }
+
+[lints]
+workspace = true
