@@ -1,0 +1,43 @@
+"""Type stub of the PyO3 module built from crates/sever-py-p2 (spec §16.2, Part 2)."""
+
+from collections.abc import Sequence
+from os import PathLike
+
+class SeverError(Exception): ...
+class WrongDimension(SeverError): ...  # noqa: N818 (spec §17 names)
+class NonFinite(SeverError): ...  # noqa: N818 (spec §17 names)
+class NotNormalised(SeverError): ...  # noqa: N818 (spec §17 names)
+class InvalidRecordId(SeverError): ...  # noqa: N818 (spec §17 names)
+class DuplicateRecord(SeverError): ...  # noqa: N818 (spec §17 names)
+class GroupCapacityExceeded(SeverError): ...  # noqa: N818 (spec §17 names)
+class UnknownCollection(SeverError): ...  # noqa: N818 (spec §17 names)
+class PlatformUnsafe(SeverError): ...  # noqa: N818 (spec §17 names)
+class IntegrityViolation(SeverError): ...  # noqa: N818 (spec §17 names)
+class DurabilityFailure(SeverError): ...  # noqa: N818 (spec §17 names)
+
+class Engine:
+    @staticmethod
+    def open(
+        data_dir: str | PathLike[str], key_dir: str | PathLike[str], allow_unsafe_fs: bool = False
+    ) -> Engine: ...
+    def create_collection(
+        self,
+        artefact: str | PathLike[str],
+        spawn_target: int = 200,
+        spawning_enabled: bool = True,
+        store_passages: bool = True,
+    ) -> str: ...
+    def insert(
+        self, collection: str, record_id: str, vector: Sequence[float], passage: bytes | None = None
+    ) -> str: ...
+    def delete(self, collection: str, record_id: str) -> str: ...
+    def delete_user(self, collection: str, record_ids: Sequence[str]) -> list[str]: ...
+    def search(
+        self, collection: str, query: Sequence[float], k: int = 10
+    ) -> list[tuple[str, float]]: ...
+    def stats(self, collection: str) -> dict[str, int]: ...
+    def group_sizes(self, collection: str) -> list[tuple[str, int]]: ...
+    def collections(self) -> list[str]: ...
+    def drop_collection(self, collection: str) -> None: ...
+    def checkpoint(self) -> None: ...
+    def close(self) -> None: ...

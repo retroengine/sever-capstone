@@ -1,0 +1,3 @@
+# PyO3 (crate sever-py-p2) needs an interpreter at build time: the project's own (spec §20.2).
+[env]
+PYO3_PYTHON = { value = ".venv/bin/python", relative = true }

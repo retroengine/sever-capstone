@@ -1,0 +1,24 @@
+[package]
+name = "sever-py-p2"
+version = "0.1.0"
+description = "PyO3 bindings of the Part 2 engine, for the sever_db_p2 SDK (spec §16.2 without commitments)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+name = "sever_db_p2_native"
+# A Python extension module only: no Rust test harness, so no build links libpython. The tests are
+# Python tests (python/sever_db_p2/tests).
+crate-type = ["cdylib"]
+test = false
+doctest = false
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-engine = { path = "../sever-engine" }
+sever-p2 = { path = "../sever-p2" }
+pyo3 = { version = "=0.29.2", features = ["extension-module", "abi3-py313"] } # spec §20.1
+
+[lints]
+workspace = true

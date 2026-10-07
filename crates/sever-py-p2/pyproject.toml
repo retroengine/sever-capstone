@@ -1,0 +1,13 @@
+# Built with `maturin develop --release -m crates/sever-py-p2/Cargo.toml` into the project .venv;
+# the SDK package itself is python/sever_db_p2 (spec §16.2).
+[build-system]
+requires = ["maturin>=1.15,<2"]
+build-backend = "maturin"
+
+[project]
+name = "sever-db-p2-native"
+version = "0.1.0"
+requires-python = "==3.13.*"
+
+[tool.maturin]
+module-name = "sever_db_p2_native"

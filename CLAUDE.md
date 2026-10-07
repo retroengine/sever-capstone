@@ -274,6 +274,10 @@ they name exists. Python modules under `python/` need `PYTHONPATH=python`.
 | P0 data check (WSL) | `(cd datasets && sha256sum -c MANIFEST.sha256)` |
 | P0 data check (P0 environment, PowerShell, on the `C:` backup) | `python scripts/data-preparation/prepare_data.py verify --root .` |
 | P1-T2/T5 gate (Full tier; writes the run ledger) | `PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit.gates p1-differential --data nq-10k --all-seeds` |
+| Part 2 SDK native module (after `uv sync`, which removes it) | `uv run --no-sync maturin develop --release --uv -m crates/sever-py-p2/Cargo.toml` |
+| Part 2 demo | `cargo run --release -p sever-p2 --features demo --bin sever-demo-p2 -- durable --data nq-10k --seed 42` (offline: `--data synthetic`) |
+| Part 2 CLI | `cargo run --release -p sever-p2 --bin sever-db-p2 -- verify --data DIR --keys DIR` |
+| P2-T1…T3 crash gate (Full tier; writes the run ledger; ~7 h) | `PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit_p2.gates p2-crash --data nq-10k --all-seeds --jobs 3` |
 | Review demo (self-contained in `demo/`, own env; DB-56) | `demo/scripts/demo.sh setup\|test\|run\|repl`; container: `demo/scripts/demo.sh docker-build`, then `docker test\|run\|repl` (see `demo/README.md`) |
 
 ---

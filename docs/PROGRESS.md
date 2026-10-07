@@ -39,7 +39,10 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
 | `sever-engine` | built | `Engine<E, S>` + participants: create (MANIFEST last), recovery (checkpoint + WAL replay + participants), index rebuilt through a synthetic ChangeSet, full invariant check (INV-4, 6, 7, 8, §9.7 scrambled IDs, frozen layout, payload refs), insert/delete/delete_user/search/checkpoint/drop/stats, writer mutex + RwLock, Abort/Poison policy, platform (statfs, flock via rustix), test hooks (step hook, canonical state). Crash at every op × 3 policies + double crash vs a model index: PASS. SB-12…SB-15 red through the engine. WAL recovery now refuses a damaged committed record instead of dropping it (SB-11 red there too) |
 | `sever-crashkit`, `sever_refmodel_durable` | built | Python oracle: 20,000-op stream (P1 inserts, cohort `delete_user`s, singles, re-inserts) and a canonical state digest per op; golden small oracle (`golden/p2_oracle_small.jsonl`) matched by the engine byte for byte. Crash kit: generic KV campaign (EX-1 step 1), index campaign (every VFS op of every op, 512-byte tears of sampled WAL writes, random points, double crash), retry checks; `SimVfs` made copy-on-write (fork cost per file, not per byte). nq-10k timing: ~8 ms per op, ~0.15 s per crash point → ~3.5 h per seed |
 | `sever-p2` | built (demo pending) | composition root (platform check, lock, PosixVfs, abort policy, SECRETS 0600), `sever-db-p2` CLI (JSON in/out) |
-| `sever_testkit_p2` | started | `gates p2-crash` (P2-T1 … P2-T3) |
+| `sever_testkit_p2` | started | `gates p2-crash` (P2-T1 … P2-T3) — **running** since 7 Oct 19:26 UTC on commit 682bfac (5 seeds, 3 jobs, ~7 h) |
+| `sever-demo-p2` | built | synthetic: all four crashes (sim before/after commit, SIGKILL before/after commit) all-or-nothing, survivors check passes |
+| `sever-py-p2` / `sever_db_p2` | built | PyO3 0.29.2 (abi3, cdylib only), typed SDK (`Database`, retry semantics), stub for mypy |
+| E2E-2.1 … 2.8, L13 Part 2 | built | `tests/e2e/test_p2_e2e.py` (2.1 nq-10k marked slow; 2.5 via fsync fault injection, aborts with SIGABRT; 2.6 via mkfs.ext4 -d + debugfs, DB-70); `tests/architecture/test_architecture_p2.py` (Vfs-only I/O, no mmap, freeze guard) |
 | `sever-wal` | | §12.3; SB-11, SB-13 |
 | `sever-appendstore` | | EP-8, §14.8 |
 | `sever-checkpoint` | | §12.4, §15.6; SB-12 |

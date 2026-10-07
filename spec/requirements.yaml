@@ -295,3 +295,6 @@
 - {id: SR-15.7-2, section: "15.7", kind: must, part: 2, text: "Full invariant check at every startup (n equals the slot count; S = Σ x̃; every locator entry points at a slot with the same scrambled_id; N and k), and refusal to serve on any violation."}
 - {id: SR-15.9-1, section: "15.9", kind: step, part: 2, text: "Drop collection: commit a WAL record removing the collection, then its data leaves the files (Part 4 adds the cryptographic erase)."}
 - {id: SR-16.1-1, section: "16.1", kind: definition, part: 2, text: "The engine API: open, create_collection, drop_collection, insert, delete, delete_user (one transaction), search, storage_checkpoint_now, stats; group_snapshot only with test-hooks."}
+
+# --- Part 2: architecture, SDK, E2E (7 Oct 2026) ---
+- {id: SR-12.7-3, section: "12.7", kind: must-not, part: 2, text: "No writes go through mmap.", technique: [architecture]}

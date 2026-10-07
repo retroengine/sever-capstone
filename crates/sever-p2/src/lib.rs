@@ -7,6 +7,8 @@
 
 #[cfg(feature = "demo")]
 pub mod demo;
+#[cfg(feature = "demo")]
+pub mod fault;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -15,7 +17,7 @@ use sever_engine::{Engine, EngineConfig, EngineLock, FailurePolicy, PlatformRepo
 use sever_index::NoExtension;
 use sever_txn::PlaintextSealer;
 use sever_types::{CollectionId, Error};
-use sever_vfs::PosixVfs;
+use sever_vfs::{PosixVfs, Vfs};
 use sha2::{Digest, Sha256};
 
 /// Part 2's engine.
@@ -72,6 +74,14 @@ fn io_err(check: &'static str) -> impl Fn(std::io::Error) -> Error {
 
 /// Opens (recovering, or creating) the database: platform checks, lock, engine.
 pub fn open(o: &OpenOptions) -> Result<Opened, Error> {
+    open_wrapped(o, &|v| v)
+}
+
+/// [`open`], with the data directory's `Vfs` passed through `wrap` (fault injection in tests).
+pub fn open_wrapped(
+    o: &OpenOptions,
+    wrap: &dyn Fn(Arc<dyn Vfs>) -> Arc<dyn Vfs>,
+) -> Result<Opened, Error> {
     std::fs::create_dir_all(&o.data_dir).map_err(io_err("§12.9 data directory"))?;
     std::fs::create_dir_all(&o.key_dir).map_err(io_err("§14.1 key directory"))?;
     let platform = sever_engine::check_data_dir(&o.data_dir, o.allow_unsafe_fs)?;
@@ -87,12 +97,14 @@ pub fn open(o: &OpenOptions) -> Result<Opened, Error> {
         config_hash,
         ..EngineConfig::default()
     };
-    let engine = Engine::open(
+    let data: Arc<dyn Vfs> =
         Arc::new(
             PosixVfs::new(&o.data_dir).map_err(|_| Error::PlatformUnsafe {
                 check: "§12.9 data directory",
             })?,
-        ),
+        );
+    let engine = Engine::open(
+        wrap(data),
         Arc::new(
             PosixVfs::new(&o.key_dir).map_err(|_| Error::PlatformUnsafe {
                 check: "§14.1 key directory",

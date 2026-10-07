@@ -100,7 +100,20 @@ fn run(cmd: &str, a: &Args) -> Result<Result<Value, Error>, String> {
     let mut o = OpenOptions::new(PathBuf::from(a.get("data")?), PathBuf::from(a.get("keys")?));
     o.allow_unsafe_fs = a.flag("allow-unsafe-fs");
     o.config_file = a.0.get("config").map(PathBuf::from);
-    let opened = match open(&o) {
+    // E2E-2.5 (test builds only): fail the n-th fsync of the data directory.
+    #[cfg(feature = "demo")]
+    let opened = match std::env::var("SEVER_TEST_FAIL_FSYNC_AT")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+    {
+        Some(n) => sever_p2::open_wrapped(&o, &move |v| {
+            std::sync::Arc::new(sever_p2::fault::FailingVfs::new(v, n))
+        }),
+        None => open(&o),
+    };
+    #[cfg(not(feature = "demo"))]
+    let opened = open(&o);
+    let opened = match opened {
         Ok(x) => x,
         Err(e) => return Ok(Err(e)),
     };
