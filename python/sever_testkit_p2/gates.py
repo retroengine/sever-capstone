@@ -25,6 +25,10 @@ mismatches against the trace, and an unchanged state across every reopen.
 ``p2-sabotage`` is gate P2-T8 (Build §2.6, L12): ``tests/sabotage/run.sh``, every SB item of
 Parts 1 and 2 turns at least one test red.
 
+``p2-measures`` is measure P2-T11 (descriptive, Build §2.5: recorded as found, never rerun to pass):
+bytes written and fsyncs per operation, recovery time and resident memory, on real files, running
+the operations of the ``nq-100k`` Part 1 trace for seed 42.
+
 ``p2-spikes`` is the proof-spike part of gate P2-T7 (Build §3.4): the throwaway crate
 ``spikes/p2-proof`` passes; its only output is the ledger entry, then it is deleted.
 """
@@ -255,6 +259,45 @@ def p2_sabotage(root: Path) -> int:
     return 0 if passed else 1
 
 
+def p2_measures(root: Path, data: str, seed: int) -> int:
+    """P2-T11: a measure. The run is recorded whatever it finds."""
+    cmd = f"gates p2-measures --data {data} --seed {seed}"
+    gate = "P2-T11 (measure)"
+    started = ledger.start(root, cmd, gate=gate, data=data, seeds=[seed])
+    bin_dir = _build(root, started["commit"], "sever-crashkit")
+    trace = root / f"traces/p1-{data}-seed{seed}.jsonl"
+    out = root / f"traces/p2-measures-{data}-seed{seed}.jsonl"
+    run = subprocess.run(
+        [str(bin_dir / "sever-crashkit"), "measure", "--trace", str(trace), "--root", str(root),
+         "--out", str(out), "--work", str(root / "target/measure-p2")],
+        cwd=root, capture_output=True, text=True, check=False,
+    )  # fmt: skip
+    found = json.loads(out.read_text().splitlines()[-1]) if out.exists() else {}
+    data_out = {"measure": "P2-T11", "data": data, "seed": seed,
+                "trace_sha256": _sha(trace), "rc": run.returncode, "found": found,
+                "stderr_tail": run.stderr.splitlines()[-10:],
+                "outcome": "RECORDED" if run.returncode == 0 else "ERROR"}  # fmt: skip
+    path, sha = ledger.result_file(
+        root, f"p2-measures-{data}-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(
+            root,
+            cmd,
+            gate=gate,
+            data=data,
+            seeds=[seed],
+            outcome=data_out["outcome"],
+            run_commit=started["commit"],
+            result_file=str(path.relative_to(root)),
+            result_sha256=sha,
+        ),
+    )
+    print(json.dumps(data_out))
+    return 0 if run.returncode == 0 else 1
+
+
 def p2_spikes(root: Path) -> int:
     """Build §3.4: the Part 2 proof spikes pass; their only output is this ledger entry."""
     cmd = "gates p2-spikes"
@@ -365,6 +408,10 @@ def _main(argv: list[str]) -> int:
     rp.add_argument("--all-seeds", action="store_true")
     rp.add_argument("--jobs", type=int, default=1)
     rp.add_argument("--root", type=Path, default=Path("."))
+    me = sub.add_parser("p2-measures")
+    me.add_argument("--data", default="nq-100k")
+    me.add_argument("--seed", type=int, default=42)
+    me.add_argument("--root", type=Path, default=Path("."))
     sb = sub.add_parser("p2-sabotage")
     sb.add_argument("--root", type=Path, default=Path("."))
     sp = sub.add_parser("p2-spikes")
@@ -373,6 +420,8 @@ def _main(argv: list[str]) -> int:
     if args.cmd == "p2-replay":
         rseeds = list(SEEDS) if args.all_seeds else (args.seed or [42])
         return p2_replay(args.root.resolve(), args.data, rseeds, args.jobs)
+    if args.cmd == "p2-measures":
+        return p2_measures(args.root.resolve(), args.data, args.seed)
     if args.cmd == "p2-sabotage":
         return p2_sabotage(args.root.resolve())
     if args.cmd == "p2-spikes":
