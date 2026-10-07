@@ -36,7 +36,8 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
 | `sever-appendstore` | built | EP-8 `AppendStore` + `FileStore` (segments, torn-tail cut at open, rollover); EP-8 contract suite, a wrong store fails it; crash at every op × 3 policies keeps every synced record |
 | `sever-checkpoint` | built | §15.6 steps 1–4 (tmp dir, rename, MANIFEST via tmp+rename), strict load (paged files, WAL position, artefact names), cleanup of leftovers; crash at every op × 3 policies loads old or new; SB-12 red through it |
 | `sever-txn` | built | EP-6 `Sealer` + `PlaintextSealer`, EP-7 `TxnParticipant`, EP-9 `Clock` (`SystemClock`, `SimClock`), each with a contract suite that wrong implementations fail; `StoredExtension` (codec beside the frozen EP-1); ChangeSet → after-images (put, move-last, drain/re-wrap, headers incl. holding count, counters, passage refs); decode + synthetic ChangeSet rebuild; the §5.4 protocol with step hooks; SB-15 red |
-| (next) | | `sever-engine` |
+| `sever-engine` | built | `Engine<E, S>` + participants: create (MANIFEST last), recovery (checkpoint + WAL replay + participants), index rebuilt through a synthetic ChangeSet, full invariant check (INV-4, 6, 7, 8, §9.7 scrambled IDs, frozen layout, payload refs), insert/delete/delete_user/search/checkpoint/drop/stats, writer mutex + RwLock, Abort/Poison policy, platform (statfs, flock via rustix), test hooks (step hook, canonical state). Crash at every op × 3 policies + double crash vs a model index: PASS. SB-12…SB-15 red through the engine. WAL recovery now refuses a damaged committed record instead of dropping it (SB-11 red there too) |
+| (next) | | `sever-crashkit`, `sever_refmodel_durable` |
 | `sever-wal` | | §12.3; SB-11, SB-13 |
 | `sever-appendstore` | | EP-8, §14.8 |
 | `sever-checkpoint` | | §12.4, §15.6; SB-12 |
@@ -102,6 +103,11 @@ report and the rebuilt artefact identical apart from timing); the freeze manifes
   data silently gone, the retry "succeeds"), which is what SB-14 will exploit.
 - The current/durable views of `SimVfs`, and why a new file needs `fsync_dir` of its parent.
 - Why the EP-5 crash contract must fail a backend that loses nothing.
+
+- `sever-engine` rebuilds Part 1's frozen index after a crash by applying one synthetic `ChangeSet`
+  (every group, slot and locator entry as a "put"): no edit to the frozen crate.
+- Why a valid WAL record *after* a bad one means corruption, not a torn tail (only the last,
+  unsynced append can be torn).
 
 ## Open questions
 

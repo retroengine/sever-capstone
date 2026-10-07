@@ -344,7 +344,13 @@ impl Wal {
                 let (rec, len) = match WalRecord::parse_next(rest) {
                     WalParse::End => break,
                     WalParse::Record(r, len) if r.wal_seq == expect => (r, len),
-                    _ if tail_segment => break 'segments,
+                    // A torn tail is only ever the last, unsynced append: nothing valid can
+                    // follow it. A valid record after the bad bytes means a committed record was
+                    // damaged; discarding the rest would silently lose acknowledged work.
+                    _ if tail_segment && !valid_record_after(bytes, off + 1, expect) => {
+                        break 'segments;
+                    }
+                    _ if tail_segment => return Err(bad("§12.3 corrupt record inside the log")),
                     _ => return Err(bad("§12.3 hole inside the log")),
                 };
                 off += len;
@@ -423,6 +429,32 @@ impl Wal {
         };
         Ok((wal, committed, report))
     }
+}
+
+/// True if a CRC-valid record with `wal_seq ≥ expect` starts anywhere in `bytes[from..]`.
+/// Candidates are filtered on the type byte and a plausible `wal_seq` before the CRC is computed.
+fn valid_record_after(bytes: &[u8], from: usize, expect: u64) -> bool {
+    let end = bytes
+        .len()
+        .saturating_sub(sever_format::wal::RECORD_OVERHEAD);
+    (from..=end).any(|p| {
+        let Some(head) = bytes.get(p..p + 13) else {
+            return false;
+        };
+        let ty_ok = head
+            .get(4)
+            .is_some_and(|&t| RecordType::from_byte(t).is_some());
+        let seq = head
+            .get(5..13)
+            .and_then(|b| <[u8; 8]>::try_from(b).ok())
+            .map(u64::from_be_bytes);
+        ty_ok
+            && seq.is_some_and(|q| q >= expect && q < expect.saturating_add(1 << 24))
+            && matches!(
+                WalRecord::parse_next(bytes.get(p..).unwrap_or_default()),
+                WalParse::Record(r, _) if Some(r.wal_seq) == seq
+            )
+    })
 }
 
 /// Creates segment `seq`: the file and its directory entry, then its header, all durable.

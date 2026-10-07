@@ -1,0 +1,36 @@
+[package]
+name = "sever-engine"
+version = "0.1.0"
+description = "The storage engine: collections, the API, recovery with the full invariant check, platform checks (Part 2, spec §12.7, §12.9, §15.7, §16.1)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[features]
+# §16.1: group_snapshot and the other inspection hooks; never in measured builds (Build §1.1).
+test-hooks = ["sever-index/test-hooks"]
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-quant = { path = "../sever-quant" }
+sever-partition = { path = "../sever-partition" }
+sever-index = { path = "../sever-index" }
+sever-search = { path = "../sever-search" }
+sever-vfs = { path = "../sever-vfs" }
+sever-format = { path = "../sever-format" }
+sever-wal = { path = "../sever-wal" }
+sever-appendstore = { path = "../sever-appendstore" }
+sever-checkpoint = { path = "../sever-checkpoint" }
+sever-txn = { path = "../sever-txn" }
+zeroize = "=1.9.0" # spec §20.1
+rand_core = { version = "=0.6.4", features = ["getrandom"] } # spec §20.1: the OsRng source
+rustix = { version = "1.1", default-features = false, features = ["std", "fs"] } # safe flock and statfs (§12.9)
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+sever-engine = { path = ".", features = ["test-hooks"] }
+serde_json = "1"
+proptest = { version = "~1.6", default-features = false, features = ["std", "bit-set"] } # rand 0.8, no fork: one rand_core and one getrandom (spec §20.3 check 1)
+
+[lints]
+workspace = true

@@ -283,3 +283,15 @@
 - {id: SR-15.2-1, section: "15.2", kind: step, part: 2, text: "Flush inside the triggering insert's transaction: the new group is created, each holding record's payload ciphertext moves unchanged and its record key is re-wrapped for the new group; n = 200, N += 200, k += 1."}
 - {id: SR-15.3-1, section: "15.3", kind: step, part: 2, text: "Delete: an absent scrambled_id returns AlreadyAbsent and touches nothing; otherwise one WAL transaction carries the slot move and truncate, locator updates, the new group header and the counters; COMMIT; fsync; apply; acknowledge. delete_user commits one transaction for the whole list."}
 - {id: SR-15.8-1, section: "15.8", kind: must, part: 2, text: "An operation returns success only when its transaction is durable and applied to memory (Part 4 adds the key conditions).", related: [SB-15]}
+
+# --- Part 2: sever-engine (7 Oct 2026) ---
+- {id: SR-12.5-1, section: "12.5", kind: must, part: 2, text: "One writer at a time (a writer mutex); searches take a shared lock; applying a committed transaction to memory takes the exclusive lock briefly."}
+- {id: SR-12.5-2, section: "12.5", kind: must, part: 2, text: "Serializable: a reader that starts before a deletion either finishes before the apply or sees the post-deletion state, never a mix; no retained snapshots."}
+- {id: SR-12.9-1, section: "12.9", kind: must, part: 2, text: "Linux x86-64; the data directory is on ext4 or XFS (the allow_unsafe_fs override is recorded in the ledger, owner decision 7 Oct 2026)."}
+- {id: SR-12.9-2, section: "12.9", kind: must, part: 2, text: "ENGINE.lock is taken exclusively (one process per data directory)."}
+- {id: SR-15.1-2, section: "15.1", kind: must, part: 2, text: "A crash before the COMMIT is durable leaves the database unchanged; after it the insert is done, and a retry fails with DuplicateRecord { same_commitment: true }."}
+- {id: SR-15.4-1, section: "15.4", kind: table-row, part: 2, text: "Crash table (Part 2 rows): before COMMIT is durable → unchanged, retrying is safe; after COMMIT → deleted, a retry returns AlreadyAbsent."}
+- {id: SR-15.7-1, section: "15.7", kind: step, part: 2, text: "Recovery: read MANIFEST; load the storage checkpoint; replay every WAL transaction with a valid COMMIT; discard the rest; rebuild the in-memory state."}
+- {id: SR-15.7-2, section: "15.7", kind: must, part: 2, text: "Full invariant check at every startup (n equals the slot count; S = Σ x̃; every locator entry points at a slot with the same scrambled_id; N and k), and refusal to serve on any violation."}
+- {id: SR-15.9-1, section: "15.9", kind: step, part: 2, text: "Drop collection: commit a WAL record removing the collection, then its data leaves the files (Part 4 adds the cryptographic erase)."}
+- {id: SR-16.1-1, section: "16.1", kind: definition, part: 2, text: "The engine API: open, create_collection, drop_collection, insert, delete, delete_user (one transaction), search, storage_checkpoint_now, stats; group_snapshot only with test-hooks."}

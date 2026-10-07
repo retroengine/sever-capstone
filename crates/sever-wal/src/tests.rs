@@ -375,3 +375,24 @@ proptest! {
         prop_assert!(got == s[..acked] || got == s[..(acked + 1).min(s.len())]);
     }
 }
+
+// SB-11 must turn this red too: a damaged committed record is never mistaken for a torn tail.
+#[test]
+#[spec("SR-12.7-4", "SR-12.3-3")]
+fn p2_wal_a_damaged_committed_record_is_refused_not_dropped() {
+    let seg = DEFAULT_SEGMENT_BYTES;
+    let v = fresh(seg);
+    run(&v, seg, &script(6, 50));
+    // Flip one payload byte of the second transaction, in the newest (only) segment.
+    let mut f = v.open(&segment_path(1), OpenMode::Existing).unwrap();
+    // Transaction 1: BEGIN (25), one record of 50 + 25, COMMIT (25). Transaction 2: BEGIN (25),
+    // then its first record: 21 bytes of framing before the payload. Flip a payload byte.
+    let at = (SegmentHeader::LEN + 25 + 75 + 25 + 25 + 21 + 10) as u64;
+    let mut b = [0u8; 1];
+    f.read_at(at, &mut b).unwrap();
+    f.write_at(at, &[b[0] ^ 0x40]).unwrap();
+    assert_eq!(
+        open(&v, seg).err(),
+        Some(bad("§12.3 corrupt record inside the log"))
+    );
+}
