@@ -477,8 +477,8 @@ system: with Parts 3 and 4 plugged in, the bytes come out exactly as the specifi
 | **DB-49** | The code accepts any dimension that is a multiple of 8 and any number of frozen groups ≥ 1; the v1 configuration fixes 384 and 128. Small dimensions are used only by fast tests |
 | **DB-50** | The `SecretMemory` provider is installed once, by the composition root, at startup |
 
-**Status (4 October 2026).** DB-44, DB-45, DB-47, DB-49 and DB-50 are accepted and recorded in overview
-§6.8. DB-46 and DB-48 remain proposals until Part 2's design review.
+**Status (7 October 2026).** All seven are accepted and recorded in overview §6.8: DB-44, DB-45, DB-47,
+DB-49 and DB-50 on 4 October 2026; DB-46 and DB-48 on 7 October 2026, at Part 2's design review.
 
 ---
 

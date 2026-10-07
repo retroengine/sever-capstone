@@ -927,7 +927,8 @@ stores and are read on demand.
 ### 12.2 Storage I/O layer (VFS)
 
 Every read and write goes through a `Vfs` trait: `open`, `read_at`, `write_at`, `append`, `fsync`,
-`fsync_dir`, `rename`, `unlink`, `truncate`, `list`. There are two backends:
+`fsync_dir`, `rename`, `unlink`, `truncate`, `list`, `create_dir`, `remove_dir` (the last two for
+storage checkpoint directories, §15.6; overview DB-65). There are two backends:
 
 - `PosixVfs` — real files.
 - `SimVfs` — in memory and seeded. It models the POSIX durability contract conservatively: only
@@ -1031,7 +1032,7 @@ be moved to another record, field or key version.
 
 | Data | Key | Associated data |
 |---|---|---|
-| Slot payload (record ID, insert leaf index, `r_t`, `x̃`) | `RK_t` | `collection_id ‖ scrambled_id ‖ 0x01` |
+| Slot payload (record ID, `x̃`, insert leaf index, `r_t`) | `RK_t` | `collection_id ‖ scrambled_id ‖ 0x01` |
 | Passage text | `RK_t` | `collection_id ‖ scrambled_id ‖ 0x02` |
 | Wrapped record key | `BK_{g,b}` | `collection_id ‖ group_id(32, zero-padded) ‖ scrambled_id ‖ u64be bucket_version` |
 | Wrapped bucket key | `GK_g` | `collection_id ‖ group_id ‖ u8 b ‖ u64be group_key_version` |
@@ -1115,6 +1116,13 @@ group had to be re-wrapped under a two-level scheme (Appendix A).
 
 All structures carry a magic number, a `u16be` format version and a trailing CRC-32C unless stated.
 
+**Sealer marker (overview DB-48).** Every file in `<data_dir>` also records the `u16be sealer_id` it
+was written with, immediately after its format version: `0` for the plaintext sealer (no encryption;
+build Parts 2 and 3) and `1` for AES-256-GCM-SIV as in §13.2 (Part 4 and the released system). A
+build MUST refuse to open a file whose `sealer_id` differs from its own (`IntegrityViolation`, naming
+the check). A database written with sealer `0` makes no confidentiality claim; INV-11 and §13.2 apply
+only to sealer `1`. The key directory (§14.7) exists only with sealer `1`.
+
 ### 14.1 Directory layout
 
 ```
@@ -1153,12 +1161,21 @@ pages are written only inside storage checkpoint files.
 |---|---|---|
 | `group_id`, zero-padded | 32 | yes |
 | `kind` (0 frozen, 1 spawned, 2 holding) | 1 | yes |
-| `group_key_version` | 8 | yes |
+| `seal_version` (the group key version, §13.3) | 8 | yes |
 | `n` | 8 | yes |
 | `C_S` | 32 | yes |
 | centroid, `d × f64` | 3,072 | yes (all zero for the holding area) |
 | `nonce ‖ AES-GCM-SIV(S as d × i64 ‖ r_agg) ‖ tag` | 12 + 3,104 + 16 = 3,132 | encrypted (absent for the holding area) |
 | **Total** | **6,285** | |
+
+**Extension and sealer fields (overview DB-46).** `C_S` is the group extension's public state and
+`r_agg` its secret state (EP-1; the same split as the blob's extension region, §5.5 and DB-47). The
+accumulator `S as d × i64 ‖ extension secret` is sealed by the storage sealer, which maintains
+`seal_version`; under AES-GCM-SIV it is the group key version, the `group_key_version` of §13.2's
+associated data. With no extension (build Parts 1–2) both extension fields are empty. With the
+plaintext sealer (DB-48) the accumulator is stored without nonce and tag, and `seal_version` is 0. The
+sizes in the table are those of the released system (commitment extension, AES-GCM-SIV); Appendix A
+also lists the Part 2 sizes.
 
 ### 14.4 Slot (fixed size, identical for group members and holding-area records)
 
@@ -1170,8 +1187,11 @@ pages are written only inside storage checkpoint files.
 | Padding to 8-byte alignment | 5 |
 | **Total** | **1,992** |
 
-Payload plaintext (1,835 bytes): `u16be id_len ‖ id padded with zeros to 256 bytes ‖ u64be
-insert_leaf_index ‖ u8 has_rt ‖ r_t (32) ‖ x̃ as d × i32be`.
+Payload plaintext (1,835 bytes): `u16be id_len ‖ id padded with zeros to 256 bytes ‖ x̃ as d × i32be
+‖ extension record secret`. The commitment extension's record secret is `u64be insert_leaf_index ‖ u8
+has_rt ‖ r_t (32)`, 41 bytes (overview DB-46). With no extension (build Parts 1–2) the record secret
+is empty and the payload is 1,794 bytes; with the plaintext sealer (§14 sealer marker) the wrapped
+record key is empty and the payload is stored without nonce and tag.
 
 - Padding IDs to 256 bytes keeps slots fixed-size and hides ID length.
 - `has_rt` MUST be 1 in every slot: the engine stores `r_t` for every record (§9.4, DB-55 in the
@@ -1767,7 +1787,7 @@ All at `d = 384`, recomputed by script on 27 Sep 2026.
 | Insert leaf | 1 + 16 + 64 + 32 + 32 + 64 | 209 bytes |
 | Certificate, group deletion | 13 TLV fields + signature, 21-hash path | ≈ 14,093 bytes |
 | Certificates at 900,000 deletions | 14,093 × 900,000 | ≈ 12.7 GB |
-| Slot payload plaintext | 2 + 256 + 8 + 1 + 32 + 384 × 4 | 1,835 bytes |
+| Slot payload plaintext | 2 + 256 + 384 × 4 + 41 (DB-46) | 1,835 bytes |
 | Slot | 64 + 60 + 1,863 → 8-aligned | **1,992 bytes** |
 | Slots at 10^6 | 1,992 × 10^6 | 1.99 GB |
 | Search mirror at 10^6 | 10^6 × 384 × 4 | 1.54 GB |
@@ -1775,6 +1795,9 @@ All at `d = 384`, recomputed by script on 27 Sep 2026.
 | Resident estimate at 10^6 | slots + mirror + log tree + locator and IDs | **≈ 3.8 GB** |
 | Accumulator plaintext / ciphertext | 384 × 8 + 32 / + 28 | 3,104 / 3,132 bytes |
 | Group header | §14.3 | 6,285 bytes |
+| Part 2 slot payload (no extension) | 2 + 256 + 384 × 4 | 1,794 bytes |
+| Part 2 slot (no extension, plaintext sealer) | 64 + 0 + 1,794 → 8-aligned | 1,864 bytes |
+| Part 2 group header (no extension, plaintext sealer) | 32 + 1 + 8 + 8 + 0 + 3,072 + 384 × 8 | 6,193 bytes |
 | Bucket block | 64 × (8 + 60) | 4,352 bytes |
 | Deletion rewrite, three-level, full bucket | 4,352 + ⌈5,703/64⌉ × 60 + 3,132 | ≈ 12.9 KB |
 | Deletion rewrite, two-level | 5,703 × 60 | 342,180 bytes |

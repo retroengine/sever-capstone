@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-45, DB-47, DB-49, DB-50, DB-55 … DB-64)](#6-decision-register-db-1--db-45-db-47-db-49-db-50-db-55--db-64)
+6. [Decision register (DB-1 … DB-50, DB-55 … DB-65)](#6-decision-register-db-1--db-50-db-55--db-65)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-45, DB-47, DB-49, DB-50, DB-55 … DB-64)
+## 6. Decision register (DB-1 … DB-50, DB-55 … DB-65)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -791,7 +791,8 @@ must be independently checkable, and aggregation reduces verifier computation, n
 
 DB-44 … DB-54 are reserved for the amendments proposed in the build plans (Build §3.5, Build 3-4 §3.5)
 and are recorded here once accepted. DB-44, DB-45, DB-47, DB-49 and DB-50 were accepted on 4 October
-2026; DB-46, DB-48 and DB-51 … DB-54 remain proposals until the part that needs them.
+2026, and DB-46 and DB-48 on 7 October 2026 (Part 2's design review); DB-51 … DB-54 remain proposals
+until the part that needs them.
 
 #### DB-44 — Build in four frozen parts; erasure after certificates (4 October 2026)
 
@@ -823,6 +824,22 @@ directly (breaks the freeze rule); callbacks inside `apply` (`apply` could then 
 **Consequence.** Before a part freezes, proof spikes show that its extension points can express every
 later user (Build §3.4).
 
+#### DB-46 — Slot payload order and the header's `seal_version` (7 October 2026)
+
+**Decision.** The slot payload is `u16be id_len ‖ id padded to 256 ‖ x̃ as d × i32be ‖ extension
+record secret`. The commitment extension's record secret is `u64be insert_leaf_index ‖ u8 has_rt ‖
+r_t` (41 bytes), so the released payload is still 1,835 bytes and the slot still 1,992 bytes. In the
+group header, `C_S` is the extension's public state and `r_agg` (inside the sealed accumulator) its
+secret state; the field `group_key_version` becomes `seal_version`, maintained by the storage sealer
+(EP-6), which under AES-GCM-SIV is the group key version: the same bytes in the released system (spec
+§14.3–§14.4). **Why.** Part 2 stores slots and headers before commitments exist. With the extension's
+bytes at the end of the payload and in named extension fields, Part 2's codec writes the core fields
+and appends whatever the extension supplies, and Part 3 adds `r_t` without editing a frozen format.
+**Rejected.** Keeping the old order (Part 2 would have to reserve Part 3's 41 bytes in the middle of
+the payload, with no meaning in Part 2); a separate per-record extension file (one more file to keep
+consistent across a crash). **Consequence.** Part 2's sizes at `d = 384` are a 1,794-byte payload, a
+1,864-byte slot and a 6,193-byte header (spec Appendix A). Every released size is unchanged.
+
 #### DB-47 — The canonical blob's extension region and magic (4 October 2026)
 
 **Decision.** The canonical group blob (spec §5.5) has an extension region between `S` and
@@ -835,6 +852,20 @@ zero bytes is the identity encoding, a real value meaning "empty group", so the 
 false statement). **Consequence.** Golden vector 8 exists in two forms: `SEVERC` (Part 1) and `SEVERG`
 (Part 3). Part 1's equivalence helper compares the core fields (`S`, `n`, blob, member IDs); `C_S`
 joins in Part 3.
+
+#### DB-48 — A sealer marker in every file; no confidentiality before Part 4 (7 October 2026)
+
+**Decision.** Every file in the data directory records the `u16be sealer_id` it was written with,
+right after its format version: `0` for `PlaintextSealer`, `1` for AES-256-GCM-SIV (spec §14). A build
+refuses to open a file written with another sealer (`IntegrityViolation`, naming the check). Parts 2
+and 3 store plaintext through `PlaintextSealer` and make **no** confidentiality claim; the
+ciphertext-only rule (INV-11, spec §13.2) applies from Part 4. **Why.** Encryption is built last
+(DB-44), yet Parts 2 and 3 need a working database. The marker makes the difference explicit on disk,
+so a plaintext database can never be mistaken for, or silently opened as, an encrypted one, and the
+reverse. **Rejected.** Encrypting from Part 2 (pulls Part 4's key hierarchy forward and breaks the
+one-claim-per-part order); no marker (a Part 2 database opened by the released build would be read as
+corrupt ciphertext, or worse, accepted). **Consequence.** The key directory exists only with sealer
+`1`. Part 2 and Part 3 demos and reports say "plaintext database" wherever they show stored bytes.
 
 #### DB-49 — Runtime dimension and group count (4 October 2026)
 
@@ -889,6 +920,16 @@ example `"§6.3 artefact d"`), never a value. **Why.** §6.3 required the checks
 for them. **Rejected.** A new §17 row `InvalidArtefact` (one more variant with no different handling:
 a bad artefact stops collection creation either way). **Consequence.** Closes G-12; matches the code
 written in Part 1.
+
+#### DB-65 — Directory operations in the `Vfs` (7 October 2026)
+
+**Decision.** The `Vfs` trait (spec §12.2, EP-5) also has `create_dir` and `remove_dir`. **Why.** A
+storage checkpoint is written into a new directory, renamed into place and later deleted (spec
+§15.6), so the storage engine must create and remove directories, and every file operation must go
+through the `Vfs` so that `SimVfs` can crash it. **Rejected.** Creating the directories outside the
+trait (a crash test could then never lose a directory entry); fixed, reused checkpoint directories
+(loses the atomic directory rename that makes an interrupted checkpoint harmless). **Consequence.**
+Closes G-13. In `SimVfs` a new directory is durable only after `fsync_dir` of its parent, like a file.
 
 #### DB-60 — The dimension check (4 October 2026)
 
@@ -1682,6 +1723,11 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **7 October 2026 — Part 2 design review.** DB-46 (slot payload order and the header's
+  `seal_version`) and DB-48 (`sealer_id` in every file; no confidentiality claim before Part 4)
+  accepted from the build plan. New: DB-65 (`create_dir` and `remove_dir` in the `Vfs`, closes
+  G-13). Specification sections touched: §12.2, §13.2 (payload row), §14 (sealer marker), §14.3,
+  §14.4, Appendix A. Build §3.5; Build 3-4 §3.5.
 - **6 October 2026 — Part 1 gaps closed.** DB-61 (the ULP sentence of §4.1, closes G-9), DB-62
   (spawn target size is a runtime value, closes G-10), DB-63 (at most 10,000 frozen groups, closes
   G-11), DB-64 (the error for a bad artefact, closes G-12). Specification sections touched: §2.2,
