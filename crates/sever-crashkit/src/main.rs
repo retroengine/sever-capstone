@@ -5,6 +5,8 @@
 //! sever-crashkit campaign --oracle traces/p2-oracle-nq-10k-seed42.jsonl --root . \
 //!     --out results/p2-crash-nq-10k-seed42.jsonl [--seed 42] [--offset-samples 200]
 //!     [--random 1000] [--double-every 50] [--step-every 1] [--limit-ops N]
+//! sever-crashkit replay-p1 --trace traces/p1-nq-10k-seed42.jsonl --root . --mode plain|close|crash \
+//!     --out results/p2-replay-....json
 //! ```
 //! The oracle header names the artefact, the vectors and the spawn target. The results are
 //! checked by `python -m sever_refmodel_durable.oracle check ORACLE RESULTS`.
@@ -17,7 +19,7 @@ use std::process::ExitCode;
 
 use sever_crashkit::campaign::{self, Settings};
 use sever_crashkit::rows::{FixtureRows, NpyRows, Rows};
-use sever_crashkit::{Oracle, generic};
+use sever_crashkit::{Oracle, generic, replay};
 
 fn args() -> (String, HashMap<String, String>) {
     let mut it = std::env::args().skip(1);
@@ -97,7 +99,22 @@ fn real_main() -> Result<bool, String> {
             println!("{sum:?}");
             sum.failures() == 0
         }
-        _ => return Err("usage: sever-crashkit generic|campaign --out FILE ...".into()),
+        "replay-p1" => {
+            let root = PathBuf::from(a.get("root").map_or(".", String::as_str));
+            let trace = PathBuf::from(a.get("trace").ok_or("--trace is required")?);
+            let mode = replay::Mode::parse(a.get("mode").map_or("plain", String::as_str))
+                .ok_or("--mode plain|close|crash")?;
+            let r = replay::replay(&trace, &root, mode)?;
+            let line = serde_json::json!({"t": "summary", "mode": format!("{mode:?}"),
+                "ops": r.ops, "checks": r.checks, "mismatches": r.mismatches, "reopens": r.reopens,
+                "reopen_state_changed": r.reopen_state_changed,
+                "survivors_checked": r.survivors_checked, "survivors_failed": r.survivors_failed,
+                "deleted_returned": r.deleted_returned, "first": r.first, "passed": r.passed()});
+            writeln!(out, "{line}").map_err(|e| e.to_string())?;
+            println!("{line}");
+            r.passed()
+        }
+        _ => return Err("usage: sever-crashkit generic|campaign|replay-p1 --out FILE ...".into()),
     };
     out.flush().map_err(|e| e.to_string())?;
     Ok(ok)

@@ -14,6 +14,7 @@
 pub mod campaign;
 pub mod generic;
 pub mod oracle;
+pub mod replay;
 pub mod rows;
 
 pub use oracle::{Oracle, OracleOp, state_digest};

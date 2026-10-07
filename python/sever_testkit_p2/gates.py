@@ -17,6 +17,11 @@ recovered state. The crash kit is built once into a target directory owned by th
 ``p2-fuzz`` is gate P2-T6: each Part 2 parser (WAL record, MANIFEST, checkpoint file, store record)
 runs ``--runs`` libFuzzer executions, all at once, with 0 crashes.
 
+``p2-replay`` is gate P2-T5 (Build §5.7 L4, F-5): Part 1's frozen traces (written by the reference
+model from the spec) replay through the Part 2 engine in three modes, ``plain``, ``close`` (a clean
+close and reopen after every rung) and ``crash`` (a crash and recovery after every rung), with 0
+mismatches against the trace, and an unchanged state across every reopen.
+
 ``p2-spikes`` is the proof-spike part of gate P2-T7 (Build §3.4): the throwaway crate
 ``spikes/p2-proof`` passes; its only output is the ledger entry, then it is deleted.
 """
@@ -145,6 +150,69 @@ def p2_crash(root: Path, data: str, seeds: list[int], jobs: int, extra: list[str
     return 0 if passed else 1
 
 
+REPLAY_MODES = ("plain", "close", "crash")
+
+
+def _replay_one(root: Path, bin_dir: Path, data: str, seed: int, mode: str) -> dict[str, Any]:
+    t0 = time.time()
+    trace = root / f"traces/p1-{data}-seed{seed}.jsonl"
+    out = root / f"traces/p2-replay-{data}-seed{seed}-{mode}.jsonl"
+    run = subprocess.run(
+        [str(bin_dir / "sever-crashkit"), "replay-p1", "--trace", str(trace), "--root",
+         str(root), "--mode", mode, "--out", str(out)],
+        cwd=root, capture_output=True, text=True, check=False,
+    )  # fmt: skip
+    summary = json.loads(out.read_text().splitlines()[-1]) if out.exists() else {}
+    result = {
+        "seed": seed,
+        "mode": mode,
+        "trace_sha256": _sha(trace),
+        "rc": run.returncode,
+        "summary": summary,
+        "stderr_tail": run.stderr.splitlines()[-5:],
+        "seconds": round(time.time() - t0),
+        "outcome": "PASS" if run.returncode == 0 and summary.get("passed") is True else "FAIL",
+    }
+    print(json.dumps(result), flush=True)
+    return result
+
+
+def p2_replay(root: Path, data: str, seeds: list[int], jobs: int) -> int:
+    """P2-T5: every Part 1 trace of ``data`` through the Part 2 engine, in every mode."""
+    cmd = f"gates p2-replay --data {data} --seeds {seeds}"
+    gate = "P2-T5"
+    started = ledger.start(root, cmd, gate=gate, data=data, seeds=seeds, modes=list(REPLAY_MODES))
+    bin_dir = _build(root, started["commit"], "sever-crashkit")
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max(1, jobs)) as pool:
+        futs = [
+            pool.submit(_replay_one, root, bin_dir, data, s, m) for s in seeds for m in REPLAY_MODES
+        ]
+        runs = [f.result() for f in futs]
+    passed = all(r["outcome"] == "PASS" for r in runs)
+    data_out = {"gate": "P2-T5 (Part 1 traces through the Part 2 engine, with and without "
+                "restarts: 0 mismatches, 0 state changes across a reopen)", "data": data,
+                "runs": runs, "outcome": "PASS" if passed else "FAIL"}  # fmt: skip
+    path, sha = ledger.result_file(
+        root, f"p2-replay-{data}-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(
+            root,
+            cmd,
+            gate=gate,
+            data=data,
+            seeds=seeds,
+            outcome=data_out["outcome"],
+            run_commit=started["commit"],
+            result_file=str(path.relative_to(root)),
+            result_sha256=sha,
+            summary={f"{r['seed']}-{r['mode']}": r["outcome"] for r in runs},
+        ),
+    )
+    return 0 if passed else 1
+
+
 def p2_spikes(root: Path) -> int:
     """Build §3.4: the Part 2 proof spikes pass; their only output is this ledger entry."""
     cmd = "gates p2-spikes"
@@ -249,9 +317,18 @@ def _main(argv: list[str]) -> int:
     f = sub.add_parser("p2-fuzz")
     f.add_argument("--runs", type=int, default=100_000_000)
     f.add_argument("--root", type=Path, default=Path("."))
+    rp = sub.add_parser("p2-replay")
+    rp.add_argument("--data", default="nq-10k")
+    rp.add_argument("--seed", type=int, action="append")
+    rp.add_argument("--all-seeds", action="store_true")
+    rp.add_argument("--jobs", type=int, default=1)
+    rp.add_argument("--root", type=Path, default=Path("."))
     sp = sub.add_parser("p2-spikes")
     sp.add_argument("--root", type=Path, default=Path("."))
     args = ap.parse_args(argv)
+    if args.cmd == "p2-replay":
+        rseeds = list(SEEDS) if args.all_seeds else (args.seed or [42])
+        return p2_replay(args.root.resolve(), args.data, rseeds, args.jobs)
     if args.cmd == "p2-spikes":
         return p2_spikes(args.root.resolve())
     if args.cmd == "p2-fuzz":
