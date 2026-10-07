@@ -29,6 +29,10 @@ Parts 1 and 2 turns at least one test red.
 bytes written and fsyncs per operation, recovery time and resident memory, on real files, running
 the operations of the ``nq-100k`` Part 1 trace for seed 42.
 
+``p2-coverage`` and ``p2-mutants`` are gate P2-T9 on ``sever-format``, ``sever-wal``, ``sever-txn``
+and ``sever-engine``: lines >= 90 %, branches >= 85 % (whole-workspace tests, ignored included);
+mutation score >= 85 % with every survivor triaged in ``docs/MUTANTS_P2.md``.
+
 ``p2-spikes`` is the proof-spike part of gate P2-T7 (Build §3.4): the throwaway crate
 ``spikes/p2-proof`` passes; its only output is the ledger entry, then it is deleted.
 """
@@ -37,6 +41,8 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
+import os
+import shutil
 import subprocess
 import sys
 import time
@@ -298,6 +304,108 @@ def p2_measures(root: Path, data: str, seed: int) -> int:
     return 0 if run.returncode == 0 else 1
 
 
+P2_CRATES = ("crates/sever-format/src/", "crates/sever-wal/src/", "crates/sever-txn/src/",
+             "crates/sever-engine/src/")  # fmt: skip
+P2_MUTATED = ("sever-format", "sever-wal", "sever-txn", "sever-engine")
+P2_MUTANT_TESTS = (*P2_MUTATED, "sever-checkpoint", "sever-appendstore")
+
+
+def p2_coverage(root: Path) -> int:
+    """P2-T9 (coverage): lines >= 90 %, branches >= 85 % over the four crates."""
+    cmd = "gates p2-coverage"
+    gate = "P2-T9 coverage"
+    started = ledger.start(root, cmd, gate=gate)
+    rust = subprocess.run(
+        ["cargo", "+nightly", "llvm-cov", "--branch", "--release", "-q", "--workspace", "--json",
+         "--summary-only", "--", "--include-ignored"],
+        cwd=root, capture_output=True, text=True, check=False,
+    )  # fmt: skip
+    files = json.loads(rust.stdout)["data"][0]["files"] if rust.stdout else []
+    lines, branches, per_file = [0, 0], [0, 0], {}
+    for f in files:
+        name = f["filename"].split(str(root) + "/", 1)[-1]
+        if not name.startswith(P2_CRATES) or name.endswith("/tests.rs"):
+            continue
+        sm = f["summary"]
+        lines[0] += sm["lines"]["covered"]
+        lines[1] += sm["lines"]["count"]
+        branches[0] += sm["branches"]["covered"]
+        branches[1] += sm["branches"]["count"]
+        per_file[name] = {"lines": sm["lines"]["percent"], "branches": sm["branches"]["percent"]}
+    lr, br = lines[0] / max(lines[1], 1), branches[0] / max(branches[1], 1)
+    passed = rust.returncode == 0 and lr >= 0.90 and br >= 0.85
+    data_out = {"gate": "P2-T9: lines >= 90 %, branches >= 85 %", "lines": [*lines, lr],
+                "branches": [*branches, br], "files": per_file, "tests_ok": rust.returncode == 0,
+                "stderr_tail": rust.stderr.splitlines()[-10:],
+                "outcome": "PASS" if passed else "FAIL"}  # fmt: skip
+    path, sha = ledger.result_file(
+        root, f"p2-coverage-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(root, cmd, gate=gate, outcome=data_out["outcome"],
+                     run_commit=started["commit"], result_file=str(path.relative_to(root)),
+                     result_sha256=sha, rust_lines=lr, rust_branches=br),
+    )  # fmt: skip
+    print(json.dumps({"lines": lr, "branches": br, "outcome": data_out["outcome"]}))
+    return 0 if passed else 1
+
+
+def p2_mutants(root: Path, jobs: int) -> int:
+    """P2-T9 (mutants): score >= 85 %, every survivor triaged in docs/MUTANTS_P2.md."""
+    cmd = f"gates p2-mutants --jobs {jobs}"
+    gate = "P2-T9 mutants"
+    started = ledger.start(
+        root, cmd, gate=gate, mutated=list(P2_MUTATED), tests=list(P2_MUTANT_TESTS)
+    )
+    tree = Path.home() / f".cache/sever-mutants-{started['commit'][:12]}"
+    tmp = Path.home() / ".cache/mutants-tmp"
+    tmp.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "worktree", "remove", "--force", str(tree)], cwd=root, check=False,
+                   capture_output=True)  # fmt: skip
+    subprocess.run(
+        ["git", "worktree", "add", "--detach", str(tree), started["commit"]], cwd=root, check=True
+    )
+    out_dir = root / "traces/mutants-p2-gate"
+    shutil.rmtree(out_dir, ignore_errors=True)
+    args = ["cargo", "mutants", "-j", str(jobs), "--timeout", "300", "-o", str(out_dir)]
+    for p in P2_MUTATED:
+        args += ["-p", p]
+    for p in P2_MUTANT_TESTS:
+        args += ["--test-package", p]
+    run = subprocess.run(args, cwd=tree, capture_output=True, text=True, check=False,
+                         env={**os.environ, "TMPDIR": str(tmp)})  # fmt: skip
+    subprocess.run(["git", "worktree", "remove", "--force", str(tree)], cwd=root, check=False,
+                   capture_output=True)  # fmt: skip
+    outcomes = json.loads((out_dir / "mutants.out/outcomes.json").read_text(encoding="utf-8"))
+    counts = {
+        k: outcomes.get(k, 0) for k in ("caught", "missed", "timeout", "unviable", "total_mutants")
+    }
+    tested = counts["caught"] + counts["missed"] + counts["timeout"]
+    score = counts["caught"] / max(tested, 1)
+    missed = (out_dir / "mutants.out/missed.txt").read_text(encoding="utf-8").splitlines()
+    triage_file = root / "docs/MUTANTS_P2.md"
+    triage = triage_file.read_text(encoding="utf-8") if triage_file.exists() else ""
+    untriaged = [m for m in missed if m.split(" in ")[0] not in triage]
+    passed = score >= 0.85 and not untriaged
+    data_out = {"gate": "P2-T9: score >= 85 %, every survivor triaged", "counts": counts,
+                "score": score, "missed": missed, "untriaged": untriaged,
+                "cargo_mutants_exit": run.returncode,
+                "outcome": "PASS" if passed else "FAIL"}  # fmt: skip
+    path, sha = ledger.result_file(
+        root, f"p2-mutants-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(root, cmd, gate=gate, outcome=data_out["outcome"],
+                     run_commit=started["commit"], result_file=str(path.relative_to(root)),
+                     result_sha256=sha, score=score, counts=counts, untriaged=len(untriaged)),
+    )  # fmt: skip
+    print(json.dumps({"score": score, "counts": counts, "untriaged": len(untriaged),
+                      "outcome": data_out["outcome"]}))  # fmt: skip
+    return 0 if passed else 1
+
+
 def p2_spikes(root: Path) -> int:
     """Build §3.4: the Part 2 proof spikes pass; their only output is this ledger entry."""
     cmd = "gates p2-spikes"
@@ -408,6 +516,11 @@ def _main(argv: list[str]) -> int:
     rp.add_argument("--all-seeds", action="store_true")
     rp.add_argument("--jobs", type=int, default=1)
     rp.add_argument("--root", type=Path, default=Path("."))
+    cv = sub.add_parser("p2-coverage")
+    cv.add_argument("--root", type=Path, default=Path("."))
+    mu = sub.add_parser("p2-mutants")
+    mu.add_argument("--jobs", type=int, default=2)
+    mu.add_argument("--root", type=Path, default=Path("."))
     me = sub.add_parser("p2-measures")
     me.add_argument("--data", default="nq-100k")
     me.add_argument("--seed", type=int, default=42)
@@ -420,6 +533,10 @@ def _main(argv: list[str]) -> int:
     if args.cmd == "p2-replay":
         rseeds = list(SEEDS) if args.all_seeds else (args.seed or [42])
         return p2_replay(args.root.resolve(), args.data, rseeds, args.jobs)
+    if args.cmd == "p2-coverage":
+        return p2_coverage(args.root.resolve())
+    if args.cmd == "p2-mutants":
+        return p2_mutants(args.root.resolve(), args.jobs)
     if args.cmd == "p2-measures":
         return p2_measures(args.root.resolve(), args.data, args.seed)
     if args.cmd == "p2-sabotage":
