@@ -9,6 +9,9 @@ declares its oracle, in the same annotation block:
     // oracle: A §14.3 segment header table                      (Rust, a line comment)
     @pytest.mark.oracle("A", "§14.3 segment header table")      (Python)
 
+A test with several labels and oracles of different strength scopes each oracle with a trailing
+``[SR-…, SR-…]`` in its source; an oracle without one backs every label of the test.
+
 Oracles: **A** the spec (text, worked example, Appendix A, normative table, by hand); **B** an
 independent oracle; **B-shared** a B oracle written by the same author as the code under test;
 **C** Part 1's frozen code; **D** the code under test itself (round trip, no panic, label echo).
@@ -56,6 +59,24 @@ PY_ORACLE: Final = re.compile(
 )
 PY_ORACLE_ANY: Final = re.compile(r"@pytest\.mark\.oracle\(")
 SPEC_REF: Final = re.compile(r"§\s*\d|Appendix\s+[A-Z]")
+SCOPE: Final = re.compile(r"\s*\[(SR-[^\]]*)\]\s*$")
+
+
+@dataclass(frozen=True)
+class Oracle:
+    """One declared oracle; ``scope`` is the labels it backs (``None``: all of the test's)."""
+
+    kind: str
+    source: str
+    scope: tuple[str, ...] | None = None
+
+
+def parse_oracle(kind: str, text: str) -> Oracle:
+    m = SCOPE.search(text)
+    if not m:
+        return Oracle(kind, text.strip())
+    ids = tuple(i.strip() for i in m.group(1).split(",") if i.strip())
+    return Oracle(kind, text[: m.start()].strip(), ids)
 
 
 @dataclass
@@ -64,21 +85,32 @@ class Test:
 
     name: str
     requirements: list[str]
-    oracles: list[tuple[str, str]]
+    oracles: list[Oracle]
     problems: list[str] = field(default_factory=list)
 
+    def kinds_for(self, rid: str) -> set[str]:
+        """The oracle kinds that back requirement ``rid`` in this test."""
+        return {o.kind for o in self.oracles if o.scope is None or rid in o.scope}
 
-def _problems(oracles: list[tuple[str, str]]) -> list[str]:
+
+def _problems(ids: list[str], oracles: list[Oracle]) -> list[str]:
     if not oracles:
         return ["no oracle declared"]
     out: list[str] = []
-    for kind, source in oracles:
-        if kind not in KINDS:
-            out.append(f"unknown oracle {kind!r} (use one of {', '.join(KINDS)})")
-        elif kind in NEEDS_SOURCE and not source:
-            out.append(f"oracle {kind} names no source")
-        elif kind == "A" and not SPEC_REF.search(source):
-            out.append(f"oracle A source {source!r} names no § or Appendix")
+    for o in oracles:
+        if o.kind not in KINDS:
+            out.append(f"unknown oracle {o.kind!r} (use one of {', '.join(KINDS)})")
+        elif o.kind in NEEDS_SOURCE and not o.source:
+            out.append(f"oracle {o.kind} names no source")
+        elif o.kind == "A" and not SPEC_REF.search(o.source):
+            out.append(f"oracle A source {o.source!r} names no § or Appendix")
+        out.extend(
+            f"oracle {o.kind} scoped to {rid}, which the test does not label"
+            for rid in o.scope or ()
+            if rid not in ids
+        )
+    t = Test("", ids, oracles)
+    out.extend(f"no oracle backs {rid}" for rid in ids if not t.kinds_for(rid))
     return out
 
 
@@ -86,11 +118,11 @@ def scan_rust(path: Path) -> list[Test]:
     """Each ``#[spec]`` and ``// oracle:`` belongs to the next ``fn``, as in ``spec_trace``."""
     out: list[Test] = []
     ids: list[str] = []
-    oracles: list[tuple[str, str]] = []
+    oracles: list[Oracle] = []
     for line in path.read_text(encoding="utf-8").splitlines():
         o = RUST_ORACLE.match(line)
         if o:
-            oracles.append((o.group(1), o.group(2)))
+            oracles.append(parse_oracle(o.group(1), o.group(2)))
             continue
         m = RUST_ATTR.search(line)
         if m:
@@ -99,7 +131,8 @@ def scan_rust(path: Path) -> list[Test]:
         f = RUST_FN.search(line)
         if f:
             if ids:
-                out.append(Test(f"{path.name}::{f.group(1)}", ids, oracles, _problems(oracles)))
+                probs = _problems(ids, oracles)
+                out.append(Test(f"{path.name}::{f.group(1)}", ids, oracles, probs))
             ids, oracles = [], []
     return out
 
@@ -108,12 +141,12 @@ def scan_python(path: Path) -> list[Test]:
     """Each ``@pytest.mark.spec`` and ``@pytest.mark.oracle`` belongs to the next ``def test_``."""
     out: list[Test] = []
     ids: list[str] = []
-    oracles: list[tuple[str, str]] = []
+    oracles: list[Oracle] = []
     bad: list[str] = []
     for line in path.read_text(encoding="utf-8").splitlines():
         o = PY_ORACLE.search(line)
         if o:
-            oracles.append((o.group(1), o.group(2) or ""))
+            oracles.append(parse_oracle(o.group(1), o.group(2) or ""))
             continue
         if PY_ORACLE_ANY.search(line):
             bad.append(f"malformed oracle mark: {line.strip()}")
@@ -125,7 +158,7 @@ def scan_python(path: Path) -> list[Test]:
         f = PY_DEF.search(line)
         if f:
             if ids:
-                probs = bad + _problems(oracles)
+                probs = bad + _problems(ids, oracles)
                 out.append(Test(f"{path.name}::{f.group(1)}", ids, oracles, probs))
             ids, oracles, bad = [], [], []
     return out
@@ -159,12 +192,12 @@ class Audit:
         return out
 
     def d_only(self) -> list[str]:
-        """Owned requirements whose tests all declare oracles, and all of them D."""
+        """Owned requirements whose tests all declare oracles for them, and all of them D."""
         out: list[str] = []
         for rid in self.owned:
             tests = self.by_requirement.get(rid, [])
-            kinds = {k for t in tests for k, _ in t.oracles}
-            if tests and kinds and kinds <= {"D"} and all(t.oracles for t in tests):
+            per_test = [t.kinds_for(rid) for t in tests]
+            if tests and all(per_test) and set().union(*per_test) <= {"D"}:
                 out.append(rid)
         return out
 
@@ -184,17 +217,21 @@ def collect(root: Path, part: int = 2) -> Audit:
     return Audit(tests, by_req, owned)
 
 
-def _cell(oracles: list[tuple[str, str]]) -> str:
+def _cell(oracles: list[Oracle]) -> str:
     if not oracles:
         return "**none**"
-    return "<br>".join(f"**{k}** {s}".strip().replace("|", "\\|") for k, s in oracles)
+    cells = []
+    for o in oracles:
+        scope = f" [{', '.join(o.scope)}]" if o.scope else ""
+        cells.append(f"**{o.kind}** {o.source}{scope}".strip().replace("|", "\\|"))
+    return "<br>".join(cells)
 
 
 def report(a: Audit) -> str:
     """The Markdown of ``docs/TEST_ORACLES_P2.md``."""
     counts: dict[str, int] = defaultdict(int)
     for t in a.tests:
-        for k in {k for k, _ in t.oracles} or {"none"}:
+        for k in {o.kind for o in t.oracles} or {"none"}:
             counts[k] += 1
     lines = [
         "# Test oracles, Part 2",
@@ -217,12 +254,12 @@ def report(a: Audit) -> str:
     d_only = set(a.d_only())
     for rid in a.owned:
         tests = a.by_requirement.get(rid, [])
-        n = {k: sum(1 for t in tests if any(o == k for o, _ in t.oracles)) for k in KINDS}
+        n = {k: sum(1 for t in tests if k in t.kinds_for(rid)) for k in KINDS}
         status = "**D only**" if rid in d_only else ("no test" if not tests else "ok")
         if any(t.problems for t in tests):
             status += " (untagged tests)"
         lines.append(f"| {rid} | " + " | ".join(str(n[k]) for k in KINDS) + f" | {status} |")
-    shared = [t for t in a.tests if any(k == "B-shared" for k, _ in t.oracles)]
+    shared = [t for t in a.tests if any(o.kind == "B-shared" for o in t.oracles)]
     lines += ["", "## B-shared: for the owner to review by hand", ""]
     if shared:
         lines += [

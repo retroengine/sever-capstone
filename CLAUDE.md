@@ -219,7 +219,9 @@ code and the test, the test must not inherit the code's reading. These rules app
 
   Rust: a comment on the line directly above `#[spec(...)]`, `// oracle: A §14.3 segment header`.
   Python: `@pytest.mark.oracle("A", "§14.3 segment header")`. A and B need a source after the letter;
-  A's source must name a `§` or Appendix.
+  A's source must name a `§` or Appendix. A test with several labels whose oracles differ in strength
+  scopes each one with a trailing `[SR-…]` (`// oracle: D round trip [SR-14-1]`); every label must be
+  backed by some oracle.
 - **D is never enough on its own.** Every requirement needs at least one A, B, B-shared or C test. A
   byte-layout rule needs an A test whose expected bytes are written by hand from the spec, not only
   an encode-then-decode round trip.

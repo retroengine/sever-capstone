@@ -56,7 +56,7 @@ def test_p2_oracle_check_passes_a_correctly_tagged_repo(tmp_path: Path) -> None:
     a = oracle_check.collect(_repo(tmp_path, GOOD_RUST, GOOD_PY))
     assert a.failures() == []
     assert len(a.tests) == 3
-    assert [k for k, _ in a.tests[0].oracles] == ["A"]
+    assert [o.kind for o in a.tests[0].oracles] == ["A"]
 
 
 def test_p2_oracle_check_fails_an_untagged_labelled_test(tmp_path: Path) -> None:
@@ -110,3 +110,30 @@ def test_p2_oracle_check_report_lists_b_shared_tests(tmp_path: Path) -> None:
     shared = md.split("## B-shared")[1].split("## Tests")[0]
     assert "test_x.py::test_p2_open" in shared
     assert "| SR-14.3-1 | 1 | 0 | 0 | 0 | 1 | ok |" in md
+
+
+TWO_LABELS = """\
+// oracle: A §14.9 parser rejections [SR-15.1-1]
+// oracle: D round trip [SR-14.3-1]
+#[spec("SR-14.3-1", "SR-15.1-1")]
+fn p2_format_two_labels() {}
+"""
+
+
+def test_p2_oracle_check_scoped_oracles_back_only_their_labels(tmp_path: Path) -> None:
+    a = oracle_check.collect(_repo(tmp_path, TWO_LABELS))
+    assert a.tests[0].kinds_for("SR-14.3-1") == {"D"}
+    assert a.tests[0].kinds_for("SR-15.1-1") == {"A"}
+    assert a.d_only() == ["SR-14.3-1"]
+
+
+def test_p2_oracle_check_fails_a_label_no_oracle_backs(tmp_path: Path) -> None:
+    rust = TWO_LABELS.replace("// oracle: D round trip [SR-14.3-1]\n", "")
+    fails = oracle_check.collect(_repo(tmp_path, rust)).failures()
+    assert fails == ["lib.rs::p2_format_two_labels: no oracle backs SR-14.3-1"]
+
+
+def test_p2_oracle_check_fails_a_scope_outside_the_labels(tmp_path: Path) -> None:
+    rust = TWO_LABELS.replace("[SR-14.3-1]", "[SR-14.3-1, SR-99-1]")
+    fails = oracle_check.collect(_repo(tmp_path, rust)).failures()
+    assert any("scoped to SR-99-1, which the test does not label" in f for f in fails)
