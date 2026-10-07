@@ -15,7 +15,7 @@ frozen (Build §0.1):
 | Part | The claim it adds | Status |
 |---|---|---|
 | **1 The Idea** | Deleting a vector returns its group, bit for bit, to the never-inserted state | **Done**: every gate passed on 6 Oct 2026; frozen as `part-1-frozen` (see [Part 1 results](#part-1-results)) |
-| 2 The Database | Exactness survives a crash at any point; multi-group deletion is all-or-nothing | **Next** |
+| **2 The Database** | Exactness survives a crash at any point; multi-group deletion is all-or-nothing | **In progress**: built; gates running (see [Part 2](#part-2-the-database)) |
 | 3 The Receipt | Every deletion yields a certificate anyone can verify offline | Not started (a preview exists in `demo/`) |
 | 4 The Erasure | Nothing deleted can be recovered from raw storage | Not started |
 
@@ -62,6 +62,76 @@ SciQ, picks one article's passages (a *cohort*), deletes them with one `delete_u
    survivors-only mean bit for bit), side by side with SEVER's distance of exactly 0.
 
 It prints tables and writes `artefacts/demo/idea-<data>-seed<seed>.json` plus an HTML report page.
+
+---
+
+## Part 2: The Database
+
+Part 2 puts Part 1's frozen index behind a storage engine (Build §5): a write-ahead log (WAL),
+paged storage checkpoints, a payload store for passage text, a transaction protocol with an explicit
+commit point, and recovery that refuses to serve a state that breaks any invariant (spec §12, §14,
+§15, §16.1, §17). Nothing is encrypted yet: Part 2 stores plaintext through `PlaintextSealer`, marks
+the database as plaintext, and makes **no confidentiality claim** (DB-48); Part 4 adds encryption.
+
+### Using it
+
+```bash
+scripts/p2-demo.sh --data synthetic            # offline demo (Build §5.9)
+scripts/p2-demo.sh --data nq-10k --seed 42     # the same on 10,000 real passages
+```
+
+The demo runs one multi-group `delete_user` and crashes it twice, once just before its commit point
+and once just after, first on a simulated disk and then with a real `SIGKILL` of a child process.
+After every recovery the invariant check passes, the deletion is all or nothing (nothing before the
+commit point, everything after it), and Part 1's survivors check holds for every touched group.
+
+The command-line tool prints one JSON line per command (errors are typed §17 kinds and carry no
+record ID, vector value or key):
+
+```bash
+cargo build --release -p sever-p2
+B=target/release/sever-db-p2; D="--data /path/db --keys /path/keys"   # data on ext4 or XFS
+$B create $D --artefact golden/p1_partition_small.svp --spawn-target 8   # -> {"cid": "..."}
+$B insert $D --cid <cid> --id doc-1 --vector '[0.25, ...]' --passage 'text'
+$B delete-user $D --cid <cid> --ids '["doc-1", "doc-2"]'                 # one transaction
+$B search $D --cid <cid> --vector '[...]' --k 10
+$B verify $D                                                             # recovery + invariant check
+```
+
+The Python SDK (PyO3; build it once after every `uv sync` with
+`uv run --no-sync maturin develop --release --uv -m crates/sever-py-p2/Cargo.toml`):
+
+```python
+from sever_db_p2 import Database
+with Database.open("/path/db", "/path/keys") as db:
+    cid = db.create_collection("artefacts/partition-seed42.svp")
+    db.insert(cid, "doc-1", vector, passage=b"text")      # vector: float32, unit length, d = 384
+    db.delete_user(cid, ["doc-1", "doc-2"])                 # ["deleted", "absent"], all or nothing
+    db.search(cid, query, k=10)                             # [(record_id, score), ...]
+```
+
+A retried insert of the same record with the same vector is a success (`receipt.retried`); a retried
+deletion is `"absent"` (§15.1, §15.4). A failed `fsync` aborts the process (§12.7): the next start
+recovers.
+
+### Part 2 results
+
+From the run ledger, as for Part 1.
+
+| Target (Build §5.8) | What | Result |
+|---|---|---|
+| P2-T1…T3 | crash at every VFS operation of 20,000 operations, every 512-byte offset of 200 WAL writes, 1,000 random points, crashes during recovery; five seeds on nq-10k: 0 exactness violations, 0 lost acknowledged operations, 0 corrupt recoveries, 100 % oracle-allowed states, 0 partial `delete_user` | running |
+| P2-T4 | a reader at every protocol step sees the state before or after, never a mix | engine test (in `gates p2-checks`) |
+| P2-T5 | Part 1's traces through the Part 2 engine, plain / close / crash after every rung | **PASS**: 5 seeds × 3 modes on nq-10k, 0 mismatches |
+| P2-T6 | 0 fuzz crashes in 10^8 executions per parser | **PASS**: `wal_record`, `manifest`, `checkpoint_file`, `store_record` |
+| P2-T7 | contract suites pass and fail for wrong implementations; proof spikes | **PASS** (spikes: AES-GCM-SIV sealer, log and key-rotation participants; recorded, then deleted) |
+| P2-T8 | SB-1 … SB-15 each turn a test red | **PASS** |
+| P2-T9 | traceability 100 %; lines ≥ 90 %, branches ≥ 85 %, mutation score ≥ 85 % | traceability 46 / 46; coverage and mutants running |
+| P2-T10 | the Part 1 freeze manifest is unchanged | checked by every CI run |
+| P2-T11 | bytes and fsyncs per operation, recovery time, memory at nq-100k (measure) | queued |
+
+**Bugs found by the test suite on the way:** recovery silently dropped a damaged committed record in
+the newest WAL segment as if it were a torn tail; it now refuses to serve (§12.3).
 
 ---
 
