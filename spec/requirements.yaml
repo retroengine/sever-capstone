@@ -298,3 +298,10 @@
 
 # --- Part 2: architecture, SDK, E2E (7 Oct 2026) ---
 - {id: SR-12.7-3, section: "12.7", kind: must-not, part: 2, text: "No writes go through mmap.", technique: [architecture]}
+- {id: SR-12.6-1, section: "12.6", kind: table-row, part: 2, text: "In-memory structures (Part 2 rows): group table, slot arrays exactly as on disk (the storage image), search mirror, locator, counters."}
+- {id: SR-14.1-1, section: "14.1", kind: definition, part: 2, text: "Directory layout: ENGINE.lock, MANIFEST, checkpoint/<id>/ (meta.bin, collections.bin, partitions/, groups.bin, slots.bin, locator.bin, payloads.bin), wal/<seq>.wal, payloads/<seq>.store; <key_dir>/SECRETS."}
+# Owned by later parts (catalogued now so spec-trace sees every normative line of §12–§15):
+- {id: SR-12.3-4, section: "12.3", kind: must-not, part: 4, text: "The WAL MUST NOT contain plaintext vectors, record IDs, passage text, r_t, S, r_agg or unwrapped keys (INV-11); it MAY contain scrambled_ids, n, C_S, centroids and public log leaves.", notes: "DB-48: applies from Part 4; Part 2 stores plaintext."}
+- {id: SR-14.4-3, section: "14.4", kind: must, part: 3, text: "has_rt MUST be 1 in every slot; a slot whose payload has has_rt ≠ 1 is an IntegrityViolation."}
+- {id: SR-15.1-3, section: "15.1", kind: must, part: 3, text: "Insert step 2: recompute C_t from x̃ and r_t; it MUST equal the supplied C_t; verify the user signature."}
+- {id: SR-15.3-2, section: "15.3", kind: must, part: 3, text: "Delete step 2: recompute C_t from the stored x̃ and r_t; it MUST equal the C_t in the record's insert leaf, otherwise IntegrityViolation and touch nothing."}

@@ -278,7 +278,7 @@ impl Mini {
 }
 
 #[test]
-#[spec("SR-12.3-1", "SR-15.1-1", "SR-15.2-1", "SR-15.3-1")]
+#[spec("SR-12.3-1", "SR-15.1-1", "SR-15.2-1", "SR-15.3-1", "SR-12.6-1")]
 fn p2_txn_after_images_reproduce_the_index_through_inserts_flushes_and_deletes() {
     let mut m = Mini::new();
     m.check();

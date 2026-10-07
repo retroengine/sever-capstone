@@ -131,7 +131,7 @@ fn load_current(v: &SimVfs) -> (CheckpointMeta, DbImage) {
 }
 
 #[test]
-#[spec("SR-15.6-1", "SR-15.6-2", "SR-15.6-3", "SR-14.9-1")]
+#[spec("SR-15.6-1", "SR-15.6-2", "SR-15.6-3", "SR-14.9-1", "SR-14.1-1")]
 fn p2_checkpoint_write_then_load_round_trips() {
     let v = fresh();
     assert_eq!(read_manifest(&v, 0).unwrap(), None, "no database yet");
