@@ -457,6 +457,7 @@ dependencies = [
  "sever-types",
  "sever-vfs",
  "sever-wal",
+ "sha2",
  "zeroize",
 ]
 

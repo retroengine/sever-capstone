@@ -535,3 +535,78 @@ fn p2_txn_holding_header_counts_its_records() {
     assert_eq!(n, live, "after a holding deletion");
     m.check();
 }
+
+// ----- small fixed rules -----
+
+#[test]
+fn p2_txn_system_clock_is_wall_clock_milliseconds() {
+    // EP-9: time for log checkpoints and key epochs, in ms since the Unix epoch.
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64;
+    let t = SystemClock::default().now_ms();
+    assert!(t.abs_diff(now) < 60_000, "{t} vs {now}");
+}
+
+#[test]
+#[spec("SR-14-1")]
+fn p2_txn_plaintext_sealer_refuses_any_envelope_bytes() {
+    // DB-48: with the plaintext sealer the wrapped record key is empty (§14.4).
+    let (cid, g, sid) = (
+        CollectionId::from_bytes([1; 16]),
+        GroupId::Holding,
+        sever_types::ScrambledId::from_bytes([2; 64]),
+    );
+    let o = RecordOwner {
+        collection: &cid,
+        group: &g,
+        scrambled_id: &sid,
+    };
+    let (env, sealed) = PlaintextSealer.seal_record(&o, b"abc").unwrap();
+    assert!(env.is_empty());
+    assert!(PlaintextSealer.open_record(&o, &[0], &sealed).is_err());
+    assert!(PlaintextSealer.rewrap_record(&o, &o, &[0]).is_err());
+    assert!(PlaintextSealer.seal_passage(&o, &[0], b"t").is_err());
+    assert!(PlaintextSealer.open_passage(&o, &[0], b"t").is_err());
+    assert_eq!(
+        PlaintextSealer.rewrap_record(&o, &o, &[]).unwrap(),
+        Vec::<u8>::new()
+    );
+}
+
+#[test]
+fn p2_txn_no_extension_stores_no_bytes() {
+    // DB-46: with no extension (Parts 1–2) every extension field is empty, and a non-empty one
+    // is corrupt.
+    type N = sever_index::NoExtension;
+    assert!(<N as StoredExtension>::decode_public(&[]).is_ok());
+    assert!(<N as StoredExtension>::decode_public(&[0]).is_err());
+    assert!(<N as StoredExtension>::decode_group_secret(&[0]).is_err());
+    assert!(<N as StoredExtension>::decode_record_secret(&[0]).is_err());
+}
+
+/// A participant with only the trait's defaults.
+struct Plain;
+impl TxnParticipant<sever_index::NoExtension> for Plain {
+    fn id(&self) -> u16 {
+        0x0102
+    }
+}
+
+#[test]
+fn p2_txn_a_participant_owns_only_its_extension_records() {
+    // DB-45: EXTENSION payloads start with u16be participant_id.
+    let rec = |ty, payload: Vec<u8>| sever_format::WalRecord {
+        ty,
+        wal_seq: 1,
+        txn_id: 1,
+        payload,
+    };
+    use sever_format::RecordType as T;
+    assert!(Plain.owns(&rec(T::Extension, vec![1, 2, 9])));
+    assert!(!Plain.owns(&rec(T::Extension, vec![1, 3, 9])));
+    assert!(!Plain.owns(&rec(T::Extension, vec![1])));
+    assert!(!Plain.owns(&rec(T::LogLeaf, vec![1, 2])));
+    assert!(Plain.owned_types().is_empty());
+}

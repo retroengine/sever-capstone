@@ -798,3 +798,161 @@ fn p2_engine_refuses_a_passage_of_a_record_that_is_not_live() {
         "§14.8",
     );
 }
+
+/// HMAC-SHA-512 (RFC 2104), written here from the definition, for §9.7.
+fn hmac_sha512(key: &[u8; 64], msg: &[u8]) -> [u8; 64] {
+    use sha2::{Digest, Sha512};
+    // A 64-byte key is shorter than SHA-512's 128-byte block: zero-pad it.
+    let mut k = [0u8; 128];
+    k[..64].copy_from_slice(key);
+    let pad = |b: u8| k.iter().map(|x| x ^ b).collect::<Vec<u8>>();
+    let inner = Sha512::new()
+        .chain_update(pad(0x36))
+        .chain_update(msg)
+        .finalize();
+    Sha512::new()
+        .chain_update(pad(0x5c))
+        .chain_update(inner)
+        .finalize()
+        .into()
+}
+
+/// `k_scramble` from the key directory's `SECRETS` file, parsed from §14.9's table:
+/// `magic ‖ u16be version ‖ u16be sealer_id ‖ u32be count ‖ (u16be kind ‖ u32be len ‖ bytes)* ‖ crc`.
+fn k_scramble(keys: &SimVfs) -> [u8; 64] {
+    let f = keys
+        .open(sever_engine::SECRETS, OpenMode::Existing)
+        .unwrap();
+    let b = sever_vfs::read_all(f.as_ref()).unwrap();
+    assert_eq!(&b[..8], b"SVDBSECR");
+    let count = u32::from_be_bytes(b[12..16].try_into().unwrap());
+    let mut at = 16;
+    for _ in 0..count {
+        let kind = u16::from_be_bytes(b[at..at + 2].try_into().unwrap());
+        let len = u32::from_be_bytes(b[at + 2..at + 6].try_into().unwrap()) as usize;
+        if kind == 1 {
+            assert_eq!(len, 64, "k_scramble is 64 bytes");
+            return b[at + 6..at + 70].try_into().unwrap();
+        }
+        at += 6 + len;
+    }
+    panic!("no k_scramble in SECRETS");
+}
+
+#[test]
+#[spec("SR-9.7-1")]
+fn p2_engine_scrambled_ids_are_the_hmac_of_the_stored_key() {
+    // §9.7: scrambled_id = HMAC-SHA-512(k_scramble, collection_id ‖ record_id_bytes); the key is
+    // 64 bytes from the OS, once per database. Checked on the checkpoint's slots.
+    let mut seen = Vec::new();
+    for _ in 0..2 {
+        let (disks, cid) = base();
+        let db = disks.open(1 << 30).unwrap();
+        run(&db, cid, &workload(5, 30), &vectors());
+        db.close().unwrap();
+        let k = k_scramble(&disks.keys);
+        assert_ne!(k, [0; 64]);
+        let layout = sever_format::Layout::plain(16);
+        let m = sever_checkpoint::read_manifest(&disks.data, 0)
+            .unwrap()
+            .unwrap();
+        let (_, img) = sever_checkpoint::load(&disks.data, &m, &|_| layout).unwrap();
+        let coll = &img.collections[&cid];
+        let mut slots = 0;
+        for g in &coll.groups {
+            for s in &g.slots {
+                let p = sever_format::SlotPayload::parse(&s.sealed_payload, &layout).unwrap();
+                let msg = [cid.as_bytes().as_slice(), p.record_id.as_str().as_bytes()].concat();
+                assert_eq!(s.scrambled_id.as_bytes(), &hmac_sha512(&k, &msg));
+                slots += 1;
+            }
+        }
+        assert!(slots > 0);
+        seen.push(k);
+    }
+    assert_ne!(seen[0], seen[1], "each database draws its own key");
+}
+
+#[test]
+#[spec("SR-12.4-1")]
+fn p2_engine_checkpoints_itself_after_enough_wal() {
+    // §12.4: a storage checkpoint runs every so many bytes of WAL (1 GiB in production; a small
+    // threshold here), not only when asked; it deletes the WAL segments it covers.
+    let ops: Vec<Op> = workload(9, 120)
+        .into_iter()
+        .filter(|o| !matches!(o, Op::Checkpoint))
+        .collect();
+    let vs = vectors();
+    let count = |every: u64| {
+        let (disks, cid) = base();
+        let db = disks.open(every).unwrap();
+        let before = db.stats(cid).unwrap().checkpoint_id;
+        assert_eq!(run(&db, cid, &ops, &vs), ops.len());
+        let after = db.stats(cid).unwrap().checkpoint_id;
+        let segments = disks.data.list("wal").unwrap().len();
+        (after - before, segments)
+    };
+    let (never, segs_never) = count(1 << 40);
+    let (often, segs_often) = count(16 * 1024);
+    assert_eq!(never, 0);
+    assert!(often >= 2, "{often} automatic checkpoints");
+    assert!(
+        segs_often < segs_never,
+        "covered segments deleted: {segs_often} vs {segs_never}"
+    );
+}
+
+#[test]
+#[spec("SR-15.1-1")]
+fn p2_engine_placements_and_locations_equal_part_1_s() {
+    // The engine adds storage only: every placement, location and group list equals the frozen
+    // Part 1 index's on the same operations (Part 1's index is P1-T2's oracle-checked core).
+    let art = PartitionArtefact::parse(ARTEFACT).unwrap();
+    let mut ix = Index::new(
+        &art,
+        IndexConfig {
+            spawning_enabled: true,
+            spawn_target: 8,
+        },
+        NoExtension,
+        HmacSha512Scrambler::new(&[0; 64]),
+        CollectionId::from_bytes([0; 16]),
+    )
+    .unwrap();
+    let (disks, cid) = base();
+    let db = disks.open(1 << 30).unwrap();
+    assert!(!db.is_poisoned());
+    let vs = vectors();
+    for (i, v) in vs.iter().enumerate().take(120) {
+        let id = format!("p{i}");
+        let want = ix
+            .insert(sever_index::InsertRequest {
+                record_id: id.clone(),
+                vector: v.clone(),
+                credential: (),
+            })
+            .unwrap();
+        let got = db
+            .insert(
+                cid,
+                InsertRequest {
+                    record_id: id.clone(),
+                    vector: v.clone(),
+                    credential: (),
+                    passage: None,
+                },
+            )
+            .unwrap();
+        assert_eq!(got.placement, want, "{id}");
+        assert_eq!(db.location(cid, &id), ix.location(&id).map(|g| g.as_text()));
+    }
+    assert!(vs.len() >= 120);
+    assert_eq!(db.group_ids(cid), ix.group_ids());
+    let some = ix.group_ids()[0];
+    assert_eq!(
+        db.group_snapshot(cid, &some).map(|s| s.blob),
+        ix.blob(&some)
+    );
+    assert!(db.survivors_snapshot(cid, &some).is_some());
+    assert!(!db.is_poisoned());
+}
