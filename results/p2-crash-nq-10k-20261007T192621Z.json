@@ -1,0 +1,53 @@
+{
+ "gate": "P2-T1 (0 exactness violations, 0 lost acknowledged operations, 0 corrupt recoveries, 0 refusals), P2-T2 (100 % oracle-allowed states), P2-T3 (0 partial delete_user)",
+ "data": "nq-10k",
+ "seeds": [
+  {
+   "seed": 42,
+   "outcome": "PASS",
+   "oracle_sha256": "f17067d2105c5d770039a79946d2099a33e4dda57458115f0b0df1087e33dbe1",
+   "generic": {
+    "points": 5735,
+    "refusals": 0,
+    "t": "summary",
+    "wrong_states": 0
+   },
+   "generic_rc": 0,
+   "campaign": {
+    "bad_retries": 0,
+    "double": 31,
+    "double_mismatches": 0,
+    "main_mismatches": 0,
+    "not_oracle_state": 0,
+    "offset": 424,
+    "ops": 40,
+    "random": 1000,
+    "refusals": 0,
+    "seconds": 19,
+    "skipped": 0,
+    "step": 160,
+    "t": "summary"
+   },
+   "campaign_rc": 0,
+   "campaign_stderr": "",
+   "campaign_results_sha256": "116103611784aea557f775d41c54a10d623718034e180508dc08cb3c11465a9d",
+   "verdict": {
+    "crash_points": 1584,
+    "not_oracle_state": 0,
+    "lost_acknowledged": 0,
+    "partial_delete_user": 0,
+    "startup_refusals": 0,
+    "bad_retries": 0,
+    "double_crash_mismatch": 0,
+    "by_kind": {
+     "step": 160,
+     "offset": 424,
+     "random": 1000
+    },
+    "failures": 0
+   },
+   "seconds": 212
+  }
+ ],
+ "outcome": "PASS"
+}
