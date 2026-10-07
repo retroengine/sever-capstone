@@ -1,0 +1,24 @@
+{
+ "gate": "P2-T8: every SB item makes a test fail",
+ "lines": [
+  "PASS SB-1 (sever-index): 9 failing test line(s)",
+  "PASS SB-2 (sever-index): 10 failing test line(s)",
+  "PASS SB-3 (sever-index): 2 failing test line(s)",
+  "PASS SB-4 (sever-index): 7 failing test line(s)",
+  "PASS SB-5 (sever-index): 7 failing test line(s)",
+  "PASS SB-7 (sever-index): 2 failing test line(s)",
+  "PASS SB-8 (sever-index): 3 failing test line(s)",
+  "PASS SB-6 (sever-search): 1 failing test line(s)",
+  "PASS SB-9 (sever-search): 2 failing test line(s)",
+  "PASS SB-10 (python): 6 failed",
+  "PASS SB-11 (sever-format): 1 failing test line(s)",
+  "PASS SB-12 (sever-vfs): 2 failing test line(s)",
+  "PASS SB-13 (sever-wal): 6 failing test line(s)",
+  "PASS SB-14 (sever-vfs): 2 failing test line(s)",
+  "PASS SB-15 (sever-txn): 2 failing test line(s)"
+ ],
+ "missing": [],
+ "seconds": 81,
+ "outcome": "PASS",
+ "stderr_tail": []
+}
