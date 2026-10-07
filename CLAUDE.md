@@ -87,7 +87,8 @@ A part is built module by module. The modules and their spec sections are listed
    `docs/notes/P1-sever-quant.md`): what the module does, and why, in their own words. Claude corrects
    misunderstandings.
 3. **Tests first.** From the part's test plan (Build §4.7, §5.7; Build 3-4 §1.8, §2.8), the user
-   writes the module's tests. Each test names the requirement IDs it checks (§6.2 of this file).
+   writes the module's tests. Each test names the requirement IDs it checks (§6.2 of this file) and
+   where its expected value comes from (§6.3). An AI writing tests follows §6.3 without exception.
 4. **Implement.** The user writes the code until the tests pass.
 5. **Sabotage.** For each SB item the module owns (Build §2.6), deliberately break the code, confirm
    a test goes **red**, then revert. A test that never fails proves nothing (Overview §9.2).
@@ -193,6 +194,49 @@ part adds exactly one claim and is built on the frozen parts before it.
 - **CI tiers** (Build §2.8): Fast on every push, Extended on every merge to `main`, Full before an exit
   gate and before any published number.
 
+### 6.3 Test independence (binding for every test an AI writes)
+
+A test is only worth something if it can catch a misreading of the spec. When the same AI writes the
+code and the test, the test must not inherit the code's reading. These rules apply from Part 2 on
+(Part 1 is frozen) and override any "keep going" instruction.
+
+- **Oracle first.** Before writing a test body, write down the expected value and where it comes
+  from: a §, a worked example, an Appendix A size, a row of a normative table, or an independent
+  oracle. While writing a test, read only the spec, the public API signatures and the oracle;
+  **never open the implementation to decide what to assert.**
+- **Never take an expected value from the code.** Never run the engine and paste its output into an
+  assertion, a golden file or a trace. Golden files come from the spec or the reference model
+  (Build §2.2 items 4–5).
+- **Every test declares its oracle**, one of:
+
+  | Oracle | Expected value comes from |
+  |---|---|
+  | **A** | The spec: text, worked example, Appendix A, a normative table; worked out by hand |
+  | **B** | An independent oracle: the Python reference model, Part 1 traces, RFC vectors, an independent CRC/HMAC |
+  | **B-shared** | A B oracle written by the same AI as the code under test (for example `sever_refmodel_durable`); listed for the owner to review by hand |
+  | **C** | Part 1's frozen code |
+  | **D** | The code under test itself: round trip, "does not panic", echoing an error label |
+
+  Rust: a comment on the line directly above `#[spec(...)]`, `// oracle: A §14.3 segment header`.
+  Python: `@pytest.mark.oracle("A", "§14.3 segment header")`. A and B need a source after the letter;
+  A's source must name a `§` or Appendix.
+- **D is never enough on its own.** Every requirement needs at least one A, B, B-shared or C test. A
+  byte-layout rule needs an A test whose expected bytes are written by hand from the spec, not only
+  an encode-then-decode round trip.
+- **An `SR-…` label claims the test can fail.** Put `SR-X` on a test only if breaking rule X turns
+  that test red. Evidence: an SB item, a killed mutant, or a hand sabotage that was run once. A test
+  that merely passes through the code near rule X does not get the label.
+- **A red test is evidence, not an obstacle.** Never change an expected value to match the code unless
+  the spec shows the code is right, and say which § decides it. If the spec is unclear, open a G-N gap
+  (§2); never loosen the test instead.
+- **Report honestly.** Never say a test checks a rule without having seen it go red at least once.
+- **Enforced.** `sever_testkit_p2.oracle_check check` runs in the Fast tier. It fails on an
+  `SR`-labelled test with no oracle tag, on an A tag without a §, and on any requirement guarded only
+  by D tests. `oracle_check report` writes `docs/TEST_ORACLES_P2.md`, including the B-shared list.
+  Parts 3 and 4 add their own wrapper of the checker (Part 2's freezes with it).
+- **Pull request.** On top of the Build §6.1 checklist: oracle check passes; no requirement is D-only;
+  new B-shared tests are listed for the owner.
+
 ---
 
 ## 7. Rules that apply to all code (from the spec)
@@ -277,6 +321,7 @@ they name exists. Python modules under `python/` need `PYTHONPATH=python`.
 | Part 2 SDK native module (after `uv sync`, which removes it) | `uv run --no-sync maturin develop --release --uv -m crates/sever-py-p2/Cargo.toml` |
 | Part 2 demo | `cargo run --release -p sever-p2 --features demo --bin sever-demo-p2 -- durable --data nq-10k --seed 42` (offline: `--data synthetic`) |
 | Part 2 CLI | `cargo run --release -p sever-p2 --bin sever-db-p2 -- verify --data DIR --keys DIR` |
+| Part 2 test-oracle check / report (§6.3) | `PYTHONPATH=python uv run python -m sever_testkit_p2.oracle_check check` (`report` writes `docs/TEST_ORACLES_P2.md`) |
 | P2-T1…T3 crash gate (Full tier; writes the run ledger; ~7 h) | `PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit_p2.gates p2-crash --data nq-10k --all-seeds --jobs 3` |
 | Review demo (self-contained in `demo/`, own env; DB-56) | `demo/scripts/demo.sh setup\|test\|run\|repl`; container: `demo/scripts/demo.sh docker-build`, then `docker test\|run\|repl` (see `demo/README.md`) |
 
