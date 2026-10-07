@@ -876,7 +876,7 @@ state. Two collections never influence each other's blobs.
 | E2E-2.3 | An insert whose acknowledgement was lost | The application backend retries | `DuplicateRecord { same_commitment: true }`, which the SDK treats as success |
 | E2E-2.4 | A deletion whose acknowledgement was lost | The application backend retries | `AlreadyAbsent` |
 | E2E-2.5 | A `Vfs` that fails an `fsync` | Any write runs | The process aborts; the restart recovers a valid state |
-| E2E-2.6 | A database on a disk image | The image is unmounted and remounted | The state is unchanged |
+| E2E-2.6 | A database on a disk image | The image is unmounted and remounted (DB-70: without root, the closed database is packed into an ext4 image with `mkfs.ext4 -d` and read back with `debugfs`) | The state is unchanged |
 | E2E-2.7 | Two collections | One is dropped | The other is byte-for-byte unaffected |
 | E2E-2.8 | Every malformed request | It is submitted through the SDK | A typed error with no leaked content |
 
@@ -923,7 +923,7 @@ public API.
 
 ### 5.9 The demo
 
-`sever-demo durable --data nq-10k --seed 42`:
+`sever-demo-p2 durable --data nq-10k --seed 42` (DB-69: Part 1's `sever-demo` binary is frozen):
 
 1. Load 10,000 passages into a database on a disk image, and show the stats.
 2. Start a `delete_user` over a cohort spanning several groups, with a crash injected by `SimVfs` at a

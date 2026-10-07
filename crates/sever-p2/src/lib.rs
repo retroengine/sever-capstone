@@ -5,6 +5,9 @@
 //! configuration hash, `SECRETS` file permissions (mode 0600, §14.1), and the failure policy
 //! (abort the process on a durability failure, §12.7).
 
+#[cfg(feature = "demo")]
+pub mod demo;
+
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -142,8 +145,11 @@ mod tests {
 
     fn dir(tag: &str) -> PathBuf {
         // Under target/, on the repository's ext4 disk.
-        let d = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../target/p2-tests"))
-            .join(format!("{tag}-{}", std::process::id()));
+        let d = Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../target/p2-tests"
+        ))
+        .join(format!("{tag}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
         d
     }
