@@ -154,9 +154,10 @@ def p2_fuzz(root: Path, runs: int) -> int:
     for t in FUZZ_TARGETS:
         (fuzz / "corpus" / t).mkdir(parents=True, exist_ok=True)
         procs[t] = subprocess.Popen(
-            ["cargo", "+nightly", "fuzz", "run", "-O", t, f"corpus/{t}", f"seeds/{t}", "--",
-             f"-runs={runs}", "-print_final_stats=1"],
-            cwd=fuzz,
+            ["cargo", "+nightly", "fuzz", "run", "--fuzz-dir", "fuzz-p2", "-O", t,
+             f"fuzz-p2/corpus/{t}", f"fuzz-p2/seeds/{t}", "--", f"-runs={runs}",
+             "-print_final_stats=1"],
+            cwd=root,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
