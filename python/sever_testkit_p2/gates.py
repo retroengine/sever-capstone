@@ -2,6 +2,8 @@
 
     PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit_p2.gates p2-crash \\
         --data nq-10k --all-seeds --jobs 3
+    PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit_p2.gates p2-fuzz \\
+        --runs 100000000
 
 ``p2-crash`` is gates P2-T1 (0 exactness violations, 0 lost acknowledged operations, 0 corrupt
 recoveries, 0 startup refusals after an honest crash), P2-T2 (100 % of recovered states equal an
@@ -11,6 +13,9 @@ kit runs the generic-records campaign first (overview EX-1 step 1), then the ind
 at every VFS operation of all 20,000 operations, every 512-byte offset of 200 sampled WAL writes,
 1,000 random points, and a crash during recovery every 50th point; then the oracle checks every
 recovered state. The crash kit is built once into a target directory owned by this run.
+
+``p2-fuzz`` is gate P2-T6: each Part 2 parser (WAL record, MANIFEST, checkpoint file, store record)
+runs ``--runs`` libFuzzer executions, all at once, with 0 crashes.
 """
 
 import argparse
@@ -137,6 +142,58 @@ def p2_crash(root: Path, data: str, seeds: list[int], jobs: int, extra: list[str
     return 0 if passed else 1
 
 
+FUZZ_TARGETS = ("wal_record", "manifest", "checkpoint_file", "store_record")
+
+
+def p2_fuzz(root: Path, runs: int) -> int:
+    """P2-T6: ``runs`` executions per parser, 0 crashes."""
+    cmd = f"gates p2-fuzz --runs {runs}"
+    started = ledger.start(root, cmd, gate="P2-T6", runs=runs, targets=list(FUZZ_TARGETS))
+    fuzz = root / "fuzz-p2"
+    procs = {}
+    for t in FUZZ_TARGETS:
+        (fuzz / "corpus" / t).mkdir(parents=True, exist_ok=True)
+        procs[t] = subprocess.Popen(
+            ["cargo", "+nightly", "fuzz", "run", "-O", t, f"corpus/{t}", f"seeds/{t}", "--",
+             f"-runs={runs}", "-print_final_stats=1"],
+            cwd=fuzz,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )  # fmt: skip
+    out: dict[str, Any] = {}
+    for t, p in procs.items():
+        log = p.communicate()[0]
+        done = [ln for ln in log.splitlines() if ln.startswith("Done ")]
+        out[t] = {
+            "exit": p.returncode,
+            "done": done[-1] if done else None,
+            "crashed": p.returncode != 0 or "panicked" in log or "ERROR: libFuzzer" in log,
+            "tail": log.splitlines()[-12:],
+        }
+    passed = all(not v["crashed"] and v["done"] for v in out.values())
+    data_out = {"gate": "P2-T6 (0 crashes)", "runs_per_target": runs, "targets": out,
+                "outcome": "PASS" if passed else "FAIL"}  # fmt: skip
+    path, sha = ledger.result_file(
+        root, f"p2-fuzz-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(
+            root,
+            cmd,
+            gate="P2-T6",
+            outcome=data_out["outcome"],
+            run_commit=started["commit"],
+            result_file=str(path.relative_to(root)),
+            result_sha256=sha,
+            summary={t: v["done"] for t, v in out.items()},
+        ),
+    )
+    print(json.dumps({t: v["done"] for t, v in out.items()} | {"outcome": data_out["outcome"]}))
+    return 0 if passed else 1
+
+
 def _main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog="gates-p2", description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -147,7 +204,12 @@ def _main(argv: list[str]) -> int:
     c.add_argument("--jobs", type=int, default=1)
     c.add_argument("--root", type=Path, default=Path("."))
     c.add_argument("--limit-ops", type=int, default=None, help="smoke runs only; not a gate")
+    f = sub.add_parser("p2-fuzz")
+    f.add_argument("--runs", type=int, default=100_000_000)
+    f.add_argument("--root", type=Path, default=Path("."))
     args = ap.parse_args(argv)
+    if args.cmd == "p2-fuzz":
+        return p2_fuzz(args.root.resolve(), args.runs)
     seeds = list(SEEDS) if args.all_seeds else (args.seed or [42])
     if args.cmd == "p2-crash":
         extra = ["--limit-ops", str(args.limit_ops)] if args.limit_ops else []
