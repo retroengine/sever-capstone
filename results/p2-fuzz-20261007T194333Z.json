@@ -1,0 +1,69 @@
+{
+ "gate": "P2-T6 (0 crashes)",
+ "runs_per_target": 100000000,
+ "targets": {
+  "wal_record": {
+   "exit": 1,
+   "done": null,
+   "crashed": true,
+   "tail": [
+    "    Blocking waiting for file lock on package cache",
+    "    Blocking waiting for file lock on package cache",
+    "    Blocking waiting for file lock on package cache",
+    "    Blocking waiting for file lock on package cache",
+    "error: no bin target named `wal_record` in default-run packages",
+    "help: available bin targets:",
+    "    artefact_parse",
+    "    blob_parse",
+    "Error: failed to build fuzz script: ASAN_OPTIONS=\"detect_odr_violation=0\" RUSTFLAGS=\" -Cpasses=sancov-module -Cllvm-args=-sanitizer-coverage-level=4 -Cllvm-args=-sanitizer-coverage-inline-8bit-counters -Cllvm-args=-sanitizer-coverage-pc-table -Cllvm-args=-sanitizer-coverage-trace-compares --cfg fuzzing -Cllvm-args=-simplifycfg-branch-fold-threshold=0 -Zsanitizer=address -Cllvm-args=-sanitizer-coverage-stack-depth -Ccodegen-units=1\" \"cargo\" \"build\" \"--manifest-path\" \"/home/saiki/sever-db/fuzz/Cargo.toml\" \"--target\" \"x86_64-unknown-linux-gnu\" \"--release\" \"--config\" \"profile.release.debug=\\\"line-tables-only\\\"\" \"--bin\" \"wal_record\""
+   ]
+  },
+  "manifest": {
+   "exit": 1,
+   "done": null,
+   "crashed": true,
+   "tail": [
+    "    Blocking waiting for file lock on package cache",
+    "    Blocking waiting for file lock on package cache",
+    "    Blocking waiting for file lock on package cache",
+    "error: no bin target named `manifest` in default-run packages",
+    "help: available bin targets:",
+    "    artefact_parse",
+    "    blob_parse",
+    "Error: failed to build fuzz script: ASAN_OPTIONS=\"detect_odr_violation=0\" RUSTFLAGS=\" -Cpasses=sancov-module -Cllvm-args=-sanitizer-coverage-level=4 -Cllvm-args=-sanitizer-coverage-inline-8bit-counters -Cllvm-args=-sanitizer-coverage-pc-table -Cllvm-args=-sanitizer-coverage-trace-compares --cfg fuzzing -Cllvm-args=-simplifycfg-branch-fold-threshold=0 -Zsanitizer=address -Cllvm-args=-sanitizer-coverage-stack-depth -Ccodegen-units=1\" \"cargo\" \"build\" \"--manifest-path\" \"/home/saiki/sever-db/fuzz/Cargo.toml\" \"--target\" \"x86_64-unknown-linux-gnu\" \"--release\" \"--config\" \"profile.release.debug=\\\"line-tables-only\\\"\" \"--bin\" \"manifest\""
+   ]
+  },
+  "checkpoint_file": {
+   "exit": 1,
+   "done": null,
+   "crashed": true,
+   "tail": [
+    "    Blocking waiting for file lock on package cache",
+    "    Blocking waiting for file lock on package cache",
+    "    Blocking waiting for file lock on package cache",
+    "    Blocking waiting for file lock on package cache",
+    "error: no bin target named `checkpoint_file` in default-run packages",
+    "help: available bin targets:",
+    "    artefact_parse",
+    "    blob_parse",
+    "Error: failed to build fuzz script: ASAN_OPTIONS=\"detect_odr_violation=0\" RUSTFLAGS=\" -Cpasses=sancov-module -Cllvm-args=-sanitizer-coverage-level=4 -Cllvm-args=-sanitizer-coverage-inline-8bit-counters -Cllvm-args=-sanitizer-coverage-pc-table -Cllvm-args=-sanitizer-coverage-trace-compares --cfg fuzzing -Cllvm-args=-simplifycfg-branch-fold-threshold=0 -Zsanitizer=address -Cllvm-args=-sanitizer-coverage-stack-depth -Ccodegen-units=1\" \"cargo\" \"build\" \"--manifest-path\" \"/home/saiki/sever-db/fuzz/Cargo.toml\" \"--target\" \"x86_64-unknown-linux-gnu\" \"--release\" \"--config\" \"profile.release.debug=\\\"line-tables-only\\\"\" \"--bin\" \"checkpoint_file\""
+   ]
+  },
+  "store_record": {
+   "exit": 1,
+   "done": null,
+   "crashed": true,
+   "tail": [
+    "    Blocking waiting for file lock on package cache",
+    "    Blocking waiting for file lock on package cache",
+    "    Blocking waiting for file lock on package cache",
+    "error: no bin target named `store_record` in default-run packages",
+    "help: available bin targets:",
+    "    artefact_parse",
+    "    blob_parse",
+    "Error: failed to build fuzz script: ASAN_OPTIONS=\"detect_odr_violation=0\" RUSTFLAGS=\" -Cpasses=sancov-module -Cllvm-args=-sanitizer-coverage-level=4 -Cllvm-args=-sanitizer-coverage-inline-8bit-counters -Cllvm-args=-sanitizer-coverage-pc-table -Cllvm-args=-sanitizer-coverage-trace-compares --cfg fuzzing -Cllvm-args=-simplifycfg-branch-fold-threshold=0 -Zsanitizer=address -Cllvm-args=-sanitizer-coverage-stack-depth -Ccodegen-units=1\" \"cargo\" \"build\" \"--manifest-path\" \"/home/saiki/sever-db/fuzz/Cargo.toml\" \"--target\" \"x86_64-unknown-linux-gnu\" \"--release\" \"--config\" \"profile.release.debug=\\\"line-tables-only\\\"\" \"--bin\" \"store_record\""
+   ]
+  }
+ },
+ "outcome": "FAIL"
+}
