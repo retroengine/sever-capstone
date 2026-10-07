@@ -1,0 +1,21 @@
+# THROWAWAY proof spike (Build §3.4): deleted after its gate; its only output is the ledger entry.
+[package]
+name = "sever-spike-p2-proof"
+version = "0.0.0"
+description = "Proof spike before Part 2 freezes: EP-6 can carry AES-GCM-SIV sealing, EP-7 can carry a log and key rotation"
+edition = "2024"
+publish = false
+
+[dependencies]
+sever-txn = { path = "../../crates/sever-txn", features = ["contract-tests"] }
+sever-format = { path = "../../crates/sever-format" }
+sever-index = { path = "../../crates/sever-index" }
+sever-types = { path = "../../crates/sever-types" }
+sever-vfs = { path = "../../crates/sever-vfs" }
+zeroize = "=1.9.0" # spec §20.1
+aes-gcm-siv = "=0.11.1" # spec §20.1
+rand_core = { version = "=0.6.4", features = ["getrandom"] } # spec §20.1
+sha2 = "=0.10.9"
+
+# Outside the engine workspace: the spike never becomes part of a frozen part.
+[workspace]

@@ -16,6 +16,9 @@ recovered state. The crash kit is built once into a target directory owned by th
 
 ``p2-fuzz`` is gate P2-T6: each Part 2 parser (WAL record, MANIFEST, checkpoint file, store record)
 runs ``--runs`` libFuzzer executions, all at once, with 0 crashes.
+
+``p2-spikes`` is the proof-spike part of gate P2-T7 (Build §3.4): the throwaway crate
+``spikes/p2-proof`` passes; its only output is the ledger entry, then it is deleted.
 """
 
 import argparse
@@ -142,6 +145,44 @@ def p2_crash(root: Path, data: str, seeds: list[int], jobs: int, extra: list[str
     return 0 if passed else 1
 
 
+def p2_spikes(root: Path) -> int:
+    """Build §3.4: the Part 2 proof spikes pass; their only output is this ledger entry."""
+    cmd = "gates p2-spikes"
+    gate = "P2-T7 proof spikes (Build §3.4)"
+    started = ledger.start(root, cmd, gate=gate)
+    t0 = time.time()
+    run = subprocess.run(
+        ["cargo", "test", "--release", "--manifest-path", "spikes/p2-proof/Cargo.toml"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    results = [ln for ln in run.stdout.splitlines() if ln.startswith("test ")]
+    passed = run.returncode == 0 and len(results) > 0
+    data_out = {"gate": "Build §3.4 proof spikes", "tests": results,
+                "seconds": round(time.time() - t0, 1), "outcome": "PASS" if passed else "FAIL",
+                "stderr_tail": run.stderr.splitlines()[-15:]}  # fmt: skip
+    path, sha = ledger.result_file(
+        root, f"p2-spikes-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(
+            root,
+            cmd,
+            gate=gate,
+            outcome=data_out["outcome"],
+            run_commit=started["commit"],
+            result_file=str(path.relative_to(root)),
+            result_sha256=sha,
+            tests=results,
+        ),
+    )
+    print(json.dumps([*results, data_out["outcome"]]))
+    return 0 if passed else 1
+
+
 FUZZ_TARGETS = ("wal_record", "manifest", "checkpoint_file", "store_record")
 
 
@@ -208,7 +249,11 @@ def _main(argv: list[str]) -> int:
     f = sub.add_parser("p2-fuzz")
     f.add_argument("--runs", type=int, default=100_000_000)
     f.add_argument("--root", type=Path, default=Path("."))
+    sp = sub.add_parser("p2-spikes")
+    sp.add_argument("--root", type=Path, default=Path("."))
     args = ap.parse_args(argv)
+    if args.cmd == "p2-spikes":
+        return p2_spikes(args.root.resolve())
     if args.cmd == "p2-fuzz":
         return p2_fuzz(args.root.resolve(), args.runs)
     seeds = list(SEEDS) if args.all_seeds else (args.seed or [42])
