@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-50, DB-55 … DB-65)](#6-decision-register-db-1--db-50-db-55--db-65)
+6. [Decision register (DB-1 … DB-50, DB-55 … DB-68)](#6-decision-register-db-1--db-50-db-55--db-68)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-50, DB-55 … DB-65)
+## 6. Decision register (DB-1 … DB-50, DB-55 … DB-68)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -864,8 +864,8 @@ ciphertext-only rule (INV-11, spec §13.2) applies from Part 4. **Why.** Encrypt
 so a plaintext database can never be mistaken for, or silently opened as, an encrypted one, and the
 reverse. **Rejected.** Encrypting from Part 2 (pulls Part 4's key hierarchy forward and breaks the
 one-claim-per-part order); no marker (a Part 2 database opened by the released build would be read as
-corrupt ciphertext, or worse, accepted). **Consequence.** The key directory exists only with sealer
-`1`. Part 2 and Part 3 demos and reports say "plaintext database" wherever they show stored bytes.
+corrupt ciphertext, or worse, accepted). **Consequence.** The key file `KEYS` exists only with
+sealer `1`; `SECRETS` exists in every database (DB-68). Part 2 and Part 3 demos and reports say "plaintext database" wherever they show stored bytes.
 
 #### DB-49 — Runtime dimension and group count (4 October 2026)
 
@@ -930,6 +930,40 @@ through the `Vfs` so that `SimVfs` can crash it. **Rejected.** Creating the dire
 trait (a crash test could then never lose a directory entry); fixed, reused checkpoint directories
 (loses the atomic directory rename that makes an interrupted checkpoint harmless). **Consequence.**
 Closes G-13. In `SimVfs` a new directory is durable only after `fsync_dir` of its parent, like a file.
+
+#### DB-66 — WAL record framing and payloads (7 October 2026)
+
+**Decision.** In a WAL record (spec §14.6) `len` is the length of the whole record and the CRC covers
+every byte before it. Every payload that changes a collection starts with its `collection_id`;
+unspecified widths are `u64be`; the type codes are fixed (1–17). Two record types are added,
+`COLLECTION_CREATE` (metadata and the partition artefact) and `COLLECTION_DROP`. `COUNTERS` carries
+`N` and `k`; the next `database_lsn` is carried by the log participant's own records (Part 3). The
+payloads of `BUCKET_BLOCK`, `LOG_LEAF`, `LOG_CHECKPOINT`, `CERT_REF` and `EXTENSION` are carried
+verbatim. **Why.** One WAL serves every collection, so a change must name its collection; a reader
+must know the record length before it can check the CRC; Part 2 must create collections durably
+before the log exists. **Rejected.** One WAL per collection (cross-collection operations and
+checkpoints would need two commit points); `len` excluding the framing (one more arithmetic step to
+get wrong, for no gain). **Consequence.** Closes G-14.
+
+#### DB-67 — File layouts and paged checkpoint files (7 October 2026)
+
+**Decision.** Spec §14.9 fixes the byte layout of the store file header, `MANIFEST`, WAL segment
+headers, `SECRETS`, the collection metadata and every storage checkpoint file. Every checkpoint file
+is paged (§14.2): a header page with magic, version, `sealer_id` and stream length, then data pages,
+each carrying the covered `wal_seq` and a CRC. A new checkpoint file `payloads.bin` holds the
+passage-text references. **Why.** §12.7 requires a magic, version and CRC everywhere, and a format
+claim needs bytes. Paging puts every checkpoint byte under a CRC and stops a page from another
+checkpoint being mixed in. **Rejected.** Unpaged checkpoint files with one CRC per file (a single
+bit flip in a 2 GB file would only be found after reading all of it, and the error could not say
+where). **Consequence.** Closes G-15.
+
+#### DB-68 — `SECRETS` exists in every database (7 October 2026)
+
+**Decision.** `<key_dir>/SECRETS`, holding `k_scramble` (spec §9.7), exists in every database,
+plaintext or not; only the key file `KEYS` is tied to the AES-GCM-SIV sealer (correcting DB-48's
+wording). **Why.** Scrambled IDs are computed in every part, so every database needs its scrambling
+key after a restart. **Rejected.** Storing `k_scramble` in the data directory (it would then sit
+next to the data it scrambles, against §14.1's separation). **Consequence.** Closes G-16.
 
 #### DB-60 — The dimension check (4 October 2026)
 
@@ -1726,7 +1760,8 @@ Links checked on 27 September 2026 unless noted.
 - **7 October 2026 — Part 2 design review.** DB-46 (slot payload order and the header's
   `seal_version`) and DB-48 (`sealer_id` in every file; no confidentiality claim before Part 4)
   accepted from the build plan. New: DB-65 (`create_dir` and `remove_dir` in the `Vfs`, closes
-  G-13). Specification sections touched: §12.2, §13.2 (payload row), §14 (sealer marker), §14.3,
+  G-13), DB-66 (WAL framing, closes G-14), DB-67 (file layouts, new spec §14.9, closes G-15), DB-68
+  (`SECRETS` in every database, closes G-16). Specification sections touched: §12.2, §13.2 (payload row), §14 (sealer marker), §14.3,
   §14.4, Appendix A. Build §3.5; Build 3-4 §3.5.
 - **6 October 2026 — Part 1 gaps closed.** DB-61 (the ULP sentence of §4.1, closes G-9), DB-62
   (spawn target size is a runtime value, closes G-10), DB-63 (at most 10,000 frozen groups, closes

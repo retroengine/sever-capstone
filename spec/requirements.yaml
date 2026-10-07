@@ -250,3 +250,19 @@
 - {id: SR-12.2-3, section: "12.2", kind: must, part: 2, text: "SimVfs is in memory and seeded and models the POSIX durability contract conservatively: only fsynced data and fsync_dir'ed directory entries survive a simulated crash.", technique: [contract, property]}
 - {id: SR-12.2-4, section: "12.2", kind: must, part: 2, text: "SimVfs can drop any unsynced write, tear a write at any byte, reorder unsynced writes, and make any fsync fail.", technique: [contract]}
 - {id: SR-12.2-5, section: "12.2", kind: must, part: 2, text: "All crash tests run on SimVfs, so they are deterministic.", technique: [property], notes: "sever-vfs: the same seed gives the same disk. That every crash test uses SimVfs is checked by the crash kit and the architecture tests."}
+
+# --- Part 2: sever-format (7 Oct 2026, write mode; owner review) ---
+- {id: SR-14-1, section: "14", kind: must, part: 2, text: "All structures carry a magic number, a u16be format version and a trailing CRC-32C unless stated; every file in data_dir records its u16be sealer_id right after the format version (DB-48)."}
+- {id: SR-14-2, section: "14", kind: must, part: 2, text: "A build MUST refuse a file whose sealer_id differs from its own (IntegrityViolation); every parser rejects a wrong magic, version, sealer_id, CRC, count, order, padding or trailing byte (§14.9)."}
+- {id: SR-14.2-1, section: "14.2", kind: definition, part: 2, text: "16,384-byte pages: u32be page_type ‖ u64be page_no ‖ u64be wal_seq ‖ payload ‖ u32be crc32c; written only inside storage checkpoint files."}
+- {id: SR-14.3-1, section: "14.3", kind: table-row, part: 2, text: "Group header: group_id zero-padded 32 ‖ kind ‖ seal_version ‖ n ‖ extension public ‖ centroid d × f64 ‖ sealed accumulator (absent for holding); 6,285 bytes released, 6,193 in Part 2 (DB-46)."}
+- {id: SR-14.4-1, section: "14.4", kind: table-row, part: 2, text: "Slot: scrambled_id ‖ envelope ‖ sealed payload ‖ padding to 8; payload u16be id_len ‖ id padded to 256 ‖ x̃ as d × i32be ‖ extension record secret; 1,992 bytes released, 1,864 in Part 2 (DB-46)."}
+- {id: SR-14.4-2, section: "14.4", kind: must, part: 2, text: "IDs are padded to 256 bytes, which keeps slots fixed-size and hides ID length."}
+- {id: SR-14.6-1, section: "14.6", kind: definition, part: 2, text: "WAL record: u32be len (whole record) ‖ u8 type ‖ u64be wal_seq ‖ u64be txn_id ‖ payload ‖ u32be crc32c over every preceding byte (DB-66)."}
+- {id: SR-14.6-2, section: "14.6", kind: table-row, part: 2, text: "The record types and payloads of §14.6 (codes 1–17), collection_id first in every change payload; participant payloads carried verbatim (DB-66)."}
+- {id: SR-14.8-1, section: "14.8", kind: definition, part: 2, text: "Append-store records: u64be key ‖ u32be len ‖ bytes ‖ u32be crc32c, after the 16-byte file header."}
+- {id: SR-14.9-1, section: "14.9", kind: table-row, part: 2, text: "The file layouts of §14.9: store file header, MANIFEST, WAL segment header, SECRETS, collection metadata, paged checkpoint files and their streams (DB-67)."}
+- {id: SR-12.3-1, section: "12.3", kind: must, part: 2, text: "Change records carry after-images; replay applies after-images and never decrypts anything."}
+- {id: SR-12.3-3, section: "12.3", kind: must, part: 2, text: "On recovery, a transaction without a valid COMMIT (including a torn or CRC-failing tail) is discarded whole. It is never repaired.", related: [SB-11, SB-13]}
+- {id: SR-12.7-4, section: "12.7", kind: must, part: 2, text: "Every record on disk has a CRC-32C; every file has a magic number and a format version.", related: [SB-11]}
+- {id: SR-15.6-1, section: "15.6", kind: step, part: 2, text: "Serialise the in-memory ciphertext state into checkpoint/<new>.tmp/; fsync every file."}

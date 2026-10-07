@@ -1,0 +1,22 @@
+[package]
+name = "sever-format"
+version = "0.1.0"
+description = "Byte-exact, checksummed, versioned storage formats with strict parsers (Part 2, spec §14)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[features]
+# Build §2.6: each builds the formats with exactly one deliberate bug. A test must go red.
+sabotage-SB-11 = [] # accept a WAL record with a bad CRC
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+crc32c = "=0.6.8" # spec §20.1
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+proptest = { version = "~1.6", default-features = false, features = ["std", "bit-set"] } # rand 0.8, no fork: one rand_core and one getrandom (spec §20.3 check 1)
+
+[lints]
+workspace = true

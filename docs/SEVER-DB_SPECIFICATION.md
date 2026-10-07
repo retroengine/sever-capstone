@@ -1121,7 +1121,9 @@ was written with, immediately after its format version: `0` for the plaintext se
 build Parts 2 and 3) and `1` for AES-256-GCM-SIV as in §13.2 (Part 4 and the released system). A
 build MUST refuse to open a file whose `sealer_id` differs from its own (`IntegrityViolation`, naming
 the check). A database written with sealer `0` makes no confidentiality claim; INV-11 and §13.2 apply
-only to sealer `1`. The key directory (§14.7) exists only with sealer `1`.
+only to sealer `1`. The key file `KEYS` (§14.7) exists only with sealer `1`; `SECRETS` (`k_scramble`,
+§9.7) exists in every database (overview DB-68). The partition artefacts in `partitions/` keep their
+own §6.3 format, verbatim. The byte layouts of every file are in §14.9.
 
 ### 14.1 Directory layout
 
@@ -1137,6 +1139,7 @@ only to sealer `1`. The key directory (§14.7) exists only with sealer `1`.
     buckets.bin                    wrapped bucket keys (§14.5)
     slots.bin                      member and holding slots (§14.4), page-structured
     locator.bin                    scrambled_id → (group, slot index)
+    payloads.bin                   scrambled_id → passage text location in payloads/ (DB-67)
   wal/<seq>.wal                    WAL segments (§14.6)
   log/leaves.store                 insert-leaf bytes (§14.8)
   log/hashes.store                 every leaf hash, in order
@@ -1207,24 +1210,33 @@ record key is empty and the payload is stored without nonce and tag.
 
 ### 14.6 WAL record
 
-`u32be len ‖ u8 type ‖ u64be wal_seq ‖ u64be txn_id ‖ payload ‖ u32be crc32c`.
+`u32be len ‖ u8 type ‖ u64be wal_seq ‖ u64be txn_id ‖ payload ‖ u32be crc32c`. `len` is the length of
+the whole record (25 + payload bytes) and the CRC covers every byte before it. Every payload that
+changes a collection starts with its `collection_id` (16); widths not given below are `u64be`
+(overview DB-66). Type codes: `BEGIN` 1, `GROUP_CREATE` 2, `GROUP_HEADER` 3, `BUCKET_BLOCK` 4,
+`SLOT_PUT` 5, `SLOT_TRUNCATE` 6, `LOCATOR_PUT` 7, `LOCATOR_DEL` 8, `LOG_LEAF` 9, `LOG_CHECKPOINT` 10,
+`CERT_REF` 11, `PAYLOAD_REF` 12, `COUNTERS` 13, `EXTENSION` 14, `COMMIT` 15, `COLLECTION_CREATE` 16,
+`COLLECTION_DROP` 17. The payloads of types 4, 9, 10, 11 and 14 belong to transaction participants
+and are carried verbatim by the storage engine.
 
 | Type | Payload (after-image) |
 |---|---|
 | `BEGIN` | — |
-| `GROUP_CREATE` | New group header, bucket block |
+| `GROUP_CREATE` | New group header, `u32be len ‖` bucket block (empty before Part 4) |
 | `GROUP_HEADER` | Replacement group header (§14.3) |
 | `BUCKET_BLOCK` | Replacement bucket block |
 | `SLOT_PUT` | `group_id ‖ slot index ‖ slot (1,992)` |
 | `SLOT_TRUNCATE` | `group_id ‖ new slot count` |
-| `LOCATOR_PUT` / `LOCATOR_DEL` | `scrambled_id ‖ (group_id ‖ slot index)` / `scrambled_id` |
+| `LOCATOR_PUT` / `LOCATOR_DEL` | `scrambled_id ‖ (group_id ‖ slot index)` / `scrambled_id` (also drops the record's `PAYLOAD_REF`) |
 | `LOG_LEAF` | Leaf hash; for insert leaves also the 209-byte leaf |
 | `LOG_CHECKPOINT` | Log checkpoint with cosignatures |
 | `CERT_REF` | `database_lsn ‖ store segment ‖ offset ‖ length ‖ SHA-256` of the certificate |
-| `PAYLOAD_REF` | `scrambled_id ‖ store segment ‖ offset ‖ length` |
-| `COUNTERS` | `N`, `k`, next `database_lsn` per collection |
+| `PAYLOAD_REF` | `scrambled_id ‖ u64be store segment ‖ u64be offset ‖ u32be length` |
+| `COUNTERS` | `N`, `k` of the collection (the next `database_lsn` is the log participant's, carried in its own records; DB-66) |
 | `EXTENSION` | `u16be participant_id ‖ bytes`, carried for a transaction participant and never interpreted by the storage engine (overview DB-45) |
 | `COMMIT` | — |
+| `COLLECTION_CREATE` | collection metadata (§14.9) `‖ u32be len ‖` partition artefact (§6.3 bytes) |
+| `COLLECTION_DROP` | — (the `collection_id` only) |
 
 Append-store bytes (certificates, payloads, leaves) are written and `fsync`ed **before** the `COMMIT`
 that references them. Unreferenced bytes after a crash are ignored and overwritten.
@@ -1243,6 +1255,30 @@ that references them. Unreferenced bytes after a crash are ignored and overwritt
 Records: `u64be key ‖ u32be len ‖ bytes ‖ u32be crc32c` (the key is `database_lsn`, leaf index, or a
 sequence number). Certificates and insert leaves are public; payload records are AES-GCM-SIV
 ciphertexts under the record key, so erasing the record key erases the text wherever it lies.
+
+Each store file starts with the 16-byte file header of §14.9. The value of a record is at most 16 MiB.
+
+### 14.9 File layouts (overview DB-67)
+
+All magics are 8 ASCII bytes. `crc32c` covers every preceding byte of its structure.
+
+| File | Layout |
+|---|---|
+| File header (append stores) | `magic ‖ u16be format_version ‖ u16be sealer_id ‖ u32be crc32c` (16 bytes) |
+| `MANIFEST` (`SVDBMANI`) | `magic ‖ u16be version ‖ u16be sealer_id ‖ u64be checkpoint_id ‖ u64be first_wal_seq ‖ u32be crc32c` (32 bytes) |
+| WAL segment header (`SVDBWALS`) | `magic ‖ u16be version ‖ u16be sealer_id ‖ u64be segment_seq ‖ u64be first_wal_seq ‖ u32be crc32c` (32 bytes), then records (§14.6); named `wal/<segment_seq, 20 digits>.wal` |
+| `SECRETS` (`SVDBSECR`) | `magic ‖ u16be version ‖ u16be sealer_id ‖ u32be count ‖ (u16be kind ‖ u32be len ‖ bytes)* ‖ u32be crc32c`; kind 1 is `k_scramble` (exactly one, 64 bytes); later parts add kinds |
+| Collection metadata | `collection_id ‖ u16be d ‖ u32be spawn_target ‖ u8 spawning_enabled ‖ u8 store_passages ‖ sha256_artefact (32)` |
+| Storage checkpoint files | Paged (§14.2): page 0 (type 1) holds `magic ‖ u16be version ‖ u16be sealer_id ‖ u64be stream_len` then zeros; pages 1… (type 2) carry the stream, the last zero-padded; every page carries the covered `wal_seq` |
+| `meta.bin` stream (`SVDBMETA`) | `u64be checkpoint_id ‖ u64be next_wal_seq ‖ u64be next_txn_id ‖ config SHA-256 (32) ‖ u32be count ‖ collection IDs ascending` |
+| `collections.bin` (`SVDBCOLL`) | per collection: metadata `‖ u64be N ‖ u64be k` |
+| `groups.bin` (`SVDBGRPS`) | per collection: `collection_id ‖ u64be count ‖` group headers (§14.3) in creation order |
+| `slots.bin` (`SVDBSLOT`) | per collection and group: `collection_id ‖ group_id ‖ u64be count ‖` slots (§14.4) in slot order |
+| `locator.bin` (`SVDBLOCA`) | per collection: `collection_id ‖ u64be count ‖ (scrambled_id ‖ group_id ‖ u64be slot index)*` ascending by `scrambled_id` |
+| `payloads.bin` (`SVDBPREF`) | per collection: `collection_id ‖ u64be count ‖ (scrambled_id ‖ u64be segment ‖ u64be offset ‖ u32be length)*` ascending by `scrambled_id` |
+
+Collections appear in ascending `collection_id` order in every checkpoint file. Every parser rejects
+a wrong magic, version, `sealer_id`, CRC, count, order, padding or any trailing byte.
 
 ---
 

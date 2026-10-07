@@ -10,12 +10,13 @@ fail=0
 # sabotage build fails is not a regression of the real code, and those files belong to a frozen
 # part (F-2), so they are put back exactly as they were when the runner exits.
 keep=$(mktemp -d)
-for c in sever-index sever-search; do
+CRATES=$(ls crates)
+for c in $CRATES; do
   mkdir -p "$keep/$c"
   [ -d "crates/$c/proptest-regressions" ] && cp -r "crates/$c/proptest-regressions/." "$keep/$c/"
 done
 restore() {
-  for c in sever-index sever-search; do
+  for c in $CRATES; do
     rm -rf "crates/$c/proptest-regressions"
     [ -z "$(ls -A "$keep/$c")" ] || cp -r "$keep/$c" "crates/$c/proptest-regressions"
   done
@@ -45,4 +46,6 @@ for sb in SB-6 SB-9; do
   if grep -q "sabotage-$sb" crates/sever-search/Cargo.toml 2>/dev/null; then rust "$sb" sever-search; else echo "SKIP $sb (sever-search not built yet)"; fi
 done
 python SB-10 python/sever_partition
+# Part 2 (Build §2.6)
+rust SB-11 sever-format
 exit $fail

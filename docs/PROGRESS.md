@@ -31,7 +31,8 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
 | Module | Status | Notes |
 |---|---|---|
 | `sever-vfs` | built | EP-5 `Vfs`; `PosixVfs`; `SimVfs` (current/durable views, crash at op N, tear, `DropAll`/`KeepAll`/`Random(seed)`, failed `fsync` loses the data like Linux, `fork`); EP-5 contract suite (functional + crash), 3 wrong backends fail it; 7 hand mutants all killed; MSRV-clean |
-| `sever-format` | next | §14 |
+| `sever-format` | built | §14 codecs: file header, `MANIFEST`, segment header, `SECRETS`, group header, slot + payload (DB-46), WAL framing + typed records, paged checkpoint files, store records, the storage image (`DbImage::apply`, checkpoint streams); SB-11 red; gaps G-14…G-16 → DB-66…DB-68 |
+| (next) | | `sever-wal` |
 | `sever-wal` | | §12.3; SB-11, SB-13 |
 | `sever-appendstore` | | EP-8, §14.8 |
 | `sever-checkpoint` | | §12.4, §15.6; SB-12 |
