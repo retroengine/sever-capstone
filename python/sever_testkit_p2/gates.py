@@ -22,6 +22,9 @@ model from the spec) replay through the Part 2 engine in three modes, ``plain``,
 close and reopen after every rung) and ``crash`` (a crash and recovery after every rung), with 0
 mismatches against the trace, and an unchanged state across every reopen.
 
+``p2-sabotage`` is gate P2-T8 (Build §2.6, L12): ``tests/sabotage/run.sh``, every SB item of
+Parts 1 and 2 turns at least one test red.
+
 ``p2-spikes`` is the proof-spike part of gate P2-T7 (Build §3.4): the throwaway crate
 ``spikes/p2-proof`` passes; its only output is the ledger entry, then it is deleted.
 """
@@ -213,6 +216,45 @@ def p2_replay(root: Path, data: str, seeds: list[int], jobs: int) -> int:
     return 0 if passed else 1
 
 
+def p2_sabotage(root: Path) -> int:
+    """P2-T8: every sabotage build (SB-1 … SB-15) makes a test fail."""
+    cmd = "gates p2-sabotage"
+    gate = "P2-T8 (and F-5: P1-T8 re-run)"
+    started = ledger.start(root, cmd, gate=gate)
+    t0 = time.time()
+    run = subprocess.run(
+        ["bash", "tests/sabotage/run.sh"], cwd=root, capture_output=True, text=True, check=False
+    )
+    lines = [
+        ln for ln in run.stdout.splitlines() if ln.split(" ", 1)[0] in ("PASS", "FAIL", "ERROR")
+    ]
+    ids = {ln.split()[1] for ln in lines}
+    want = {f"SB-{i}" for i in range(1, 16)}
+    passed = run.returncode == 0 and all(ln.startswith("PASS") for ln in lines) and want <= ids
+    data_out = {"gate": "P2-T8: every SB item makes a test fail", "lines": lines,
+                "missing": sorted(want - ids), "seconds": round(time.time() - t0),
+                "outcome": "PASS" if passed else "FAIL",
+                "stderr_tail": run.stderr.splitlines()[-10:]}  # fmt: skip
+    path, sha = ledger.result_file(
+        root, f"p2-sabotage-{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.json", data_out
+    )
+    ledger.append(
+        root,
+        ledger.entry(
+            root,
+            cmd,
+            gate=gate,
+            outcome=data_out["outcome"],
+            run_commit=started["commit"],
+            result_file=str(path.relative_to(root)),
+            result_sha256=sha,
+            summary=lines,
+        ),
+    )
+    print(json.dumps([*lines, data_out["outcome"]]))
+    return 0 if passed else 1
+
+
 def p2_spikes(root: Path) -> int:
     """Build §3.4: the Part 2 proof spikes pass; their only output is this ledger entry."""
     cmd = "gates p2-spikes"
@@ -323,12 +365,16 @@ def _main(argv: list[str]) -> int:
     rp.add_argument("--all-seeds", action="store_true")
     rp.add_argument("--jobs", type=int, default=1)
     rp.add_argument("--root", type=Path, default=Path("."))
+    sb = sub.add_parser("p2-sabotage")
+    sb.add_argument("--root", type=Path, default=Path("."))
     sp = sub.add_parser("p2-spikes")
     sp.add_argument("--root", type=Path, default=Path("."))
     args = ap.parse_args(argv)
     if args.cmd == "p2-replay":
         rseeds = list(SEEDS) if args.all_seeds else (args.seed or [42])
         return p2_replay(args.root.resolve(), args.data, rseeds, args.jobs)
+    if args.cmd == "p2-sabotage":
+        return p2_sabotage(args.root.resolve())
     if args.cmd == "p2-spikes":
         return p2_spikes(args.root.resolve())
     if args.cmd == "p2-fuzz":
