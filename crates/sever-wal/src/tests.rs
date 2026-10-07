@@ -95,7 +95,11 @@ fn p2_wal_commit_then_recover_round_trips_across_segments() {
     for t in &s {
         live.commit(t).unwrap();
     }
-    assert_eq!(wal.appended(), live.appended(), "the checkpoint trigger survives a restart");
+    assert_eq!(
+        wal.appended(),
+        live.appended(),
+        "the checkpoint trigger survives a restart"
+    );
     // wal_seq is continuous: BEGIN, records, COMMIT for every transaction.
     let records: u64 = s.iter().map(|t| t.len() as u64 + 2).sum();
     assert_eq!(wal.next_wal_seq(), 1 + records);
@@ -401,4 +405,174 @@ fn p2_wal_a_damaged_committed_record_is_refused_not_dropped() {
         open(&v, seg).err(),
         Some(bad("§12.3 corrupt record inside the log"))
     );
+}
+
+// ----- §12.3 recovery rules on hand-written logs -----
+// The records below are written byte for byte after a fresh segment's header, so each test
+// breaks exactly one rule of §12.3: a transaction is BEGIN, change records, COMMIT; wal_seq is
+// contiguous across segments; transaction IDs increase; nothing past the last COMMIT is kept.
+
+fn raw(ty: RecordType, wal_seq: u64, txn_id: u64) -> Vec<u8> {
+    sever_format::WalRecord {
+        ty,
+        wal_seq,
+        txn_id,
+        payload: vec![0x11; 9],
+    }
+    .encode()
+}
+
+/// A fresh log whose first segment holds exactly `recs` (wal_seq from 1).
+fn log_of(recs: &[(RecordType, u64)]) -> SimVfs {
+    let v = fresh(DEFAULT_SEGMENT_BYTES);
+    let mut f = v.open(&segment_path(1), OpenMode::Existing).unwrap();
+    for (i, (ty, txn)) in recs.iter().enumerate() {
+        f.append(&raw(*ty, i as u64 + 1, *txn)).unwrap();
+    }
+    v
+}
+
+use RecordType::{Begin as B, Commit as C, SlotPut as P};
+
+#[test]
+#[spec("SR-12.3-2")]
+fn p2_wal_hand_written_log_with_two_transactions_recovers_both() {
+    let v = log_of(&[(B, 1), (P, 1), (C, 1), (B, 2), (P, 2), (P, 2), (C, 2)]);
+    let (wal, txns, report) = open(&v, DEFAULT_SEGMENT_BYTES).unwrap();
+    assert_eq!(
+        txns.iter()
+            .map(|t| (t.txn_id, t.records.len()))
+            .collect::<Vec<_>>(),
+        [(1, 1), (2, 2)]
+    );
+    assert_eq!((wal.next_wal_seq(), wal.next_txn_id()), (8, 3));
+    assert_eq!(report, RecoveryReport::default());
+}
+
+#[test]
+#[spec("SR-12.3-2")]
+fn p2_wal_refuses_a_broken_transaction_structure() {
+    let bad_logs: [&[(RecordType, u64)]; 4] = [
+        &[(P, 1)],                 // a change record outside a transaction
+        &[(C, 1)],                 // COMMIT without BEGIN
+        &[(B, 1), (B, 2)],         // BEGIN inside a transaction
+        &[(B, 1), (P, 2), (C, 1)], // a record of another transaction
+    ];
+    for recs in bad_logs {
+        assert_eq!(
+            open(&log_of(recs), DEFAULT_SEGMENT_BYTES).err(),
+            Some(bad("§12.3 transaction structure")),
+            "{recs:?}"
+        );
+    }
+    assert_eq!(
+        open(&log_of(&[(B, 1), (C, 2)]), DEFAULT_SEGMENT_BYTES).err(),
+        Some(bad("§12.3 transaction structure")),
+        "COMMIT of another transaction"
+    );
+}
+
+#[test]
+#[spec("SR-12.3-2")]
+fn p2_wal_refuses_transaction_ids_that_do_not_increase() {
+    let v = log_of(&[(B, 2), (C, 2), (B, 2), (C, 2)]);
+    assert_eq!(
+        open(&v, DEFAULT_SEGMENT_BYTES).err(),
+        Some(bad("§12.3 transaction order"))
+    );
+    // Below the floor the checkpoint gives (the next transaction ID it recorded).
+    let v = log_of(&[(B, 1), (C, 1)]);
+    assert_eq!(
+        Wal::recover(Arc::new(v), cfg(DEFAULT_SEGMENT_BYTES), 1, 5).err(),
+        Some(bad("§12.3 transaction order"))
+    );
+}
+
+#[test]
+#[spec("SR-12.3-3")]
+fn p2_wal_an_open_transaction_at_the_tail_is_discarded_and_cut() {
+    let v = log_of(&[(B, 1), (P, 1), (C, 1), (B, 2), (P, 2)]);
+    let (wal, txns, report) = open(&v, DEFAULT_SEGMENT_BYTES).unwrap();
+    assert_eq!(txns.len(), 1);
+    assert!(report.discarded_txn);
+    assert_eq!(report.truncated_bytes, 2 * raw(P, 0, 0).len() as u64);
+    assert_eq!(
+        wal.next_wal_seq(),
+        4,
+        "the cut records' wal_seqs are reused"
+    );
+}
+
+#[test]
+#[spec("SR-12.3-3")]
+fn p2_wal_a_tail_record_with_the_wrong_wal_seq_is_a_torn_tail() {
+    let v = log_of(&[(B, 1), (P, 1), (C, 1)]);
+    let mut f = v.open(&segment_path(1), OpenMode::Existing).unwrap();
+    f.append(&raw(B, 9, 2)).unwrap(); // valid CRC, but wal_seq 9 where 4 is due
+    let (_, txns, report) = open(&v, DEFAULT_SEGMENT_BYTES).unwrap();
+    assert_eq!(txns.len(), 1);
+    assert!(report.truncated_bytes > 0);
+}
+
+#[test]
+#[spec("SR-12.3-2")]
+fn p2_wal_recovery_starts_at_the_checkpoint_s_wal_position() {
+    let v = log_of(&[(B, 1), (P, 1), (C, 1), (B, 2), (P, 2), (C, 2)]);
+    let (wal, txns, _) =
+        Wal::recover(Arc::new(v.clone()), cfg(DEFAULT_SEGMENT_BYTES), 4, 2).unwrap();
+    assert_eq!(
+        txns.iter().map(|t| t.txn_id).collect::<Vec<_>>(),
+        [2],
+        "transaction 1 is covered"
+    );
+    assert_eq!(
+        wal.appended(),
+        3 * raw(P, 0, 0).len() as u64,
+        "bytes from the position on"
+    );
+    // A position the log does not reach, or one before its first segment, is refused.
+    assert_eq!(
+        Wal::recover(Arc::new(v.clone()), cfg(DEFAULT_SEGMENT_BYTES), 50, 1).err(),
+        Some(bad("§12.3 WAL shorter than the checkpoint"))
+    );
+    assert_eq!(
+        Wal::recover(Arc::new(v), cfg(DEFAULT_SEGMENT_BYTES), 0, 1).err(),
+        Some(bad("§12.3 WAL position missing"))
+    );
+}
+
+#[test]
+#[spec("SR-12.3-2")]
+fn p2_wal_refuses_a_missing_middle_segment_or_a_bad_older_header() {
+    let seg = 300;
+    let v = fresh(seg);
+    run(&v, seg, &script(8, 40));
+    let n = v.list(WAL_DIR).unwrap().len();
+    assert!(n >= 3, "{n} segments");
+    let gap = v.fork();
+    gap.unlink(&segment_path(2)).unwrap();
+    assert_eq!(open(&gap, seg).err(), Some(bad("§12.3 segment sequence")));
+    let hdr = v.fork();
+    let mut f = hdr.open(&segment_path(1), OpenMode::Existing).unwrap();
+    f.write_at(0, &[0; 4]).unwrap();
+    assert_eq!(open(&hdr, seg).err(), Some(bad("§12.3 segment header")));
+}
+
+#[test]
+#[spec("SR-12.3-2")]
+fn p2_wal_refuses_segment_names_that_are_not_20_digits() {
+    for name in [
+        "0000000000000000000a.wal",
+        "0000000000000000001.wal",
+        "1.wal",
+    ] {
+        let v = fresh(DEFAULT_SEGMENT_BYTES);
+        v.open(&format!("{WAL_DIR}/{name}"), OpenMode::CreateNew)
+            .unwrap();
+        assert_eq!(
+            open(&v, DEFAULT_SEGMENT_BYTES).err(),
+            Some(bad("§12.3 WAL file name")),
+            "{name}"
+        );
+    }
 }
