@@ -26,6 +26,32 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `locator.bin`, WAL segment header): expect gap entries. Part 2 adds its own gate runners and tools
   in new modules; the Part 1 packages (including `sever_testkit`) are frozen (F-3).
 
+## RESUME HERE (session paused 7 Oct 2026, ~19:50 UTC)
+
+- **Running in the background:** `gates p2-crash --data nq-10k --all-seeds --jobs 3` (P2-T1…T3),
+  started 19:26 UTC on commit 682bfac, ~7 h. Check: `tail traces/gate-p2-crash.log`,
+  `tail -2 docs/RUN_LEDGER.jsonl`, `ps aux | grep sever-crashkit`. When done: commit
+  `docs/RUN_LEDGER.jsonl` and the new `results/p2-crash-*.json`. If the laptop slept or WSL restarted,
+  rerun the same command (the ledger keeps the aborted "started" line).
+- **Next steps, in order:**
+  1. P2-T6 fuzz: `fuzz-p2/` targets + seeds are committed; run each 10^8 runs:
+     `cargo +nightly fuzz run --fuzz-dir fuzz-p2 -O <wal_record|manifest|checkpoint_file|store_record> fuzz-p2/seeds/<t> -- -runs=100000000`,
+     then add a `p2-fuzz` runner to `python/sever_testkit_p2/gates.py` that records it in the ledger.
+  2. P2-T7 proof spikes (Build §3.4): throwaway `AeadSealer` (aes-gcm-siv =0.11.1) passing
+     `ep6_sealer_contract`, stub `LogParticipant` and `KeyRotationParticipant` (phases A/C) passing
+     `ep7_participant_contract`; record in ledger (`p2-spikes`), then delete the spike code.
+  3. P2-T5: replay Part 1 traces (`sever-trace-1`) through the Part 2 engine, with and without a
+     close/reopen after every rung (new tool in sever-crashkit or sever-p2).
+  4. P2-T9: coverage (cargo llvm-cov ≥90 % lines, ≥85 % branches) and cargo-mutants (≥85 %) on
+     sever-format, sever-wal, sever-txn, sever-engine; triage survivors in `docs/MUTANTS_P2.md`.
+  5. P2-T8: `tests/sabotage/run.sh` already lists SB-11…SB-15; run it. Update `scripts/ci.sh` to
+     add Part 2 spec-trace (`python -m sever_testkit_p2.spec_trace check --part 2 --complete`),
+     e2e, crashkit small test.
+  6. P2-T11 measures (bytes/fsyncs per op, recovery time, RSS at nq-100k); nq-10k demo run;
+     README/API docs; freeze manifest `scripts/freeze.sh 2` (tag stays with the owner).
+- Rebuild the SDK native module after any `uv sync`:
+  `uv run --no-sync maturin develop --release --uv -m crates/sever-py-p2/Cargo.toml`.
+
 ## Part 2 modules (Build §5.5)
 
 | Module | Status | Notes |
@@ -128,6 +154,10 @@ report and the rebuilt artefact identical apart from timing); the freeze manifes
 
 ## Session log
 
+- **7 Oct 2026 (later)**: built sever-format, -wal, -appendstore, -checkpoint, -txn, -engine,
+  -crashkit, sever_refmodel_durable, sever-p2 (CLI, demo), sever-py-p2 + SDK, E2E-2.1…2.8, Part 2
+  architecture tests, traceability 46/46, fuzz-p2 targets. Gaps G-14…G-17 → DB-66…DB-70. Crash gate
+  launched (background). Owner asked to pause; resume from "RESUME HERE".
 - **7 Oct 2026**: Part 2 started. Design review: DB-46, DB-48 accepted; G-13 found and closed by
   DB-65. `sever-vfs` built (30 tests, contract suite, posix on ext4 and tmpfs); a hand mutation
   pass found a weak reorder check in the contract, fixed.
