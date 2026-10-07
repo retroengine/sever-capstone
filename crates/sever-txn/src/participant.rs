@@ -38,9 +38,10 @@ pub struct TxnDraft<'a, E: GroupExtension> {
     /// Participant-owned records (`EXTENSION`, or a type the participant owns), logged after the
     /// core records.
     pub participant_records: Vec<(RecordType, Vec<u8>)>,
-    /// What participants return to the caller with the acknowledgement (Part 3: certificates),
-    /// by participant ID.
-    pub outputs: Vec<(u16, Vec<u8>)>,
+    /// What participants return to the caller with the acknowledgement (Part 3: one certificate
+    /// per deleted record), as `(participant ID, request index, bytes)`; the request index is the
+    /// position in a `delete_user` list (0 for a single operation).
+    pub outputs: Vec<(u16, usize, Vec<u8>)>,
 }
 
 impl<E: GroupExtension> core::fmt::Debug for TxnDraft<'_, E> {

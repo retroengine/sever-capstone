@@ -56,8 +56,8 @@ pub struct Durable<'a> {
 pub struct Acknowledged {
     /// Where it is in the WAL.
     pub committed: Committed,
-    /// Participant outputs (Part 3: certificates).
-    pub outputs: Vec<(u16, Vec<u8>)>,
+    /// Participant outputs `(participant ID, request index, bytes)` (Part 3: certificates).
+    pub outputs: Vec<(u16, usize, Vec<u8>)>,
 }
 
 /// Runs steps 2–8 for `draft`. `apply` installs the core records (and the change set they came

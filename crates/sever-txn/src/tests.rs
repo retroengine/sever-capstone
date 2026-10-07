@@ -437,7 +437,7 @@ impl TxnParticipant<NoExtension> for Recorder {
         self.0.lock().unwrap().push("prepare");
         d.participant_records
             .push((sever_format::RecordType::Extension, vec![0, 7, 42]));
-        d.outputs.push((7, b"receipt".to_vec()));
+        d.outputs.push((7, 0, b"receipt".to_vec()));
         if self.1 {
             return Err(Error::IntegrityViolation { invariant: "test" });
         }
