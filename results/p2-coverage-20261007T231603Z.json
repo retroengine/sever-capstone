@@ -1,0 +1,121 @@
+{
+ "gate": "P2-T9: lines >= 90 %, branches >= 85 %",
+ "lines": [
+  3689,
+  3891,
+  0.9480853251092264
+ ],
+ "branches": [
+  339,
+  391,
+  0.8670076726342711
+ ],
+ "files": {
+  "crates/sever-engine/src/config.rs": {
+   "lines": 56.25,
+   "branches": 0.0
+  },
+  "crates/sever-engine/src/engine.rs": {
+   "lines": 89.03061224489795,
+   "branches": 75.0
+  },
+  "crates/sever-engine/src/hooks.rs": {
+   "lines": 96.7741935483871,
+   "branches": 75.0
+  },
+  "crates/sever-engine/src/platform.rs": {
+   "lines": 87.87878787878788,
+   "branches": 100.0
+  },
+  "crates/sever-engine/src/recovery.rs": {
+   "lines": 93.61702127659576,
+   "branches": 89.13043478260869
+  },
+  "crates/sever-format/src/codec.rs": {
+   "lines": 97.6,
+   "branches": 83.33333333333334
+  },
+  "crates/sever-format/src/file.rs": {
+   "lines": 100.0,
+   "branches": 100.0
+  },
+  "crates/sever-format/src/group.rs": {
+   "lines": 100.0,
+   "branches": 87.5
+  },
+  "crates/sever-format/src/image.rs": {
+   "lines": 98.78419452887537,
+   "branches": 88.09523809523807
+  },
+  "crates/sever-format/src/lib.rs": {
+   "lines": 100.0,
+   "branches": 100.0
+  },
+  "crates/sever-format/src/paged.rs": {
+   "lines": 99.15254237288136,
+   "branches": 100.0
+  },
+  "crates/sever-format/src/slot.rs": {
+   "lines": 95.56962025316456,
+   "branches": 68.75
+  },
+  "crates/sever-format/src/store.rs": {
+   "lines": 89.28571428571429,
+   "branches": 100.0
+  },
+  "crates/sever-format/src/wal.rs": {
+   "lines": 96.06741573033707,
+   "branches": 91.30434782608695
+  },
+  "crates/sever-txn/src/clock.rs": {
+   "lines": 100.0,
+   "branches": 0.0
+  },
+  "crates/sever-txn/src/contract.rs": {
+   "lines": 89.77272727272727,
+   "branches": 85.18518518518519
+  },
+  "crates/sever-txn/src/decode.rs": {
+   "lines": 100.0,
+   "branches": 100.0
+  },
+  "crates/sever-txn/src/ext.rs": {
+   "lines": 100.0,
+   "branches": 100.0
+  },
+  "crates/sever-txn/src/participant.rs": {
+   "lines": 51.06382978723404,
+   "branches": 100.0
+  },
+  "crates/sever-txn/src/protocol.rs": {
+   "lines": 85.07462686567165,
+   "branches": 62.5
+  },
+  "crates/sever-txn/src/records.rs": {
+   "lines": 98.14814814814817,
+   "branches": 68.75
+  },
+  "crates/sever-txn/src/sealer.rs": {
+   "lines": 96.3855421686747,
+   "branches": 75.0
+  },
+  "crates/sever-wal/src/lib.rs": {
+   "lines": 93.10344827586206,
+   "branches": 88.1578947368421
+  }
+ },
+ "tests_ok": true,
+ "stderr_tail": [
+  "",
+  "running 4 tests",
+  "....",
+  "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+  "",
+  "",
+  "running 21 tests",
+  ".....................",
+  "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+  ""
+ ],
+ "outcome": "PASS"
+}
