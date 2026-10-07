@@ -714,6 +714,127 @@ pub(crate) mod tests {
         w.0[22] = 2; // spawning flag
         assert!(CollectionMeta::read(&mut Reader::new(&w.0, "t")).is_err());
     }
+
+    // §14.9 stream table: offsets below are the spec's. Collections ascend by ID in every file;
+    // every parser rejects a wrong order, count or trailing byte.
+    const CM: CheckpointMeta = CheckpointMeta {
+        checkpoint_id: 1,
+        next_wal_seq: 1,
+        next_txn_id: 1,
+        config_hash: [0; 32],
+    };
+
+    fn streams() -> CheckpointStreams {
+        let (img, l) = sample();
+        img.to_streams(&CM, &|_| l).unwrap()
+    }
+
+    fn refused_for(s: &CheckpointStreams, rule: &str) {
+        let l = Layout::plain(8);
+        match DbImage::from_streams(s, &|_| l) {
+            Err(Error::IntegrityViolation { invariant }) => {
+                assert!(
+                    invariant.contains(rule),
+                    "refused for {invariant}, not {rule}"
+                )
+            }
+            other => panic!("accepted or wrong error ({other:?}); wanted {rule}"),
+        }
+    }
+
+    #[test]
+    #[spec("SR-14-2")]
+    fn p2_format_checkpoint_streams_refuse_a_wrong_collection_order() {
+        let s = streams();
+        // meta.bin: 8 + 8 + 8 + 32 + u32 count, then the IDs ascending.
+        assert_eq!(&s.meta[56..60], &2u32.to_be_bytes());
+        assert_eq!(&s.meta[60..76], &[1; 16]);
+        let mut m = s.clone();
+        m.meta[76..92].copy_from_slice(&[1; 16]); // [1, 1]: not strictly ascending
+        refused_for(&m, "§14.1 meta.bin collection order");
+        // Each per-collection stream starts with the first collection's ID.
+        let other = [7u8; 16];
+        for (name, rule) in [
+            ("collections", "§14.1 collections.bin order"),
+            ("groups", "§14.1 groups.bin order"),
+            ("slots", "§14.1 slots.bin order"),
+            ("locator", "§14.1 locator.bin order"),
+            ("payloads", "§14.1 payloads.bin order"),
+        ] {
+            let mut m = s.clone();
+            let stream = match name {
+                "collections" => &mut m.collections,
+                "groups" => &mut m.groups,
+                "slots" => &mut m.slots,
+                "locator" => &mut m.locator,
+                _ => &mut m.payload_refs,
+            };
+            assert_eq!(&stream[..16], &[1; 16], "{name} starts with collection 1");
+            stream[..16].copy_from_slice(&other);
+            refused_for(&m, rule);
+        }
+    }
+
+    #[test]
+    #[spec("SR-14-2")]
+    fn p2_format_checkpoint_streams_refuse_unsorted_locator_entries() {
+        let (mut img, l) = sample();
+        // A second locator entry in collection 1, so the order of two entries can be broken.
+        let c = img
+            .collections
+            .get_mut(&CollectionId::from_bytes([1; 16]))
+            .unwrap();
+        c.locator
+            .insert(ScrambledId::from_bytes([99; 64]), (GroupId::Holding, 0));
+        c.payload_refs.insert(
+            ScrambledId::from_bytes([98; 64]),
+            PayloadRef {
+                segment: 1,
+                offset: 0,
+                len: 1,
+            },
+        );
+        let s = img.to_streams(&CM, &|_| l).unwrap();
+        // Per collection: ID (16), u64 count, then entries ascending by scrambled_id.
+        for (field, entry, rule) in [
+            ("locator", 64 + 32 + 8, "§14.1 locator.bin order"),
+            ("payloads", 64 + 8 + 8 + 4, "§14.1 payloads.bin order"),
+        ] {
+            let mut m = s.clone();
+            let st = if field == "locator" {
+                &mut m.locator
+            } else {
+                &mut m.payload_refs
+            };
+            let n = u64::from_be_bytes(st[16..24].try_into().unwrap());
+            assert!(n >= 2, "{field}: at least two entries");
+            let (a, b) = (24, 24 + entry);
+            let first = st[a..b].to_vec();
+            let second = st[b..b + entry].to_vec();
+            st[a..b].copy_from_slice(&second);
+            st[b..b + entry].copy_from_slice(&first);
+            refused_for(&m, rule);
+        }
+    }
+
+    #[test]
+    #[spec("SR-14-2")]
+    fn p2_format_checkpoint_streams_refuse_missing_extra_or_trailing_bytes() {
+        let s = streams();
+        let mut m = s.clone();
+        m.artefacts.pop();
+        refused_for(&m, "§14.1 partitions missing");
+        let mut m = s.clone();
+        m.artefacts
+            .push((CollectionId::from_bytes([5; 16]), vec![1]));
+        refused_for(&m, "§14.1 partitions extra");
+        let mut m = s.clone();
+        m.meta.push(0);
+        refused_for(&m, "§14.1 meta.bin");
+        let mut m = s.clone();
+        m.collections.push(0);
+        refused_for(&m, "§14.1 collections.bin");
+    }
 }
 
 /// Writes the fuzz seeds of `fuzz-p2/` (valid encodings of every structure): run with
