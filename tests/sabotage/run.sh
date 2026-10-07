@@ -48,4 +48,7 @@ done
 python SB-10 python/sever_partition
 # Part 2 (Build §2.6)
 rust SB-11 sever-format
+rust SB-12 sever-vfs
+rust SB-13 sever-wal
+rust SB-14 sever-vfs
 exit $fail

@@ -406,6 +406,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-wal"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "sever-format",
+ "sever-spec",
+ "sever-types",
+ "sever-vfs",
+]
+
+[[package]]
 name = "sha2"
 version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -266,3 +266,10 @@
 - {id: SR-12.3-3, section: "12.3", kind: must, part: 2, text: "On recovery, a transaction without a valid COMMIT (including a torn or CRC-failing tail) is discarded whole. It is never repaired.", related: [SB-11, SB-13]}
 - {id: SR-12.7-4, section: "12.7", kind: must, part: 2, text: "Every record on disk has a CRC-32C; every file has a magic number and a format version.", related: [SB-11]}
 - {id: SR-15.6-1, section: "15.6", kind: step, part: 2, text: "Serialise the in-memory ciphertext state into checkpoint/<new>.tmp/; fsync every file."}
+
+# --- Part 2: sever-wal and the durability helpers (7 Oct 2026) ---
+- {id: SR-12.3-2, section: "12.3", kind: must, part: 2, text: "A transaction is a BEGIN record, change records and a COMMIT record; it is committed exactly when its COMMIT record, with a valid CRC, is durable.", related: [SB-15]}
+- {id: SR-12.7-1, section: "12.7", kind: must, part: 2, text: "Every file creation, rename or unlink is followed by fsync of the containing directory.", related: [SB-12]}
+- {id: SR-12.7-2, section: "12.7", kind: must, part: 2, text: "An fsync error aborts the process; a failed fsync is never retried.", related: [SB-14]}
+- {id: SR-12.4-2, section: "12.4", kind: must, part: 2, text: "An interrupted storage checkpoint leaves the previous one valid."}
+- {id: SR-15.6-4, section: "15.6", kind: step, part: 2, text: "Delete older storage checkpoints and covered WAL segments."}

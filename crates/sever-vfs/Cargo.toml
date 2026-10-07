@@ -9,6 +9,9 @@ publish.workspace = true
 [features]
 # Build §3.4: the EP-5 contract suite, for every Vfs implementation, including later parts'.
 contract-tests = []
+# Build §2.6: each builds the durability helpers with exactly one deliberate bug.
+sabotage-SB-12 = [] # skip the directory fsync after a rename
+sabotage-SB-14 = [] # retry a failed fsync
 
 [dependencies]
 

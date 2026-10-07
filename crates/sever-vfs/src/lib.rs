@@ -10,6 +10,7 @@
 //! ([`check_path`]); the root directory itself is the empty path `""`. Errors carry no path or
 //! file content (§17).
 
+pub mod durable;
 pub mod posix;
 pub mod rng;
 pub mod sim;
