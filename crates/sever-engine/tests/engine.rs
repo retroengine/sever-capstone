@@ -623,7 +623,11 @@ fn p2_engine_unknown_collection_and_bad_requests_are_typed() {
         .unwrap()
     };
     assert_eq!(bad("ok", vec![0.5; 3]), Error::WrongDimension);
-    assert!(!bad("12345", rows("ref")[0].clone()).to_string().contains("12345"));
+    assert!(
+        !bad("12345", rows("ref")[0].clone())
+            .to_string()
+            .contains("12345")
+    );
     assert!(matches!(
         bad("12345", rows("ref")[0].clone()),
         Error::InvalidRecordId(_)
@@ -631,4 +635,166 @@ fn p2_engine_unknown_collection_and_bad_requests_are_typed() {
     assert_eq!(bad("ok", vec![1.0; 16]), Error::NotNormalised);
     assert!(db.create_collection(&ARTEFACT[..100], OPTS).is_err());
     let _ = Placement::Holding;
+}
+
+/// A database written by the engine, then one stored fact changed in its checkpoint, which is
+/// written again with valid CRCs: only the startup invariant check (§12.4, §21) can see it.
+fn open_tampered(f: impl FnOnce(&mut sever_format::CollectionImage)) -> Result<Db, Error> {
+    let (disks, cid) = base();
+    {
+        let db = disks.open(1 << 30).unwrap();
+        run(&db, cid, &workload(3, 60), &vectors());
+        db.close().unwrap();
+    }
+    let layout = sever_format::Layout::plain(16);
+    let m = sever_checkpoint::read_manifest(&disks.data, 0)
+        .unwrap()
+        .unwrap();
+    let (mut meta, mut img) = sever_checkpoint::load(&disks.data, &m, &|_| layout).unwrap();
+    f(img.collections.get_mut(&cid).unwrap());
+    meta.checkpoint_id += 1;
+    sever_checkpoint::write(&disks.data, 0, &img, &meta, &|_| layout).unwrap();
+    disks.open(1 << 30)
+}
+
+fn refused_for(r: Result<Db, Error>, rule: &str) {
+    match r {
+        Err(Error::IntegrityViolation { invariant }) => {
+            assert!(
+                invariant.contains(rule),
+                "refused for {invariant}, not {rule}"
+            )
+        }
+        Err(e) => panic!("refused with {e:?}, not IntegrityViolation({rule})"),
+        Ok(_) => panic!("served a database that breaks {rule}"),
+    }
+}
+
+fn holding(c: &mut sever_format::CollectionImage) -> &mut sever_format::GroupImage {
+    c.groups
+        .iter_mut()
+        .find(|g| g.header.group_id == GroupId::Holding)
+        .unwrap()
+}
+
+#[test]
+#[spec("SR-15.7-2")]
+fn p2_engine_refuses_groups_out_of_order() {
+    // §5.1: frozen groups in label order, then the holding area, then spawned groups.
+    refused_for(open_tampered(|c| c.groups.swap(0, 4)), "§5.1 group order");
+    refused_for(open_tampered(|c| c.groups.swap(0, 1)), "§5.1 frozen group");
+}
+
+#[test]
+#[spec("SR-15.7-2")]
+fn p2_engine_refuses_a_frozen_centroid_that_differs_from_the_artefact() {
+    refused_for(
+        open_tampered(|c| {
+            c.groups[2].header.centroid[5] =
+                f64::from_bits(c.groups[2].header.centroid[5].to_bits() ^ 1)
+        }),
+        "§5.1 frozen group",
+    );
+}
+
+#[test]
+#[spec("SR-15.7-2")]
+fn p2_engine_refuses_a_missing_holding_area() {
+    refused_for(
+        open_tampered(|c| {
+            c.groups.truncate(4);
+            c.locator
+                .retain(|_, (g, _)| g.as_text().starts_with("frozen"));
+        }),
+        "§5.1 holding area missing",
+    );
+}
+
+#[test]
+#[spec("SR-15.7-2")]
+fn p2_engine_refuses_n_that_differs_from_the_slot_count() {
+    refused_for(open_tampered(|c| c.groups[1].header.n += 1), "INV-6");
+}
+
+#[test]
+#[spec("SR-15.7-2")]
+fn p2_engine_refuses_a_slot_whose_scrambled_id_is_not_its_record_s() {
+    refused_for(
+        open_tampered(|c| {
+            let g = c.groups.iter_mut().find(|g| !g.slots.is_empty()).unwrap();
+            let old = g.slots[0].scrambled_id;
+            let new = sever_types::ScrambledId::from_bytes([0xee; 64]);
+            g.slots[0].scrambled_id = new;
+            let at = c.locator.remove(&old).unwrap();
+            c.locator.insert(new, at);
+            if let Some(p) = c.payload_refs.remove(&old) {
+                c.payload_refs.insert(new, p);
+            }
+        }),
+        "§9.7 scrambled ID",
+    );
+}
+
+#[test]
+#[spec("SR-15.7-2")]
+fn p2_engine_refuses_two_live_records_with_one_id() {
+    // §3.2 rule 3: the same record in a frozen group and again in the holding area.
+    refused_for(
+        open_tampered(|c| {
+            let slot = c
+                .groups
+                .iter()
+                .find(|g| g.header.group_id != GroupId::Holding && !g.slots.is_empty())
+                .unwrap()
+                .slots[0]
+                .clone();
+            let h = holding(c);
+            h.slots.push(slot);
+            h.header.n += 1;
+        }),
+        "§3.2 one live record per ID",
+    );
+}
+
+#[test]
+#[spec("SR-15.7-2")]
+fn p2_engine_refuses_a_locator_that_differs_from_the_slots() {
+    refused_for(
+        open_tampered(|c| {
+            let k = *c.locator.keys().next().unwrap();
+            c.locator.remove(&k);
+            c.payload_refs.remove(&k);
+        }),
+        "INV-7",
+    );
+}
+
+#[test]
+#[spec("SR-15.7-2")]
+fn p2_engine_refuses_counters_that_differ_from_the_groups() {
+    refused_for(open_tampered(|c| c.big_n += 1), "INV-8");
+    refused_for(open_tampered(|c| c.k += 1), "INV-8");
+}
+
+#[test]
+#[spec("SR-15.7-2")]
+fn p2_engine_refuses_a_collection_whose_artefact_hash_differs() {
+    refused_for(open_tampered(|c| c.meta.artefact_sha256[0] ^= 1), "§6.3");
+}
+
+#[test]
+#[spec("SR-15.7-2")]
+fn p2_engine_refuses_a_passage_of_a_record_that_is_not_live() {
+    refused_for(
+        open_tampered(|c| {
+            let any = *c
+                .payload_refs
+                .values()
+                .next()
+                .expect("the workload stores passages");
+            c.payload_refs
+                .insert(sever_types::ScrambledId::from_bytes([0xab; 64]), any);
+        }),
+        "§14.8",
+    );
 }
