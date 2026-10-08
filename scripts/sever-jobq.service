@@ -1,0 +1,15 @@
+# systemd user service for scripts/jobq.sh (install: see the header of scripts/jobq.sh).
+[Unit]
+Description=SEVER-DB job queue (long gates and measures)
+
+[Service]
+WorkingDirectory=%h/sever-db
+Environment=PATH=%h/.cargo/bin:%h/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=%h/sever-db/scripts/jobq.sh run
+Restart=always
+RestartSec=30
+# Stopping the service must not kill a running gate half-way more than a crash would: jobs are
+# resumable, so the default (stop the whole group) is acceptable.
+
+[Install]
+WantedBy=default.target

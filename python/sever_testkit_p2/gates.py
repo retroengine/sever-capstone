@@ -177,12 +177,18 @@ def p2_crash(
     gate = "P2-T1, P2-T2, P2-T3"
     state_path = root / f"traces/p2-crash-{data}-run.json"
     if resume:
+        # Exit code 3: nothing to resume (the caller starts a fresh run); other codes are results.
+        if not state_path.exists():
+            print("--resume: no interrupted run", file=sys.stderr)
+            raise SystemExit(3)
         st = json.loads(state_path.read_text(encoding="utf-8"))
         if (st["seeds"], st["extra"]) != (seeds, extra):
-            raise SystemExit("--resume: seeds or settings differ from the interrupted run")
+            print("--resume: seeds or settings differ from the interrupted run", file=sys.stderr)
+            raise SystemExit(3)
         run_commit = st["run_commit"]
         if not _same_code(root, run_commit):
-            raise SystemExit(f"--resume: the code differs from {run_commit[:12]}; start afresh")
+            print(f"--resume: the code differs from {run_commit[:12]}", file=sys.stderr)
+            raise SystemExit(3)
         ledger.start(
             root,
             cmd + " --resume",

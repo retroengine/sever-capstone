@@ -41,11 +41,15 @@ Ledger PASS so far: P2-T5 replay, P2-T6 fuzz, P2-T7 spikes, P2-T8 sabotage, P2-T
    Afterwards: `git worktree remove --force ~/.cache/sever-mutants-explore`.
 When done: `git add docs/RUN_LEDGER.jsonl results/` and commit.
 
-**Crash safety (owner's request):** done: crash campaigns resume (`sever-crashkit campaign ...
---resume 1`, progress saved every 30 s, tested equal to an uninterrupted run). To do: `--resume`
-in `gates p2-crash` (only when the code equals the interrupted run's commit; ledger keeps every
-attempt), a job queue under a systemd user service (`loginctl enable-linger`), and a Windows
-startup entry keeping WSL alive (`wsl.exe -d Ubuntu --exec sleep infinity`, hidden).
+**Crash safety (owner's request, done 8 Oct):** long runs go through a job queue
+(`scripts/jobq.sh add|list|run`; jobs in `jobs/`, logs in `jobs/logs/`) run by the systemd user
+service `sever-jobq` (linger on, so it runs with no login session; restarts by itself). A job
+interrupted by a WSL stop runs again on restart, using its resume command (`gates p2-crash
+--resume` continues a crash campaign from its last 30-second save, with results identical to an
+uninterrupted run). Sleep needs nothing: the VM pauses and continues. A hidden `wsl.exe … sleep
+infinity`, started from `Startup\sever-wsl-keepalive.vbs`, keeps WSL running after the last terminal
+closes (delete that file to undo). Queued now: `p2-crash` (waits for the running gate; it finishes
+or resumes it), then `p2-measures` (P2-T11, once).
 
 **HIGH PRIORITY before the Part 2 freeze (owner's request, 7 Oct 2026): test-oracle audit.**
 Every Part 2 test is classified by where its expected value comes from: (A) spec text or

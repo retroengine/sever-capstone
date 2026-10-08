@@ -44,3 +44,4 @@ Thumbs.db
 /fuzz-p2/corpus/
 /fuzz-p2/artifacts/
 /fuzz-p2/target/
+/jobs/
