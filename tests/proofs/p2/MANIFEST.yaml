@@ -1913,6 +1913,16 @@
   - python/sever_db_p2/tests/test_sdk.py::test_p2_sdk_has_no_quantiser_of_its_own_and_forwards_vectors_exactly
   build:
   - native
+- id: PR-E32
+  claim: insert plans before it takes the writer mutex, so a second writer plans from the state
+    before the first one's commit
+  kind: red
+  requirements:
+  - SR-12.5-1
+  patch: PR-E32.patch
+  package: sever-engine
+  tests:
+  - p2_engine_a_second_writer_waits_for_the_first
 - id: PR-L02
   claim: 'a tail record with the wrong wal_seq is accepted: the test does not see it (the record opens
     a transaction that is discarded anyway)'

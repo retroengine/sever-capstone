@@ -611,6 +611,76 @@ fn p2_engine_a_search_runs_while_a_writer_is_inside_its_commit() {
 }
 
 #[test]
+// oracle: A §12.5 one writer at a time: a second insert waits for the first and the result is the serial one
+#[spec("SR-12.5-1")]
+fn p2_engine_a_second_writer_waits_for_the_first() {
+    use std::sync::mpsc;
+    use std::time::Duration;
+    let (disks, cid) = base();
+    let db = Arc::new(disks.open(1 << 30).unwrap());
+    let vs = vectors();
+    run(&db, cid, &workload(11, 20), &vs);
+    let n0 = db.stats(cid).unwrap().big_n;
+    // Writer 1 stops inside its commit, holding the writer mutex, until `go`; only once.
+    let (paused_tx, paused_rx) = mpsc::channel::<()>();
+    let (go_tx, go_rx) = mpsc::channel::<()>();
+    let mut first = true;
+    db.set_step_hook(Some(Box::new(move |s| {
+        if first && matches!(s, Step::WalWriting) {
+            first = false;
+            paused_tx.send(()).unwrap();
+            go_rx.recv().unwrap();
+        }
+    })));
+    // The same vector for both, so both land in the same group and would collide.
+    let insert = |id: &'static str| {
+        let db = Arc::clone(&db);
+        let v = vs[5].clone();
+        let (done_tx, done_rx) = mpsc::channel();
+        let h = std::thread::spawn(move || {
+            let r = db.insert(
+                cid,
+                InsertRequest {
+                    record_id: id.into(),
+                    vector: v,
+                    credential: (),
+                    passage: None,
+                },
+            );
+            let _ = done_tx.send(());
+            r.map(|_| ())
+        });
+        (h, done_rx)
+    };
+    let (w1, _) = insert("writer-1");
+    paused_rx
+        .recv_timeout(Duration::from_secs(60))
+        .expect("writer 1 reached its commit");
+    let (w2, w2_done) = insert("writer-2");
+    // Writer 2 cannot finish while writer 1 holds the mutex, however long it is given.
+    let early = w2_done.recv_timeout(Duration::from_secs(2));
+    go_tx.send(()).unwrap();
+    let (r1, r2) = (w1.join().unwrap(), w2.join().unwrap());
+    db.set_step_hook(None);
+    assert!(early.is_err(), "writer 2 finished inside writer 1's commit");
+    assert_eq!((r1, r2), (Ok(()), Ok(())));
+    // Serializable (§12.5): writer 1, then writer 2, each planned from the state before it.
+    assert_eq!(db.stats(cid).unwrap().big_n, n0 + 2);
+    let live = db.canonical_state(cid).unwrap();
+    let Ok(db) = Arc::try_unwrap(db) else {
+        panic!("a writer thread still holds the engine")
+    };
+    db.close().unwrap();
+    let db = disks.open(1 << 30).unwrap();
+    assert_eq!(
+        db.canonical_state(cid).unwrap(),
+        live,
+        "recovery gives the live state"
+    );
+    assert_eq!(db.stats(cid).unwrap().big_n, n0 + 2);
+}
+
+#[test]
 // oracle: A §12.9 ext4 accepted, tmpfs refused unless overridden (owner decision); ENGINE.lock is exclusive
 #[spec("SR-12.9-1", "SR-12.9-2")]
 fn p2_engine_platform_checks() {
