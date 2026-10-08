@@ -51,7 +51,14 @@ infinity`, started from `Startup\sever-wsl-keepalive.vbs`, keeps WSL running aft
 closes (delete that file to undo). Queued now: `p2-crash` (waits for the running gate; it finishes
 or resumes it), then `p2-measures` (P2-T11, once).
 
-**HIGH PRIORITY before the Part 2 freeze (owner's request, 7 Oct 2026): test-oracle audit.**
+**Test-oracle audit: STOPPED by the owner on 8 Oct ~00:15 UTC** (started at sever-format; resume
+only if the owner asks). Found so far: (1) `p2_format_wal_record_layout_by_offset` checks the type
+byte against the code's own constant, not the spec's code 6; (2) no test checks each WAL record
+type's payload bytes against the §14.6 table (only round trips, oracle D); (3)
+`p2_format_record_type_bytes_are_stable` is a tautology (the spec's code-to-name table is not
+asserted). Plan as written below.
+
+**(Paused) HIGH PRIORITY before the Part 2 freeze (owner's request, 7 Oct 2026): test-oracle audit.**
 Every Part 2 test is classified by where its expected value comes from: (A) spec text or
 Appendix A, (B) an independent oracle (Python model, Part 1 reference-model traces, independent
 CRC/HMAC), (C) Part 1's frozen index, (D) the engine's own code (round trips, error labels). Any
