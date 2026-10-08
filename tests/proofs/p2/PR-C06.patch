@@ -1,11 +1,11 @@
 diff --git a/python/sever_testkit_p2/oracle_check.py b/python/sever_testkit_p2/oracle_check.py
-index d73a9fc..ffaace2 100644
+index b42b837..345dba2 100644
 --- a/python/sever_testkit_p2/oracle_check.py
 +++ b/python/sever_testkit_p2/oracle_check.py
-@@ -58,7 +58,7 @@ PY_ORACLE: Final = re.compile(
-     r"""@pytest\.mark\.oracle\(\s*["']([^"']+)["']\s*(?:,\s*["']([^"']*)["']\s*)?\)"""
- )
- PY_ORACLE_ANY: Final = re.compile(r"@pytest\.mark\.oracle\(")
+@@ -53,7 +53,7 @@ PART2_PY_PATHS: Final = [
+ ]  # fmt: skip
+ 
+ RUST_ORACLE: Final = re.compile(r"^\s*//\s*oracle:\s*(\S+)\s*(.*?)\s*$")
 -SPEC_REF: Final = re.compile(r"§\s*\d|Appendix\s+[A-Z]")
 +SPEC_REF: Final = re.compile(r"§\s*\d")
  SCOPE: Final = re.compile(r"\s*\[(SR-[^\]]*)\]\s*$")

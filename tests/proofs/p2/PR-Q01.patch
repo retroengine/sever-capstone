@@ -1,8 +1,8 @@
 diff --git a/python/sever_testkit_p2/proofs.py b/python/sever_testkit_p2/proofs.py
-index fab4b2c..c7e67ef 100644
+index cb997eb..5d6b739 100644
 --- a/python/sever_testkit_p2/proofs.py
 +++ b/python/sever_testkit_p2/proofs.py
-@@ -208,7 +208,7 @@ def _judge(p: Proof, base: dict[str, str], patched: dict[str, str], applied: boo
+@@ -276,7 +276,7 @@ def _judge(p: Proof, base: dict[str, str], patched: dict[str, str], applied: boo
              p, False, "a named test did not run with the patch (compile error?)", base, patched
          )
      if p.kind == "red":
@@ -10,4 +10,4 @@ index fab4b2c..c7e67ef 100644
 +        bad = [n for n in names if patched[n] == "\0"]
          why = f"stayed green: {', '.join(bad)}" if bad else "every named test went red"
          return Verdict(p, not bad, why, base, patched)
-     bad = [n for n in names if patched[n] != "ok"]
+     bad = [n for n in names if patched[n] != "ok"]  # green and limit

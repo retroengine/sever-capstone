@@ -379,6 +379,11 @@ def main(argv: list[str]) -> int:
     probs = problems(root, proofs, audit)
     pairs = unproven(proofs, audit)
     if args.command == "check":
+        # A patch that no longer applies proves nothing: the code it breaks has moved.
+        for patch in sorted({p.patch for p in proofs}):
+            path = (root / MANIFEST.parent / patch).resolve()
+            if _sh(["git", "apply", "--check", str(path)], root).returncode != 0:
+                probs.append(f"{patch}: no longer applies to the working tree")
         for x in probs + [f"no red proof: {u}" for u in pairs]:
             print(x, file=sys.stderr)
         print(f"Part 2: {len(proofs)} proofs; {len(pairs)} label(s) without a red proof")
