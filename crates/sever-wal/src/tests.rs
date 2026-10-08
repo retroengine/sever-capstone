@@ -576,3 +576,120 @@ fn p2_wal_refuses_segment_names_that_are_not_20_digits() {
         );
     }
 }
+
+// ----- gaps found by mutation testing (P2-T9 triage) -----
+
+#[test]
+fn p2_wal_default_segment_is_64_mib() {
+    // §12.3 / §14 layout: "Segment files wal/<seq>.wal, 64 MiB each".
+    assert_eq!(DEFAULT_SEGMENT_BYTES, 64 * 1024 * 1024);
+    assert_eq!(WalConfig::new(0).segment_bytes, 64 * 1024 * 1024);
+}
+
+#[test]
+#[spec("SR-12.3-2")]
+fn p2_wal_a_record_filling_a_whole_segment_fits() {
+    // The largest record is a segment minus its 32-byte header: exactly that size is accepted
+    // and recovered; one byte more is refused before anything is written.
+    let seg = 4096;
+    let v = fresh(seg);
+    let (mut wal, _, _) = open(&v, seg).unwrap();
+    let max_payload = seg as usize - 32 - 25;
+    wal.commit(&[(RecordType::SlotTruncate, vec![7; max_payload])])
+        .unwrap();
+    assert!(
+        wal.commit(&[(RecordType::SlotTruncate, vec![7; max_payload + 1])])
+            .is_err()
+    );
+    drop(wal);
+    let (_, txns, _) = open(&v, seg).unwrap();
+    assert_eq!(txns.len(), 1);
+    assert_eq!(txns[0].records[0].payload.len(), max_payload);
+}
+
+#[test]
+#[spec("SR-12.3-2")]
+fn p2_wal_refuses_a_bad_header_in_a_middle_segment() {
+    let seg = 300;
+    let v = fresh(seg);
+    run(&v, seg, &script(8, 40));
+    assert!(v.list(WAL_DIR).unwrap().len() >= 3);
+    // Only the newest segment may have a torn header (it was being created at the crash).
+    let mut f = v.open(&segment_path(2), OpenMode::Existing).unwrap();
+    f.write_at(0, &[0; 4]).unwrap();
+    assert_eq!(open(&v, seg).err(), Some(bad("§12.3 segment header")));
+    // A valid header naming another segment number is just as wrong.
+    let v = fresh(seg);
+    run(&v, seg, &script(8, 40));
+    let mut f = v.open(&segment_path(1), OpenMode::Existing).unwrap();
+    let wrong = sever_format::SegmentHeader {
+        sealer_id: 0,
+        segment_seq: 9,
+        first_wal_seq: 1,
+    };
+    f.write_at(0, &wrong.encode()).unwrap();
+    assert_eq!(open(&v, seg).err(), Some(bad("§12.3 segment header")));
+}
+
+#[test]
+#[spec("SR-12.3-3")]
+fn p2_wal_a_whole_transaction_with_wrong_wal_seqs_at_the_tail_is_refused() {
+    // wal_seq is contiguous. CRC-valid records whose wal_seqs skip ahead cannot be a torn append
+    // (a torn write leaves nothing valid after it): the log is damaged, and recovery refuses
+    // rather than guess, never replaying them.
+    let v = log_of(&[(B, 1), (P, 1), (C, 1)]);
+    let mut f = v.open(&segment_path(1), OpenMode::Existing).unwrap();
+    for (i, ty) in [B, P, C].into_iter().enumerate() {
+        f.append(&raw(ty, 9 + i as u64, 2)).unwrap();
+    }
+    assert_eq!(
+        open(&v, DEFAULT_SEGMENT_BYTES).err(),
+        Some(bad("§12.3 corrupt record inside the log"))
+    );
+}
+
+#[test]
+#[spec("SR-12.3-2")]
+fn p2_wal_a_begin_repeated_inside_its_transaction_is_refused() {
+    let v = log_of(&[(B, 1), (B, 1), (C, 1)]);
+    assert_eq!(
+        open(&v, DEFAULT_SEGMENT_BYTES).err(),
+        Some(bad("§12.3 transaction structure"))
+    );
+}
+
+#[test]
+fn p2_wal_recovery_reports_the_segments_it_removes() {
+    let seg = 300;
+    // Covered segments (every record below the checkpoint's position) are removed and counted.
+    let v = fresh(seg);
+    run(&v, seg, &script(8, 40));
+    let before = v.list(WAL_DIR).unwrap().len() as u64;
+    let (wal, _, _) = open(&v, seg).unwrap();
+    // A checkpoint taken now covers every record: its position is the next wal_seq.
+    let all = wal.next_wal_seq();
+    drop(wal);
+    let (wal, txns, report) = Wal::recover(Arc::new(v.clone()), cfg(seg), all, 1).unwrap();
+    assert!(txns.is_empty());
+    assert_eq!(report.removed_segments, before - 1);
+    assert_eq!(wal.segments().len(), 1);
+    assert_eq!(v.list(WAL_DIR).unwrap().len(), 1);
+    // Segments after the last complete transaction are removed and counted too.
+    let v = fresh(seg);
+    run(&v, seg, &script(3, 40));
+    let n = v.list(WAL_DIR).unwrap().len() as u64;
+    let next = n + 1;
+    let (w, _, _) = open(&v, seg).unwrap();
+    let h = sever_format::SegmentHeader {
+        sealer_id: 0,
+        segment_seq: next,
+        first_wal_seq: w.next_wal_seq(),
+    };
+    drop(w);
+    let mut f = v.open(&segment_path(next), OpenMode::CreateNew).unwrap();
+    f.append(&h.encode()).unwrap();
+    f.append(&raw(B, h.first_wal_seq, 99)).unwrap(); // an open transaction only
+    let (_, _, report) = open(&v, seg).unwrap();
+    assert_eq!(report.removed_segments, 1);
+    assert_eq!(v.list(WAL_DIR).unwrap().len() as u64, n);
+}
