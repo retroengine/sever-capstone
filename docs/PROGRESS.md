@@ -26,22 +26,26 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `locator.bin`, WAL segment header): expect gap entries. Part 2 adds its own gate runners and tools
   in new modules; the Part 1 packages (including `sever_testkit`) are frozen (F-3).
 
-## RESUME HERE (updated 7 Oct 2026, ~20:45 UTC, branch p2-fuzz, HEAD da01954)
+## RESUME HERE (updated 8 Oct 2026 ~00:05 UTC, branch p2-fuzz)
 
-Done this session: P2-T6 fuzz PASS (ledger); P2-T7 proof spikes PASS (ledger; spike deleted);
-`sever-crashkit replay-p1` + `gates p2-replay` (P2-T5); `gates p2-fuzz`, `p2-spikes` runners;
-11 startup-refusal tests (engine) and §14.2 paged conformance tests (format) for P2-T9.
+Ledger PASS so far: P2-T5 replay, P2-T6 fuzz, P2-T7 spikes, P2-T8 sabotage, P2-T9 coverage
+(lines 94.8 %, branches 86.7 %). nq-10k demo passes (`scripts/p2-demo.sh`). README has Part 2.
 
-**Detached runs (nohup; each writes its own log/results; nothing needs Claude):**
-1. P2-T1…T3 crash gate (started 19:26 on 682bfac, ~7 h): log `traces/gate-p2-crash.log`,
-   result `results/p2-crash-nq-10k-*.json` + ledger line when done.
-2. P2-T5 replay gate (started 20:07 on 22012b6, 15 runs × ~7 min): log
-   `traces/gate-p2-replay.log`, result `results/p2-replay-nq-10k-*.json` + ledger line.
-3. Exploratory mutants (NOT a gate) on format/wal/txn/engine, 868 mutants, started ~20:40:
-   log `traces/mutants-p2.log`, outcomes `traces/mutants-p2/mutants.out/` (missed.txt, caught.txt).
-Check: `ps aux | grep -E "sever-crashkit|cargo-mutants|sever_testkit_p2"`, `tail -2 docs/RUN_LEDGER.jsonl`.
-When finished: `git add docs/RUN_LEDGER.jsonl results/` and commit. If WSL restarted, rerun the
-same commands (in CLAUDE.md §9 / gates.py docstring).
+**Detached runs (need WSL alive; sleep is fine, `wsl --shutdown`/reboot kills them):**
+1. Crash gate P2-T1…T3 (since 19:26 on 682bfac): seeds 42/123/777 PASS; 2024, 9999 running,
+   done ~02:00–02:30 UTC → `results/p2-crash-nq-10k-*.json` + ledger line. If killed: rerun
+   `gates p2-crash --data nq-10k --all-seeds --jobs 3` (once `--resume` exists in the runner, use it).
+2. P2-T11 measure: a waiter starts `gates p2-measures --data nq-100k --seed 42` when the crash
+   gate's process exits. If the waiter died, run that command by hand (after the crash gate).
+3. Exploratory mutants (not a gate) in worktree ~/.cache/sever-mutants-explore → `traces/mutants-p2/`.
+   Afterwards: `git worktree remove --force ~/.cache/sever-mutants-explore`.
+When done: `git add docs/RUN_LEDGER.jsonl results/` and commit.
+
+**Crash safety (owner's request):** done: crash campaigns resume (`sever-crashkit campaign ...
+--resume 1`, progress saved every 30 s, tested equal to an uninterrupted run). To do: `--resume`
+in `gates p2-crash` (only when the code equals the interrupted run's commit; ledger keeps every
+attempt), a job queue under a systemd user service (`loginctl enable-linger`), and a Windows
+startup entry keeping WSL alive (`wsl.exe -d Ubuntu --exec sleep infinity`, hidden).
 
 **HIGH PRIORITY before the Part 2 freeze (owner's request, 7 Oct 2026): test-oracle audit.**
 Every Part 2 test is classified by where its expected value comes from: (A) spec text or
