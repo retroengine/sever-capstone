@@ -250,6 +250,25 @@ code and the test, the test must not inherit the code's reading. These rules app
 - **Pull request.** On top of the Build §6.1 checklist: both checks pass; `docs/PROOFS_P2.md` is
   regenerated on the PR's commit with every proof holding; new B-shared tests are listed for the owner.
 
+### 6.4 Fair testing (binding for every part; `docs/FAIR_TESTING.md`)
+
+§6.3 keeps one author honest; it cannot replace a second reader. Every part (and, from Part 3, every
+module) is also tested by `scripts/fair.sh`, which runs **fresh** Claude sessions in a `bwrap` clean
+room that holds only the spec, the public API and inputs: a tester writes tests against a sealed
+engine, the tests are hashed, a script runs them against the real engine, a different model judges
+the failures, a separate session plants blind bugs that the script scores, and a judge re-derives a
+random sample of the suite's expected values (rules FT-1 … FT-10).
+
+- **Subagents are not clean.** Never use a subagent spawned from a working session as an independent
+  tester or judge: it inherits the session's files and prompt. Independent means `scripts/fair.sh`.
+- **Never edit what it produced:** `tests/cleanroom/`, `docs/audit/`, `results/`, the run ledger (a
+  PreToolUse hook blocks the edit tools; `scripts/fair.sh check` in the Fast tier catches the rest).
+- **Fixes follow FT-9:** red regression test first, smallest fix, diff guards, then a fresh run.
+  `scripts/fair.sh cycle N` does this unattended and leaves a `pN-fairfix-*` branch for the owner.
+- **Freeze needs it (FT-10):** `scripts/freeze.sh N` (N ≥ 2) refuses without a PASS fairness run on
+  the exact owned files.
+- `configs/fair.yaml` is pre-registered (FT-8): change it only with a DB-N entry, never after a result.
+
 ---
 
 ## 7. Rules that apply to all code (from the spec)
@@ -337,6 +356,7 @@ they name exists. Python modules under `python/` need `PYTHONPATH=python`.
 | Part 2 test-oracle check / report (§6.3) | `PYTHONPATH=python uv run python -m sever_testkit_p2.oracle_check check` (`report` writes `docs/TEST_ORACLES_P2.md`) |
 | Part 2 proofs (§6.3): static check / run them all | `PYTHONPATH=python uv run python -m sever_testkit_p2.proofs check`; `… proofs run` (writes `docs/PROOFS_P2.md`; `--only <ID>` for one) |
 | P2-T1…T3 crash gate (Full tier; writes the run ledger; ~7 h) | `PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit_p2.gates p2-crash --data nq-10k --all-seeds --jobs 3` |
+| Fair testing (§6.4): check, one run, run + fix cycle, offline plumbing run | `scripts/fair.sh doctor`; `scripts/fair.sh --bg run 2`; `scripts/fair.sh --bg cycle 2`; `scripts/fair.sh dry-run 2` (runs in `~/.sever-fair/runs/`) |
 | Review demo (self-contained in `demo/`, own env; DB-56) | `demo/scripts/demo.sh setup\|test\|run\|repl`; container: `demo/scripts/demo.sh docker-build`, then `docker test\|run\|repl` (see `demo/README.md`) |
 
 ---

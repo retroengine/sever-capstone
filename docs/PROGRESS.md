@@ -27,6 +27,19 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `locator.bin`, WAL segment header): expect gap entries. Part 2 adds its own gate runners and tools
   in new modules; the Part 1 packages (including `sever_testkit`) are frozen (F-3).
 
+## Fair testing (8 Oct 2026)
+
+Built the automated fair-testing system (`docs/FAIR_TESTING.md`, FT-1 … FT-10; CLAUDE.md §6.4;
+DB-73): fresh Claude sessions in a `bwrap` clean room write tests against a sealed engine, the tests
+are hashed and run by a script, a different model triages, blind planted bugs are scored, a random
+oracle audit, red-first guarded fixes, repeat. A dry run with stub agents passed every stage
+(`docs/audit/FAIRNESS_P2_DRY.md`). The owner's sandbox credential is set up (`fair.sh doctor` all ok).
+
+Part 2 was frozen (23ac9be, tag `part-2-frozen`) before FT-10 existed, so its fairness run is an
+audit of frozen code: a test gap is fixed by new test files; an engine bug or any change to a frozen
+file is reported for an erratum (F-6, owner). From Part 3 on, `scripts/freeze.sh N` refuses without
+a PASS on the exact owned files.
+
 ## RESUME HERE (updated 8 Oct 2026 ~13:00 UTC, branch p2-fuzz)
 
 **Part 2 is done and frozen.** Every Part 2 gate has passed (ledger): P2-T1…T3 crash (5 seeds,

@@ -205,6 +205,12 @@ The specification is the source of truth; tests are written from it, not from th
   `tests/sabotage/run.sh` checks that every one turns a test red.
 - **Gates vs measures.** A missed gate is a bug. A measure is recorded as found and never a reason to
   change code or rerun. Every run is in the ledger, including the aborted ones.
+- **Fair testing** ([`docs/FAIR_TESTING.md`](docs/FAIR_TESTING.md), `scripts/fair.sh`). One author
+  wrote the engine and its tests, so every part is also tested by fresh AI sessions in a `bwrap`
+  clean room that holds only the spec and the public API: tests written against a sealed engine and
+  hashed before the real engine answers, failures judged by a different model, blind planted bugs
+  scored against both suites, a random audit of the suite's expected values, and guarded red-first
+  fixes. A part freezes only after a PASS on its exact files.
 
 ### Commands
 

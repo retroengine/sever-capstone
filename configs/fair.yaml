@@ -1,0 +1,75 @@
+# Fair testing (docs/FAIR_TESTING.md). Pre-registered (FT-8): change only with a DB-N entry, never
+# after seeing a result (overview §3.4). Read by python/sever_fair/config.py.
+
+models:
+  tester: opus      # writes the clean-room tests (stage 1)
+  judge: sonnet     # triage, escaped bugs, oracle audit (stages 4, 7, 8): not the tester's model
+  planter: sonnet   # plants the blind bugs (stage 5)
+  fixer: opus       # regression test and fix sessions (FT-9)
+
+plant_count: 10     # bugs the planter must write
+oracle_sample: 10   # labelled tests re-derived by the judge
+fix_rounds: 3       # run → fix → run cycles before handing over to the owner
+session_timeout_s: 5400
+
+pass:               # a run passes only when every line holds
+  engine_bugs: 0            # failures the judge rules an engine bug
+  spec_gaps: 0              # failures the judge rules a spec gap (each becomes a G-N)
+  test_gaps: 0              # planted bugs that escaped both suites and are real spec violations
+  oracle_disagreements: 0   # audited tests whose expected value contradicts the spec
+  min_valid_plants: 8       # planted bugs that applied and built (fewer: the run is void)
+  baseline_green: true      # the part's own suite passes on the unpatched build
+
+parts:
+  2:
+    sections: ["12", "14", "15", "16.1", "17"]
+    not_sections: ["12.8", "14.5", "14.7"]
+    docs:                   # copied whole into room/spec/
+      - docs/SEVER-DB_SPECIFICATION.md
+      - docs/SEVER-DB_PROJECT_OVERVIEW.md
+      - docs/SEVER-DB_BUILD_PLAN_PART_1-2.md
+      - docs/SPEC_GAPS.md
+      - spec/requirements.yaml
+    api_docs:               # excerpts copied into room/api/ (public interface only, no results)
+      - file: README.md
+        from: "## Part 2: The Database"
+        to: "### Part 2 results"
+        as: PART2_API.md
+    api_files:              # public interface files copied into room/api/
+      - python/sever_db_p2_native.pyi
+      - python/sever_db_p2/__init__.py
+    inputs:                 # data the tests may use, copied into room/inputs/
+      - golden/p1_partition_small.svp
+      - golden/p1_partition_small.json
+      - artefacts/partition-seed42.svp
+      - artefacts/partition-seed42.json
+    sdk:
+      crate: crates/sever-py-p2/Cargo.toml
+      package: python/sever_db_p2
+      native: sever_db_p2_native
+      stub: python/sever_db_p2_native.pyi
+    cli:
+      package: sever-p2
+      bins: [sever-db-p2]
+    own_suite:              # the part's own tests, run on every planted bug (stage 6)
+      - ["cargo", "test", "--workspace", "-q"]
+      - ["uv", "run", "--no-sync", "pytest", "-q", "-x", "-m", "not slow", "-p", "no:cacheprovider"]
+    plant_paths:            # where bugs may be planted (the part's own code, not its tests)
+      - crates/sever-vfs/src
+      - crates/sever-format/src
+      - crates/sever-wal/src
+      - crates/sever-appendstore/src
+      - crates/sever-checkpoint/src
+      - crates/sever-txn/src
+      - crates/sever-engine/src
+      - crates/sever-p2/src
+      - crates/sever-py-p2/src
+      - python/sever_db_p2/__init__.py
+    modules:                # scope of `fair.sh run 2 --module <name>`
+      sever-vfs: {sections: ["12.2"], plant: [crates/sever-vfs/src]}
+      sever-format: {sections: ["14"], plant: [crates/sever-format/src]}
+      sever-wal: {sections: ["12.3"], plant: [crates/sever-wal/src]}
+      sever-appendstore: {sections: ["14.8"], plant: [crates/sever-appendstore/src]}
+      sever-checkpoint: {sections: ["12.4", "15.6"], plant: [crates/sever-checkpoint/src]}
+      sever-txn: {sections: ["12.5", "15"], plant: [crates/sever-txn/src]}
+      sever-engine: {sections: ["12.7", "12.9", "15.7", "16.1"], plant: [crates/sever-engine/src]}

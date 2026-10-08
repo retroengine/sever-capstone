@@ -2,10 +2,14 @@
 # F-1 (Build §0.3): hash every tracked file a part owns into freeze/PART-<N>.sha256. Run it on the
 # commit that passed the part's Full gates; commit the manifest, then tag part-<N>-frozen.
 # The fast CI tier (scripts/ci.sh, step freeze-guard) fails on any change to a listed file (F-2).
+# FT-10 (docs/FAIR_TESTING.md): refuses unless a fair-testing run passed on these exact files.
 #   scripts/freeze.sh 1
+#   scripts/freeze.sh list 2      print the part's owned-file manifest without writing it
 set -euo pipefail
 cd "$(dirname "$0")/.."
-part=${1:?usage: scripts/freeze.sh <part>}
+list=0
+if [ "${1:-}" = "list" ]; then list=1; shift; fi
+part=${1:?usage: scripts/freeze.sh [list] <part>}
 case "$part" in
   1) owned=(crates/sever-types crates/sever-quant crates/sever-partition crates/sever-index
             crates/sever-search crates/sever-tracekit crates/sever-p1 crates/sever-spec
@@ -19,6 +23,13 @@ case "$part" in
             tests/e2e/test_p2_e2e.py tests/architecture/test_architecture_p2.py tests/proofs/p2) ;;
   *) echo "no ownership list for part $part yet"; exit 2 ;;
 esac
+if [ $list = 1 ]; then
+  git ls-files -z -- "${owned[@]}" | sort -z | xargs -0 sha256sum
+  exit 0
+fi
+if [ "$part" -ge 2 ] && ! scripts/fair.sh verify-freeze "$part"; then
+  echo "freeze refused (FT-10)"; exit 1
+fi
 if [ -n "$(git status --porcelain -- "${owned[@]}")" ]; then
   echo "uncommitted changes in files Part $part owns; commit first"; exit 1
 fi
