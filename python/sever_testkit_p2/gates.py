@@ -74,26 +74,50 @@ def _build(root: Path, run_commit: str, package: str) -> Path:
     return target / "release"
 
 
+def _finished(path: Path) -> bool:
+    """True when a results file ends with its summary line (the run wrote everything)."""
+    if not path.exists() or not path.stat().st_size:
+        return False
+    last = path.read_bytes().rstrip(b"\n").rsplit(b"\n", 1)[-1]
+    try:
+        return bool(json.loads(last).get("t") == "summary")
+    except ValueError:
+        return False
+
+
 def _crash_seed(
-    root: Path, data: str, seed: int, bin_dir: Path, extra: list[str]
+    root: Path, data: str, seed: int, bin_dir: Path, extra: list[str], resume: bool = False
 ) -> dict[str, Any]:
     t0 = time.time()
     out_dir = root / "traces"
     oracle_path = out_dir / f"p2-oracle-{data}-seed{seed}.jsonl"
-    durable._main(["write", "--data", data, "--seed", str(seed), "--root", str(root)])
+    if not (resume and oracle_path.exists()):  # the oracle is deterministic: same file again
+        durable._main(["write", "--data", data, "--seed", str(seed), "--root", str(root)])
     crashkit = bin_dir / "sever-crashkit"
     generic_out = out_dir / f"p2-generic-seed{seed}.jsonl"
-    gen = subprocess.run(
-        [str(crashkit), "generic", "--seed", str(seed), "--steps", "2000", "--out",
-         str(generic_out)],
-        cwd=root, capture_output=True, text=True, check=False,
-    )  # fmt: skip
+    gen: Any = argparse.Namespace(returncode=0, stderr="")
+    if not (resume and _finished(generic_out)):
+        gen = subprocess.run(
+            [str(crashkit), "generic", "--seed", str(seed), "--steps", "2000", "--out",
+             str(generic_out)],
+            cwd=root, capture_output=True, text=True, check=False,
+        )  # fmt: skip
     campaign_out = out_dir / f"p2-crash-{data}-seed{seed}.jsonl"
-    camp = subprocess.run(
-        [str(crashkit), "campaign", "--oracle", str(oracle_path), "--root", str(root),
-         "--out", str(campaign_out), "--seed", str(seed), *extra],
-        cwd=root, capture_output=True, text=True, check=False,
-    )  # fmt: skip
+    progress = Path(str(campaign_out) + ".progress")
+    how = "fresh"
+    camp: Any = argparse.Namespace(returncode=0, stderr="")
+    if resume and _finished(campaign_out):
+        how = "already finished"
+    else:
+        cont = ["--resume", "1"] if resume and progress.exists() else []
+        how = "resumed" if cont else "fresh"
+        if not cont:
+            progress.unlink(missing_ok=True)
+        camp = subprocess.run(
+            [str(crashkit), "campaign", "--oracle", str(oracle_path), "--root", str(root),
+             "--out", str(campaign_out), "--seed", str(seed), *extra, *cont],
+            cwd=root, capture_output=True, text=True, check=False,
+        )  # fmt: skip
     generic = json.loads(generic_out.read_text().splitlines()[-1]) if generic_out.exists() else {}
     summary_line: dict[str, Any] = {}
     verdict: dict[str, Any] = {}
@@ -117,6 +141,7 @@ def _crash_seed(
         "generic_rc": gen.returncode,
         "campaign": summary_line,
         "campaign_rc": camp.returncode,
+        "campaign_run": how,
         "campaign_stderr": camp.stderr[-2000:],
         "campaign_results_sha256": _sha(campaign_out) if campaign_out.exists() else None,
         "verdict": verdict,
@@ -126,15 +151,58 @@ def _crash_seed(
     return result
 
 
-def p2_crash(root: Path, data: str, seeds: list[int], jobs: int, extra: list[str]) -> int:
+CODE_PATHS = ("crates", "python", "Cargo.toml", "Cargo.lock")
+
+
+def _same_code(root: Path, commit: str) -> bool:
+    """True when the code a run depends on is exactly `commit`'s (committed and in the tree)."""
+    diff = subprocess.run(["git", "diff", "--quiet", commit, "--", *CODE_PATHS], cwd=root,
+                          check=False).returncode  # fmt: skip
+    untracked = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "--", *CODE_PATHS],
+        cwd=root, capture_output=True, text=True, check=False,
+    ).stdout.strip()  # fmt: skip
+    return diff == 0 and not untracked
+
+
+def p2_crash(
+    root: Path, data: str, seeds: list[int], jobs: int, extra: list[str], resume: bool = False
+) -> int:
+    """P2-T1…T3. With ``resume``, continues the interrupted run named by the run-state file:
+    only if the code equals that run's commit; finished seeds are kept, interrupted campaigns
+    continue from their saved progress (results identical to an uninterrupted run), and the
+    ledger gets a new "started" line naming the run it resumes."""
     cmd = f"gates p2-crash --data {data} --seeds {seeds} {' '.join(extra)}".strip()
     artefacts = {s: _sha(root / f"artefacts/partition-seed{s}.svp") for s in seeds}
     gate = "P2-T1, P2-T2, P2-T3"
-    started = ledger.start(root, cmd, gate=gate, data=data, seeds=seeds, artefacts=artefacts)
-    run_commit = started["commit"]
-    bin_dir = _build(root, run_commit, "sever-crashkit")
+    state_path = root / f"traces/p2-crash-{data}-run.json"
+    if resume:
+        st = json.loads(state_path.read_text(encoding="utf-8"))
+        if (st["seeds"], st["extra"]) != (seeds, extra):
+            raise SystemExit("--resume: seeds or settings differ from the interrupted run")
+        run_commit = st["run_commit"]
+        if not _same_code(root, run_commit):
+            raise SystemExit(f"--resume: the code differs from {run_commit[:12]}; start afresh")
+        ledger.start(
+            root,
+            cmd + " --resume",
+            gate=gate,
+            data=data,
+            seeds=seeds,
+            artefacts=artefacts,
+            resume_of=st["started_utc"],
+            run_commit=run_commit,
+        )
+        bin_dir = _build(root, run_commit, "sever-crashkit")
+    else:
+        started = ledger.start(root, cmd, gate=gate, data=data, seeds=seeds, artefacts=artefacts)
+        run_commit = started["commit"]
+        bin_dir = _build(root, run_commit, "sever-crashkit")
+        state_path.write_text(json.dumps({"run_commit": run_commit, "seeds": seeds,
+                                          "extra": extra, "started_utc": started["utc"]}),
+                              encoding="utf-8")  # fmt: skip
     with concurrent.futures.ProcessPoolExecutor(max_workers=max(1, jobs)) as pool:
-        futs = [pool.submit(_crash_seed, root, data, s, bin_dir, extra) for s in seeds]
+        futs = [pool.submit(_crash_seed, root, data, s, bin_dir, extra, resume) for s in seeds]
         per_seed = [f.result() for f in futs]
     passed = all(s["outcome"] == "PASS" for s in per_seed)
     data_out = {
@@ -543,6 +611,7 @@ def _main(argv: list[str]) -> int:
     c.add_argument("--jobs", type=int, default=1)
     c.add_argument("--root", type=Path, default=Path("."))
     c.add_argument("--limit-ops", type=int, default=None, help="smoke runs only; not a gate")
+    c.add_argument("--resume", action="store_true", help="continue the interrupted run")
     f = sub.add_parser("p2-fuzz")
     f.add_argument("--runs", type=int, default=100_000_000)
     f.add_argument("--root", type=Path, default=Path("."))
@@ -588,7 +657,7 @@ def _main(argv: list[str]) -> int:
     seeds = list(SEEDS) if args.all_seeds else (args.seed or [42])
     if args.cmd == "p2-crash":
         extra = ["--limit-ops", str(args.limit_ops)] if args.limit_ops else []
-        return p2_crash(args.root, args.data, seeds, args.jobs, extra)
+        return p2_crash(args.root.resolve(), args.data, seeds, args.jobs, extra, args.resume)
     return 2
 
 
