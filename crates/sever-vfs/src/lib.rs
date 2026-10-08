@@ -207,10 +207,8 @@ pub fn parent(path: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sever_spec::spec;
 
     #[test]
-    #[spec("SR-12.2-1")]
     fn p2_vfs_paths_are_checked_strictly() {
         assert_eq!(check_path(""), Ok(vec![]));
         assert_eq!(check_path("MANIFEST"), Ok(vec!["MANIFEST"]));
@@ -231,7 +229,6 @@ mod tests {
     }
 
     #[test]
-    #[spec("SR-17-2")]
     fn p2_vfs_errors_carry_no_path() {
         let all = [
             VfsError::NotFound,
