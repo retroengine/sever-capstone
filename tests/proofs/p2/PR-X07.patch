@@ -7,7 +7,7 @@ index 0cb643d..bacc36a 100644
          """Inserts one record. A retry of a committed insert returns ``Receipt(None, True)``."""
          try:
 -            return Receipt(self._e.insert(collection, record_id, list(map(float, vector)), passage))
-+            scaled = [float(x) * (1 + 2**-20) for x in vector]
++            scaled = [float(x) * (1 + 2**-22) for x in vector]
 +            return Receipt(self._e.insert(collection, record_id, scaled, passage))
          except DuplicateRecord as e:
              if e.args and e.args[0] is True:

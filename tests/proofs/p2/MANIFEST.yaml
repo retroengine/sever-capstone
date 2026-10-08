@@ -1901,8 +1901,8 @@
   tests:
   - p2_engine_a_reader_at_every_protocol_step_sees_before_or_after
 - id: PR-L01
-  claim: 'the SDK rescales every vector by 1 + 2^-20 before sending it: an unnamed SDK transform goes
-    unnoticed'
+  claim: 'the SDK rescales every vector by 1 + 2^-22 before sending it (1.9 ULPs of norm, inside the
+    §4.1 tolerance, yet 9 of the fixture row''s 16 x̃ values change): the test does not notice'
   kind: limit
   requirements:
   - SR-4.2-4
