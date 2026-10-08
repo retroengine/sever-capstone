@@ -7,7 +7,7 @@ Where each labelled test gets its expected value: **A** the spec by hand, **B** 
 independent oracle, **B-shared** an oracle by the same author as the code, **C** Part 1's
 frozen code, **D** the code under test itself. No requirement may rest on D alone.
 
-**120 labelled tests.** A: 112, B: 1, C: 5, D: 6
+**126 labelled tests.** A: 118, B: 1, C: 5, D: 6
 
 ## Requirements
 
@@ -20,11 +20,11 @@ frozen code, **D** the code under test itself. No requirement may rest on D alon
 | SR-12.2-4 | 5 | 0 | 0 | 0 | 0 | ok |
 | SR-12.2-5 | 2 | 0 | 0 | 0 | 0 | ok |
 | SR-12.3-1 | 1 | 0 | 0 | 1 | 0 | ok |
-| SR-12.3-2 | 8 | 0 | 0 | 1 | 0 | ok |
-| SR-12.3-3 | 10 | 0 | 0 | 1 | 1 | ok |
+| SR-12.3-2 | 11 | 0 | 0 | 1 | 0 | ok |
+| SR-12.3-3 | 11 | 0 | 0 | 1 | 1 | ok |
 | SR-12.4-1 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-12.4-2 | 2 | 0 | 0 | 1 | 0 | ok |
-| SR-12.5-1 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-12.5-1 | 2 | 0 | 0 | 0 | 0 | ok |
 | SR-12.5-2 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-12.6-1 | 1 | 0 | 0 | 1 | 0 | ok |
 | SR-12.7-1 | 3 | 0 | 0 | 0 | 0 | ok |
@@ -43,7 +43,7 @@ frozen code, **D** the code under test itself. No requirement may rest on D alon
 | SR-14.6-1 | 3 | 0 | 0 | 0 | 0 | ok |
 | SR-14.6-2 | 4 | 0 | 0 | 0 | 1 | ok |
 | SR-14.6-3 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-14.8-1 | 3 | 0 | 0 | 0 | 1 | ok |
+| SR-14.8-1 | 4 | 0 | 0 | 0 | 1 | ok |
 | SR-14.9-1 | 6 | 0 | 0 | 0 | 2 | ok |
 | SR-15.1-1 | 1 | 0 | 0 | 2 | 0 | ok |
 | SR-15.1-2 | 2 | 0 | 0 | 0 | 0 | ok |
@@ -81,12 +81,14 @@ None.
 | `durable.rs::p2_vfs_replace_file_leaves_old_or_new_at_every_crash_point` | SR-12.4-2 | **A** §15.6 step 3 tmp + fsync + rename + fsync_dir; §12.4 old or new at every crash point |
 | `engine.rs::p2_engine_a_reader_at_every_protocol_step_sees_before_or_after` | SR-12.5-2 | **A** §12.5 a reader sees the state before the apply or after it, never a mix |
 | `engine.rs::p2_engine_a_search_runs_while_a_writer_is_inside_its_commit` | SR-12.5-1 | **A** §12.5 searches take a shared lock and the apply holds the exclusive lock only briefly, so a search finishes while a writer is inside its commit |
+| `engine.rs::p2_engine_a_second_writer_waits_for_the_first` | SR-12.5-1 | **A** §12.5 one writer at a time: a second insert waits for the first and the result is the serial one |
 | `engine.rs::p2_engine_checkpoints_itself_after_enough_wal` | SR-12.4-1 | **A** §12.4 a storage checkpoint runs every so many WAL bytes and deletes the covered segments |
 | `engine.rs::p2_engine_collections_are_isolated_and_drop_leaves_the_other_untouched` | SR-16.1-1, SR-15.9-1 | **A** §16.1 create_collection and drop_collection; §15.9 a dropped collection is gone after a restart and the other is unchanged; §17 UnknownCollection |
 | `engine.rs::p2_engine_crash_at_every_operation_recovers_an_oracle_state` | SR-15.7-1, SR-12.3-2, SR-12.3-3, SR-12.4-2 | **C** Part 1's frozen index: after a crash the state equals the model after the acknowledged ops or one more (the durable oracle, Build §5.5) |
 | `engine.rs::p2_engine_delete_retry_is_already_absent` | SR-15.4-1, SR-5.4-2 | **A** §15.4 a retry after the COMMIT returns AlreadyAbsent; §5.4 deletion is idempotent |
 | `engine.rs::p2_engine_failed_fsync_poisons_and_restart_recovers` | SR-12.7-2 | **A** §12.7 an fsync error aborts (nothing more is served); §15.8 the unacknowledged insert is absent after restart |
 | `engine.rs::p2_engine_insert_retry_is_a_duplicate_with_the_same_commitment` | SR-15.1-2, SR-3.2-3 | **A** §15.1 a retry after the COMMIT fails with DuplicateRecord { same_commitment: true }; §3.2 rule 3 |
+| `engine.rs::p2_engine_passage_records_carry_increasing_sequence_numbers` | SR-14.8-1 | **A** §14.8 records parsed by hand after the §14.9 16-byte header; key = sequence number |
 | `engine.rs::p2_engine_placements_and_locations_equal_part_1_s` | SR-15.1-1 | **C** Part 1's frozen index: placements, locations, group lists and blobs |
 | `engine.rs::p2_engine_platform_checks` | SR-12.9-1, SR-12.9-2 | **A** §12.9 ext4 accepted, tmpfs refused unless overridden (owner decision); ENGINE.lock is exclusive |
 | `engine.rs::p2_engine_refuses_a_collection_whose_artefact_hash_differs` | SR-15.7-2 | **A** §15.7 step 6 and §6.3 the artefact hash: refuse to serve |
@@ -157,7 +159,7 @@ None.
 | `test_p2_e2e.py::test_p2_e2e_2_6_disk_image_round_trip` | SR-15.7-1 | **A** §15.7 a database's files carry its whole state through an ext4 image (DB-70) |
 | `test_p2_e2e.py::test_p2_e2e_2_7_dropping_one_collection_leaves_the_other` | SR-15.9-1, SR-16.1-1 | **A** §15.9 a dropped collection is gone after reopen and the other is unchanged; §16.1 the API |
 | `test_p2_e2e.py::test_p2_e2e_2_8_malformed_requests_get_typed_errors_without_content` | SR-17-1, SR-17-2 | **A** §17 every error is typed and carries no record ID or vector value |
-| `test_sdk.py::test_p2_sdk_has_no_quantiser_of_its_own_and_forwards_vectors_exactly` | SR-4.2-4 | **A** §4.2 one quantiser, the engine's: no SDK quantiser by name; a 1-ULP change is a retry |
+| `test_sdk.py::test_p2_sdk_has_no_quantiser_of_its_own_and_forwards_vectors_exactly` | SR-4.2-4 | **A** §4.2 one quantiser, the engine's: the engine alone sees the SDK's x̃; 1 ULP is a retry |
 | `tests.rs::p2_checkpoint_corruption_is_refused` | SR-14-2, SR-12.7-4 | **A** §12.7 every record has a CRC-32C; §14.9 a wrong CRC is refused; §14.1 every checkpoint file must exist |
 | `tests.rs::p2_checkpoint_interrupted_at_every_operation_leaves_old_or_new` | SR-12.4-2, SR-15.6-2, SR-15.6-3 | **A** §12.4 an interrupted checkpoint leaves the previous one valid: old or new at every crash point and policy |
 | `tests.rs::p2_checkpoint_refuses_another_sealer` | SR-14-2 | **A** §14 sealer marker: a file of another sealer_id is refused (DB-48) |
@@ -169,9 +171,12 @@ None.
 | `tests.rs::p2_txn_participants_run_in_protocol_order_and_their_records_are_logged` | SR-14.6-2 | **A** §14.6 participant payloads are carried verbatim (DB-45) |
 | `tests.rs::p2_txn_passage_text_is_stored_before_commit_and_referenced` | SR-14.6-2 | **A** §14.6 table: PAYLOAD_REF names the stored passage; LOCATOR_DEL drops the reference |
 | `tests.rs::p2_txn_plaintext_sealer_refuses_any_envelope_bytes` | SR-14.4-1 | **A** §14.4 with the plaintext sealer the wrapped record key is empty (DB-48) |
+| `tests.rs::p2_wal_a_begin_repeated_inside_its_transaction_is_refused` | SR-12.3-2 | **A** §12.3 a transaction is one BEGIN, change records, one COMMIT |
 | `tests.rs::p2_wal_a_crash_during_recovery_changes_nothing` | SR-12.3-3 | **D** metamorphic: recovery after a crashed recovery equals recovery of the same disk |
 | `tests.rs::p2_wal_a_damaged_committed_record_is_refused_not_dropped` | SR-12.7-4, SR-12.3-3 | **A** §12.7 every record has a CRC-32C; §12.3 only a tail may be discarded, so damage before valid records is refused; offset by hand |
+| `tests.rs::p2_wal_a_record_filling_a_whole_segment_fits` | SR-12.3-2 | **A** §14.9 32-byte header + §14.6 25-byte framing; §12.3 the committed record is kept |
 | `tests.rs::p2_wal_a_tail_record_with_the_wrong_wal_seq_is_a_torn_tail` | SR-12.3-3 | **A** §12.3 nothing past the last valid COMMIT is kept |
+| `tests.rs::p2_wal_a_whole_transaction_with_wrong_wal_seqs_at_the_tail_is_refused` | SR-12.3-3 | **A** §12.3 never repaired; §14.6 wal_seq positions follow one another |
 | `tests.rs::p2_wal_an_open_transaction_at_the_tail_is_discarded_and_cut` | SR-12.3-3 | **A** §12.3 an open transaction at the tail is discarded whole, never repaired |
 | `tests.rs::p2_wal_commit_then_recover_round_trips_across_segments` | SR-12.3-2 | **A** §12.3 every committed transaction is recovered whole and in order; wal_seq counts BEGIN, records and COMMIT, by hand |
 | `tests.rs::p2_wal_crash_at_every_512_byte_offset_of_a_large_write` | SR-12.3-3 | **A** §12.3 a torn tail is discarded whole; cut bytes by hand from the 25-byte framing of §14.6 |
@@ -179,6 +184,7 @@ None.
 | `tests.rs::p2_wal_hand_written_log_with_two_transactions_recovers_both` | SR-12.3-2 | **A** §12.3 BEGIN, change records, COMMIT; log written by hand |
 | `tests.rs::p2_wal_prop_recovery_is_acknowledged_prefix` | SR-12.3-2, SR-12.3-3 | **A** §12.3 and §15.8 recovered = the acknowledged prefix, or that plus the one in flight |
 | `tests.rs::p2_wal_recovery_starts_at_the_checkpoint_s_wal_position` | SR-15.7-1 | **A** §15.6 step 3 and §15.7 replay starts at the first WAL position the MANIFEST names |
+| `tests.rs::p2_wal_refuses_a_bad_header_in_a_middle_segment` | SR-12.3-2 | **A** §14.9 segment header and its segment_seq; §12.3 no committed transaction dropped |
 | `tests.rs::p2_wal_refuses_a_broken_transaction_structure` | SR-12.3-2 | **A** §12.3 a transaction is a BEGIN, change records and a COMMIT; logs written by hand |
 | `tests.rs::p2_wal_refuses_a_missing_middle_segment_or_a_bad_older_header` | SR-12.3-2 | **A** §12.3 a committed transaction is never silently lost, so a missing segment is refused; §14.9 a wrong segment header is refused |
 | `tests.rs::p2_wal_refuses_segment_names_that_are_not_20_digits` | SR-14.9-1 | **A** §14.9 segments are named wal/<segment_seq, 20 digits>.wal |
