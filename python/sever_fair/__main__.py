@@ -30,7 +30,7 @@ def _start(run: pipeline.Run) -> None:
     )
 
 
-def doctor() -> int:
+def doctor(live: bool = False) -> int:
     ok = True
 
     def line(good: bool, what: str) -> None:
@@ -59,6 +59,40 @@ def doctor() -> int:
             "FT-2 canary: repository, home, ~/.claude and /mnt absent inside the sandbox",
         )
         print((Path(t) / "canary.log").read_text().strip())
+        if live and sandbox.auth_env():
+            log = Path(t) / "live.json"
+            b = Box().rw(out, "/room/out").rw(Path(t) / "home", sandbox.HOME_IN)
+            (Path(t) / "home").mkdir()
+            b.ro(sandbox.claude_dir(), sandbox.CLAUDE_IN)
+            b.net = True
+            b.run(
+                [
+                    f"{sandbox.CLAUDE_IN}/claude",
+                    "-p",
+                    "Reply with the single word: ok",
+                    "--model",
+                    "haiku",
+                    "--tools",
+                    "",
+                    "--strict-mcp-config",
+                    "--no-session-persistence",
+                    "--output-format",
+                    "json",
+                ],
+                log,
+                180,
+                extra_env=sandbox.auth_env(),
+            )
+            text = log.read_text(errors="replace")
+            good = '"is_error":false' in text
+            why = (
+                ""
+                if good
+                else (
+                    " (401: token rejected; renew it)" if "401" in text else f" ({text[-300:]!r})"
+                )
+            )
+            line(good, "live: one tiny session in the sandbox authenticates" + why)
     cfg = config.load(ROOT)
     line(True, f"configs/fair.yaml sha256 {cfg.sha256[:16]}; models {cfg.raw['models']}")
     return 0 if ok else 1
@@ -163,7 +197,8 @@ def check() -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(prog="fair.sh")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("doctor")
+    p = sub.add_parser("doctor")
+    p.add_argument("--live", action="store_true", help="also make one tiny real API call")
     for name in ("run", "dry-run"):
         p = sub.add_parser(name)
         p.add_argument("part", type=int)
@@ -180,7 +215,7 @@ def main() -> int:
     sub.add_parser("check")
     a = ap.parse_args()
     if a.cmd == "doctor":
-        return doctor()
+        return doctor(a.live)
     if a.cmd in ("run", "dry-run"):
         s = run_cmd(a.part, a.module, a.cmd == "dry-run")
         return 0 if s["outcome"] in ("PASS", "DRY") else 1

@@ -89,6 +89,11 @@ def run(
         if not auth:
             raise SystemExit("no sandbox credential; see docs/FAIR_TESTING.md §4 (fair.sh doctor)")
         rc = box.run(cmd, log, timeout, extra_env=auth)
+        if '"api_error_status":401' in log.read_text(errors="replace"):
+            raise SystemExit(
+                "the sandbox credential was rejected (401); renew it (docs/FAIR_TESTING.md §4), "
+                "check with `scripts/fair.sh doctor --live`, then `scripts/fair.sh resume <run_id>`"
+            )
     return Session(role, name, model if not stub else "stub", rc, log, canary_log, _cost(log))
 
 
