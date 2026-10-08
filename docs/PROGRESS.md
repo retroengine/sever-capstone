@@ -8,8 +8,9 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
 
 ## Now
 
-- **Phase:** **Part 2, The Database** (Build §5), started 7 Oct 2026. Part 1 is frozen
-  (`freeze/PART-1.sha256`, tag `part-1-frozen`); the freeze guard passes.
+- **Phase:** **Part 2, The Database** (Build §5), 7–8 Oct 2026: done and frozen
+  (`freeze/PART-2.sha256`, tag `part-2-frozen`). Part 1 is frozen (`freeze/PART-1.sha256`, tag
+  `part-1-frozen`); the freeze guard checks both. Next: Part 3, The Receipt.
 - **Working copy:** `~/sever-db` on the WSL ext4 disk since 4 Oct (the `C:` copy is a backup).
 - **Git:** you commit from now on; Claude only leaves changes in the working tree and hands you the
   commands. The trunk is `main`. Part 2 work goes on short branches, one per module
@@ -26,17 +27,30 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `locator.bin`, WAL segment header): expect gap entries. Part 2 adds its own gate runners and tools
   in new modules; the Part 1 packages (including `sever_testkit`) are frozen (F-3).
 
-## RESUME HERE (updated 8 Oct 2026 ~07:55 UTC, branch p2-fuzz)
+## RESUME HERE (updated 8 Oct 2026 ~13:00 UTC, branch p2-fuzz)
 
-**Every Part 2 gate has passed** (ledger): P2-T1…T3 crash (5 seeds, 343,837 points, 0 failures),
-P2-T4 + P2-T10 + Full-tier checks (`p2-checks`, 19/19), P2-T5 replay, P2-T6 fuzz, P2-T7 spikes,
-P2-T8 sabotage, P2-T9 coverage (94.8 % / 86.7 %) and mutants (91.4 %, all triaged); P2-T11
-recorded. The first `p2-checks` run failed (3 steps), fixed in 5318d56 (DB-71), rerun PASS.
+**Part 2 is done and frozen.** Every Part 2 gate has passed (ledger): P2-T1…T3 crash (5 seeds,
+343,837 points, 0 failures), P2-T5 replay, P2-T6 fuzz, P2-T7 spikes, P2-T8 sabotage, P2-T9 coverage
+(94.8 % / 86.7 %) and mutants (91.4 %, all triaged); P2-T11 recorded. After the test audit, the
+Full-tier checks (P2-T4, P2-T10, E2E-2.x) ran again on 1b7477c: 21/21 steps PASS, including the new
+oracle and proof checks. Production code is unchanged since 7c7da66 outside `#[cfg(test)]` items, so
+the crash, fuzz, coverage and mutants results still describe it.
 
-**Waiting for the owner's independent test audit** (another AI; worktree `~/sever-db-oracles`,
-branch `p2-test-oracles`; owner's decision 8 Oct 07:25 UTC). Then: check each finding against the
-spec, fix the accepted ones, re-run the gates they touch, `scripts/freeze.sh 2`, commit
-`freeze/PART-2.sha256`; the owner tags `part-2-frozen` and merges the p2-* branches.
+**Test-oracle audit: done** (branch `p2-test-oracles`, merged in 0980d55; follow-up 035d70b).
+CLAUDE.md §6.3 makes it binding: each SR-labelled test declares its oracle, no requirement rests on
+the code alone, and every label has a red proof (a patch that breaks the rule). 126 labelled tests
+(A 118, B 1, C 5, D 6: `docs/TEST_ORACLES_P2.md`); 211 of 211 proofs hold at 035d70b
+(`docs/PROOFS_P2.md`). Findings fixed: G-18/G-19 (§14.9 versions and store magic, §14.6 ID widths)
+closed by DB-72; byte-level spec tests for §14.6/§14.9 written by hand; weak tests strengthened
+(checkpoint CRC flips, store torn tail, WAL cut, SDK forwarding against the engine alone); labels a
+test could not fail removed (each with a green proof); a new test for one writer at a time (§12.5).
+**For the owner to review by hand:** the crash gate's oracle `sever_refmodel_durable` was written by
+the same AI as the engine (a shared misreading of the spec would pass both).
+
+**Freeze:** `freeze/PART-2.sha256` (246 files, Part 2's proofs included); tag `part-2-frozen`.
+
+**Next:** Part 3, The Receipt (Build 3-4 §1): certificates anyone can verify offline. Start with its
+module list (Build 3-4 §1.4) and follow CLAUDE.md §6.3 from the first test.
 
 **Crash safety (owner's request, done 8 Oct):** long runs go through a job queue
 (`scripts/jobq.sh add|list|run`; jobs in `jobs/`, logs in `jobs/logs/`) run by the systemd user
@@ -48,34 +62,6 @@ infinity`, started from `Startup\sever-wsl-keepalive.vbs`, keeps WSL running aft
 closes (delete that file to undo). Queued now: `p2-crash` (waits for the running gate; it finishes
 or resumes it), then `p2-measures` (P2-T11, once).
 
-**Test-oracle audit: STOPPED by the owner on 8 Oct ~00:15 UTC** (started at sever-format; resume
-only if the owner asks). Found so far: (1) `p2_format_wal_record_layout_by_offset` checks the type
-byte against the code's own constant, not the spec's code 6; (2) no test checks each WAL record
-type's payload bytes against the §14.6 table (only round trips, oracle D); (3)
-`p2_format_record_type_bytes_are_stable` is a tautology (the spec's code-to-name table is not
-asserted). Plan as written below.
-
-**(Paused) HIGH PRIORITY before the Part 2 freeze (owner's request, 7 Oct 2026): test-oracle audit.**
-Every Part 2 test is classified by where its expected value comes from: (A) spec text or
-Appendix A, (B) an independent oracle (Python model, Part 1 reference-model traces, independent
-CRC/HMAC), (C) Part 1's frozen index, (D) the engine's own code (round trips, error labels). Any
-test guarding a spec rule with only a (D) oracle is rewritten from the spec. To keep it unbiased:
-classify from the test file and the spec only, never opening the implementation; write each
-expected value from the spec before looking at what the code produces; record the table in
-`docs/TEST_ORACLES_P2.md`; and list the rules where the Python oracle and the engine share one
-reading of the spec (same author), so the owner can review those by hand.
-
-**Next steps, in order:**
-1. P2-T9 branch coverage: exploratory measure was lines 91.8 %, branches 71.9 % (gate 85 %) before
-   the new tests. Remaining uncovered branches (deduped): sever-wal/src/lib.rs (≈18: recovery
-   refusals), sever-txn/src/contract.rs (≈24: each contract violation needs a deliberately wrong
-   implementation), sever-format image.rs streams order checks (≈13), records.rs, protocol.rs.
-   Write tests FROM THE SPEC (memory: tests-from-spec), re-measure with
-   `cargo +nightly llvm-cov --branch --release -q --workspace --json --summary-only -- --include-ignored`,
-   then add a `p2-coverage` + `p2-mutants` runner (copy p1_coverage/p1_mutants) and run them.
-2. Triage mutants survivors into `docs/MUTANTS_P2.md`.
-3. P2-T8 `tests/sabotage/run.sh`; update `scripts/ci.sh` for Part 2.
-4. P2-T11 measures; nq-10k demo run; README/API docs; `scripts/freeze.sh 2` (tag stays with owner).
 
 ## Part 2 modules (Build §5.5)
 
