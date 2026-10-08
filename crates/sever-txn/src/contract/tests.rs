@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 use sever_format::RecordType;
 use sever_index::NoExtension;
-use sever_spec::spec;
 use sever_types::Error;
 use sever_vfs::Vfs;
 use zeroize::Zeroizing;
@@ -16,7 +15,6 @@ use crate::participant::TxnDraft;
 use crate::sealer::PlaintextSealer;
 
 #[test]
-#[spec("SR-14-1")]
 fn p2_txn_ep6_plaintext_sealer_passes_contract() {
     assert_eq!(ep6_sealer_contract(&PlaintextSealer), Ok(()));
 }

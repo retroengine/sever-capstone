@@ -278,6 +278,8 @@ impl Mini {
 }
 
 #[test]
+// oracle: C Part 1's frozen index: an index rebuilt from the image and from the WAL replay has the live index's canonical blobs and stats
+// oracle: A §21 INV-4 n equals the slot count, INV-7 every locator entry points at its slot
 #[spec("SR-12.3-1", "SR-15.1-1", "SR-15.2-1", "SR-15.3-1", "SR-12.6-1")]
 fn p2_txn_after_images_reproduce_the_index_through_inserts_flushes_and_deletes() {
     let mut m = Mini::new();
@@ -340,7 +342,8 @@ fn p2_txn_after_images_reproduce_the_index_through_inserts_flushes_and_deletes()
 }
 
 #[test]
-#[spec("SR-14.6-3")]
+// oracle: A §14.6 table: PAYLOAD_REF names the stored passage; LOCATOR_DEL drops the reference
+#[spec("SR-14.6-2")]
 fn p2_txn_passage_text_is_stored_before_commit_and_referenced() {
     let mut m = Mini::new();
     let v = &rows("ref")[0];
@@ -355,6 +358,7 @@ fn p2_txn_passage_text_is_stored_before_commit_and_referenced() {
 
 // SB-15 must turn this red.
 #[test]
+// oracle: A §12.3 committed exactly when COMMIT is durable, §15.8: nothing is applied at any step before it
 #[spec("SR-12.3-2", "SR-15.8-1")]
 fn p2_txn_nothing_reaches_memory_before_the_commit_point() {
     let mut m = Mini::new();
@@ -405,6 +409,7 @@ fn p2_txn_nothing_reaches_memory_before_the_commit_point() {
 }
 
 #[test]
+// oracle: A §12.7 a failed fsync aborts and is never retried; §15.8 no success, memory unchanged
 #[spec("SR-12.7-2", "SR-15.8-1")]
 fn p2_txn_a_failed_wal_write_changes_nothing_in_memory() {
     let mut m = Mini::new();
@@ -461,6 +466,7 @@ impl TxnParticipant<NoExtension> for Recorder {
 }
 
 #[test]
+// oracle: A §14.6 participant payloads are carried verbatim (DB-45)
 #[spec("SR-14.6-2")]
 fn p2_txn_participants_run_in_protocol_order_and_their_records_are_logged() {
     let mut m = Mini::new();
@@ -504,6 +510,7 @@ fn p2_txn_layout_follows_extension_and_sealer() {
 }
 
 #[test]
+// oracle: C Part 1's frozen index: the holding area's live count; §14.3 n of the holding header
 #[spec("SR-14.3-1", "SR-7.4-1")]
 fn p2_txn_holding_header_counts_its_records() {
     let mut m = Mini::new();
@@ -550,7 +557,8 @@ fn p2_txn_system_clock_is_wall_clock_milliseconds() {
 }
 
 #[test]
-#[spec("SR-14-1")]
+// oracle: A §14.4 with the plaintext sealer the wrapped record key is empty (DB-48)
+#[spec("SR-14.4-1")]
 fn p2_txn_plaintext_sealer_refuses_any_envelope_bytes() {
     // DB-48: with the plaintext sealer the wrapped record key is empty (§14.4).
     let (cid, g, sid) = (
