@@ -225,7 +225,8 @@ def run(root: Path, only: list[str]) -> tuple[str, bool, list[Verdict]]:
     working tree, so a new proof can be tried before it is committed; ``dirty`` says so."""
     head = _sh(["git", "rev-parse", "HEAD"], root).stdout.strip()
     dirty = bool(_sh(["git", "status", "--porcelain", "--", str(MANIFEST.parent)], root).stdout)
-    target = root / "target" / "proofs"
+    # Absolute: cargo runs inside the temporary worktree, and the cache is shared between runs.
+    target = root.resolve() / "target" / "proofs"
     logs = target / "logs"
     logs.mkdir(parents=True, exist_ok=True)
     verdicts: list[Verdict] = []
