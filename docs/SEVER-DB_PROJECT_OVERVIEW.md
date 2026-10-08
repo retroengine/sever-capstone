@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-50, DB-55 … DB-72)](#6-decision-register-db-1--db-50-db-55--db-72)
+6. [Decision register (DB-1 … DB-50, DB-55 … DB-73)](#6-decision-register-db-1--db-50-db-55--db-73)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-50, DB-55 … DB-72)
+## 6. Decision register (DB-1 … DB-50, DB-55 … DB-73)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -972,6 +972,25 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-73 — Fair testing: clean-room sessions, blind bugs, a freeze condition (8 October 2026)
+
+**Decision.** Every part is tested by an automated system (`docs/FAIR_TESTING.md`, rules FT-1 …
+FT-10; `scripts/fair.sh`): fresh headless Claude sessions in a `bwrap` sandbox that holds only the
+spec, the public API and inputs write tests against a sealed engine; the tests are hashed and run by a
+script against the real engine; a different model judges failures; a separate session plants blind
+bugs that the script scores against both suites; a judge re-derives a random sample of the suite's
+expected values; findings are fixed red-first under diff guards and the run repeats. A part freezes
+only after a PASS on its exact owned files; the settings in `configs/fair.yaml` are pre-registered.
+**Why.** The engine, its tests, its oracle labels and its proofs had one author; such a suite can be
+self-consistent and still wrong (CLAUDE.md §6.3 keeps that author honest but is no second reader).
+The owner asked (8 October 2026) for testing that is fair and real, fully automated, on one machine.
+**Rejected.** Subagents of a working session (they inherit its files and prompt); a rule in
+CLAUDE.md alone (an instruction, not an enforcement); the owner planting bugs and hand-checking
+oracles (the owner asked for full automation); a second machine (not available; isolation is about
+what a tester can see, which the sandbox fixes). **Consequence.** `scripts/freeze.sh` refuses a part
+≥ 2 without a PASS (FT-10); the Fast tier checks kept clean-room tests against their manifests.
+Limit: every session is a Claude model, so a misreading all of them share can survive.
 
 #### DB-72 — Format versions, the store magic and identifier widths on disk (8 October 2026)
 
@@ -1795,6 +1814,8 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **8 October 2026 — Fair testing.** DB-73 (clean-room sessions, blind planted bugs, random oracle
+  audit, guarded fixes, freeze condition; `docs/FAIR_TESTING.md`). No specification section touched.
 - **8 October 2026 — Test-oracle audit.** DB-72 (format versions, the store magic and identifier
   widths on disk, closes G-18 and G-19). Specification sections touched: §14.6, §14.9.
 - **7 October 2026 — Part 2 design review.** DB-46 (slot payload order and the header's

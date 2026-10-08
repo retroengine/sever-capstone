@@ -40,6 +40,7 @@ fast() {
   step proofs-check-p2 uv run --no-sync python -m sever_testkit_p2.proofs check
   step crypto-deps no_duplicate_crypto_deps
   step freeze-guard freeze_guard
+  step fair-check scripts/fair.sh check
 }
 full_checks() {
   fast

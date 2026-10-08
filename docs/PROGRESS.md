@@ -26,6 +26,20 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `locator.bin`, WAL segment header): expect gap entries. Part 2 adds its own gate runners and tools
   in new modules; the Part 1 packages (including `sever_testkit`) are frozen (F-3).
 
+## Fair testing (8 Oct 2026, branch p2-fair-testing)
+
+Built the automated fair-testing system (`docs/FAIR_TESTING.md`, FT-1 … FT-10; CLAUDE.md §6.4;
+DB-73): fresh Claude sessions in a `bwrap` clean room write tests against a sealed engine, the tests
+are hashed and run by a script, a different model triages, blind planted bugs are scored, a random
+oracle audit, red-first guarded fixes, repeat. `scripts/freeze.sh 2` now refuses without a PASS on
+the exact owned files. A dry run with stub agents passed every stage (`docs/audit/FAIRNESS_P2_DRY.md`);
+`scripts/ci.sh fast` 16/16 PASS on the branch.
+
+**Owner, once:** run `claude setup-token`, put `CLAUDE_CODE_OAUTH_TOKEN=…` in
+`~/.config/sever-fair/auth.env` (mode 600), check with `scripts/fair.sh doctor`. **Then:** merge
+`p2-fair-testing`, and run `scripts/fair.sh --bg cycle 2` on the merged commit; merge any
+`p2-fairfix-*` branch it leaves; `scripts/freeze.sh 2`.
+
 ## RESUME HERE (updated 8 Oct 2026 ~07:55 UTC, branch p2-fuzz)
 
 **Every Part 2 gate has passed** (ledger): P2-T1…T3 crash (5 seeds, 343,837 points, 0 failures),
