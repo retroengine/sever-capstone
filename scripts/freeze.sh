@@ -16,7 +16,7 @@ case "$part" in
             crates/sever-p2 crates/sever-py-p2
             python/sever_refmodel_durable python/sever_testkit_p2 python/sever_db_p2
             fuzz-p2/Cargo.toml fuzz-p2/Cargo.lock fuzz-p2/fuzz_targets fuzz-p2/seeds 'golden/p2_*'
-            tests/e2e/test_p2_e2e.py tests/architecture/test_architecture_p2.py) ;;
+            tests/e2e/test_p2_e2e.py tests/architecture/test_architecture_p2.py tests/proofs/p2) ;;
   *) echo "no ownership list for part $part yet"; exit 2 ;;
 esac
 if [ -n "$(git status --porcelain -- "${owned[@]}")" ]; then
