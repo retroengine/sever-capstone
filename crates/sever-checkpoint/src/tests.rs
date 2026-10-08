@@ -131,6 +131,9 @@ fn load_current(v: &SimVfs) -> (CheckpointMeta, DbImage) {
 }
 
 #[test]
+// oracle: A §15.6 steps 1–3: after a DropAll restart the checkpoint loads, so every file, the rename and MANIFEST were synced [SR-15.6-1, SR-15.6-2, SR-15.6-3]
+// oracle: A §14.1 checkpoint file names by hand [SR-14.1-1]
+// oracle: D the streams round trip; their bytes are in sever-format tests/spec_bytes.rs [SR-14.9-1]
 #[spec("SR-15.6-1", "SR-15.6-2", "SR-15.6-3", "SR-14.9-1", "SR-14.1-1")]
 fn p2_checkpoint_write_then_load_round_trips() {
     let v = fresh();
@@ -161,6 +164,7 @@ fn p2_checkpoint_write_then_load_round_trips() {
 }
 
 #[test]
+// oracle: A §12.4 an interrupted checkpoint leaves the previous one valid: old or new at every crash point and policy
 #[spec("SR-12.4-2", "SR-15.6-2", "SR-15.6-3")]
 fn p2_checkpoint_interrupted_at_every_operation_leaves_old_or_new() {
     let base = fresh();
@@ -205,6 +209,7 @@ fn p2_checkpoint_interrupted_at_every_operation_leaves_old_or_new() {
 }
 
 #[test]
+// oracle: A §12.7 every record has a CRC-32C; §14.9 a wrong CRC is refused; §14.1 every checkpoint file must exist
 #[spec("SR-14-2", "SR-12.7-4")]
 fn p2_checkpoint_corruption_is_refused() {
     let v = fresh();
@@ -246,6 +251,7 @@ fn p2_checkpoint_corruption_is_refused() {
 }
 
 #[test]
+// oracle: A §14 sealer marker: a file of another sealer_id is refused (DB-48)
 #[spec("SR-14-2")]
 fn p2_checkpoint_refuses_another_sealer() {
     let v = fresh();
