@@ -224,6 +224,26 @@ fn p2_checkpoint_corruption_is_refused() {
         f.write_at(16_384 + 30, &[b[0] ^ 0x10]).unwrap();
         assert!(load(&w, &m, &layout).is_err(), "{name}");
     }
+    // Bytes no parser rule constrains, so only the page CRC (§14.2, §14.9) can catch the flip.
+    // File offset = page 1 (16,384) + its 20-byte page header + the offset in the §14.9 stream.
+    for (name, at) in [
+        ("meta.bin", 8 + 8 + 8 + 6),                 // inside the config SHA-256
+        ("groups.bin", 16 + 8 + 32 + 1 + 8 + 8 + 3), // inside centroid[0] of frozen-0000
+        ("slots.bin", 16 + 32 + 8 + 64 + 2 + 256 + 1), // inside x̃[0] of the first slot
+    ] {
+        let w = v.fork();
+        let path = format!("{}/{name}", checkpoint_path(1));
+        let mut f = w.open(&path, OpenMode::Existing).unwrap();
+        let off = 16_384 + 20 + at;
+        let mut b = [0u8; 1];
+        f.read_at(off, &mut b).unwrap();
+        f.write_at(off, &[b[0] ^ 0x01]).unwrap();
+        assert_eq!(
+            load(&w, &m, &layout).err(),
+            Some(bad("§14.2 page crc")),
+            "{name}"
+        );
+    }
     let w = v.fork();
     w.unlink(&format!("{}/locator.bin", checkpoint_path(1)))
         .unwrap();

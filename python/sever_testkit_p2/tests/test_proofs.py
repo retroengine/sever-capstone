@@ -76,11 +76,12 @@ def test_p2_proofs_every_label_needs_a_red_proof(tmp_path: Path) -> None:
 
 
 def test_p2_proofs_a_green_proof_does_not_prove_a_label(tmp_path: Path) -> None:
-    m = _entry("P1", "green", "SR-14.3-1", "p2_format_unlabelled") + _entry(
+    # A green proof naming a labelled test is itself a problem, and never counts as coverage.
+    m = _entry("P1", "green", "SR-14.3-1", "p2_format_two") + _entry(
         "P2", "red", "SR-15.1-1", "p2_format_two, p2_format_one"
     )
     probs, pairs = _check(_repo(tmp_path, m))
-    assert probs == []
+    assert probs == ["P1: green proof for SR-14.3-1, but p2_format_two still labels it"]
     assert pairs == ["lib.rs::p2_format_two: SR-14.3-1"]
 
 

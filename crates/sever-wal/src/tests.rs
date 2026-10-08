@@ -511,6 +511,12 @@ fn p2_wal_an_open_transaction_at_the_tail_is_discarded_and_cut() {
         4,
         "the cut records' wal_seqs are reused"
     );
+    // The cut is on disk: a new transaction lands right after transaction 1.
+    drop(wal);
+    let (mut wal, _, _) = open(&v, DEFAULT_SEGMENT_BYTES).unwrap();
+    wal.commit(&txn(9, 4)).unwrap();
+    let (_, again, _) = open(&v, DEFAULT_SEGMENT_BYTES).unwrap();
+    assert_eq!(again.iter().map(|t| t.txn_id).collect::<Vec<_>>(), [1, 2]);
 }
 
 #[test]

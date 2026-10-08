@@ -257,8 +257,14 @@ mod tests {
         let mut s = FileStore::create(Arc::new(v.clone()), cfg(DEFAULT_SEGMENT_BYTES)).unwrap();
         let a = s.append(1, b"first passage").unwrap();
         s.sync().unwrap();
-        let _lost = s.append(2, b"never synced").unwrap();
-        v.restart(CrashPolicy::Random(3));
+        // A crash tears the next append after 5 bytes: unreferenced garbage at the tail.
+        v.set_faults(FaultPlan {
+            crash_at_op: Some(1),
+            tear_bytes: 5,
+            ..FaultPlan::default()
+        });
+        assert!(s.append(2, b"never synced").is_err());
+        v.restart(CrashPolicy::KeepAll);
         let mut s = FileStore::open(Arc::new(v.clone()), cfg(DEFAULT_SEGMENT_BYTES)).unwrap();
         assert_eq!(s.read(&a).unwrap().bytes, b"first passage");
         // The next record lands after the last valid one, whatever the crash left behind.
