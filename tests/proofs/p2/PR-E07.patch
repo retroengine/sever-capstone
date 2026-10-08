@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/recovery.rs b/crates/sever-engine/src/recovery.rs
+index 1570af5..ff1ca96 100644
+--- a/crates/sever-engine/src/recovery.rs
++++ b/crates/sever-engine/src/recovery.rs
+@@ -265,7 +265,7 @@ pub(crate) fn rebuild_collection<E: StoredExtension, S: Sealer>(
+             derived.insert(slot.scrambled_id, (g.id, i as u64));
+         }
+     }
+-    if derived != coll.locator {
++    if derived.len() < coll.locator.len() {
+         return Err(inv("INV-7 locator matches slots"));
+     }
+     // INV-8: N and k.

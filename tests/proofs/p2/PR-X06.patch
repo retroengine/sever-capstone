@@ -1,0 +1,15 @@
+diff --git a/python/sever_db_p2/__init__.py b/python/sever_db_p2/__init__.py
+index 0cb643d..f8c6e46 100644
+--- a/python/sever_db_p2/__init__.py
++++ b/python/sever_db_p2/__init__.py
+@@ -107,6 +107,10 @@ class Database:
+                 return Receipt(None, retried=True)
+             raise
+ 
++    @staticmethod
++    def _quantise(v: Sequence[float]) -> list[float]:
++        return [round(float(x) * 2**24) / 2**24 for x in v]
++
+     def delete(self, collection: str, record_id: str) -> Outcome:
+         """Deletes one record: ``"deleted"``, or ``"absent"`` if it was not live (a retry)."""
+         return "deleted" if self._e.delete(collection, record_id) == "deleted" else "absent"

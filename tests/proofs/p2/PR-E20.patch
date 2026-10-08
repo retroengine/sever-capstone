@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/engine.rs b/crates/sever-engine/src/engine.rs
+index c4692ce..71c735e 100644
+--- a/crates/sever-engine/src/engine.rs
++++ b/crates/sever-engine/src/engine.rs
+@@ -380,7 +380,7 @@ impl<E: StoredExtension, S: Sealer> Engine<E, S> {
+             (cs, records, layout)
+         };
+         let placement = match cs.outcomes.first() {
+-            Some(Outcome::Placed(p)) => *p,
++            Some(Outcome::Placed(_)) => Placement::Holding,
+             _ => Placement::Holding,
+         };
+         let installed = cs.clone();

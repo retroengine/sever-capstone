@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/recovery.rs b/crates/sever-engine/src/recovery.rs
+index 1570af5..02d43a3 100644
+--- a/crates/sever-engine/src/recovery.rs
++++ b/crates/sever-engine/src/recovery.rs
+@@ -218,7 +218,7 @@ pub(crate) fn rebuild_collection<E: StoredExtension, S: Sealer>(
+                 .iter()
+                 .zip(&g.header.centroid)
+                 .all(|(a, b)| a.to_bits() == b.to_bits());
+-            if label != Some(id) || !same {
++            if label != Some(id) && !same {
+                 return Err(inv("§5.1 frozen group"));
+             }
+         }

@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/recovery.rs b/crates/sever-engine/src/recovery.rs
+index 1570af5..b4eea70 100644
+--- a/crates/sever-engine/src/recovery.rs
++++ b/crates/sever-engine/src/recovery.rs
+@@ -193,7 +193,7 @@ pub(crate) fn rebuild_collection<E: StoredExtension, S: Sealer>(
+     let meta = &coll.meta;
+     let cid = meta.cid;
+     let scrambler = sever_index::HmacSha512Scrambler::new(k_scramble);
+-    if art.sha256_artefact != meta.artefact_sha256 || art.d != usize::from(meta.d) {
++    if art.d != usize::from(meta.d) {
+         return Err(inv("§6.3 artefact does not match the collection"));
+     }
+     let d = art.d;

@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/engine.rs b/crates/sever-engine/src/engine.rs
+index c4692ce..f544f9d 100644
+--- a/crates/sever-engine/src/engine.rs
++++ b/crates/sever-engine/src/engine.rs
+@@ -244,7 +244,7 @@ impl<E: StoredExtension, S: Sealer> Engine<E, S> {
+     }
+ 
+     fn maybe_checkpoint(&self, w: &mut Writer<E>) -> Result<(), Error> {
+-        if w.wal.appended() >= self.cfg.checkpoint_every_wal_bytes {
++        if w.wal.appended() >= self.cfg.checkpoint_every_wal_bytes && w.checkpoint_id == u64::MAX {
+             self.checkpoint_locked(w)?;
+         }
+         Ok(())

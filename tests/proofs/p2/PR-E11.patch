@@ -1,0 +1,22 @@
+diff --git a/crates/sever-engine/src/recovery.rs b/crates/sever-engine/src/recovery.rs
+index 1570af5..f65322e 100644
+--- a/crates/sever-engine/src/recovery.rs
++++ b/crates/sever-engine/src/recovery.rs
+@@ -248,7 +248,7 @@ pub(crate) fn rebuild_collection<E: StoredExtension, S: Sealer>(
+                         .ok_or(inv("INV-6 sum overflow"))?;
+                 }
+             }
+-            if s != state.s || state.n != g.slots.len() as u64 {
++            if state.n != g.slots.len() as u64 {
+                 return Err(inv("INV-6 S equals the sum of members"));
+             }
+             ext.check_group(&state.s, &state.ext_public, &state.ext_secret)?;
+@@ -284,7 +284,7 @@ pub(crate) fn rebuild_collection<E: StoredExtension, S: Sealer>(
+     )?;
+     ix.apply(rebuild_changeset(d, groups, Counters { big_n, k }));
+     // Part 1's own checks on the rebuilt index (INV-5 … INV-8 from its side).
+-    ix.check_invariants()?;
++    let _ = ix.check_invariants();
+     if ix.k() != k {
+         return Err(inv("INV-8 k"));
+     }

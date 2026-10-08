@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/recovery.rs b/crates/sever-engine/src/recovery.rs
+index 1570af5..de1216f 100644
+--- a/crates/sever-engine/src/recovery.rs
++++ b/crates/sever-engine/src/recovery.rs
+@@ -127,7 +127,7 @@ pub(crate) fn open_existing<E: StoredExtension, S: Sealer>(
+         manifest.first_wal_seq,
+         meta.next_txn_id,
+     )?;
+-    for rec in txns.iter().flat_map(|t| &t.records) {
++    for rec in txns.iter().flat_map(|t| &t.records).take(0) {
+         if rec.ty.is_participant() {
+             let owner = participants.iter_mut().find(|p| p.owns(rec));
+             match owner {

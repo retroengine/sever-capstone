@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/recovery.rs b/crates/sever-engine/src/recovery.rs
+index 1570af5..80cc0cc 100644
+--- a/crates/sever-engine/src/recovery.rs
++++ b/crates/sever-engine/src/recovery.rs
+@@ -229,7 +229,7 @@ pub(crate) fn rebuild_collection<E: StoredExtension, S: Sealer>(
+             return Err(inv("INV-4 group cap"));
+         }
+     }
+-    if coll.groups.len() <= k_frozen {
++    if coll.groups.len() < k_frozen {
+         return Err(inv("§5.1 holding area missing"));
+     }
+     let groups = decode_collection::<E>(coll, &layout, sealer)?;

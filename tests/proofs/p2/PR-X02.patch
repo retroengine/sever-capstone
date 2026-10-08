@@ -1,0 +1,13 @@
+diff --git a/python/sever_db_p2/__init__.py b/python/sever_db_p2/__init__.py
+index 0cb643d..c984e00 100644
+--- a/python/sever_db_p2/__init__.py
++++ b/python/sever_db_p2/__init__.py
+@@ -106,6 +106,8 @@ class Database:
+             if e.args and e.args[0] is True:
+                 return Receipt(None, retried=True)
+             raise
++        except InvalidRecordId as e:
++            raise InvalidRecordId(f"{e} (record {record_id})") from None
+ 
+     def delete(self, collection: str, record_id: str) -> Outcome:
+         """Deletes one record: ``"deleted"``, or ``"absent"`` if it was not live (a retry)."""

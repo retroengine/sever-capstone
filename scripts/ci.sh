@@ -36,6 +36,8 @@ fast() {
   step python-tests uv run --no-sync pytest -q -m "not slow"
   step spec-trace uv run --no-sync python -m sever_testkit.spec_trace check --part 1 --complete
   step spec-trace-p2 uv run --no-sync python -m sever_testkit_p2.spec_trace check --part 2 --complete
+  step oracle-check-p2 uv run --no-sync python -m sever_testkit_p2.oracle_check check
+  step proofs-check-p2 uv run --no-sync python -m sever_testkit_p2.proofs check
   step crypto-deps no_duplicate_crypto_deps
   step freeze-guard freeze_guard
 }

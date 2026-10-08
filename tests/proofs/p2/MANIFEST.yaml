@@ -1,5 +1,6 @@
 # Proofs for Part 2 (CLAUDE.md §6.3). Each entry: a patch that breaks one rule and the tests that
-# must go red (red) or stay green (green). Run: python -m sever_testkit_p2.proofs run
+# must go red (red), stay green (green: the label was removed), or stay green while keeping the
+# label (limit: what the test does not notice). Run: python -m sever_testkit_p2.proofs run
 - id: PR-C01
   claim: an SR-labelled test without an oracle passes the checker
   kind: red
@@ -169,6 +170,171 @@
   runner: pytest
   tests:
   - python/sever_testkit_p2/tests/test_proofs.py::test_p2_proofs_manifest_problems_are_reported
+- id: PR-G01
+  claim: replay ignores GROUP_HEADER after-images; apply_is_strict stays green, so it cannot carry SR-12.3-1
+  kind: green
+  requirements:
+  - SR-12.3-1
+  patch: PR-G01.patch
+  package: sever-format
+  tests:
+  - p2_format_apply_is_strict
+- id: PR-G01:txn
+  claim: replay ignores GROUP_HEADER after-images
+  kind: red
+  requirements:
+  - SR-12.3-1
+  patch: PR-G01.patch
+  tests:
+  - p2_txn_after_images_reproduce_the_index_through_inserts_flushes_and_deletes
+  package: sever-txn
+- id: PR-G02
+  claim: checkpoint files are written without fsync; the stream round trip stays green, so it cannot carry
+    SR-15.6-1
+  kind: green
+  requirements:
+  - SR-15.6-1
+  patch: PR-K01.patch
+  package: sever-format
+  tests:
+  - p2_format_checkpoint_streams_round_trip
+- id: PR-G03
+  claim: a storage crate writes a file around the VFS; the path-syntax test stays green, so it cannot
+    carry SR-12.2-1
+  kind: green
+  requirements:
+  - SR-12.2-1
+  patch: PR-G03.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_paths_are_checked_strictly
+- id: PR-G03:arch
+  claim: a storage crate (sever-wal) writes a file around the VFS
+  kind: red
+  requirements:
+  - SR-12.2-1
+  patch: PR-G03.patch
+  tests:
+  - tests/architecture/test_architecture_p2.py::test_p2_arch_storage_io_goes_through_the_vfs
+  runner: pytest
+- id: PR-G04
+  claim: a VFS error message names a record ID; the no-path test stays green, so it cannot carry SR-17-2
+  kind: green
+  requirements:
+  - SR-17-2
+  patch: PR-G04.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_errors_carry_no_path
+- id: PR-G05
+  claim: SimVfs keeps unsynced entries under DropAll; the functional contract stays green, so it cannot
+    carry SR-12.2-3
+  kind: green
+  requirements:
+  - SR-12.2-3
+  patch: PR-V01.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_sim_passes_functional_contract
+- id: PR-G06
+  claim: recovery replays an uncommitted transaction; the transaction-ID test stays green, so it cannot
+    carry SR-12.3-2
+  kind: green
+  requirements:
+  - SR-12.3-2
+  patch: PR-W01.patch
+  package: sever-wal
+  tests:
+  - p2_wal_refuses_transaction_ids_that_do_not_increase
+- id: PR-G07
+  claim: WAL records write and read txn_id before wal_seq (symmetric); the commit round trip stays green,
+    so it cannot carry SR-14.6-1
+  kind: green
+  requirements:
+  - SR-14.6-1
+  patch: PR-G07.patch
+  package: sever-wal
+  tests:
+  - p2_wal_commit_then_recover_round_trips_across_segments
+- id: PR-G07:format
+  claim: WAL records write and read txn_id before wal_seq
+  kind: red
+  requirements:
+  - SR-14.6-1
+  patch: PR-G07.patch
+  tests:
+  - p2_format_wal_record_layout_by_offset
+  package: sever-format
+- id: PR-G08
+  claim: the payload store is not fsynced before the COMMIT; the passage test stays green, so it cannot
+    carry SR-14.6-3
+  kind: green
+  requirements:
+  - SR-14.6-3
+  patch: PR-G08.patch
+  package: sever-txn
+  tests:
+  - p2_txn_passage_text_is_stored_before_commit_and_referenced
+- id: PR-G09
+  claim: the file header loses its version field; the EP-6 contract and the plaintext-sealer test stay
+    green, so neither can carry SR-14-1
+  kind: green
+  requirements:
+  - SR-14-1
+  patch: PR-F05.patch
+  package: sever-txn
+  tests:
+  - p2_txn_ep6_plaintext_sealer_passes_contract
+  - p2_txn_plaintext_sealer_refuses_any_envelope_bytes
+- id: PR-G11
+  claim: a WAL record's len counts one byte too many; the participant-type test stays green, so it cannot
+    carry SR-14.6-1
+  kind: green
+  requirements:
+  - SR-14.6-1
+  patch: PR-F14.patch
+  package: sever-format
+  tests:
+  - p2_format_participant_record_types_are_4_9_10_11_14
+- id: PR-G12
+  claim: a commit is acknowledged without fsync; the checkpoint-position and segment-name tests stay green,
+    so neither can carry SR-12.3-2
+  kind: green
+  requirements:
+  - SR-12.3-2
+  patch: PR-W02.patch
+  package: sever-wal
+  tests:
+  - p2_wal_recovery_starts_at_the_checkpoint_s_wal_position
+  - p2_wal_refuses_segment_names_that_are_not_20_digits
+- id: PR-G14
+  claim: store CRCs cover only the value (symmetric); the crash-tail test stays green, so it cannot carry
+    SR-14.8-1
+  kind: green
+  requirements:
+  - SR-14.8-1
+  patch: PR-G14.patch
+  package: sever-appendstore
+  tests:
+  - p2_store_synced_records_survive_and_unsynced_tail_is_cut
+- id: PR-G14:format
+  claim: store CRCs cover only the value
+  kind: red
+  requirements:
+  - SR-14.8-1
+  patch: PR-G14.patch
+  tests:
+  - p2_format_store_record_layout_by_offset
+  package: sever-format
+- id: PR-G14:store
+  claim: store CRCs cover only the value
+  kind: red
+  requirements:
+  - SR-14.8-1
+  patch: PR-G14.patch
+  tests:
+  - p2_store_file_on_disk_is_the_spec_s
+  package: sever-appendstore
 - id: PR-F01:SR-14-1
   claim: every §14.9 header and paged file says version 2 instead of 1
   kind: red
@@ -1197,168 +1363,607 @@
   package: sever-txn
   tests:
   - p2_txn_a_failed_wal_write_changes_nothing_in_memory
-- id: PR-G01
-  claim: replay ignores GROUP_HEADER after-images; apply_is_strict stays green, so it cannot carry SR-12.3-1
-  kind: green
-  requirements:
-  - SR-12.3-1
-  patch: PR-G01.patch
-  package: sever-format
-  tests:
-  - p2_format_apply_is_strict
-- id: PR-G01:txn
-  claim: replay ignores GROUP_HEADER after-images
+- id: PR-E01:SR-15.7-2
+  claim: startup accepts groups out of §5.1 order
   kind: red
   requirements:
-  - SR-12.3-1
-  patch: PR-G01.patch
+  - SR-15.7-2
+  patch: PR-E01.patch
+  package: sever-engine
   tests:
-  - p2_txn_after_images_reproduce_the_index_through_inserts_flushes_and_deletes
-  package: sever-txn
-- id: PR-G02
-  claim: checkpoint files are written without fsync; the stream round trip stays green, so it cannot carry
-    SR-15.6-1
-  kind: green
-  requirements:
-  - SR-15.6-1
-  patch: PR-K01.patch
-  package: sever-format
-  tests:
-  - p2_format_checkpoint_streams_round_trip
-- id: PR-G03
-  claim: a storage crate writes a file around the VFS; the path-syntax test stays green, so it cannot
-    carry SR-12.2-1
-  kind: green
-  requirements:
-  - SR-12.2-1
-  patch: PR-G03.patch
-  package: sever-vfs
-  tests:
-  - p2_vfs_paths_are_checked_strictly
-- id: PR-G03:arch
-  claim: a storage crate (sever-wal) writes a file around the VFS
+  - p2_engine_refuses_groups_out_of_order
+- id: PR-E02:SR-15.7-2
+  claim: startup accepts a frozen group whose centroid differs from the artefact
   kind: red
   requirements:
-  - SR-12.2-1
-  patch: PR-G03.patch
+  - SR-15.7-2
+  patch: PR-E02.patch
+  package: sever-engine
   tests:
-  - tests/architecture/test_architecture_p2.py::test_p2_arch_storage_io_goes_through_the_vfs
-  runner: pytest
-- id: PR-G04
-  claim: a VFS error message names a record ID; the no-path test stays green, so it cannot carry SR-17-2
-  kind: green
+  - p2_engine_refuses_a_frozen_centroid_that_differs_from_the_artefact
+- id: PR-E03:SR-15.7-2
+  claim: startup accepts n larger than the slot count
+  kind: red
   requirements:
-  - SR-17-2
-  patch: PR-G04.patch
-  package: sever-vfs
+  - SR-15.7-2
+  patch: PR-E03.patch
+  package: sever-engine
   tests:
-  - p2_vfs_errors_carry_no_path
-- id: PR-G05
-  claim: SimVfs keeps unsynced entries under DropAll; the functional contract stays green, so it cannot
-    carry SR-12.2-3
-  kind: green
+  - p2_engine_refuses_n_that_differs_from_the_slot_count
+- id: PR-E04:SR-15.7-2
+  claim: startup accepts a collection without a holding area
+  kind: red
   requirements:
-  - SR-12.2-3
-  patch: PR-V01.patch
-  package: sever-vfs
+  - SR-15.7-2
+  patch: PR-E04.patch
+  package: sever-engine
   tests:
-  - p2_vfs_ep5_sim_passes_functional_contract
-- id: PR-G06
-  claim: recovery replays an uncommitted transaction; the transaction-ID test stays green, so it cannot
-    carry SR-12.3-2
-  kind: green
+  - p2_engine_refuses_a_missing_holding_area
+- id: PR-E07:SR-15.7-2
+  claim: startup accepts a locator missing an entry
+  kind: red
+  requirements:
+  - SR-15.7-2
+  patch: PR-E07.patch
+  package: sever-engine
+  tests:
+  - p2_engine_refuses_a_locator_that_differs_from_the_slots
+- id: PR-E08:SR-15.7-2
+  claim: startup accepts N or k that differ from the groups
+  kind: red
+  requirements:
+  - SR-15.7-2
+  patch: PR-E08.patch
+  package: sever-engine
+  tests:
+  - p2_engine_refuses_counters_that_differ_from_the_groups
+- id: PR-E09:SR-15.7-2
+  claim: startup accepts an artefact whose hash differs from the collection's
+  kind: red
+  requirements:
+  - SR-15.7-2
+  patch: PR-E09.patch
+  package: sever-engine
+  tests:
+  - p2_engine_refuses_a_collection_whose_artefact_hash_differs
+- id: PR-E10:SR-15.7-2
+  claim: startup accepts a passage reference of a record that is not live
+  kind: red
+  requirements:
+  - SR-15.7-2
+  patch: PR-E10.patch
+  package: sever-engine
+  tests:
+  - p2_engine_refuses_a_passage_of_a_record_that_is_not_live
+- id: PR-E12:SR-15.1-2
+  claim: 'an insert retry reports same_commitment: false'
+  kind: red
+  requirements:
+  - SR-15.1-2
+  patch: PR-E12.patch
+  package: sever-engine
+  tests:
+  - p2_engine_insert_retry_is_a_duplicate_with_the_same_commitment
+- id: PR-E13:SR-15.4-1
+  claim: deleting an absent record is an error instead of AlreadyAbsent
+  kind: red
+  requirements:
+  - SR-15.4-1
+  patch: PR-E13.patch
+  package: sever-engine
+  tests:
+  - p2_engine_delete_retry_is_already_absent
+- id: PR-E13:SR-5.4-2
+  claim: deleting an absent record is an error instead of AlreadyAbsent
+  kind: red
+  requirements:
+  - SR-5.4-2
+  patch: PR-E13.patch
+  package: sever-engine
+  tests:
+  - p2_engine_delete_retry_is_already_absent
+- id: PR-E14:SR-15.9-1
+  claim: drop_collection commits no COLLECTION_DROP record
+  kind: red
+  requirements:
+  - SR-15.9-1
+  patch: PR-E14.patch
+  package: sever-engine
+  tests:
+  - p2_engine_collections_are_isolated_and_drop_leaves_the_other_untouched
+- id: PR-E14:SR-16.1-1
+  claim: drop_collection commits no COLLECTION_DROP record
+  kind: red
+  requirements:
+  - SR-16.1-1
+  patch: PR-E14.patch
+  package: sever-engine
+  tests:
+  - p2_engine_collections_are_isolated_and_drop_leaves_the_other_untouched
+- id: PR-E15:SR-12.7-2
+  claim: a durability failure does not stop the engine
+  kind: red
+  requirements:
+  - SR-12.7-2
+  patch: PR-E15.patch
+  package: sever-engine
+  tests:
+  - p2_engine_failed_fsync_poisons_and_restart_recovers
+- id: PR-E16:SR-12.9-1
+  claim: any filesystem is accepted as the data directory
+  kind: red
+  requirements:
+  - SR-12.9-1
+  patch: PR-E16.patch
+  package: sever-engine
+  tests:
+  - p2_engine_platform_checks
+- id: PR-E17:SR-12.9-2
+  claim: ENGINE.lock is taken shared instead of exclusive
+  kind: red
+  requirements:
+  - SR-12.9-2
+  patch: PR-E17.patch
+  package: sever-engine
+  tests:
+  - p2_engine_platform_checks
+- id: PR-E18:SR-9.7-1
+  claim: k_scramble is all zeros instead of 64 bytes from the OS
+  kind: red
+  requirements:
+  - SR-9.7-1
+  patch: PR-E18.patch
+  package: sever-engine
+  tests:
+  - p2_engine_scrambled_ids_are_the_hmac_of_the_stored_key
+- id: PR-E19:SR-12.4-1
+  claim: storage checkpoints never run on their own
+  kind: red
+  requirements:
+  - SR-12.4-1
+  patch: PR-E19.patch
+  package: sever-engine
+  tests:
+  - p2_engine_checkpoints_itself_after_enough_wal
+- id: PR-E20:SR-15.1-1
+  claim: an insert reports the holding area as its placement
+  kind: red
+  requirements:
+  - SR-15.1-1
+  patch: PR-E20.patch
+  package: sever-engine
+  tests:
+  - p2_engine_placements_and_locations_equal_part_1_s
+- id: PR-E21:SR-12.5-1
+  claim: a search waits for the writer mutex
+  kind: red
+  requirements:
+  - SR-12.5-1
+  patch: PR-E21.patch
+  package: sever-engine
+  tests:
+  - p2_engine_a_search_runs_while_a_writer_is_inside_its_commit
+- id: PR-E24:SR-15.7-1
+  claim: recovery replays no WAL transaction
+  kind: red
+  requirements:
+  - SR-15.7-1
+  patch: PR-E24.patch
+  package: sever-engine
+  tests:
+  - p2_engine_crash_at_every_operation_recovers_an_oracle_state
+  - p2_engine_state_survives_close_and_reopen
+- id: PR-E24:SR-12.3-2
+  claim: recovery replays no WAL transaction
+  kind: red
   requirements:
   - SR-12.3-2
-  patch: PR-W01.patch
-  package: sever-wal
+  patch: PR-E24.patch
+  package: sever-engine
   tests:
-  - p2_wal_refuses_transaction_ids_that_do_not_increase
-- id: PR-G07
-  claim: WAL records write and read txn_id before wal_seq (symmetric); the commit round trip stays green,
-    so it cannot carry SR-14.6-1
-  kind: green
-  requirements:
-  - SR-14.6-1
-  patch: PR-G07.patch
-  package: sever-wal
-  tests:
-  - p2_wal_commit_then_recover_round_trips_across_segments
-- id: PR-G07:format
-  claim: WAL records write and read txn_id before wal_seq
+  - p2_engine_crash_at_every_operation_recovers_an_oracle_state
+- id: PR-E27:SR-9.7-1
+  claim: the scrambled ID hashes record_id ‖ collection_id (frozen Part 1 code, patched in the proof only)
   kind: red
   requirements:
-  - SR-14.6-1
-  patch: PR-G07.patch
+  - SR-9.7-1
+  patch: PR-E27.patch
+  package: sever-engine
   tests:
-  - p2_format_wal_record_layout_by_offset
-  package: sever-format
-- id: PR-G08
-  claim: the payload store is not fsynced before the COMMIT; the passage test stays green, so it cannot
-    carry SR-14.6-3
-  kind: green
+  - p2_engine_scrambled_ids_are_the_hmac_of_the_stored_key
+- id: PR-E-W01:SR-12.3-3
+  claim: recovery replays an uncommitted transaction (as SB-13)
+  kind: red
   requirements:
-  - SR-14.6-3
-  patch: PR-G08.patch
-  package: sever-txn
+  - SR-12.3-3
+  patch: PR-W01.patch
+  package: sever-engine
   tests:
-  - p2_txn_passage_text_is_stored_before_commit_and_referenced
-- id: PR-G09
-  claim: the file header loses its version field; the EP-6 contract and the plaintext-sealer test stay
-    green, so neither can carry SR-14-1
-  kind: green
-  requirements:
-  - SR-14-1
-  patch: PR-F05.patch
-  package: sever-txn
-  tests:
-  - p2_txn_ep6_plaintext_sealer_passes_contract
-  - p2_txn_plaintext_sealer_refuses_any_envelope_bytes
-- id: PR-G11
-  claim: a WAL record's len counts one byte too many; the participant-type test stays green, so it cannot
-    carry SR-14.6-1
-  kind: green
-  requirements:
-  - SR-14.6-1
-  patch: PR-F14.patch
-  package: sever-format
-  tests:
-  - p2_format_participant_record_types_are_4_9_10_11_14
-- id: PR-G12
-  claim: a commit is acknowledged without fsync; the checkpoint-position and segment-name tests stay green,
-    so neither can carry SR-12.3-2
-  kind: green
+  - p2_engine_crash_at_every_operation_recovers_an_oracle_state
+- id: PR-E-W02:SR-12.3-2
+  claim: a commit is acknowledged without fsync
+  kind: red
   requirements:
   - SR-12.3-2
   patch: PR-W02.patch
-  package: sever-wal
+  package: sever-engine
   tests:
-  - p2_wal_recovery_starts_at_the_checkpoint_s_wal_position
-  - p2_wal_refuses_segment_names_that_are_not_20_digits
-- id: PR-G14
-  claim: store CRCs cover only the value (symmetric); the crash-tail test stays green, so it cannot carry
-    SR-14.8-1
+  - p2_engine_crash_at_every_operation_recovers_an_oracle_state
+- id: PR-E-W12:SR-15.7-1
+  claim: recovery drops committed transactions
+  kind: red
+  requirements:
+  - SR-15.7-1
+  patch: PR-W12.patch
+  package: sever-engine
+  tests:
+  - p2_engine_crash_at_every_operation_recovers_an_oracle_state
+  - p2_engine_state_survives_close_and_reopen
+- id: PR-E-W12:SR-12.3-2
+  claim: recovery drops committed transactions
+  kind: red
+  requirements:
+  - SR-12.3-2
+  patch: PR-W12.patch
+  package: sever-engine
+  tests:
+  - p2_engine_crash_at_every_operation_recovers_an_oracle_state
+- id: PR-E-K03:SR-12.4-2
+  claim: MANIFEST is overwritten in place
+  kind: red
+  requirements:
+  - SR-12.4-2
+  patch: PR-K03.patch
+  package: sever-engine
+  tests:
+  - p2_engine_crash_at_every_operation_recovers_an_oracle_state
+- id: PR-E-T07:SR-12.5-2
+  claim: changes are applied to memory before the COMMIT is durable (as SB-15)
+  kind: red
+  requirements:
+  - SR-12.5-2
+  patch: PR-T07.patch
+  package: sever-engine
+  tests:
+  - p2_engine_a_reader_at_every_protocol_step_sees_before_or_after
+- id: PR-E05:SR-15.7-2
+  claim: startup accepts a slot whose scrambled_id is not its record's
+  kind: red
+  requirements:
+  - SR-15.7-2
+  patch: PR-E05.patch
+  package: sever-engine
+  tests:
+  - p2_engine_refuses_a_slot_whose_scrambled_id_is_not_its_record_s
+- id: PR-E06:SR-15.7-2
+  claim: startup accepts two live records with one ID
+  kind: red
+  requirements:
+  - SR-15.7-2
+  patch: PR-E06.patch
+  package: sever-engine
+  tests:
+  - p2_engine_refuses_two_live_records_with_one_id
+- id: PR-E11:SR-15.7-2
+  claim: startup checks neither S = Σ x̃ nor Part 1's index invariants
+  kind: red
+  requirements:
+  - SR-15.7-2
+  patch: PR-E11.patch
+  package: sever-engine
+  tests:
+  - p2_engine_refuses_to_serve_on_a_violated_invariant
+- id: PR-K-W02:SR-12.3-2
+  claim: a commit is acknowledged without fsync
+  kind: red
+  requirements:
+  - SR-12.3-2
+  patch: PR-W02.patch
+  package: sever-crashkit
+  tests:
+  - p2_crashkit_generic_records_survive_a_crash_at_every_operation
+- id: PR-K-W01:SR-12.3-3
+  claim: recovery replays an uncommitted transaction (as SB-13)
+  kind: red
+  requirements:
+  - SR-12.3-3
+  patch: PR-W01.patch
+  package: sever-crashkit
+  tests:
+  - p2_crashkit_generic_records_survive_a_crash_at_every_operation
+- id: PR-K-V09:SR-12.7-1
+  claim: creating a file does not fsync its directory
+  kind: red
+  requirements:
+  - SR-12.7-1
+  patch: PR-V09.patch
+  package: sever-crashkit
+  tests:
+  - p2_crashkit_generic_records_survive_a_crash_at_every_operation
+- id: PR-K-V10:SR-12.7-1
+  claim: a rename does not fsync its directory (as SB-12)
+  kind: red
+  requirements:
+  - SR-12.7-1
+  patch: PR-V10.patch
+  package: sever-crashkit
+  tests:
+  - p2_crashkit_generic_records_survive_a_crash_at_every_operation
+- id: PR-P-E16:SR-12.9-1
+  claim: any filesystem is accepted as the data directory
+  kind: red
+  requirements:
+  - SR-12.9-1
+  patch: PR-E16.patch
+  package: sever-p2
+  tests:
+  - p2_root_refuses_tmpfs_unless_overridden
+- id: PR-P-E17:SR-12.9-2
+  claim: ENGINE.lock is taken shared instead of exclusive
+  kind: red
+  requirements:
+  - SR-12.9-2
+  patch: PR-E17.patch
+  package: sever-p2
+  tests:
+  - p2_root_opens_on_ext4_locks_and_protects_secrets
+- id: PR-P-E28:SR-12.9-1
+  claim: ext4 is refused as the data directory
+  kind: red
+  requirements:
+  - SR-12.9-1
+  patch: PR-E28.patch
+  package: sever-p2
+  tests:
+  - p2_root_opens_on_ext4_locks_and_protects_secrets
+- id: PR-E28:SR-12.9-1
+  claim: ext4 is refused as the data directory
+  kind: red
+  requirements:
+  - SR-12.9-1
+  patch: PR-E28.patch
+  package: sever-engine
+  tests:
+  - p2_engine_platform_checks
+- id: PR-X-F07:2_1
+  claim: locator.bin lists entries in descending order, so no checkpoint loads
+  kind: red
+  requirements:
+  - SR-15.7-1
+  patch: PR-F07.patch
+  runner: pytest
+  tests:
+  - tests/e2e/test_p2_e2e.py::test_p2_e2e_2_1_close_and_reopen_changes_nothing
+  - tests/e2e/test_p2_e2e.py::test_p2_e2e_2_6_disk_image_round_trip
+  build:
+  - native
+- id: PR-X-F07:nq10k
+  claim: locator.bin lists entries in descending order, so no checkpoint loads
+  kind: red
+  requirements:
+  - SR-15.7-1
+  patch: PR-F07.patch
+  runner: pytest
+  tests:
+  - tests/e2e/test_p2_e2e.py::test_p2_e2e_2_1_nq10k_close_and_reopen_changes_nothing
+  build:
+  - native
+  - data
+- id: PR-X-E12
+  claim: 'an insert retry reports same_commitment: false'
+  kind: red
+  requirements:
+  - SR-15.1-2
+  patch: PR-E12.patch
+  runner: pytest
+  tests:
+  - tests/e2e/test_p2_e2e.py::test_p2_e2e_2_3_insert_retry_is_success
+  build:
+  - native
+- id: PR-X-E13
+  claim: deleting an absent record is an error instead of AlreadyAbsent
+  kind: red
+  requirements:
+  - SR-15.4-1
+  patch: PR-E13.patch
+  runner: pytest
+  tests:
+  - tests/e2e/test_p2_e2e.py::test_p2_e2e_2_4_delete_retry_is_absent
+  build:
+  - native
+- id: PR-X03
+  claim: an fsync error poisons the engine instead of aborting the process
+  kind: red
+  requirements:
+  - SR-12.7-2
+  patch: PR-X03.patch
+  runner: pytest
+  tests:
+  - tests/e2e/test_p2_e2e.py::test_p2_e2e_2_5_failed_fsync_aborts_and_restart_recovers
+  build:
+  - cli
+- id: PR-X04
+  claim: the CLI's delete-user commits one transaction per record
+  kind: red
+  requirements:
+  - SR-15.3-1
+  patch: PR-X04.patch
+  runner: pytest
+  tests:
+  - tests/e2e/test_p2_e2e.py::test_p2_e2e_2_2_sigkill_during_delete_user_is_all_or_nothing
+  build:
+  - cli
+- id: PR-X-E14:16.1
+  claim: drop_collection commits no COLLECTION_DROP record
+  kind: red
+  requirements:
+  - SR-16.1-1
+  patch: PR-E14.patch
+  runner: pytest
+  tests:
+  - tests/e2e/test_p2_e2e.py::test_p2_e2e_2_7_dropping_one_collection_leaves_the_other
+  build:
+  - native
+- id: PR-X-E14:15.9
+  claim: drop_collection commits no COLLECTION_DROP record
+  kind: red
+  requirements:
+  - SR-15.9-1
+  patch: PR-E14.patch
+  runner: pytest
+  tests:
+  - tests/e2e/test_p2_e2e.py::test_p2_e2e_2_7_dropping_one_collection_leaves_the_other
+  build:
+  - native
+- id: PR-X01
+  claim: WrongDimension reaches Python as the untyped SeverError
+  kind: red
+  requirements:
+  - SR-17-1
+  patch: PR-X01.patch
+  runner: pytest
+  tests:
+  - tests/e2e/test_p2_e2e.py::test_p2_e2e_2_8_malformed_requests_get_typed_errors_without_content
+  build:
+  - native
+- id: PR-X02
+  claim: the SDK adds the record ID to an InvalidRecordId message
+  kind: red
+  requirements:
+  - SR-17-2
+  patch: PR-X02.patch
+  runner: pytest
+  tests:
+  - tests/e2e/test_p2_e2e.py::test_p2_e2e_2_8_malformed_requests_get_typed_errors_without_content
+  build:
+  - native
+- id: PR-X06
+  claim: the SDK gains its own _quantise function
+  kind: red
+  requirements:
+  - SR-4.2-4
+  patch: PR-X06.patch
+  runner: pytest
+  tests:
+  - python/sever_db_p2/tests/test_sdk.py::test_p2_sdk_has_no_quantiser_of_its_own_and_forwards_vectors_exactly
+  build:
+  - native
+- id: PR-X08
+  claim: the workspace depends on memmap2
+  kind: red
+  requirements:
+  - SR-12.7-3
+  patch: PR-X08.patch
+  runner: pytest
+  tests:
+  - tests/architecture/test_architecture_p2.py::test_p2_arch_no_writes_through_mmap
+- id: PR-G15
+  claim: close() takes no checkpoint; close-and-reopen stays green (WAL replay restores the state), so
+    it cannot carry SR-12.4-1
   kind: green
   requirements:
-  - SR-14.8-1
-  patch: PR-G14.patch
-  package: sever-appendstore
+  - SR-12.4-1
+  patch: PR-E25.patch
+  package: sever-engine
   tests:
-  - p2_store_synced_records_survive_and_unsynced_tail_is_cut
-- id: PR-G14:format
-  claim: store CRCs cover only the value
-  kind: red
+  - p2_engine_state_survives_close_and_reopen
+- id: PR-G16
+  claim: close() takes no checkpoint; E2E-2.1 stays green, so it cannot carry SR-12.4-1
+  kind: green
   requirements:
-  - SR-14.8-1
-  patch: PR-G14.patch
+  - SR-12.4-1
+  patch: PR-E25.patch
+  runner: pytest
   tests:
-  - p2_format_store_record_layout_by_offset
+  - tests/e2e/test_p2_e2e.py::test_p2_e2e_2_1_close_and_reopen_changes_nothing
+  build:
+  - native
+- id: PR-G17
+  claim: a search waits for the writer mutex; E2E-2.2 stays green (it never searches), so it cannot carry
+    SR-12.5-1
+  kind: green
+  requirements:
+  - SR-12.5-1
+  patch: PR-E21.patch
+  runner: pytest
+  tests:
+  - tests/e2e/test_p2_e2e.py::test_p2_e2e_2_2_sigkill_during_delete_user_is_all_or_nothing
+  build:
+  - cli
+- id: PR-G18
+  claim: a search takes the exclusive lock; the single-threaded reader test stays green, so it cannot
+    carry SR-12.5-1
+  kind: green
+  requirements:
+  - SR-12.5-1
+  patch: PR-E22.patch
+  package: sever-engine
+  tests:
+  - p2_engine_a_reader_at_every_protocol_step_sees_before_or_after
+- id: PR-L01
+  claim: 'the SDK rescales every vector by 1 + 2^-20 before sending it: an unnamed SDK transform goes
+    unnoticed'
+  kind: limit
+  requirements:
+  - SR-4.2-4
+  patch: PR-X07.patch
+  runner: pytest
+  tests:
+  - python/sever_db_p2/tests/test_sdk.py::test_p2_sdk_has_no_quantiser_of_its_own_and_forwards_vectors_exactly
+  build:
+  - native
+- id: PR-L02
+  claim: 'a tail record with the wrong wal_seq is accepted: the test does not see it (the record opens
+    a transaction that is discarded anyway)'
+  kind: limit
+  requirements:
+  - SR-12.3-3
+  patch: PR-W15.patch
+  package: sever-wal
+  tests:
+  - p2_wal_a_tail_record_with_the_wrong_wal_seq_is_a_torn_tail
+- id: PR-L03
+  claim: 'slots are padded to 16 bytes: the slot test checks padding only when the layout has some'
+  kind: limit
+  requirements:
+  - SR-14.4-1
+  patch: PR-F09.patch
   package: sever-format
-- id: PR-G14:store
-  claim: store CRCs cover only the value
+  tests:
+  - p2_format_slot_layout_and_padding
+- id: PR-L04
+  claim: 'close() takes no checkpoint: recovery still restores the state from the WAL'
+  kind: limit
+  requirements:
+  - SR-15.7-1
+  patch: PR-E25.patch
+  package: sever-engine
+  tests:
+  - p2_engine_state_survives_close_and_reopen
+- id: PR-E29:SR-3.2-3
+  claim: an ID that is already live is inserted again (frozen Part 1 code, patched in the proof only)
   kind: red
   requirements:
-  - SR-14.8-1
-  patch: PR-G14.patch
+  - SR-3.2-3
+  patch: PR-E29.patch
+  package: sever-engine
   tests:
-  - p2_store_file_on_disk_is_the_spec_s
-  package: sever-appendstore
+  - p2_engine_insert_retry_is_a_duplicate_with_the_same_commitment
+- id: PR-E29:SR-15.1-2
+  claim: an ID that is already live is inserted again (frozen Part 1 code, patched in the proof only)
+  kind: red
+  requirements:
+  - SR-15.1-2
+  patch: PR-E29.patch
+  package: sever-engine
+  tests:
+  - p2_engine_insert_retry_is_a_duplicate_with_the_same_commitment
+- id: PR-E30:SR-17-2
+  claim: an invalid record ID is reported in an error message that contains it
+  kind: red
+  requirements:
+  - SR-17-2
+  patch: PR-E30.patch
+  package: sever-engine
+  tests:
+  - p2_engine_unknown_collection_and_bad_requests_are_typed

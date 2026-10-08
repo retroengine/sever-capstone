@@ -1,0 +1,16 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index c2a082b..3e864d7 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -153,6 +153,11 @@ version = "0.12.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
+ 
++[[package]]
++name = "memmap2"
++version = "0.9.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++
+ [[package]]
+ name = "memchr"
+ version = "2.8.3"

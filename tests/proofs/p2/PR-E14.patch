@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/engine.rs b/crates/sever-engine/src/engine.rs
+index c4692ce..0a8e28c 100644
+--- a/crates/sever-engine/src/engine.rs
++++ b/crates/sever-engine/src/engine.rs
+@@ -341,7 +341,7 @@ impl<E: StoredExtension, S: Sealer> Engine<E, S> {
+             cid,
+             &layout,
+             None,
+-            vec![CoreRecord::CollectionDrop { cid }],
++            vec![],
+             |st| {
+                 st.live.remove(&cid);
+             },
