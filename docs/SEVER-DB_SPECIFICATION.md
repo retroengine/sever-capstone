@@ -1263,7 +1263,7 @@ Each store file starts with the 16-byte file header of §14.9. The value of a re
 ### 14.9 File layouts (overview DB-67)
 
 All magics are 8 ASCII bytes; the append stores' file header uses `SVDBSTOR`. Every `version` and
-`format_version` below is `1` in v1 (overview DB-71). `crc32c` covers every preceding byte of its
+`format_version` below is `1` in v1 (overview DB-72). `crc32c` covers every preceding byte of its
 structure.
 
 | File | Layout |

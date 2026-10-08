@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-50, DB-55 … DB-71)](#6-decision-register-db-1--db-50-db-55--db-71)
+6. [Decision register (DB-1 … DB-50, DB-55 … DB-72)](#6-decision-register-db-1--db-50-db-55--db-72)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-50, DB-55 … DB-71)
+## 6. Decision register (DB-1 … DB-50, DB-55 … DB-72)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -981,7 +981,7 @@ development machine has no passwordless sudo (owner decision, 7 October 2026). T
 that the database's files carry its whole state through a filesystem image. **Rejected.** Mounting
 through sudo; skipping the test. **Consequence.** Build §5.7 E2E-2.6 notes the method.
 
-#### DB-71 — Format versions, the store magic and identifier widths on disk (8 October 2026)
+#### DB-72 — Format versions, the store magic and identifier widths on disk (8 October 2026)
 
 **Decision.** Every `version` and `format_version` of spec §14.9 is `1` in v1, as for the blob
 (§5.5) and the partition artefact (§6.3); the append stores' file header uses the magic `SVDBSTOR`; a
@@ -1785,7 +1785,7 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
-- **8 October 2026 — Test-oracle audit.** DB-71 (format versions, the store magic and identifier
+- **8 October 2026 — Test-oracle audit.** DB-72 (format versions, the store magic and identifier
   widths on disk, closes G-18 and G-19). Specification sections touched: §14.6, §14.9.
 - **7 October 2026 — Part 2 design review.** DB-46 (slot payload order and the header's
   `seal_version`) and DB-48 (`sealer_id` in every file; no confidentiality claim before Part 4)

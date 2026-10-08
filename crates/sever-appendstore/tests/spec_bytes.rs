@@ -1,6 +1,6 @@
 //! L3 conformance of the bytes a `FileStore` leaves on disk (spec §14.8, §14.9 file header row),
 //! read raw from the simulated disk (CLAUDE.md §6.3, oracle A). Expected bytes are written here
-//! from the spec, with an independent bitwise CRC-32C; the store magic and version are DB-71's.
+//! from the spec, with an independent bitwise CRC-32C; the store magic and version are DB-72's.
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
@@ -42,7 +42,7 @@ fn record(key: u64, bytes: &[u8]) -> Vec<u8> {
 }
 
 #[test]
-// oracle: A §14.8 records after the 16-byte §14.9 file header (SVDBSTOR, version 1: DB-71)
+// oracle: A §14.8 records after the 16-byte §14.9 file header (SVDBSTOR, version 1: DB-72)
 #[spec("SR-14.8-1", "SR-14-1")]
 fn p2_store_file_on_disk_is_the_spec_s() {
     let v = SimVfs::new();
