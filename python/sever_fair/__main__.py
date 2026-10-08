@@ -4,6 +4,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import re
 import shutil
 import sys
 import tempfile
@@ -50,6 +51,17 @@ def doctor(live: bool = False) -> int:
     )
     if sandbox.AUTH_FILE.exists():
         line(sandbox.AUTH_FILE.stat().st_mode & 0o077 == 0, f"{sandbox.AUTH_FILE} has mode 600")
+    tok = sandbox.auth_env().get("CLAUDE_CODE_OAUTH_TOKEN")
+    if tok is not None:  # the shape only; the token itself is never printed
+        shape = re.fullmatch(r"sk-ant-oat01-[A-Za-z0-9_-]{80,}", tok) is not None
+        odd = sorted(
+            {f"U+{ord(c):04X}" for c in tok if not (c.isascii() and (c.isalnum() or c in "-_"))}
+        )
+        line(
+            shape,
+            f"token shape sk-ant-oat01-…, {len(tok)} characters"
+            + (f"; unexpected characters {odd} (a paste artefact?)" if odd else ""),
+        )
     with tempfile.TemporaryDirectory() as t:
         out = Path(t) / "out"
         out.mkdir()
