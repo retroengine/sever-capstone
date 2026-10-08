@@ -53,6 +53,8 @@ def run(
     stub: bool,
     timeout: int,
     canary_allow: list[str] | None = None,
+    budget_usd: float | None = None,
+    wait_on_limit: bool = False,
 ) -> Session:
     """Runs one fresh session. ``prompt_dir`` must be mounted in ``box``; the prompt lands there."""
     home = run_dir / "homes" / name
@@ -88,10 +90,12 @@ def run(
             "--output-format",
             "json",
         ]
+        if budget_usd is not None:
+            cmd += ["--max-budget-usd", f"{budget_usd:.2f}"]
         auth = sandbox.auth_env()
         if not auth:
             raise SystemExit("no sandbox credential; see docs/FAIR_TESTING.md §4 (fair.sh doctor)")
-        rc = _run_with_waits(box, cmd, log, timeout, auth)
+        rc = _run_with_waits(box, cmd, log, timeout, auth, wait_on_limit)
     return Session(role, name, model if not stub else "stub", rc, log, canary_log, _cost(log))
 
 
@@ -122,7 +126,9 @@ def _result(log: Path) -> dict[str, object]:
     return data if isinstance(data, dict) else {}
 
 
-def _run_with_waits(box: Box, cmd: list[str], log: Path, timeout: int, auth: dict[str, str]) -> int:
+def _run_with_waits(
+    box: Box, cmd: list[str], log: Path, timeout: int, auth: dict[str, str], wait: bool
+) -> int:
     """One session; on a usage limit it waits for the reset and runs a fresh session again."""
     limit_waits = errors = 0
     while True:
@@ -137,14 +143,19 @@ def _run_with_waits(box: Box, cmd: list[str], log: Path, timeout: int, auth: dic
                 "the sandbox credential was rejected (401); renew it (docs/FAIR_TESTING.md §4), "
                 "check with `scripts/fair.sh doctor --live`, then `scripts/fair.sh resume <run_id>`"
             )
+        if status == 429 and not wait:
+            raise SystemExit(
+                f"usage limit reached ({res.get('result', '')}); stopped, not waiting (DB-74). "
+                "Continue after the reset with: scripts/fair.sh resume <run_id> --yes"
+            )
         if status == 429 and limit_waits < MAX_LIMIT_WAITS:
             limit_waits += 1
-            wait = reset_wait(str(res.get("result", "")), dt.datetime.now(dt.UTC))
+            secs = reset_wait(str(res.get("result", "")), dt.datetime.now(dt.UTC))
             print(
-                f"usage limit; waiting {wait / 60:.0f} min for the reset, then a fresh session",
+                f"usage limit; waiting {secs / 60:.0f} min for the reset, then a fresh session",
                 flush=True,
             )
-            time.sleep(wait)
+            time.sleep(secs)
             continue
         if res.get("is_error") and status not in (None, 429) and errors < MAX_ERROR_RETRIES:
             errors += 1

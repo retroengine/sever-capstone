@@ -79,7 +79,24 @@ them share survives (different models for tester and judge reduce this, they do 
 a wrong spec is tested faithfully. One machine runs everything, so power-loss durability beyond what
 WSL's virtual disk provides is a stated limit, not a result.
 
-## 4. Setup (once)
+## 4. Cost control (DB-74)
+
+Cost controls decide **when a command stops, never what is tested**: the models, the number of
+planted bugs and audited tests, the pass rule and the scopes are unchanged, and they alone make up
+the FT-8 digest, so a stopped run resumes where it stopped.
+
+- **Nothing starts without `--yes`.** `fair.sh run|cycle|resume|fix` first prints the sessions it
+  will start, a typical cost (from past runs) and an upper bound (the per-session caps), and exits.
+- **Caps.** Each session runs with `--max-budget-usd` (`budget.session_usd`); one command starts no
+  new session once it has spent `budget.command_usd`. A session stopped by its cap stops the run
+  before anything is sealed or reported; `resume` continues it, and the tester or planter picks up
+  the files the cut-off session left.
+- **Usage limit.** On the plan's usage limit the command stops (`on_usage_limit: stop`); it never
+  waits for the reset unless the owner sets `wait`.
+- **Resume, don't redo.** Finished stages are never repeated: a resumed run keeps its sealed tests
+  and its planted bugs.
+
+## 5. Setup (once)
 
 The sandbox gets no access to `~/.claude`, so it needs its own credential: run `claude setup-token`
 once and put `CLAUDE_CODE_OAUTH_TOKEN=...` (or `ANTHROPIC_API_KEY=...`) in

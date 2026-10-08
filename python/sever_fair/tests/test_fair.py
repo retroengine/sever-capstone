@@ -170,3 +170,14 @@ def test_fair_usage_limit_waits_until_the_named_reset() -> None:
     assert reset_wait(msg, now) == (6 * 60 + 20) + 120
     assert reset_wait("resets 9am (UTC)", now) == ((24 - 16 + 9) * 3600 - 33 * 60 - 40) + 120
     assert reset_wait("no time given", now) == 30 * 60
+
+
+def test_fair_cost_settings_do_not_change_the_fairness_digest() -> None:
+    """DB-74: budgets decide when to stop, not what is tested; FT-8 sees every other change."""
+    from sever_fair.config import testing_digest
+
+    base = {"models": {"tester": "opus"}, "plant_count": 10, "budget": {"command_usd": 40}}
+    cheaper = base | {"budget": {"command_usd": 5}, "on_usage_limit": "wait"}
+    fewer_bugs = base | {"plant_count": 5}
+    assert testing_digest(base) == testing_digest(cheaper)
+    assert testing_digest(base) != testing_digest(fewer_bugs)

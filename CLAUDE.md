@@ -356,7 +356,7 @@ they name exists. Python modules under `python/` need `PYTHONPATH=python`.
 | Part 2 test-oracle check / report (§6.3) | `PYTHONPATH=python uv run python -m sever_testkit_p2.oracle_check check` (`report` writes `docs/TEST_ORACLES_P2.md`) |
 | Part 2 proofs (§6.3): static check / run them all | `PYTHONPATH=python uv run python -m sever_testkit_p2.proofs check`; `… proofs run` (writes `docs/PROOFS_P2.md`; `--only <ID>` for one) |
 | P2-T1…T3 crash gate (Full tier; writes the run ledger; ~7 h) | `PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit_p2.gates p2-crash --data nq-10k --all-seeds --jobs 3` |
-| Fair testing (§6.4): check, one run, run + fix cycle, offline plumbing run | `scripts/fair.sh doctor`; `scripts/fair.sh --bg run 2`; `scripts/fair.sh --bg cycle 2`; `scripts/fair.sh dry-run 2` (runs in `~/.sever-fair/runs/`) |
+| Fair testing (§6.4): check, one run, run + fix cycle, offline plumbing run | `scripts/fair.sh doctor --live`; `scripts/fair.sh run 2` prints the cost estimate, then `scripts/fair.sh --bg run 2 --yes` starts it (also `cycle`, `resume RUN_ID`, `fix RUN_ID`; DB-74); `scripts/fair.sh dry-run 2` (offline; runs in `~/.sever-fair/runs/`) |
 | Review demo (self-contained in `demo/`, own env; DB-56) | `demo/scripts/demo.sh setup\|test\|run\|repl`; container: `demo/scripts/demo.sh docker-build`, then `docker test\|run\|repl` (see `demo/README.md`) |
 
 ---

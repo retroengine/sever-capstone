@@ -73,3 +73,10 @@ parts:
       sever-checkpoint: {sections: ["12.4", "15.6"], plant: [crates/sever-checkpoint/src]}
       sever-txn: {sections: ["12.5", "15"], plant: [crates/sever-txn/src]}
       sever-engine: {sections: ["12.7", "12.9", "15.7", "16.1"], plant: [crates/sever-engine/src]}
+
+# Cost control (DB-74). These decide when a command stops, never what is tested, so they are not
+# part of the fairness digest (FT-8): models, counts, the pass rule and the scopes above are.
+budget:
+  session_usd: {tester: 15, judge: 5, planter: 8, fixer: 10}  # --max-budget-usd per session
+  command_usd: 40       # one fair.sh command stops before a session once it has spent this much
+on_usage_limit: stop    # stop: end the command, resume later; wait: sleep until the reset

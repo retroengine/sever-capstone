@@ -16,11 +16,12 @@ from typing import Any
 
 import yaml
 
-from sever_fair import agent, checks, room
+from sever_fair import agent, checks, config, room
 from sever_fair.config import Config, Scope
 from sever_fair.sandbox import Box, with_python
 
 RUNS = Path.home() / ".sever-fair/runs"
+SPENT: list[float] = [0.0]  # what this fair.sh command has spent so far (DB-74)
 
 
 @dataclass
@@ -67,6 +68,14 @@ class Run:
         (self.dir / "state.json").write_text(json.dumps(s, indent=1) + "\n")
 
     def session(self, **kw: Any) -> agent.Session:
+        cap = self.cfg.command_cap
+        if cap is not None and not self.stub and SPENT[0] >= cap:
+            raise SystemExit(
+                f"budget: this command has spent ${SPENT[0]:.2f} of its ${cap:.0f} cap (DB-74); "
+                f"nothing more starts. Continue with: scripts/fair.sh resume {self.run_id} --yes"
+            )
+        kw.setdefault("budget_usd", self.cfg.session_cap(kw["role"]))
+        kw.setdefault("wait_on_limit", self.cfg.wait_on_limit)
         s = agent.run(
             run_dir=self.dir,
             repo=self.repo,
@@ -83,6 +92,7 @@ class Run:
             "canary": "pass",
             "log": str(s.log),
         }
+        SPENT[0] += s.cost_usd or 0.0
         self.save(sessions=[*self.state().get("sessions", []), rec])
         self.say(f"session {s.name} ({s.model}) rc={s.rc}")
         if s.rc != 0:
@@ -118,7 +128,7 @@ def new(repo: Path, cfg: Config, scope: Scope, stub: bool, rev: str = "HEAD") ->
 def load(repo: Path, cfg: Config, run_id: str) -> Run:
     d = RUNS / run_id
     s = json.loads((d / "state.json").read_text())
-    if s["config_sha256"] != cfg.sha256:
+    if s["config_sha256"] != cfg.sha256 and config.digest_at(repo, s["commit"]) != cfg.sha256:
         raise SystemExit("configs/fair.yaml changed since this run started (FT-8); start a new run")
     return Run(repo, cfg, cfg.scope(s["part"], s["module"]), run_id, s["commit"], d, s["stub"])
 

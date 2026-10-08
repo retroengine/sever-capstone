@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-50, DB-55 … DB-73)](#6-decision-register-db-1--db-50-db-55--db-73)
+6. [Decision register (DB-1 … DB-50, DB-55 … DB-74)](#6-decision-register-db-1--db-50-db-55--db-74)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-50, DB-55 … DB-73)
+## 6. Decision register (DB-1 … DB-50, DB-55 … DB-74)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -972,6 +972,18 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-74 — Fair testing within a token budget (8 October 2026)
+
+**Decision.** `fair.sh` starts nothing without `--yes` and first prints the sessions and their
+estimated cost; every session runs with a cost cap and one command stops starting sessions at a
+total cap (`configs/fair.yaml`, `budget`); on the plan's usage limit a command stops instead of
+waiting. These settings are excluded from the FT-8 digest. **Why.** The first real runs spent the
+owner's plan quickly: a full cycle started without a cap, and an automatic wait-for-reset turned it
+into an all-day drain (owner, 8 October 2026: stop the burn, with no loss of testing quality).
+**Rejected.** Cheaper models, fewer planted bugs or audited tests, fewer fix rounds (each weakens the
+test; the owner asked for no loss of quality). **Consequence.** A run may stop part-way more often;
+`resume` continues it without redoing finished stages. Amends DB-73.
 
 #### DB-73 — Fair testing: clean-room sessions, blind bugs, a freeze condition (8 October 2026)
 
@@ -1814,6 +1826,8 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **8 October 2026 — Fair testing within a budget.** DB-74 (confirm before spending, cost caps,
+  stop on the usage limit; no change to what is tested).
 - **8 October 2026 — Fair testing.** DB-73 (clean-room sessions, blind planted bugs, random oracle
   audit, guarded fixes, freeze condition; `docs/FAIR_TESTING.md`). No specification section touched.
 - **8 October 2026 — Test-oracle audit.** DB-72 (format versions, the store magic and identifier

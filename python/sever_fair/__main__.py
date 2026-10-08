@@ -110,12 +110,50 @@ def doctor(live: bool = False) -> int:
     return 0 if ok else 1
 
 
+RUN_ROLES = ["tester", "triage", "planter", "escape", "oracle"]
+
+
+def history() -> dict[str, list[float]]:
+    """Costs of past real sessions, by role (from every run's state.json)."""
+    out: dict[str, list[float]] = {}
+    for st in pipeline.RUNS.glob("*/state.json"):
+        s = json.loads(st.read_text())
+        for x in [] if s.get("stub") else s.get("sessions", []):
+            if x.get("cost_usd") and x.get("rc") == 0:
+                out.setdefault(x["role"], []).append(float(x["cost_usd"]))
+    return out
+
+
+def gate(yes: bool, roles: list[str], extra: str = "") -> bool:
+    """DB-74: print what a command may spend; start only with --yes."""
+    cfg = config.load(ROOT)
+    h = history()
+    typical = sum(sum(h[r]) / len(h[r]) for r in roles if h.get(r))
+    known = [r for r in roles if h.get(r)]
+    upper = sum(cfg.session_cap(r) or 0.0 for r in roles)
+    print(f"sessions: {', '.join(roles) or 'none'}{extra}")
+    print(
+        f"estimate: typical ${typical:.2f} (past runs of {', '.join(known) or 'no role yet'}); "
+        f"at most ${upper:.0f} by the per-session caps; this command stops at "
+        f"${cfg.command_cap or 0:.0f} (configs/fair.yaml budget)"
+    )
+    if not yes:
+        print("nothing started: add --yes to run it")
+    return yes
+
+
 def run_cmd(part: int, module: str | None, stub: bool, rev: str = "HEAD") -> dict[str, Any]:
     cfg = config.load(ROOT)
     run = pipeline.new(ROOT, cfg, cfg.scope(part, module), stub, rev)
     run.say(f"run {run.run_id} in {run.dir}")
     _start(run)
     return pipeline.execute(run)
+
+
+def remaining(run_id: str) -> list[str]:
+    s = json.loads((pipeline.RUNS / run_id / "state.json").read_text())
+    done = {x["role"] for x in s.get("sessions", []) if x.get("rc") == 0}
+    return [r for r in RUN_ROLES if r not in done]
 
 
 def resume(run_id: str) -> dict[str, Any]:
@@ -215,19 +253,37 @@ def main() -> int:
         p = sub.add_parser(name)
         p.add_argument("part", type=int)
         p.add_argument("--module")
+        p.add_argument("--yes", action="store_true", help="start (spends tokens; DB-74)")
     p = sub.add_parser("resume")
     p.add_argument("run_id")
+    p.add_argument("--yes", action="store_true", help="start (spends tokens; DB-74)")
     p = sub.add_parser("fix")
     p.add_argument("run_id")
+    p.add_argument("--yes", action="store_true", help="start (spends tokens; DB-74)")
     for name in ("cycle", "dry-cycle"):
         p = sub.add_parser(name)
         p.add_argument("part", type=int)
+        p.add_argument("--yes", action="store_true", help="start (spends tokens; DB-74)")
     p = sub.add_parser("verify-freeze")
     p.add_argument("part", type=int)
     sub.add_parser("check")
     a = ap.parse_args()
     if a.cmd == "doctor":
         return doctor(a.live)
+    if a.cmd == "run" and not gate(a.yes, RUN_ROLES):
+        return 2
+    if a.cmd == "resume" and not gate(a.yes, remaining(a.run_id)):
+        return 2
+    if a.cmd == "fix":
+        n = len(json.loads((pipeline.RUNS / a.run_id / "findings.json").read_text()))
+        if not gate(a.yes, ["fixer"] * (3 * n), f" (up to 3 per finding, {n} findings)"):
+            return 2
+    if a.cmd == "cycle" and not gate(
+        a.yes,
+        RUN_ROLES,
+        f"; then fixes and fresh runs, up to {config.load(ROOT).number('fix_rounds')} more rounds",
+    ):
+        return 2
     if a.cmd in ("run", "dry-run"):
         s = run_cmd(a.part, a.module, a.cmd == "dry-run")
         return 0 if s["outcome"] in ("PASS", "DRY") else 1
