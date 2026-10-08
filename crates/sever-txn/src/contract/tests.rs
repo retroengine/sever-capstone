@@ -386,11 +386,23 @@ fn p2_txn_ep6_contract_rejects_each_wrong_sealer_for_its_rule() {
 }
 
 /// A toy encrypting sealer (`sealer_id` 1): every value carries an 8-byte tag of its owner, so
-/// opening under another owner fails. `rotate` and `bind_acc` switch off one rule each.
+/// opening under another owner fails. Each flag switches off one rule.
+#[derive(Clone, Copy)]
 struct Tagged {
     rotate: bool,
-    bind_acc: bool,
+    bind_sid: bool,
+    bind_group: bool,
+    bind_n: bool,
+    bind_version: bool,
 }
+
+const GOOD: Tagged = Tagged {
+    rotate: true,
+    bind_sid: true,
+    bind_group: true,
+    bind_n: true,
+    bind_version: true,
+};
 
 fn tag(parts: &[&[u8]]) -> [u8; 8] {
     let mut h = 0xcbf2_9ce4_8422_2325u64; // FNV-1a
@@ -403,12 +415,25 @@ fn tag(parts: &[&[u8]]) -> [u8; 8] {
     h.to_be_bytes()
 }
 
-fn owner_tag(o: &RecordOwner<'_>) -> [u8; 8] {
-    tag(&[
-        o.collection.as_bytes(),
-        &o.group.to_padded_bytes().0,
-        o.scrambled_id.as_bytes(),
-    ])
+impl Tagged {
+    fn owner_tag(&self, o: &RecordOwner<'_>) -> [u8; 8] {
+        let g = if self.bind_group {
+            o.group.to_padded_bytes().0
+        } else {
+            [0; 32]
+        };
+        tag(&[o.collection.as_bytes(), &g, self.sid(o)])
+    }
+    fn sid<'a>(&self, o: &RecordOwner<'a>) -> &'a [u8] {
+        if self.bind_sid {
+            o.scrambled_id.as_bytes()
+        } else {
+            &[]
+        }
+    }
+    fn data_tag(&self, o: &RecordOwner<'_>, kind: u8) -> [u8; 8] {
+        tag(&[o.collection.as_bytes(), self.sid(o), &[kind]])
+    }
 }
 
 fn untag(s: &[u8], want: [u8; 8]) -> core::result::Result<Zeroizing<Vec<u8>>, Error> {
@@ -420,7 +445,8 @@ fn untag(s: &[u8], want: [u8; 8]) -> core::result::Result<Zeroizing<Vec<u8>>, Er
 
 impl Tagged {
     fn acc_tag(&self, o: &GroupOwner<'_>, v: u64) -> [u8; 8] {
-        let (v, n) = if self.bind_acc { (v, o.n) } else { (0, 0) };
+        let v = if self.bind_version { v } else { 0 };
+        let n = if self.bind_n { o.n } else { 0 };
         tag(&[
             o.collection.as_bytes(),
             &o.group.to_padded_bytes().0,
@@ -445,8 +471,8 @@ impl Sealer for Tagged {
         o: &RecordOwner<'_>,
         p: &[u8],
     ) -> core::result::Result<(Vec<u8>, Vec<u8>), Error> {
-        let data = tag(&[o.collection.as_bytes(), o.scrambled_id.as_bytes(), &[1]]);
-        Ok((owner_tag(o).to_vec(), [p, &data].concat()))
+        let data = self.data_tag(o, 1);
+        Ok((self.owner_tag(o).to_vec(), [p, &data].concat()))
     }
     fn open_record(
         &self,
@@ -454,13 +480,10 @@ impl Sealer for Tagged {
         e: &[u8],
         s: &[u8],
     ) -> core::result::Result<Zeroizing<Vec<u8>>, Error> {
-        if e != owner_tag(o) {
+        if e != self.owner_tag(o) {
             return Err(oops());
         }
-        untag(
-            s,
-            tag(&[o.collection.as_bytes(), o.scrambled_id.as_bytes(), &[1]]),
-        )
+        untag(s, self.data_tag(o, 1))
     }
     fn rewrap_record(
         &self,
@@ -468,10 +491,10 @@ impl Sealer for Tagged {
         b: &RecordOwner<'_>,
         e: &[u8],
     ) -> core::result::Result<Vec<u8>, Error> {
-        if e != owner_tag(a) {
+        if e != self.owner_tag(a) {
             return Err(oops());
         }
-        Ok(owner_tag(b).to_vec())
+        Ok(self.owner_tag(b).to_vec())
     }
     fn seal_passage(
         &self,
@@ -479,14 +502,10 @@ impl Sealer for Tagged {
         e: &[u8],
         t: &[u8],
     ) -> core::result::Result<Vec<u8>, Error> {
-        if e != owner_tag(o) {
+        if e != self.owner_tag(o) {
             return Err(oops());
         }
-        Ok([
-            t,
-            &tag(&[o.collection.as_bytes(), o.scrambled_id.as_bytes(), &[2]]),
-        ]
-        .concat())
+        Ok([t, &self.data_tag(o, 2)].concat())
     }
     fn open_passage(
         &self,
@@ -494,13 +513,10 @@ impl Sealer for Tagged {
         e: &[u8],
         s: &[u8],
     ) -> core::result::Result<Zeroizing<Vec<u8>>, Error> {
-        if e != owner_tag(o) {
+        if e != self.owner_tag(o) {
             return Err(oops());
         }
-        untag(
-            s,
-            tag(&[o.collection.as_bytes(), o.scrambled_id.as_bytes(), &[2]]),
-        )
+        untag(s, self.data_tag(o, 2))
     }
     fn next_version(&self, _: &GroupOwner<'_>, p: Option<u64>, d: bool) -> u64 {
         match p {
@@ -529,29 +545,30 @@ impl Sealer for Tagged {
 
 #[test]
 fn p2_txn_ep6_contract_checks_rotation_and_accumulator_binding() {
-    let good = Tagged {
-        rotate: true,
-        bind_acc: true,
-    };
     assert_eq!(
-        ep6_sealer_contract(&good),
+        ep6_sealer_contract(&GOOD),
         Ok(()),
         "a binding, rotating sealer passes"
     );
+    let without = |f: fn(&mut Tagged)| {
+        let mut t = GOOD;
+        f(&mut t);
+        ep6_sealer_contract(&t)
+    };
     assert_eq!(
-        ep6_sealer_contract(&Tagged {
-            rotate: false,
-            bind_acc: true
-        }),
+        without(|t| t.rotate = false),
         Err(ContractViolation::NoRotation)
     );
-    assert_eq!(
-        ep6_sealer_contract(&Tagged {
-            rotate: true,
-            bind_acc: false
-        }),
-        Err(ContractViolation::OwnerNotBound)
-    );
+    // Each owner field must be bound on its own: the record (scrambled ID), its group, the
+    // accumulator's n and its key version.
+    for f in [
+        (|t: &mut Tagged| t.bind_sid = false) as fn(&mut Tagged),
+        |t| t.bind_group = false,
+        |t| t.bind_n = false,
+        |t| t.bind_version = false,
+    ] {
+        assert_eq!(without(f), Err(ContractViolation::OwnerNotBound));
+    }
 }
 
 // ----- EP-7: participants that break the protocol's other rules -----
@@ -614,4 +631,86 @@ fn p2_txn_ep7_contract_rejects_a_participant_that_refuses_or_is_inconsistent() {
         ep7_participant_contract(&make),
         Err(ContractViolation::InvariantFailed)
     );
+}
+
+/// Deliberately wrong (two ways): correct after a clean restart, but it writes its own file only
+/// after the commit point (`after_commit`), so a crash between the WAL commit and that write
+/// leaves the file behind the log. `Refuse` notices at recovery; `Forget` silently restarts
+/// from zero. Only a contract that really crashes, and checks the recovered state, sees either.
+#[derive(Clone, Copy, PartialEq)]
+enum Late {
+    Refuse,
+    Forget,
+}
+struct LateWriter {
+    vfs: Arc<dyn Vfs>,
+    n: u64,
+    mode: Late,
+}
+impl LateWriter {
+    fn file_n(&self) -> u64 {
+        self.vfs
+            .open("late", sever_vfs::OpenMode::Existing)
+            .ok()
+            .and_then(|f| sever_vfs::read_all(f.as_ref()).ok())
+            .and_then(|b| b.get(..8).and_then(|b| b.try_into().ok()))
+            .map_or(0, u64::from_be_bytes)
+    }
+}
+impl TxnParticipant<NoExtension> for LateWriter {
+    fn id(&self) -> u16 {
+        12
+    }
+    fn prepare(&mut self, d: &mut TxnDraft<'_, NoExtension>) -> core::result::Result<(), Error> {
+        let mut payload = 12u16.to_be_bytes().to_vec();
+        payload.extend_from_slice(&(self.n + 1).to_be_bytes());
+        d.participant_records.push((RecordType::Extension, payload));
+        Ok(())
+    }
+    fn after_commit(&mut self) -> core::result::Result<(), Error> {
+        self.n += 1;
+        let mut f = match self.vfs.open("late", sever_vfs::OpenMode::Existing) {
+            Ok(f) => f,
+            Err(_) => sever_vfs::durable::create(self.vfs.as_ref(), "late").map_err(|_| oops())?,
+        };
+        f.write_at(0, &self.n.to_be_bytes()).map_err(|_| oops())?;
+        sever_vfs::durable::sync(f.as_mut()).map_err(|_| oops())
+    }
+    fn replay(&mut self, r: &sever_format::WalRecord) -> core::result::Result<(), Error> {
+        let b: [u8; 8] = r
+            .payload
+            .get(2..10)
+            .and_then(|b| b.try_into().ok())
+            .ok_or(oops())?;
+        self.n = u64::from_be_bytes(b);
+        Ok(())
+    }
+    fn recover(&mut self) -> core::result::Result<(), Error> {
+        if self.file_n() == self.n {
+            Ok(())
+        } else if self.mode == Late::Refuse {
+            Err(oops())
+        } else {
+            self.n = 0;
+            Ok(())
+        }
+    }
+}
+impl ProbedParticipant for LateWriter {
+    fn digest(&self) -> Vec<u8> {
+        self.n.to_be_bytes().to_vec()
+    }
+}
+
+#[test]
+fn p2_txn_ep7_contract_crashes_between_commit_and_after_commit() {
+    for (mode, want) in [
+        (Late::Refuse, ContractViolation::Failed("recover")),
+        (Late::Forget, ContractViolation::StateNotRecovered),
+    ] {
+        let make = move |v: Arc<dyn Vfs>| -> Box<dyn ProbedParticipant> {
+            Box::new(LateWriter { vfs: v, n: 0, mode })
+        };
+        assert_eq!(ep7_participant_contract(&make), Err(want));
+    }
 }

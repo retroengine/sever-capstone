@@ -538,10 +538,28 @@ fn p2_engine_a_reader_at_every_protocol_step_sees_before_or_after() {
         seen.lock().unwrap().clear();
         run(&db, cid, std::slice::from_ref(&op), &vs);
         let after = db.canonical_state(cid).unwrap();
-        for (step, state) in seen.lock().unwrap().iter() {
+        let seen = seen.lock().unwrap();
+        for (step, state) in seen.iter() {
             let applied = matches!(step, Step::Applied | Step::PhaseC);
             let want = if applied { &after } else { &before };
             assert_eq!(state, want, "{op:?} at {step:?}: a mixed or early state");
+        }
+        // The reader really ran at every boundary of every write (Build §5.4's seven steps).
+        if !matches!(op, Op::Checkpoint) {
+            let steps: Vec<Step> = seen.iter().map(|(s, _)| *s).collect();
+            assert_eq!(
+                steps,
+                [
+                    Step::Prepared,
+                    Step::StoresSynced,
+                    Step::PhaseA,
+                    Step::WalWriting,
+                    Step::Committed,
+                    Step::Applied,
+                    Step::PhaseC
+                ],
+                "{op:?}"
+            );
         }
     }
     db.set_step_hook(None);
@@ -896,6 +914,13 @@ fn p2_engine_checkpoints_itself_after_enough_wal() {
     let (often, segs_often) = count(16 * 1024);
     assert_eq!(never, 0);
     assert!(often >= 2, "{often} automatic checkpoints");
+    // Every so many bytes, not after every transaction (each operation here writes far less
+    // than the 16 KiB threshold).
+    assert!(
+        (often as usize) < ops.len() / 4,
+        "{often} checkpoints for {} operations",
+        ops.len()
+    );
     assert!(
         segs_often < segs_never,
         "covered segments deleted: {segs_often} vs {segs_never}"
@@ -948,6 +973,12 @@ fn p2_engine_placements_and_locations_equal_part_1_s() {
     }
     assert!(vs.len() >= 120);
     assert_eq!(db.group_ids(cid), ix.group_ids());
+    // §16.1 stats: one size per frozen and spawned group (k of them), never the holding area.
+    let st = db.stats(cid).unwrap();
+    assert_eq!(st.group_sizes.len() as u64, st.k);
+    assert!(st.group_sizes.iter().all(|(g, _)| g != "holding"));
+    let total: u64 = st.group_sizes.iter().map(|(_, n)| n).sum();
+    assert_eq!(total, st.big_n, "INV-8: N is the sum of the group sizes");
     let some = ix.group_ids()[0];
     assert_eq!(
         db.group_snapshot(cid, &some).map(|s| s.blob),
@@ -955,4 +986,48 @@ fn p2_engine_placements_and_locations_equal_part_1_s() {
     );
     assert!(db.survivors_snapshot(cid, &some).is_some());
     assert!(!db.is_poisoned());
+}
+
+#[test]
+#[spec("SR-14.8-1")]
+fn p2_engine_passage_records_carry_increasing_sequence_numbers() {
+    // §14.8: store records are `u64be key ‖ u32be len ‖ bytes ‖ u32be crc32c` after a 16-byte
+    // file header; for passages the key is a sequence number. Each passage gets its own.
+    let (disks, cid) = base();
+    let db = disks.open(1 << 30).unwrap();
+    let vs = vectors();
+    for (i, v) in vs.iter().enumerate().take(12) {
+        db.insert(
+            cid,
+            InsertRequest {
+                record_id: format!("t{i}"),
+                vector: v.clone(),
+                credential: (),
+                passage: Some(format!("passage {i}").into_bytes()),
+            },
+        )
+        .unwrap();
+    }
+    db.close().unwrap();
+    let mut keys = Vec::new();
+    let mut names = disks.data.list(sever_engine::PAYLOAD_DIR).unwrap();
+    names.sort();
+    for name in names {
+        let f = disks
+            .data
+            .open(
+                &format!("{}/{name}", sever_engine::PAYLOAD_DIR),
+                OpenMode::Existing,
+            )
+            .unwrap();
+        let b = sever_vfs::read_all(f.as_ref()).unwrap();
+        let mut at = 16;
+        while at + 12 <= b.len() {
+            keys.push(u64::from_be_bytes(b[at..at + 8].try_into().unwrap()));
+            let len = u32::from_be_bytes(b[at + 8..at + 12].try_into().unwrap()) as usize;
+            at += 12 + len + 4;
+        }
+    }
+    assert_eq!(keys.len(), 12);
+    assert!(keys.windows(2).all(|w| w[0] < w[1]), "{keys:?}");
 }

@@ -232,6 +232,23 @@ mod tests {
     }
 
     #[test]
+    fn p2_format_group_header_encode_checks_each_field_size() {
+        // §14.3: every field has a fixed size for the layout; one wrong field is enough to refuse.
+        let l = Layout::plain(8);
+        let good = header(GroupId::frozen(2).unwrap(), 8);
+        assert!(good.encode(&l).is_ok());
+        let mut h = good.clone();
+        h.centroid.pop();
+        assert!(h.encode(&l).is_err(), "centroid");
+        let mut h = good.clone();
+        h.sealed_accumulator.pop();
+        assert!(h.encode(&l).is_err(), "accumulator");
+        let mut h = good;
+        h.ext_public = vec![0];
+        assert!(h.encode(&l).is_err(), "extension field");
+    }
+
+    #[test]
     fn p2_format_accumulator_round_trips() {
         let l = Layout {
             ext_group_secret: 3,

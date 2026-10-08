@@ -228,6 +228,30 @@ mod tests {
     }
 
     #[test]
+    fn p2_format_slot_and_payload_encode_check_each_field_size() {
+        // §14.4: fixed sizes; one wrong field is enough to refuse.
+        let l = Layout::plain(8);
+        let ok = SlotBytes {
+            scrambled_id: ScrambledId::from_bytes([7; 64]),
+            envelope: vec![],
+            sealed_payload: payload("a", 8).encode(&l).unwrap(),
+        };
+        assert!(ok.encode(&l).is_ok());
+        let mut s = ok.clone();
+        s.envelope = vec![1];
+        assert!(s.encode(&l).is_err(), "envelope");
+        let mut s = ok;
+        s.sealed_payload.pop();
+        assert!(s.encode(&l).is_err(), "payload");
+        let mut p = payload("a", 8);
+        p.x.pop();
+        assert!(p.encode(&l).is_err(), "x̃ length");
+        let mut p = payload("a", 8);
+        p.ext_secret = vec![1];
+        assert!(p.encode(&l).is_err(), "extension secret");
+    }
+
+    #[test]
     fn p2_format_debug_never_shows_payload_content() {
         let p = payload("secret-id", 8);
         assert!(!format!("{p:?}").contains("secret"));

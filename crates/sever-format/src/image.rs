@@ -818,6 +818,38 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn p2_format_slot_truncate_to_the_current_count_changes_nothing() {
+        // §14.6 SLOT_TRUNCATE carries the new slot count: equal to the current one is valid (and
+        // changes nothing); larger is not a truncation and is refused.
+        let (mut img, _) = sample();
+        let cid = CollectionId::from_bytes([1; 16]);
+        let before = img.clone();
+        let g0 = GroupId::frozen(0).unwrap();
+        img.apply(&CoreRecord::SlotTruncate {
+            cid,
+            group: g0,
+            len: 1,
+        })
+        .unwrap();
+        assert_eq!(img, before);
+        assert!(
+            img.apply(&CoreRecord::SlotTruncate {
+                cid,
+                group: g0,
+                len: 2
+            })
+            .is_err()
+        );
+        img.apply(&CoreRecord::SlotTruncate {
+            cid,
+            group: g0,
+            len: 0,
+        })
+        .unwrap();
+        assert!(img.collections[&cid].group(&g0).unwrap().slots.is_empty());
+    }
+
+    #[test]
     #[spec("SR-14-2")]
     fn p2_format_checkpoint_streams_refuse_missing_extra_or_trailing_bytes() {
         let s = streams();
