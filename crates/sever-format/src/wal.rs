@@ -512,12 +512,13 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §14.6 framing by hand; SLOT_TRUNCATE is type 6
     #[spec("SR-14.6-1")]
     fn p2_format_wal_record_layout_by_offset() {
         let b = rec(vec![0xaa, 0xbb]).encode();
         assert_eq!(b.len(), RECORD_OVERHEAD + 2);
         assert_eq!(&b[..4], &27u32.to_be_bytes(), "len counts the whole record");
-        assert_eq!(b[4], RecordType::SlotTruncate as u8);
+        assert_eq!(b[4], 6, "SLOT_TRUNCATE is type 6");
         assert_eq!(&b[5..13], &41u64.to_be_bytes(), "wal_seq");
         assert_eq!(&b[13..21], &7u64.to_be_bytes(), "txn_id");
         assert_eq!(&b[21..23], &[0xaa, 0xbb]);
@@ -529,6 +530,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §14.6 len and type codes 1–17; §12.3 a torn record is not a record
     #[spec("SR-14.6-1", "SR-12.3-3")]
     fn p2_format_wal_parse_next_stops_at_anything_invalid() {
         let a = rec(vec![1, 2, 3]).encode();
@@ -564,6 +566,7 @@ mod tests {
 
     // SB-11 must turn this red.
     #[test]
+    // oracle: A §12.7 every record has a CRC-32C; §12.3 a CRC-failing record is not a record
     #[spec("SR-12.7-4", "SR-12.3-3")]
     fn p2_format_wal_every_single_bit_flip_is_detected() {
         let b = rec((0..40).collect()).encode();
@@ -655,6 +658,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: D round trip (the bytes by hand: tests/spec_bytes.rs)
     #[spec("SR-14.6-2")]
     fn p2_format_every_record_type_round_trips() {
         let l = Layout::plain(8);

@@ -172,6 +172,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §14.3 table with the plaintext sealer and no extension (DB-46, DB-48), offsets by hand
     #[spec("SR-14.3-1")]
     fn p2_format_group_header_layout_by_offset() {
         let l = Layout::plain(16);

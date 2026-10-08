@@ -144,6 +144,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §14.4 payload plaintext, offsets by hand
     #[spec("SR-14.4-1", "SR-14.4-2")]
     fn p2_format_payload_layout_by_offset() {
         let l = Layout::plain(8);
@@ -161,6 +162,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §14.4 payload: the extension record secret comes last
     #[spec("SR-14.4-1")]
     fn p2_format_extension_secret_goes_last() {
         let l = Layout {
@@ -207,6 +209,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §14.4 slot table: scrambled_id first, then the payload, zero padding
     #[spec("SR-14.4-1")]
     fn p2_format_slot_layout_and_padding() {
         let l = Layout::plain(8);
