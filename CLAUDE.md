@@ -226,18 +226,29 @@ code and the test, the test must not inherit the code's reading. These rules app
   byte-layout rule needs an A test whose expected bytes are written by hand from the spec, not only
   an encode-then-decode round trip.
 - **An `SR-…` label claims the test can fail.** Put `SR-X` on a test only if breaking rule X turns
-  that test red. Evidence: an SB item, a killed mutant, or a hand sabotage that was run once. A test
-  that merely passes through the code near rule X does not get the label.
+  that test red. A test that merely passes through the code near rule X does not get the label.
 - **A red test is evidence, not an obstacle.** Never change an expected value to match the code unless
   the spec shows the code is right, and say which § decides it. If the spec is unclear, open a G-N gap
   (§2); never loosen the test instead.
-- **Report honestly.** Never say a test checks a rule without having seen it go red at least once.
-- **Enforced.** `sever_testkit_p2.oracle_check check` runs in the Fast tier. It fails on an
-  `SR`-labelled test with no oracle tag, on an A tag without a §, and on any requirement guarded only
-  by D tests. `oracle_check report` writes `docs/TEST_ORACLES_P2.md`, including the B-shared list.
-  Parts 3 and 4 add their own wrapper of the checker (Part 2's freezes with it).
-- **Pull request.** On top of the Build §6.1 checklist: oracle check passes; no requirement is D-only;
-  new B-shared tests are listed for the owner.
+- **Every claim carries a proof anyone can re-run.** Saying it, or having seen it once, is not
+  enough:
+  - *A label can fail* → a **red proof**: a patch in `tests/proofs/p2/` that breaks exactly that rule,
+    and the labelled tests that pass without it and fail with it. Every (test, label) pair needs one.
+  - *A label was removed because the test could not fail* → a **green proof**: a patch that breaks the
+    rule while the test stays green.
+  - *Tests pass, a count, a gate, the freeze holds* → the exact command and its output, recorded in a
+    generated file (`docs/PROOFS_P2.md`, the run ledger), with the commit it ran on.
+  - *The spec says X* → the § and the quoted sentence. *The spec is silent* → a G-N gap.
+  `sever_testkit_p2.proofs run` applies every patch to the committed HEAD in a throwaway worktree and
+  writes `docs/PROOFS_P2.md`. A patch that does not apply or compile proves nothing. A claim without a
+  proof is reported as unproven, never as done.
+- **Enforced.** The Fast tier runs `oracle_check check` and `proofs check`. They fail on an
+  `SR`-labelled test with no oracle tag, an A tag without a §, a requirement guarded only by D tests, or
+  a (test, label) pair with no red proof in the manifest. `proofs run` (Extended tier) shows each proof
+  holds. `oracle_check report` writes `docs/TEST_ORACLES_P2.md`, including the B-shared list. Parts 3
+  and 4 add their own wrappers (Part 2's freeze with it).
+- **Pull request.** On top of the Build §6.1 checklist: both checks pass; `docs/PROOFS_P2.md` is
+  regenerated on the PR's commit with every proof holding; new B-shared tests are listed for the owner.
 
 ---
 
@@ -324,6 +335,7 @@ they name exists. Python modules under `python/` need `PYTHONPATH=python`.
 | Part 2 demo | `cargo run --release -p sever-p2 --features demo --bin sever-demo-p2 -- durable --data nq-10k --seed 42` (offline: `--data synthetic`) |
 | Part 2 CLI | `cargo run --release -p sever-p2 --bin sever-db-p2 -- verify --data DIR --keys DIR` |
 | Part 2 test-oracle check / report (§6.3) | `PYTHONPATH=python uv run python -m sever_testkit_p2.oracle_check check` (`report` writes `docs/TEST_ORACLES_P2.md`) |
+| Part 2 proofs (§6.3): static check / run them all | `PYTHONPATH=python uv run python -m sever_testkit_p2.proofs check`; `… proofs run` (writes `docs/PROOFS_P2.md`; `--only <ID>` for one) |
 | P2-T1…T3 crash gate (Full tier; writes the run ledger; ~7 h) | `PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit_p2.gates p2-crash --data nq-10k --all-seeds --jobs 3` |
 | Review demo (self-contained in `demo/`, own env; DB-56) | `demo/scripts/demo.sh setup\|test\|run\|repl`; container: `demo/scripts/demo.sh docker-build`, then `docker test\|run\|repl` (see `demo/README.md`) |
 
