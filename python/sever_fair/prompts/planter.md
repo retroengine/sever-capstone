@@ -15,6 +15,10 @@ accepts what it must refuse, a lost update on one path only. Spread them over di
 sections. Not allowed: a change only to comments, logging, formatting or names; a change that cannot
 alter behaviour; a compile error.
 
+Start with `cd /src && git checkout -- .` (a previous attempt may have been cut off). If
+`/room/out/bugs/` already holds finished bugs (a `.patch` with its `.json`), keep them and continue
+the numbering; delete any `.patch` without its `.json`.
+
 For each bug `NN` (01, 02, …):
 
 1. Edit the files.

@@ -6,7 +6,10 @@ its transcript (JSON) goes to the run's ``logs/``. In a dry run the same sandbox
 ``stub_agent.py`` instead, so every stage can be exercised offline.
 """
 
+import datetime as dt
 import json
+import re
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -88,13 +91,68 @@ def run(
         auth = sandbox.auth_env()
         if not auth:
             raise SystemExit("no sandbox credential; see docs/FAIR_TESTING.md §4 (fair.sh doctor)")
+        rc = _run_with_waits(box, cmd, log, timeout, auth)
+    return Session(role, name, model if not stub else "stub", rc, log, canary_log, _cost(log))
+
+
+RESET = re.compile(r"resets\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)\s*\(UTC\)", re.IGNORECASE)
+MAX_LIMIT_WAITS = 24  # a usage limit resets every few hours; a long cycle may meet it many times
+MAX_ERROR_RETRIES = 3
+
+
+def reset_wait(message: str, now: dt.datetime) -> float:
+    """Seconds until the usage limit named in ``message`` resets, plus two minutes."""
+    m = RESET.search(message)
+    if not m:
+        return 30 * 60.0
+    hour = int(m.group(1)) % 12 + (12 if m.group(3).lower() == "pm" else 0)
+    at = now.replace(hour=hour, minute=int(m.group(2) or 0), second=0, microsecond=0)
+    if at <= now:
+        at += dt.timedelta(days=1)
+    return (at - now).total_seconds() + 120.0
+
+
+def _result(log: Path) -> dict[str, object]:
+    text = log.read_text(encoding="utf-8", errors="replace") if log.exists() else ""
+    start = text.find('{"')
+    try:
+        data = json.loads(text[start:]) if start >= 0 else {}
+    except ValueError:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _run_with_waits(box: Box, cmd: list[str], log: Path, timeout: int, auth: dict[str, str]) -> int:
+    """One session; on a usage limit it waits for the reset and runs a fresh session again."""
+    limit_waits = errors = 0
+    while True:
+        if log.exists():
+            n = len(list(log.parent.glob(log.stem + ".attempt*.json"))) + 1
+            log.rename(log.with_name(f"{log.stem}.attempt{n}.json"))
         rc = box.run(cmd, log, timeout, extra_env=auth)
-        if '"api_error_status":401' in log.read_text(errors="replace"):
+        res = _result(log)
+        status = res.get("api_error_status")
+        if status == 401:
             raise SystemExit(
                 "the sandbox credential was rejected (401); renew it (docs/FAIR_TESTING.md §4), "
                 "check with `scripts/fair.sh doctor --live`, then `scripts/fair.sh resume <run_id>`"
             )
-    return Session(role, name, model if not stub else "stub", rc, log, canary_log, _cost(log))
+        if status == 429 and limit_waits < MAX_LIMIT_WAITS:
+            limit_waits += 1
+            wait = reset_wait(str(res.get("result", "")), dt.datetime.now(dt.UTC))
+            print(
+                f"usage limit; waiting {wait / 60:.0f} min for the reset, then a fresh session",
+                flush=True,
+            )
+            time.sleep(wait)
+            continue
+        if res.get("is_error") and status not in (None, 429) and errors < MAX_ERROR_RETRIES:
+            errors += 1
+            time.sleep(300)
+            continue
+        if rc == 0 and res.get("is_error"):
+            rc = 1
+        return rc
 
 
 def _inside(box: Box, host: Path) -> str:

@@ -43,6 +43,9 @@ Write at least {min_tests} tests.
 In `/room/work/NOTES.md`, list every place where the spec does not decide a behaviour you wanted to
 test (with §); those are candidate gaps, not tests.
 
+If `/room/work/tests/` already holds files, an earlier session was cut off: read them, keep what is
+right, and continue until the work is complete.
+
 ## Rules
 
 - Do not use the network. Do not look for the source code; it is not here.

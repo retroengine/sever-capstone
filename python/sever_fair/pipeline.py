@@ -85,6 +85,11 @@ class Run:
         }
         self.save(sessions=[*self.state().get("sessions", []), rec])
         self.say(f"session {s.name} ({s.model}) rc={s.rc}")
+        if s.rc != 0:
+            raise SystemExit(
+                f"session {s.name} did not complete (rc {s.rc}; {s.log}); nothing was sealed or "
+                f"reported from it. Continue with: scripts/fair.sh resume {self.run_id}"
+            )
         return s
 
 
@@ -189,8 +194,7 @@ def own_suite(run: Run, label: str) -> tuple[bool, list[dict[str, Any]]]:
 
 
 def write(run: Run) -> None:
-    tests = run.room / "work/tests"
-    if (run.dir / "seal.json").exists() or any(tests.glob("test_*.py")):
+    if (run.dir / "seal.json").exists() or run.state().get("written"):
         return
     run.say("stage 1: clean-room tester writes tests against the sealed engine")
     sc = run.scope
@@ -218,6 +222,7 @@ def write(run: Run) -> None:
         box=box,
         prompt_dir=run.room / "out",
     )
+    run.save(written=True)
 
 
 def seal(run: Run) -> dict[str, str]:
@@ -302,7 +307,7 @@ def triage(run: Run, baseline: dict[str, dict[str, str]]) -> dict[str, Any]:
 
 def plant(run: Run) -> Path:
     bugs = run.dir / "plant/out/bugs"
-    if any(bugs.glob("*.patch")):
+    if run.state().get("planted"):
         return bugs
     run.say("stage 5: planter plants blind bugs")
     src = run.dir / "plant/src"
@@ -359,6 +364,7 @@ def plant(run: Run) -> Path:
         box=b,
         prompt_dir=bugs.parent,
     )
+    run.save(planted=True)
     return bugs
 
 

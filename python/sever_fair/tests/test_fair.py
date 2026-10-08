@@ -157,3 +157,16 @@ def test_fair_canary_sees_room_but_not_repository(tmp_path: Path) -> None:
     leaky = Box().rw(out, "/room/out").ro(ROOT)
     assert not sandbox.canary(leaky, ROOT, tmp_path / "leak.log")
     assert "REACHABLE" in (tmp_path / "leak.log").read_text()
+
+
+def test_fair_usage_limit_waits_until_the_named_reset() -> None:
+    """A usage limit (429) waits for the reset time it names, plus two minutes."""
+    import datetime as dt
+
+    from sever_fair.agent import reset_wait
+
+    now = dt.datetime(2026, 10, 8, 16, 33, 40, tzinfo=dt.UTC)
+    msg = "You've hit your session limit · resets 4:40pm (UTC)"
+    assert reset_wait(msg, now) == (6 * 60 + 20) + 120
+    assert reset_wait("resets 9am (UTC)", now) == ((24 - 16 + 9) * 3600 - 33 * 60 - 40) + 120
+    assert reset_wait("no time given", now) == 30 * 60

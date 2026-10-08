@@ -1,0 +1,128 @@
+{
+ "run_id": "20261008T161930Z-p2-d76a93aa",
+ "part": 2,
+ "module": null,
+ "commit": "d76a93aaeaf88cb96fc8fb3f61c876d1c6ea5155",
+ "outcome": "FAIL",
+ "config_sha256": "71a184c085f84dc30e52c25bc47764eabc7ec3f013348b7a39a633a7c95140ae",
+ "seal_digest": "50035b22bb2a31b5d0644933756a7b9a2312903d1ec83c558b81a4e1e8009e6d",
+ "owned_sha256": "1ff0ced4e9dc0b64d242d5540b283e568c9b7610e6d4488441da75f2cc58592e",
+ "rows": [
+  {
+   "check": "own suite green on the unpatched build",
+   "value": "True",
+   "ok": true
+  },
+  {
+   "check": "engine bugs (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "spec gaps (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "test gaps (escaped real bugs)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "oracle disagreements",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "valid planted bugs",
+   "value": "0 of 0",
+   "ok": false
+  },
+  {
+   "check": "judge outputs complete",
+   "value": "oracle.json: unreadable (FileNotFoundError)",
+   "ok": false
+  }
+ ],
+ "tests": 65,
+ "failing": 0,
+ "triage": {},
+ "planted": [],
+ "escapes": {},
+ "oracle": {
+  "pool": 123,
+  "verdicts": {},
+  "picked": [
+   [
+    "crates/sever-format/src/wal.rs",
+    "p2_format_wal_every_single_bit_flip_is_detected"
+   ],
+   [
+    "crates/sever-engine/tests/engine.rs",
+    "p2_engine_refuses_two_live_records_with_one_id"
+   ],
+   [
+    "crates/sever-format/src/file.rs",
+    "p2_format_file_header_round_trips_and_checks_every_field"
+   ],
+   [
+    "crates/sever-format/src/lib.rs",
+    "p2_format_released_sizes_match_appendix_a"
+   ],
+   [
+    "crates/sever-wal/src/tests.rs",
+    "p2_wal_refuses_segment_names_that_are_not_20_digits"
+   ],
+   [
+    "crates/sever-engine/tests/engine.rs",
+    "p2_engine_refuses_a_locator_that_differs_from_the_slots"
+   ],
+   [
+    "crates/sever-format/src/image.rs",
+    "p2_format_checkpoint_streams_refuse_a_wrong_collection_order"
+   ],
+   [
+    "crates/sever-vfs/tests/posix_contract.rs",
+    "p2_vfs_ep5_posix_passes_functional_contract_on_ext4"
+   ],
+   [
+    "crates/sever-txn/src/tests.rs",
+    "p2_txn_passage_text_is_stored_before_commit_and_referenced"
+   ],
+   [
+    "crates/sever-crashkit/tests/small.rs",
+    "p2_crashkit_small_campaign_against_the_python_oracle"
+   ]
+  ]
+ },
+ "findings": [],
+ "sessions": [
+  {
+   "role": "tester",
+   "name": "1-tester",
+   "model": "opus",
+   "rc": 1,
+   "cost_usd": 2.9798505000000004,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261008T161930Z-p2-d76a93aa/logs/1-tester.json"
+  },
+  {
+   "role": "planter",
+   "name": "5-planter",
+   "model": "sonnet",
+   "rc": 1,
+   "cost_usd": 0.0,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261008T161930Z-p2-d76a93aa/logs/5-planter.json"
+  },
+  {
+   "role": "oracle",
+   "name": "8-oracle",
+   "model": "sonnet",
+   "rc": 1,
+   "cost_usd": 0.0,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261008T161930Z-p2-d76a93aa/logs/8-oracle.json"
+  }
+ ]
+}
