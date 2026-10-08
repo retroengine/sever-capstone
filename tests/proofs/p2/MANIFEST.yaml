@@ -1900,6 +1900,53 @@
   package: sever-engine
   tests:
   - p2_engine_a_reader_at_every_protocol_step_sees_before_or_after
+- id: PR-W17
+  claim: a record that ends exactly at the end of its segment is not read back, so a committed
+    transaction is lost
+  kind: red
+  requirements:
+  - SR-12.3-2
+  patch: PR-W17.patch
+  package: sever-wal
+  tests:
+  - p2_wal_a_record_filling_a_whole_segment_fits
+- id: PR-W18
+  claim: a bad header in a middle segment is taken for the end of the log, dropping the committed
+    transactions after it
+  kind: red
+  requirements:
+  - SR-12.3-2
+  patch: PR-W18.patch
+  package: sever-wal
+  tests:
+  - p2_wal_refuses_a_bad_header_in_a_middle_segment
+- id: PR-W19
+  claim: a BEGIN inside an open transaction restarts it instead of being refused
+  kind: red
+  requirements:
+  - SR-12.3-2
+  patch: PR-W19.patch
+  package: sever-wal
+  tests:
+  - p2_wal_a_begin_repeated_inside_its_transaction_is_refused
+- id: PR-W15
+  claim: CRC-valid records whose wal_seqs skip ahead are replayed (the log is repaired, not refused)
+  kind: red
+  requirements:
+  - SR-12.3-3
+  patch: PR-W15.patch
+  package: sever-wal
+  tests:
+  - p2_wal_a_whole_transaction_with_wrong_wal_seqs_at_the_tail_is_refused
+- id: PR-E31
+  claim: every passage is stored under the same key instead of its own sequence number
+  kind: red
+  requirements:
+  - SR-14.8-1
+  patch: PR-E31.patch
+  package: sever-engine
+  tests:
+  - p2_engine_passage_records_carry_increasing_sequence_numbers
 - id: PR-X07
   claim: 'the SDK rescales every vector by 1 + 2^-22 before sending it (1.9 ULPs of norm, inside the
     §4.1 tolerance, yet 9 of the fixture row''s 16 x̃ values change); was limit PR-L01 until the test

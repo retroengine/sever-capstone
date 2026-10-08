@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/wal.rs b/crates/sever-format/src/wal.rs
+index 23cd3e1..86d59af 100644
+--- a/crates/sever-format/src/wal.rs
++++ b/crates/sever-format/src/wal.rs
+@@ -165,7 +165,7 @@ impl WalRecord {
+         if !(RECORD_OVERHEAD..=MAX_RECORD).contains(&len) {
+             return WalParse::Invalid;
+         }
+-        let Some(rec) = buf.get(..len) else {
++        let Some(rec) = buf.get(..len).filter(|_| len < buf.len()) else {
+             return WalParse::Invalid;
+         };
+         let Some((body, tail)) = rec.split_last_chunk::<4>() else {

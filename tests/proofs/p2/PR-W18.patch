@@ -1,0 +1,12 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..35b9c63 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -301,6 +301,7 @@ impl Wal {
+                     vfs.unlink(&path).map_err(io)?;
+                     report.removed_segments += 1;
+                 }
++                _ if !segs.is_empty() => break,
+                 _ => return Err(bad("§12.3 segment header")),
+             }
+         }

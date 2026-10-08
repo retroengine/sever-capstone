@@ -1,0 +1,22 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..867528a 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -366,7 +366,7 @@ impl Wal {
+                     continue;
+                 }
+                 match (rec.ty, &mut open) {
+-                    (RecordType::Begin, None) => {
++                    (RecordType::Begin, _) => {
+                         if last_txn.is_some_and(|t| rec.txn_id <= t)
+                             || rec.txn_id < next_txn_id_floor
+                         {
+@@ -383,7 +383,7 @@ impl Wal {
+                         cut = (i, off, expect);
+                         since_at_cut = since;
+                     }
+-                    (RecordType::Begin | RecordType::Commit, _) => {
++                    (RecordType::Commit, _) => {
+                         return Err(bad("§12.3 transaction structure"));
+                     }
+                     (_, Some(t)) if t.txn_id == rec.txn_id => t.records.push(rec),

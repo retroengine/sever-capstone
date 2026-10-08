@@ -1,0 +1,12 @@
+diff --git a/crates/sever-engine/src/engine.rs b/crates/sever-engine/src/engine.rs
+index c4692ce..9cdd7bb 100644
+--- a/crates/sever-engine/src/engine.rs
++++ b/crates/sever-engine/src/engine.rs
+@@ -373,7 +373,6 @@ impl<E: StoredExtension, S: Sealer> Engine<E, S> {
+             } = &mut *w;
+             let records =
+                 changeset_records(coll, &layout, &cs, &self.sealer, passage, &mut |bytes| {
+-                    *store_key += 1;
+                     store.append(*store_key, bytes)
+                 });
+             let records = self.fail(records)?;

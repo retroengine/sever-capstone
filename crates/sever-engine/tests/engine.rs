@@ -1137,6 +1137,7 @@ fn p2_engine_placements_and_locations_equal_part_1_s() {
 }
 
 #[test]
+// oracle: A §14.8 records parsed by hand after the §14.9 16-byte header; key = sequence number
 #[spec("SR-14.8-1")]
 fn p2_engine_passage_records_carry_increasing_sequence_numbers() {
     // §14.8: store records are `u64be key ‖ u32be len ‖ bytes ‖ u32be crc32c` after a 16-byte

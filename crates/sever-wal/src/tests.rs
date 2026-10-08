@@ -607,6 +607,7 @@ fn p2_wal_default_segment_is_64_mib() {
 }
 
 #[test]
+// oracle: A §14.9 32-byte header + §14.6 25-byte framing; §12.3 the committed record is kept
 #[spec("SR-12.3-2")]
 fn p2_wal_a_record_filling_a_whole_segment_fits() {
     // The largest record is a segment minus its 32-byte header: exactly that size is accepted
@@ -628,6 +629,7 @@ fn p2_wal_a_record_filling_a_whole_segment_fits() {
 }
 
 #[test]
+// oracle: A §14.9 segment header and its segment_seq; §12.3 no committed transaction dropped
 #[spec("SR-12.3-2")]
 fn p2_wal_refuses_a_bad_header_in_a_middle_segment() {
     let seg = 300;
@@ -652,6 +654,7 @@ fn p2_wal_refuses_a_bad_header_in_a_middle_segment() {
 }
 
 #[test]
+// oracle: A §12.3 never repaired; §14.6 wal_seq positions follow one another
 #[spec("SR-12.3-3")]
 fn p2_wal_a_whole_transaction_with_wrong_wal_seqs_at_the_tail_is_refused() {
     // wal_seq is contiguous. CRC-valid records whose wal_seqs skip ahead cannot be a torn append
@@ -669,6 +672,7 @@ fn p2_wal_a_whole_transaction_with_wrong_wal_seqs_at_the_tail_is_refused() {
 }
 
 #[test]
+// oracle: A §12.3 a transaction is one BEGIN, change records, one COMMIT
 #[spec("SR-12.3-2")]
 fn p2_wal_a_begin_repeated_inside_its_transaction_is_refused() {
     let v = log_of(&[(B, 1), (B, 1), (C, 1)]);
