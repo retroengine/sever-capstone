@@ -250,7 +250,8 @@ mod tests {
     }
 
     #[test]
-    #[spec("SR-14.8-1", "SR-14.6-3")]
+    // oracle: A §14.6 unreferenced bytes after a crash are ignored and overwritten; synced records survive
+    #[spec("SR-14.6-3")]
     fn p2_store_synced_records_survive_and_unsynced_tail_is_cut() {
         let v = SimVfs::new();
         let mut s = FileStore::create(Arc::new(v.clone()), cfg(DEFAULT_SEGMENT_BYTES)).unwrap();

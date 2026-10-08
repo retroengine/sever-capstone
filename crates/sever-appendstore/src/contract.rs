@@ -94,6 +94,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: D read-back of what was appended (EP-8 contract, Build §3.4); the bytes: tests/spec_bytes.rs
     #[spec("SR-14.8-1")]
     fn p2_store_ep8_file_store_passes_contract() {
         assert_eq!(ep8_contract(&mut file_store(DEFAULT_SEGMENT_BYTES)), Ok(()));
