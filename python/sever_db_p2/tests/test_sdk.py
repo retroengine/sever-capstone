@@ -27,6 +27,10 @@ def db() -> Iterator[tuple[Database, str]]:
 
 
 @pytest.mark.spec("SR-4.2-4")
+@pytest.mark.oracle(
+    "A",
+    "§4.2 one quantiser, the engine's: no SDK quantiser by name; a 1-ULP change is a retry",
+)
 def test_p2_sdk_has_no_quantiser_of_its_own_and_forwards_vectors_exactly(
     db: tuple[Database, str],
 ) -> None:

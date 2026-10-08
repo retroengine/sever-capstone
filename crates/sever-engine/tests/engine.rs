@@ -270,8 +270,8 @@ fn base() -> (Disks, CollectionId) {
 
 #[test]
 // oracle: C Part 1's frozen index (model_states) gives the state after the workload
-// oracle: A §12.4 checkpoint at clean shutdown, §15.7 recovery: after DropAll the reopened state equals the closed one
-#[spec("SR-15.7-1", "SR-12.4-1")]
+// oracle: A §15.7 recovery: after DropAll the reopened state equals the closed one
+#[spec("SR-15.7-1")]
 fn p2_engine_state_survives_close_and_reopen() {
     let (disks, cid) = base();
     let vs = vectors();

@@ -86,7 +86,10 @@ def observe(db: Database, cid: str, queries: np.ndarray) -> tuple[Any, ...]:
     )
 
 
-@pytest.mark.spec("SR-15.7-1", "SR-12.4-1")
+@pytest.mark.spec("SR-15.7-1")
+@pytest.mark.oracle(
+    "A", "§15.7 recovery: after close and reopen, stats, group sizes and searches are unchanged"
+)
 def test_p2_e2e_2_1_close_and_reopen_changes_nothing(where: tuple[Path, Path]) -> None:
     data, keys = where
     db, cid, rows = small_db(data, keys)
@@ -98,6 +101,9 @@ def test_p2_e2e_2_1_close_and_reopen_changes_nothing(where: tuple[Path, Path]) -
 
 @pytest.mark.slow
 @pytest.mark.spec("SR-15.7-1")
+@pytest.mark.oracle(
+    "A", "§15.7 recovery: after close and reopen, stats, group sizes and searches are unchanged"
+)
 def test_p2_e2e_2_1_nq10k_close_and_reopen_changes_nothing(where: tuple[Path, Path]) -> None:
     data, keys = where
     vectors = np.load(ROOT / "datasets/processed/nq_1m/embeddings.npy", mmap_mode="r")[:10_000]
@@ -113,7 +119,11 @@ def test_p2_e2e_2_1_nq10k_close_and_reopen_changes_nothing(where: tuple[Path, Pa
         assert observe(again, cid, queries) == before
 
 
-@pytest.mark.spec("SR-12.5-1", "SR-15.3-1")
+@pytest.mark.spec("SR-15.3-1")
+@pytest.mark.oracle(
+    "A",
+    "§15.3 delete_user is one transaction: after SIGKILL each cohort is all or nothing",
+)
 def test_p2_e2e_2_2_sigkill_during_delete_user_is_all_or_nothing(
     built: Path, where: tuple[Path, Path]
 ) -> None:
@@ -153,6 +163,10 @@ def test_p2_e2e_2_2_sigkill_during_delete_user_is_all_or_nothing(
 
 
 @pytest.mark.spec("SR-15.1-2")
+@pytest.mark.oracle(
+    "A",
+    "§15.1 a retry after the COMMIT is DuplicateRecord(same_commitment=true): SDK success",
+)
 def test_p2_e2e_2_3_insert_retry_is_success(where: tuple[Path, Path]) -> None:
     data, keys = where
     db, cid, rows = small_db(data, keys)
@@ -166,6 +180,7 @@ def test_p2_e2e_2_3_insert_retry_is_success(where: tuple[Path, Path]) -> None:
 
 
 @pytest.mark.spec("SR-15.4-1")
+@pytest.mark.oracle("A", "§15.4 a retry after the COMMIT returns AlreadyAbsent")
 def test_p2_e2e_2_4_delete_retry_is_absent(where: tuple[Path, Path]) -> None:
     data, keys = where
     db, cid, _ = small_db(data, keys)
@@ -176,6 +191,9 @@ def test_p2_e2e_2_4_delete_retry_is_absent(where: tuple[Path, Path]) -> None:
 
 
 @pytest.mark.spec("SR-12.7-2")
+@pytest.mark.oracle(
+    "A", "§12.7 an fsync error aborts the process (SIGABRT); the restart recovers a valid state"
+)
 def test_p2_e2e_2_5_failed_fsync_aborts_and_restart_recovers(
     built: Path, where: tuple[Path, Path]
 ) -> None:
@@ -198,6 +216,9 @@ def test_p2_e2e_2_5_failed_fsync_aborts_and_restart_recovers(
 
 
 @pytest.mark.spec("SR-15.7-1")
+@pytest.mark.oracle(
+    "A", "§15.7 a database's files carry its whole state through an ext4 image (DB-70)"
+)
 def test_p2_e2e_2_6_disk_image_round_trip(where: tuple[Path, Path]) -> None:
     # DB-70: no root, so the image is built with mkfs.ext4 -d and read back with debugfs.
     data, keys = where
@@ -219,6 +240,9 @@ def test_p2_e2e_2_6_disk_image_round_trip(where: tuple[Path, Path]) -> None:
 
 
 @pytest.mark.spec("SR-15.9-1", "SR-16.1-1")
+@pytest.mark.oracle(
+    "A", "§15.9 a dropped collection is gone after reopen and the other is unchanged; §16.1 the API"
+)
 def test_p2_e2e_2_7_dropping_one_collection_leaves_the_other(where: tuple[Path, Path]) -> None:
     data, keys = where
     db, a, rows = small_db(data, keys)
@@ -237,6 +261,7 @@ def test_p2_e2e_2_7_dropping_one_collection_leaves_the_other(where: tuple[Path, 
 
 
 @pytest.mark.spec("SR-17-1", "SR-17-2")
+@pytest.mark.oracle("A", "§17 every error is typed and carries no record ID or vector value")
 def test_p2_e2e_2_8_malformed_requests_get_typed_errors_without_content(
     where: tuple[Path, Path],
 ) -> None:

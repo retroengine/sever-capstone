@@ -26,6 +26,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Final
@@ -38,6 +39,13 @@ MANIFEST: Final = Path("tests/proofs/p2/MANIFEST.yaml")
 REPORT: Final = Path("docs/PROOFS_P2.md")
 KINDS: Final = ("red", "green")
 RUNNERS: Final = ("cargo", "pytest")
+#: What a pytest proof needs built from the patched worktree, never installed into the shared
+#: environment: the ``sever-db-p2`` CLI, the SDK's native module (a wheel unpacked on
+#: ``PYTHONPATH``), and links to the local, uncommitted data (``datasets/processed``,
+#: ``artefacts``).
+BUILDS: Final = ("cli", "native", "data")
+#: Proofs share a baseline when runner, package and build agree.
+GroupKey = tuple[str, str, tuple[str, ...]]
 CARGO_LINE: Final = re.compile(r"^test (\S+) \.\.\. (ok|FAILED|ignored)\b")
 PYTEST_LINE: Final = re.compile(r"^(\S+::\S+) (PASSED|FAILED|ERROR|SKIPPED)\b")
 
@@ -55,6 +63,7 @@ class Proof:
     tests: list[str]
     package: str = ""
     env: dict[str, str] = field(default_factory=dict)
+    build: tuple[str, ...] = ()
 
 
 def load(root: Path) -> list[Proof]:
@@ -72,6 +81,7 @@ def load(root: Path) -> list[Proof]:
                 tests=[str(t) for t in e["tests"]],
                 package=str(e.get("package", "")),
                 env={str(k): str(v) for k, v in (e.get("env") or {}).items()},
+                build=tuple(str(b) for b in e.get("build") or ()),
             )
         )
     return out
@@ -97,6 +107,7 @@ def problems(root: Path, proofs: list[Proof], audit: oracle_check.Audit) -> list
             out.append(f"{p.id}: runner {p.runner!r} is not one of {RUNNERS}")
         if p.runner == "cargo" and not p.package:
             out.append(f"{p.id}: a cargo proof names its package")
+        out.extend(f"{p.id}: unknown build {b!r}" for b in p.build if b not in BUILDS)
         if not (root / MANIFEST.parent / p.patch).is_file():
             out.append(f"{p.id}: patch {p.patch} is missing")
         if not p.tests:
@@ -144,10 +155,61 @@ def _sh(
     return subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, check=False)
 
 
+def _link_missing(src: Path, dst: Path) -> None:
+    """Links every entry of ``src`` that ``dst`` lacks (local data that git does not carry)."""
+    if not src.is_dir():
+        return
+    dst.mkdir(parents=True, exist_ok=True)
+    for entry in src.iterdir():
+        if not (dst / entry.name).exists():
+            (dst / entry.name).symlink_to(entry)
+
+
+def _prepare(p: Proof, wt: Path, env: dict[str, str], data_root: Path) -> tuple[bool, str]:
+    """Builds what ``p.build`` asks for inside ``wt``; returns success and the build log."""
+    log = ""
+    if "data" in p.build:
+        _link_missing(data_root / "datasets" / "processed", wt / "datasets" / "processed")
+        _link_missing(data_root / "artefacts", wt / "artefacts")
+    if "cli" in p.build:
+        r = _sh(
+            ["nice", "-n", "19", "cargo", "build", "-q", "-j", "2", "--release", "-p", "sever-p2",
+             "--features", "demo"],
+            wt,
+            env,
+        )  # fmt: skip
+        log += r.stdout + r.stderr
+        if r.returncode != 0:
+            return False, log
+    if "native" in p.build:
+        wheels, native = wt / ".proof-wheels", wt / ".proof-native"
+        shutil.rmtree(wheels, ignore_errors=True)
+        shutil.rmtree(native, ignore_errors=True)
+        r = _sh(
+            ["nice", "-n", "19", sys.executable, "-m", "maturin", "build", "--release", "-q",
+             "-m", "crates/sever-py-p2/Cargo.toml", "-o", str(wheels)],
+            wt,
+            env,
+        )  # fmt: skip
+        log += r.stdout + r.stderr
+        built = sorted(wheels.glob("*.whl"))
+        if r.returncode != 0 or not built:
+            return False, log
+        with zipfile.ZipFile(built[-1]) as z:
+            z.extractall(native)
+        env["PYTHONPATH"] = f"{native}{os.pathsep}{env['PYTHONPATH']}"
+    return True, log
+
+
 def _outcomes(p: Proof, wt: Path, target: Path) -> tuple[dict[str, str], str]:
     """Runs ``p``'s tests in worktree ``wt``; returns ``{test: ok|FAILED|…}`` and the raw log."""
     env = dict(os.environ, CARGO_TARGET_DIR=str(target), PYTHONHASHSEED="0", PYTHONPATH="python")
     env.update(p.env)
+    if p.build:
+        data_root = Path(os.environ.get("SEVER_DATA_ROOT", str(target.parent.parent)))
+        ok, blog = _prepare(p, wt, env, data_root)
+        if not ok:
+            return {}, blog
     if p.runner == "cargo":
         names = [_short(t) for t in p.tests]
         cmd = ["nice", "-n", "19", "cargo", "test", "-j", "2", "-p", p.package, "--no-fail-fast"]
@@ -238,19 +300,21 @@ def run(root: Path, only: list[str]) -> tuple[str, bool, list[Verdict]]:
             shutil.copytree(root / MANIFEST.parent, wt / MANIFEST.parent)
             proofs = [p for p in load(wt) if not only or p.id in only]
             # One baseline per runner and package, over every test its proofs name.
-            groups: dict[tuple[str, str], list[str]] = {}
+            # The worktree's target/ is the shared cache, so CLI paths under target/ resolve.
+            (wt / "target").symlink_to(target, target_is_directory=True)
+            # One baseline per runner, package and build, over every test its proofs name.
+            groups: dict[GroupKey, list[str]] = {}
             for p in proofs:
-                names = groups.setdefault((p.runner, p.package), [])
+                names = groups.setdefault((p.runner, p.package, p.build), [])
                 names.extend(t for t in p.tests if t not in names)
-            baselines: dict[tuple[str, str], dict[str, str]] = {}
-            for (runner, package), tests in groups.items():
-                probe = Proof("baseline", "", "red", [], "", runner, tests, package)
-                baselines[(runner, package)], blog = _outcomes(probe, wt, target)
-                (logs / f"baseline-{runner}-{package or 'python'}.log").write_text(
-                    blog, encoding="utf-8"
-                )
+            baselines: dict[GroupKey, dict[str, str]] = {}
+            for (runner, package, build), tests in groups.items():
+                probe = Proof("baseline", "", "red", [], "", runner, tests, package, build=build)
+                baselines[(runner, package, build)], blog = _outcomes(probe, wt, target)
+                tag = "-".join([runner, package or "python", *build])
+                (logs / f"baseline-{tag}.log").write_text(blog, encoding="utf-8")
             for p in proofs:
-                base = baselines[(p.runner, p.package)]
+                base = baselines[(p.runner, p.package, p.build)]
                 patch = (wt / MANIFEST.parent / p.patch).resolve()
                 applied = _sh(["git", "apply", str(patch)], wt).returncode == 0
                 patched, plog = _outcomes(p, wt, target) if applied else ({}, "")

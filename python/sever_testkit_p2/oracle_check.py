@@ -22,6 +22,7 @@ or Appendix, or if a requirement Part 2 owns is checked only by D tests. ``repor
 """
 
 import argparse
+import ast
 import re
 import sys
 from collections import defaultdict
@@ -30,8 +31,6 @@ from pathlib import Path
 from typing import Final
 
 from sever_testkit.spec_trace import (
-    PY_DEF,
-    PY_MARK,
     QUOTED_ID,
     RUST_ATTR,
     RUST_FN,
@@ -54,10 +53,6 @@ PART2_PY_PATHS: Final = [
 ]  # fmt: skip
 
 RUST_ORACLE: Final = re.compile(r"^\s*//\s*oracle:\s*(\S+)\s*(.*?)\s*$")
-PY_ORACLE: Final = re.compile(
-    r"""@pytest\.mark\.oracle\(\s*["']([^"']+)["']\s*(?:,\s*["']([^"']*)["']\s*)?\)"""
-)
-PY_ORACLE_ANY: Final = re.compile(r"@pytest\.mark\.oracle\(")
 SPEC_REF: Final = re.compile(r"§\s*\d|Appendix\s+[A-Z]")
 SCOPE: Final = re.compile(r"\s*\[(SR-[^\]]*)\]\s*$")
 
@@ -137,31 +132,52 @@ def scan_rust(path: Path) -> list[Test]:
     return out
 
 
+def _mark(dec: ast.expr, name: str) -> ast.Call | None:
+    """The call ``@pytest.mark.<name>(...)``, or ``None``."""
+    f = dec.func if isinstance(dec, ast.Call) else None
+    ok = (
+        isinstance(f, ast.Attribute)
+        and f.attr == name
+        and isinstance(f.value, ast.Attribute)
+        and f.value.attr == "mark"
+        and isinstance(f.value.value, ast.Name)
+        and f.value.value.id == "pytest"
+    )
+    return dec if ok and isinstance(dec, ast.Call) else None
+
+
 def scan_python(path: Path) -> list[Test]:
-    """Each ``@pytest.mark.spec`` and ``@pytest.mark.oracle`` belongs to the next ``def test_``."""
+    """Each ``@pytest.mark.spec`` and ``@pytest.mark.oracle`` on a ``def test_…``, read with ``ast``
+    so that a mark split over lines by the formatter is still one mark."""
     out: list[Test] = []
-    ids: list[str] = []
-    oracles: list[Oracle] = []
-    bad: list[str] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        o = PY_ORACLE.search(line)
-        if o:
-            oracles.append(parse_oracle(o.group(1), o.group(2) or ""))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             continue
-        if PY_ORACLE_ANY.search(line):
-            bad.append(f"malformed oracle mark: {line.strip()}")
+        if not node.name.startswith("test_"):
             continue
-        m = PY_MARK.search(line)
-        if m:
-            ids.extend(QUOTED_ID.findall(m.group(1)))
-            continue
-        f = PY_DEF.search(line)
-        if f:
-            if ids:
-                probs = bad + _problems(ids, oracles)
-                out.append(Test(f"{path.name}::{f.group(1)}", ids, oracles, probs))
-            ids, oracles, bad = [], [], []
-    return out
+        ids: list[str] = []
+        oracles: list[Oracle] = []
+        bad: list[str] = []
+        for dec in node.decorator_list:
+            spec = _mark(dec, "spec")
+            if spec is not None:
+                ids.extend(
+                    a.value
+                    for a in spec.args
+                    if isinstance(a, ast.Constant) and isinstance(a.value, str)
+                )
+            mark = _mark(dec, "oracle")
+            if mark is not None:
+                args = [a.value for a in mark.args if isinstance(a, ast.Constant)]
+                if len(args) != len(mark.args) or not 1 <= len(args) <= 2:
+                    bad.append(f"malformed oracle mark at line {mark.lineno}")
+                    continue
+                oracles.append(parse_oracle(str(args[0]), str(args[1]) if len(args) > 1 else ""))
+        if ids:
+            probs = bad + _problems(ids, oracles)
+            out.append(Test(f"{path.name}::{node.name}", ids, oracles, probs))
+    return sorted(out, key=lambda t: t.name)
 
 
 def part2_files(root: Path) -> tuple[list[Path], list[Path]]:

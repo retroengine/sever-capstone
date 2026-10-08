@@ -52,6 +52,7 @@ def engine_lines(path: Path) -> list[tuple[int, str]]:
 
 
 @pytest.mark.spec("SR-12.2-1")
+@pytest.mark.oracle("A", "§12.2 the engine's storage crates do no file I/O outside the Vfs")
 @pytest.mark.parametrize("crate", STORAGE)
 def test_p2_arch_storage_io_goes_through_the_vfs(crate: str) -> None:
     hits = []
@@ -64,6 +65,7 @@ def test_p2_arch_storage_io_goes_through_the_vfs(crate: str) -> None:
 
 
 @pytest.mark.spec("SR-12.7-3")
+@pytest.mark.oracle("A", "§12.7 no mmap: no mmap crate in Cargo.lock and no mmap in the sources")
 def test_p2_arch_no_writes_through_mmap() -> None:
     lock = (ROOT / "Cargo.lock").read_text(encoding="utf-8")
     assert not re.search(r'^name = "(memmap|memmap2|mmap.*)"$', lock, re.MULTILINE)
