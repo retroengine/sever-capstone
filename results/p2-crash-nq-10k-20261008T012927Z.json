@@ -1,0 +1,237 @@
+{
+ "gate": "P2-T1 (0 exactness violations, 0 lost acknowledged operations, 0 corrupt recoveries, 0 refusals), P2-T2 (100 % oracle-allowed states), P2-T3 (0 partial delete_user)",
+ "data": "nq-10k",
+ "seeds": [
+  {
+   "seed": 42,
+   "outcome": "PASS",
+   "oracle_sha256": "f17067d2105c5d770039a79946d2099a33e4dda57458115f0b0df1087e33dbe1",
+   "generic": {
+    "points": 5735,
+    "refusals": 0,
+    "t": "summary",
+    "wrong_states": 0
+   },
+   "generic_rc": 0,
+   "campaign": {
+    "bad_retries": 0,
+    "double": 1378,
+    "double_mismatches": 0,
+    "main_mismatches": 0,
+    "not_oracle_state": 0,
+    "offset": 3594,
+    "ops": 20000,
+    "random": 1000,
+    "refusals": 0,
+    "seconds": 10039,
+    "skipped": 0,
+    "step": 64333,
+    "t": "summary"
+   },
+   "campaign_rc": 0,
+   "campaign_stderr": "",
+   "campaign_results_sha256": "d4987d671b62589b724c353d8412482e54c5dfa6ef81e5c290bd369849775309",
+   "verdict": {
+    "crash_points": 68927,
+    "not_oracle_state": 0,
+    "lost_acknowledged": 0,
+    "partial_delete_user": 0,
+    "startup_refusals": 0,
+    "bad_retries": 0,
+    "double_crash_mismatch": 0,
+    "by_kind": {
+     "step": 64333,
+     "offset": 3594,
+     "random": 1000
+    },
+    "failures": 0
+   },
+   "seconds": 10354
+  },
+  {
+   "seed": 123,
+   "outcome": "PASS",
+   "oracle_sha256": "6e1793a7b10b3cac55741ba6243466f5e85d266d705c0af1767d898752f43702",
+   "generic": {
+    "points": 5745,
+    "refusals": 0,
+    "t": "summary",
+    "wrong_states": 0
+   },
+   "generic_rc": 0,
+   "campaign": {
+    "bad_retries": 0,
+    "double": 1362,
+    "double_mismatches": 0,
+    "main_mismatches": 0,
+    "not_oracle_state": 0,
+    "offset": 2826,
+    "ops": 20000,
+    "random": 1000,
+    "refusals": 0,
+    "seconds": 10081,
+    "skipped": 0,
+    "step": 64323,
+    "t": "summary"
+   },
+   "campaign_rc": 0,
+   "campaign_stderr": "",
+   "campaign_results_sha256": "87c7b2fc3b97d34869ab877172095c7cf459dfaf31e2b2260bab35b5636c693d",
+   "verdict": {
+    "crash_points": 68149,
+    "not_oracle_state": 0,
+    "lost_acknowledged": 0,
+    "partial_delete_user": 0,
+    "startup_refusals": 0,
+    "bad_retries": 0,
+    "double_crash_mismatch": 0,
+    "by_kind": {
+     "step": 64323,
+     "random": 1000,
+     "offset": 2826
+    },
+    "failures": 0
+   },
+   "seconds": 10396
+  },
+  {
+   "seed": 777,
+   "outcome": "PASS",
+   "oracle_sha256": "6787f4ce90f64e18124bae7b2aa5be444b65de5bdc872594af054c21b9783010",
+   "generic": {
+    "points": 5734,
+    "refusals": 0,
+    "t": "summary",
+    "wrong_states": 0
+   },
+   "generic_rc": 0,
+   "campaign": {
+    "bad_retries": 0,
+    "double": 1376,
+    "double_mismatches": 0,
+    "main_mismatches": 0,
+    "not_oracle_state": 0,
+    "offset": 3494,
+    "ops": 20000,
+    "random": 1000,
+    "refusals": 0,
+    "seconds": 10157,
+    "skipped": 0,
+    "step": 64327,
+    "t": "summary"
+   },
+   "campaign_rc": 0,
+   "campaign_stderr": "",
+   "campaign_results_sha256": "884fb930737d3ee15614538d2803e5a121764ec51495bbb921e6842371039741",
+   "verdict": {
+    "crash_points": 68821,
+    "not_oracle_state": 0,
+    "lost_acknowledged": 0,
+    "partial_delete_user": 0,
+    "startup_refusals": 0,
+    "bad_retries": 0,
+    "double_crash_mismatch": 0,
+    "by_kind": {
+     "step": 64327,
+     "random": 1000,
+     "offset": 3494
+    },
+    "failures": 0
+   },
+   "seconds": 10469
+  },
+  {
+   "seed": 2024,
+   "outcome": "PASS",
+   "oracle_sha256": "3b274bf0c4115cddadd3dff4938566093fffa2dc686393853cb8edafa36a768c",
+   "generic": {
+    "points": 5747,
+    "refusals": 0,
+    "t": "summary",
+    "wrong_states": 0
+   },
+   "generic_rc": 0,
+   "campaign": {
+    "bad_retries": 0,
+    "double": 1397,
+    "double_mismatches": 0,
+    "main_mismatches": 0,
+    "not_oracle_state": 0,
+    "offset": 4488,
+    "ops": 20000,
+    "random": 1000,
+    "refusals": 0,
+    "seconds": 11107,
+    "skipped": 0,
+    "step": 64383,
+    "t": "summary"
+   },
+   "campaign_rc": 0,
+   "campaign_stderr": "",
+   "campaign_results_sha256": "93e8652008bad611e721fd6d3f300fff80f31d700f5502083b42c7c7ad73a51f",
+   "verdict": {
+    "crash_points": 69871,
+    "not_oracle_state": 0,
+    "lost_acknowledged": 0,
+    "partial_delete_user": 0,
+    "startup_refusals": 0,
+    "bad_retries": 0,
+    "double_crash_mismatch": 0,
+    "by_kind": {
+     "step": 64383,
+     "random": 1000,
+     "offset": 4488
+    },
+    "failures": 0
+   },
+   "seconds": 11400
+  },
+  {
+   "seed": 9999,
+   "outcome": "PASS",
+   "oracle_sha256": "da8cde86a9d56d88b620e87bae1d79b725c7d5594d153ef895a7d7108f3b3d5c",
+   "generic": {
+    "points": 5746,
+    "refusals": 0,
+    "t": "summary",
+    "wrong_states": 0
+   },
+   "generic_rc": 0,
+   "campaign": {
+    "bad_retries": 0,
+    "double": 1361,
+    "double_mismatches": 0,
+    "main_mismatches": 0,
+    "not_oracle_state": 0,
+    "offset": 2746,
+    "ops": 20000,
+    "random": 1000,
+    "refusals": 0,
+    "seconds": 10991,
+    "skipped": 0,
+    "step": 64323,
+    "t": "summary"
+   },
+   "campaign_rc": 0,
+   "campaign_stderr": "",
+   "campaign_results_sha256": "0ff81a6fb8c246e4d7cbc8f152da0edb9bb4449e39ad465303c97b6454082f49",
+   "verdict": {
+    "crash_points": 68069,
+    "not_oracle_state": 0,
+    "lost_acknowledged": 0,
+    "partial_delete_user": 0,
+    "startup_refusals": 0,
+    "bad_retries": 0,
+    "double_crash_mismatch": 0,
+    "by_kind": {
+     "step": 64323,
+     "random": 1000,
+     "offset": 2746
+    },
+    "failures": 0
+   },
+   "seconds": 11281
+  }
+ ],
+ "outcome": "PASS"
+}
