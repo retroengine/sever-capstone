@@ -120,15 +120,15 @@ From the run ledger, as for Part 1.
 
 | Target (Build §5.8) | What | Result |
 |---|---|---|
-| P2-T1…T3 | crash at every VFS operation of 20,000 operations, every 512-byte offset of 200 WAL writes, 1,000 random points, crashes during recovery; five seeds on nq-10k: 0 exactness violations, 0 lost acknowledged operations, 0 corrupt recoveries, 100 % oracle-allowed states, 0 partial `delete_user` | running |
+| P2-T1…T3 | crash at every VFS operation of 20,000 operations, every 512-byte offset of 200 WAL writes, 1,000 random points, crashes during recovery; five seeds on nq-10k: 0 exactness violations, 0 lost acknowledged operations, 0 corrupt recoveries, 100 % oracle-allowed states, 0 partial `delete_user` | **PASS**: 5 seeds; 343,837 crash points (every VFS operation 321,689, every 512-byte WAL offset 17,148, random 5,000; 6,874 also crashed during recovery) and 28,707 generic-record points; 0 failures of any kind |
 | P2-T4 | a reader at every protocol step sees the state before or after, never a mix | engine test (in `gates p2-checks`) |
 | P2-T5 | Part 1's traces through the Part 2 engine, plain / close / crash after every rung | **PASS**: 5 seeds × 3 modes on nq-10k, 0 mismatches |
 | P2-T6 | 0 fuzz crashes in 10^8 executions per parser | **PASS**: `wal_record`, `manifest`, `checkpoint_file`, `store_record` |
 | P2-T7 | contract suites pass and fail for wrong implementations; proof spikes | **PASS** (spikes: AES-GCM-SIV sealer, log and key-rotation participants; recorded, then deleted) |
 | P2-T8 | SB-1 … SB-15 each turn a test red | **PASS** |
-| P2-T9 | traceability 100 %; lines ≥ 90 %, branches ≥ 85 %, mutation score ≥ 85 % | traceability 46 / 46; coverage and mutants running |
+| P2-T9 | traceability 100 %; lines ≥ 90 %, branches ≥ 85 %, mutation score ≥ 85 % | traceability 46 / 46; coverage **PASS** (lines 94.8 %, branches 86.7 %); mutants: exploratory 652 / 713 = 91.4 %, every survivor triaged in [`docs/MUTANTS_P2.md`](docs/MUTANTS_P2.md); gate run in the ledger |
 | P2-T10 | the Part 1 freeze manifest is unchanged | checked by every CI run |
-| P2-T11 | bytes and fsyncs per operation, recovery time, memory at nq-100k (measure) | queued |
+| P2-T11 | bytes and fsyncs per operation, recovery time, memory at nq-100k (measure) | recorded: ≈ 1 fsync per operation; insert 8.1 KB, single delete 14.2 KB, multi-record `delete_user` 24.6 KB written per operation (header and slot after-images in the WAL); recovery 0.05 s from a checkpoint, 0.85 s replaying the WAL since the last automatic checkpoint; peak resident memory 1.09 GB (146,215 operations) |
 
 **Bugs found by the test suite on the way:** recovery silently dropped a damaged committed record in
 the newest WAL segment as if it were a torn tail; it now refuses to serve (§12.3).

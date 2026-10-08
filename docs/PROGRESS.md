@@ -26,20 +26,16 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `locator.bin`, WAL segment header): expect gap entries. Part 2 adds its own gate runners and tools
   in new modules; the Part 1 packages (including `sever_testkit`) are frozen (F-3).
 
-## RESUME HERE (updated 8 Oct 2026 ~00:05 UTC, branch p2-fuzz)
+## RESUME HERE (updated 8 Oct 2026 ~06:55 UTC, branch p2-fuzz)
 
-Ledger PASS so far: P2-T5 replay, P2-T6 fuzz, P2-T7 spikes, P2-T8 sabotage, P2-T9 coverage
-(lines 94.8 %, branches 86.7 %). nq-10k demo passes (`scripts/p2-demo.sh`). README has Part 2.
+Ledger PASS: P2-T1…T3 crash gate (5 seeds, 343,837 crash points, 0 failures), P2-T5 replay,
+P2-T6 fuzz, P2-T7 spikes, P2-T8 sabotage, P2-T9 coverage (94.8 % / 86.7 %). P2-T11 recorded.
+Exploratory mutants 91.4 %, all 60 survivors triaged in `docs/MUTANTS_P2.md`.
 
-**Detached runs (need WSL alive; sleep is fine, `wsl --shutdown`/reboot kills them):**
-1. Crash gate P2-T1…T3 (since 19:26 on 682bfac): seeds 42/123/777 PASS; 2024, 9999 running,
-   done ~02:00–02:30 UTC → `results/p2-crash-nq-10k-*.json` + ledger line. If killed: rerun
-   `gates p2-crash --data nq-10k --all-seeds --jobs 3` (once `--resume` exists in the runner, use it).
-2. P2-T11 measure: a waiter starts `gates p2-measures --data nq-100k --seed 42` when the crash
-   gate's process exits. If the waiter died, run that command by hand (after the crash gate).
-3. Exploratory mutants (not a gate) in worktree ~/.cache/sever-mutants-explore → `traces/mutants-p2/`.
-   Afterwards: `git worktree remove --force ~/.cache/sever-mutants-explore`.
-When done: `git add docs/RUN_LEDGER.jsonl results/` and commit.
+**In the job queue (systemd `sever-jobq`; `scripts/jobq.sh list`; logs in `jobs/logs/`):**
+`gates p2-mutants --jobs 3` (P2-T9 mutants, ~1 h), then `gates p2-checks` (Full-tier CI incl.
+P2-T4, P2-T10, E2E-2.x; ~1 h). When both PASS: commit ledger + results, fill the README rows,
+run `scripts/freeze.sh 2`, commit `freeze/PART-2.sha256`; the owner tags `part-2-frozen`.
 
 **Crash safety (owner's request, done 8 Oct):** long runs go through a job queue
 (`scripts/jobq.sh add|list|run`; jobs in `jobs/`, logs in `jobs/logs/`) run by the systemd user
