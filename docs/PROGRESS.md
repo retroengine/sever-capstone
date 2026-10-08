@@ -35,7 +35,10 @@ Exploratory mutants 91.4 %, all 60 survivors triaged in `docs/MUTANTS_P2.md`.
 **In the job queue (systemd `sever-jobq`; `scripts/jobq.sh list`; logs in `jobs/logs/`):**
 `gates p2-mutants --jobs 3` (P2-T9 mutants, ~1 h), then `gates p2-checks` (Full-tier CI incl.
 P2-T4, P2-T10, E2E-2.x; ~1 h). When both PASS: commit ledger + results, fill the README rows,
-run `scripts/freeze.sh 2`, commit `freeze/PART-2.sha256`; the owner tags `part-2-frozen`.
+then **wait for the owner's independent audit** (another AI, worktree `~/sever-db-oracles`, branch
+`p2-test-oracles`; owner's decision 8 Oct 07:25 UTC): merge its accepted fixes first, re-run the
+gates they touch, and only then run `scripts/freeze.sh 2` and commit `freeze/PART-2.sha256`; the
+owner tags `part-2-frozen`.
 
 **Crash safety (owner's request, done 8 Oct):** long runs go through a job queue
 (`scripts/jobq.sh add|list|run`; jobs in `jobs/`, logs in `jobs/logs/`) run by the systemd user
