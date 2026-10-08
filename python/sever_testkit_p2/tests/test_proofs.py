@@ -32,7 +32,7 @@ fn p2_format_unlabelled() {}
 
 
 def _repo(tmp_path: Path, manifest: str, patches: tuple[str, ...] = ("a.patch",)) -> Path:
-    (tmp_path / "spec").mkdir()
+    (tmp_path / "spec").mkdir(parents=True)
     (tmp_path / "spec/requirements.yaml").write_text(CATALOGUE, encoding="utf-8")
     src = tmp_path / "crates/sever-format/src"
     src.mkdir(parents=True)
@@ -116,3 +116,15 @@ def test_p2_proofs_verdicts() -> None:
     assert not proofs._judge(_p("red"), ok, {}, False).ok, "patch does not apply"
     assert proofs._judge(_p("green"), ok, ok, True).ok
     assert not proofs._judge(_p("green"), ok, red, True).ok
+    assert proofs._judge(_p("limit"), ok, ok, True).ok
+    assert not proofs._judge(_p("limit"), ok, red, True).ok
+
+
+def test_p2_proofs_a_limit_keeps_the_label_and_does_not_prove_it(tmp_path: Path) -> None:
+    m = FULL + _entry("P4", "limit", "SR-14.3-1", "p2_format_two")
+    probs, pairs = _check(_repo(tmp_path / "a", m))
+    assert probs == []
+    assert pairs == []
+    only = _entry("P1", "limit", "SR-14.3-1", "p2_format_two")
+    _, pairs = _check(_repo(tmp_path / "b", only))
+    assert "lib.rs::p2_format_two: SR-14.3-1" in pairs

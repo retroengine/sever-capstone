@@ -9,6 +9,8 @@ A proof is a patch that breaks one rule of the code, and the tests it names:
   a label: ``SR-X`` on a test claims the test goes red when rule X breaks.
 - ``green``: each named test passes with and without the patch, although the patch breaks the rule
   in ``requirements``. This is the evidence for removing a label the test could not fail for.
+- ``limit``: like ``green``, for a test that keeps its label (a red proof covers it): the patch
+  breaks part of the rule and the test does not notice. A recorded limit of that test.
 
 ``run`` checks out the committed HEAD into a temporary git worktree (the working tree is never
 touched), runs every proof there, and writes ``docs/PROOFS_P2.md``: the commit, each verdict, and
@@ -37,7 +39,7 @@ from sever_testkit_p2 import oracle_check
 
 MANIFEST: Final = Path("tests/proofs/p2/MANIFEST.yaml")
 REPORT: Final = Path("docs/PROOFS_P2.md")
-KINDS: Final = ("red", "green")
+KINDS: Final = ("red", "green", "limit")
 RUNNERS: Final = ("cargo", "pytest")
 #: What a pytest proof needs built from the patched worktree, never installed into the shared
 #: environment: the ``sever-db-p2`` CLI, the SDK's native module (a wheel unpacked on
@@ -277,7 +279,7 @@ def _judge(p: Proof, base: dict[str, str], patched: dict[str, str], applied: boo
         bad = [n for n in names if patched[n] not in ("FAILED", "ERROR")]
         why = f"stayed green: {', '.join(bad)}" if bad else "every named test went red"
         return Verdict(p, not bad, why, base, patched)
-    bad = [n for n in names if patched[n] != "ok"]
+    bad = [n for n in names if patched[n] != "ok"]  # green and limit
     why = f"went red: {', '.join(bad)}" if bad else "every named test stayed green"
     return Verdict(p, not bad, why, base, patched)
 
@@ -342,7 +344,9 @@ def report(head: str, dirty: bool, verdicts: list[Verdict], unproven_pairs: list
         "Each proof applies one patch (`tests/proofs/p2/`) to that commit in a temporary worktree.",
         "**red**: the named tests pass without it and fail with it, so their label can fail.",
         "**green**: the named tests pass with and without it although it breaks the rule, so the",
-        "label was removed. Re-run any proof: `… proofs run --only <ID>`.",
+        "label was removed. **limit**: the same for a test that keeps its label (a red proof",
+        "covers it), recording what the test does not notice.",
+        "Re-run any proof: `… proofs run --only <ID>`.",
         "",
         "| Proof | Kind | Requirements | Claim | Verdict | Tests: without → with the patch |",
         "|---|---|---|---|---|---|",
