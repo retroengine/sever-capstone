@@ -11,6 +11,8 @@
 
 pub mod codec;
 pub mod file;
+#[cfg(test)]
+mod fuzz_seeds_tests;
 pub mod group;
 pub mod image;
 pub mod paged;

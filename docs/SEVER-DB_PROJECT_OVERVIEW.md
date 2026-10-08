@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-50, DB-55 … DB-70)](#6-decision-register-db-1--db-50-db-55--db-70)
+6. [Decision register (DB-1 … DB-50, DB-55 … DB-71)](#6-decision-register-db-1--db-50-db-55--db-71)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-50, DB-55 … DB-70)
+## 6. Decision register (DB-1 … DB-50, DB-55 … DB-71)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -972,6 +972,16 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-71 — Licence allow-list: Apache-2.0 WITH LLVM-exception (8 October 2026)
+
+**Decision.** `deny.toml` also allows the SPDX expression `Apache-2.0 WITH LLVM-exception`. **Why.**
+The Part 2 Python SDK uses PyO3 (owner decision, 7 October 2026), whose build-time dependency
+`target-lexicon` carries this licence; the LLVM exception only adds permissions to Apache-2.0
+(already allowed), and the crate is used at build time, not linked into the engine. Found by the
+Full-tier `cargo deny` step (spec §20.3 check 5). **Rejected.** Dropping the PyO3 SDK; a per-crate
+exception (the expression is as permissive as Apache-2.0 for every crate). **Consequence.** Spec §20.3
+check 5 passes with PyO3 in the workspace.
 
 #### DB-70 — E2E-2.6 without mounting (7 October 2026)
 

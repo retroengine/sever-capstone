@@ -103,11 +103,12 @@ The Python SDK (PyO3; build it once after every `uv sync` with
 
 ```python
 from sever_db_p2 import Database
+
 with Database.open("/path/db", "/path/keys") as db:
     cid = db.create_collection("artefacts/partition-seed42.svp")
-    db.insert(cid, "doc-1", vector, passage=b"text")      # vector: float32, unit length, d = 384
-    db.delete_user(cid, ["doc-1", "doc-2"])                 # ["deleted", "absent"], all or nothing
-    db.search(cid, query, k=10)                             # [(record_id, score), ...]
+    db.insert(cid, "doc-1", vector, passage=b"text")  # vector: float32, unit length, d = 384
+    db.delete_user(cid, ["doc-1", "doc-2"])  # ["deleted", "absent"], all or nothing
+    db.search(cid, query, k=10)  # [(record_id, score), ...]
 ```
 
 A retried insert of the same record with the same vector is a success (`receipt.retried`); a retried
