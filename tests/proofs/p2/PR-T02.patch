@@ -1,0 +1,17 @@
+diff --git a/crates/sever-txn/src/records.rs b/crates/sever-txn/src/records.rs
+index cfeb643..9d7b1ae 100644
+--- a/crates/sever-txn/src/records.rs
++++ b/crates/sever-txn/src/records.rs
+@@ -281,11 +281,7 @@ pub fn changeset_records<E: StoredExtension>(
+                     });
+                     overlay.insert((*to, base + i), moved);
+                 }
+-                out.push(CoreRecord::SlotTruncate {
+-                    cid,
+-                    group: *from,
+-                    len: 0,
+-                });
++
+                 for i in 0..n {
+                     overlay.remove(&(*from, i));
+                 }

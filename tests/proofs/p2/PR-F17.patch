@@ -1,0 +1,12 @@
+diff --git a/crates/sever-format/src/wal.rs b/crates/sever-format/src/wal.rs
+index 23cd3e1..43562d3 100644
+--- a/crates/sever-format/src/wal.rs
++++ b/crates/sever-format/src/wal.rs
+@@ -95,6 +95,7 @@ impl RecordType {
+                 | Self::LogLeaf
+                 | Self::LogCheckpoint
+                 | Self::CertRef
++                | Self::PayloadRef
+                 | Self::Extension
+         )
+     }

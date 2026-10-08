@@ -1,0 +1,13 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..d5dd64c 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -387,7 +387,7 @@ impl Wal {
+                         return Err(bad("§12.3 transaction structure"));
+                     }
+                     (_, Some(t)) if t.txn_id == rec.txn_id => t.records.push(rec),
+-                    _ => return Err(bad("§12.3 transaction structure")),
++                    _ => {}
+                 }
+             }
+         }

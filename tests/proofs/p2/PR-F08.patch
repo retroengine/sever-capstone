@@ -1,0 +1,14 @@
+diff --git a/crates/sever-format/src/group.rs b/crates/sever-format/src/group.rs
+index 74a2464..0aa01bd 100644
+--- a/crates/sever-format/src/group.rs
++++ b/crates/sever-format/src/group.rs
+@@ -71,8 +71,8 @@ impl GroupHeader {
+         let mut w = Writer(Vec::with_capacity(layout.header_len(holding)));
+         w.group_id(&self.group_id)
+             .u8(self.kind() as u8)
+-            .u64(self.seal_version)
+             .u64(self.n)
++            .u64(self.seal_version)
+             .bytes(&self.ext_public);
+         for &c in &self.centroid {
+             w.f64(c);

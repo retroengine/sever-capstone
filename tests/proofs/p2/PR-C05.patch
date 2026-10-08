@@ -1,0 +1,13 @@
+diff --git a/python/sever_testkit_p2/oracle_check.py b/python/sever_testkit_p2/oracle_check.py
+index d73a9fc..f91fdf4 100644
+--- a/python/sever_testkit_p2/oracle_check.py
++++ b/python/sever_testkit_p2/oracle_check.py
+@@ -149,7 +149,7 @@ def scan_python(path: Path) -> list[Test]:
+             oracles.append(parse_oracle(o.group(1), o.group(2) or ""))
+             continue
+         if PY_ORACLE_ANY.search(line):
+-            bad.append(f"malformed oracle mark: {line.strip()}")
++            pass
+             continue
+         m = PY_MARK.search(line)
+         if m:

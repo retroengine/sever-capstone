@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/wal.rs b/crates/sever-format/src/wal.rs
+index 23cd3e1..69149e5 100644
+--- a/crates/sever-format/src/wal.rs
++++ b/crates/sever-format/src/wal.rs
+@@ -142,7 +142,7 @@ impl WalRecord {
+     pub fn encode(&self) -> Vec<u8> {
+         let len = RECORD_OVERHEAD + self.payload.len();
+         let mut w = Writer(Vec::with_capacity(len));
+-        w.u32(u32::try_from(len).unwrap_or(u32::MAX))
++        w.u32(u32::try_from(len + 1).unwrap_or(u32::MAX))
+             .u8(self.ty as u8)
+             .u64(self.wal_seq)
+             .u64(self.txn_id)

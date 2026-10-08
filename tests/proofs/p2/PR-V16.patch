@@ -1,0 +1,13 @@
+diff --git a/crates/sever-vfs/src/contract.rs b/crates/sever-vfs/src/contract.rs
+index 1ea3818..37d237f 100644
+--- a/crates/sever-vfs/src/contract.rs
++++ b/crates/sever-vfs/src/contract.rs
+@@ -441,7 +441,7 @@ pub fn ep5_crash_contract(empty: &dyn CrashableVfs) -> Ep5 {
+         Err(VfsError::Io {
+             op: VfsOp::Fsync, ..
+         }) => {}
+-        _ => return Err(Ep5Violation::FsyncFailureNotInjected),
++        _ => {}
+     }
+     let _ = a.fsync(); // the forbidden retry (§12.7), here only to probe the model
+     v.restart(CrashPolicy::KeepAll);

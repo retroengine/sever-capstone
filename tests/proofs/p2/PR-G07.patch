@@ -1,0 +1,24 @@
+diff --git a/crates/sever-format/src/wal.rs b/crates/sever-format/src/wal.rs
+index 23cd3e1..3570ebb 100644
+--- a/crates/sever-format/src/wal.rs
++++ b/crates/sever-format/src/wal.rs
+@@ -144,8 +144,8 @@ impl WalRecord {
+         let mut w = Writer(Vec::with_capacity(len));
+         w.u32(u32::try_from(len).unwrap_or(u32::MAX))
+             .u8(self.ty as u8)
+-            .u64(self.wal_seq)
+             .u64(self.txn_id)
++            .u64(self.wal_seq)
+             .bytes(&self.payload);
+         let c = crc(&w.0);
+         w.u32(c);
+@@ -178,8 +178,8 @@ impl WalRecord {
+         let mut r = Reader::new(body.get(4..).unwrap_or_default(), "§14.6 WAL record");
+         let parsed = (|| -> Result<WalRecord, Error> {
+             let ty = RecordType::from_byte(r.u8()?).ok_or(bad("§14.6 record type"))?;
+-            let wal_seq = r.u64()?;
+             let txn_id = r.u64()?;
++            let wal_seq = r.u64()?;
+             let payload = r.take(r.remaining())?.to_vec();
+             Ok(WalRecord {
+                 ty,

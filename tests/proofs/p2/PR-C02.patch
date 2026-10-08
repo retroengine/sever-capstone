@@ -1,0 +1,13 @@
+diff --git a/python/sever_testkit_p2/oracle_check.py b/python/sever_testkit_p2/oracle_check.py
+index d73a9fc..c306c75 100644
+--- a/python/sever_testkit_p2/oracle_check.py
++++ b/python/sever_testkit_p2/oracle_check.py
+@@ -197,7 +197,7 @@ class Audit:
+         for rid in self.owned:
+             tests = self.by_requirement.get(rid, [])
+             per_test = [t.kinds_for(rid) for t in tests]
+-            if tests and all(per_test) and set().union(*per_test) <= {"D"}:
++            if tests and all(per_test) and set().union(*per_test) <= set():
+                 out.append(rid)
+         return out
+ 

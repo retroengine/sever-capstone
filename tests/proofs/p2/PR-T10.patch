@@ -1,0 +1,13 @@
+diff --git a/crates/sever-txn/src/sealer.rs b/crates/sever-txn/src/sealer.rs
+index c1fca32..4b96975 100644
+--- a/crates/sever-txn/src/sealer.rs
++++ b/crates/sever-txn/src/sealer.rs
+@@ -101,7 +101,7 @@ pub trait Sealer: Send + Sync {
+ pub struct PlaintextSealer;
+ 
+ fn no_envelope(envelope: &[u8]) -> Result<(), Error> {
+-    if envelope.is_empty() {
++    if envelope.len() <= 1 {
+         Ok(())
+     } else {
+         Err(Error::IntegrityViolation {

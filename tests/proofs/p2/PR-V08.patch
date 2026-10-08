@@ -1,0 +1,13 @@
+diff --git a/crates/sever-vfs/src/durable.rs b/crates/sever-vfs/src/durable.rs
+index 2cde9c2..5330dbf 100644
+--- a/crates/sever-vfs/src/durable.rs
++++ b/crates/sever-vfs/src/durable.rs
+@@ -10,7 +10,7 @@ use crate::{OpenMode, Vfs, VfsError, VfsFile, parent};
+ pub fn sync(file: &mut dyn VfsFile) -> Result<(), VfsError> {
+     let first = file.fsync();
+     // SB-14: retry a failed fsync (the retry "succeeds" without saving the lost pages).
+-    if cfg!(feature = "sabotage-SB-14") && first.is_err() {
++    if first.is_err() {
+         return file.fsync();
+     }
+     first

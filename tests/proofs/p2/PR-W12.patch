@@ -1,0 +1,13 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..2acea43 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -379,7 +379,7 @@ impl Wal {
+                     }
+                     (RecordType::Commit, Some(t)) if t.txn_id == rec.txn_id => {
+                         last_txn = Some(t.txn_id);
+-                        committed.extend(open.take());
++                        open.take();
+                         cut = (i, off, expect);
+                         since_at_cut = since;
+                     }

@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/file.rs b/crates/sever-format/src/file.rs
+index d246448..69628a0 100644
+--- a/crates/sever-format/src/file.rs
++++ b/crates/sever-format/src/file.rs
+@@ -20,7 +20,7 @@ fn check_ident(
+     if r.u16()? != FORMAT_VERSION {
+         return Err(bad("§14 format version"));
+     }
+-    if r.u16()? != sealer_id {
++    if r.u16()? != sealer_id && sealer_id == u16::MAX {
+         return Err(bad("DB-48 sealer_id"));
+     }
+     Ok(())

@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/paged.rs b/crates/sever-format/src/paged.rs
+index aaebc29..3f82bf3 100644
+--- a/crates/sever-format/src/paged.rs
++++ b/crates/sever-format/src/paged.rs
+@@ -88,7 +88,7 @@ pub fn decode(bytes: &[u8], magic: &[u8; 8], sealer_id: u16) -> Result<(u64, Vec
+                 return Err(bad("§14.2 header padding"));
+             }
+         } else {
+-            if ty != PAGE_DATA || wal_seq != seq {
++            if ty != PAGE_DATA || wal_seq == u64::MAX - seq {
+                 return Err(bad("§14.2 page type"));
+             }
+             let take = (want_len - stream.len()).min(PAGE_PAYLOAD);

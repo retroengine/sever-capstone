@@ -1,0 +1,13 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..fb068c7 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -351,7 +351,7 @@ impl Wal {
+                     // follow it. A valid record after the bad bytes means a committed record was
+                     // damaged; discarding the rest would silently lose acknowledged work.
+                     _ if tail_segment && !valid_record_after(bytes, off + 1, expect) => {
+-                        break 'segments;
++                        return Err(bad("§12.3 torn tail refused"));
+                     }
+                     _ if tail_segment => return Err(bad("§12.3 corrupt record inside the log")),
+                     _ => return Err(bad("§12.3 hole inside the log")),

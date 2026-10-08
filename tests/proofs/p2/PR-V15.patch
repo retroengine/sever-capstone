@@ -1,0 +1,13 @@
+diff --git a/crates/sever-vfs/src/contract.rs b/crates/sever-vfs/src/contract.rs
+index 1ea3818..cc251d0 100644
+--- a/crates/sever-vfs/src/contract.rs
++++ b/crates/sever-vfs/src/contract.rs
+@@ -293,7 +293,7 @@ fn durable_base(vfs: &dyn Vfs) -> Ep5 {
+ 
+ fn open_a(vfs: &dyn Vfs) -> Result<Box<dyn VfsFile>, Ep5Violation> {
+     vfs.open("d/a", OpenMode::Existing)
+-        .map_err(|_| Ep5Violation::SyncedEntryLost)
++        .map_err(|_| Ep5Violation::SyncedDataLost)
+ }
+ 
+ fn read_a(vfs: &dyn Vfs) -> Result<Vec<u8>, Ep5Violation> {

@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/image.rs b/crates/sever-format/src/image.rs
+index 4c55e4f..00abde4 100644
+--- a/crates/sever-format/src/image.rs
++++ b/crates/sever-format/src/image.rs
+@@ -209,7 +209,7 @@ impl DbImage {
+                 })?;
+             }
+             CoreRecord::GroupHeader { cid, header } => {
+-                self.coll_mut(cid)?.group_mut(&header.group_id)?.header = header.clone();
++                let _ = self.coll_mut(cid)?.group_mut(&header.group_id)?;
+             }
+             CoreRecord::SlotPut {
+                 cid,

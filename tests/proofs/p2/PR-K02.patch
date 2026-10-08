@@ -1,0 +1,13 @@
+diff --git a/crates/sever-checkpoint/src/lib.rs b/crates/sever-checkpoint/src/lib.rs
+index 97f8054..07fa02f 100644
+--- a/crates/sever-checkpoint/src/lib.rs
++++ b/crates/sever-checkpoint/src/lib.rs
+@@ -127,7 +127,7 @@ pub fn write(
+     durable::sync_dir(vfs, &tmp).map_err(io)?;
+     durable::sync_dir(vfs, CHECKPOINT_DIR).map_err(io)?;
+     // 2. Rename into place; fsync checkpoint/.
+-    durable::rename(vfs, &tmp, &dir).map_err(io)?;
++    vfs.rename(&tmp, &dir).map_err(io)?;
+     // 3. Install MANIFEST (tmp, fsync, rename, fsync the directory).
+     let manifest = Manifest {
+         sealer_id,

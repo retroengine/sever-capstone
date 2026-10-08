@@ -1,0 +1,13 @@
+diff --git a/crates/sever-txn/src/records.rs b/crates/sever-txn/src/records.rs
+index cfeb643..c27baf2 100644
+--- a/crates/sever-txn/src/records.rs
++++ b/crates/sever-txn/src/records.rs
+@@ -316,7 +316,7 @@ pub fn changeset_records<E: StoredExtension>(
+         });
+     }
+ 
+-    if let (Some(text), Some((sid, group, envelope))) = (passage, &inserted) {
++    if let (Some(text), Some((sid, group, envelope)), true) = (passage, &inserted, false) {
+         let owner = RecordOwner {
+             collection: &cid,
+             group,

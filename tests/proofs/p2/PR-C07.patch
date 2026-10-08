@@ -1,0 +1,13 @@
+diff --git a/python/sever_testkit_p2/oracle_check.py b/python/sever_testkit_p2/oracle_check.py
+index d73a9fc..c58ef6d 100644
+--- a/python/sever_testkit_p2/oracle_check.py
++++ b/python/sever_testkit_p2/oracle_check.py
+@@ -259,7 +259,7 @@ def report(a: Audit) -> str:
+         if any(t.problems for t in tests):
+             status += " (untagged tests)"
+         lines.append(f"| {rid} | " + " | ".join(str(n[k]) for k in KINDS) + f" | {status} |")
+-    shared = [t for t in a.tests if any(o.kind == "B-shared" for o in t.oracles)]
++    shared = [t for t in a.tests if any(o.kind == "X" for o in t.oracles)]
+     lines += ["", "## B-shared: for the owner to review by hand", ""]
+     if shared:
+         lines += [

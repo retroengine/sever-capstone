@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/lib.rs b/crates/sever-format/src/lib.rs
+index 3c22806..5c4a216 100644
+--- a/crates/sever-format/src/lib.rs
++++ b/crates/sever-format/src/lib.rs
+@@ -101,7 +101,7 @@ impl Layout {
+     /// Slot payload plaintext: `u16be id_len ‖ id padded to 256 ‖ x̃ as d × i32be ‖ extension
+     /// record secret` (§14.4, DB-46).
+     pub fn payload_len(&self) -> usize {
+-        2 + PADDED_ID_BYTES + 4 * self.d + self.ext_record_secret
++        2 + PADDED_ID_BYTES + 4 * self.d
+     }
+ 
+     /// A slot: `scrambled_id ‖ envelope ‖ sealed payload`, zero-padded to a multiple of 8 (§14.4).

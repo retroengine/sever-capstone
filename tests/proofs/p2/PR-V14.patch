@@ -1,0 +1,13 @@
+diff --git a/crates/sever-vfs/src/contract.rs b/crates/sever-vfs/src/contract.rs
+index 1ea3818..c710098 100644
+--- a/crates/sever-vfs/src/contract.rs
++++ b/crates/sever-vfs/src/contract.rs
+@@ -345,7 +345,7 @@ pub fn ep5_crash_contract(empty: &dyn CrashableVfs) -> Ep5 {
+         step(a.append(b"tail"), "unsynced append")?;
+         v.restart(policy);
+         let got = read_a(v.as_ref())?;
+-        if got != want {
++        if got != want && matches!(policy, CrashPolicy::KeepAll) {
+             return Err(match policy {
+                 CrashPolicy::DropAll => Ep5Violation::UnsyncedWriteSurvived,
+                 _ => Ep5Violation::KeepAllLostData,

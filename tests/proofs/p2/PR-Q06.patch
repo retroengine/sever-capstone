@@ -1,0 +1,13 @@
+diff --git a/python/sever_testkit_p2/proofs.py b/python/sever_testkit_p2/proofs.py
+index fab4b2c..765ada3 100644
+--- a/python/sever_testkit_p2/proofs.py
++++ b/python/sever_testkit_p2/proofs.py
+@@ -89,7 +89,7 @@ def problems(root: Path, proofs: list[Proof], audit: oracle_check.Audit) -> list
+     labelled = {_short(t.name): t for t in audit.tests}
+     for p in proofs:
+         if p.id in seen:
+-            out.append(f"{p.id}: duplicate ID")
++            pass
+         seen.add(p.id)
+         if p.kind not in KINDS:
+             out.append(f"{p.id}: kind {p.kind!r} is not one of {KINDS}")

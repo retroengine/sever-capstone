@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/file.rs b/crates/sever-format/src/file.rs
+index d246448..6c8b149 100644
+--- a/crates/sever-format/src/file.rs
++++ b/crates/sever-format/src/file.rs
+@@ -56,7 +56,7 @@ impl FileHeader {
+     /// The 16 bytes.
+     pub fn encode(&self) -> Vec<u8> {
+         let mut w = Writer::new();
+-        w.bytes(&self.magic).u16(FORMAT_VERSION).u16(self.sealer_id);
++        w.bytes(&self.magic).u16(self.sealer_id);
+         let c = crc(&w.0);
+         w.u32(c);
+         w.finish()

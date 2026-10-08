@@ -1,0 +1,13 @@
+diff --git a/crates/sever-vfs/src/durable.rs b/crates/sever-vfs/src/durable.rs
+index 2cde9c2..165909b 100644
+--- a/crates/sever-vfs/src/durable.rs
++++ b/crates/sever-vfs/src/durable.rs
+@@ -42,7 +42,7 @@ pub fn create_dir(vfs: &dyn Vfs, path: &str) -> Result<(), VfsError> {
+ pub fn rename(vfs: &dyn Vfs, from: &str, to: &str) -> Result<(), VfsError> {
+     vfs.rename(from, to)?;
+     // SB-12: skip the directory fsync after a rename.
+-    if cfg!(feature = "sabotage-SB-12") {
++    if !cfg!(feature = "sabotage-SB-12") {
+         return Ok(());
+     }
+     sync_dir(vfs, parent(to))?;

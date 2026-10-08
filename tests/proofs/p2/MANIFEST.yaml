@@ -1,0 +1,1364 @@
+# Proofs for Part 2 (CLAUDE.md §6.3). Each entry: a patch that breaks one rule and the tests that
+# must go red (red) or stay green (green). Run: python -m sever_testkit_p2.proofs run
+- id: PR-C01
+  claim: an SR-labelled test without an oracle passes the checker
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-C01.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_fails_an_untagged_labelled_test
+- id: PR-C02
+  claim: a requirement resting on D alone passes the checker
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-C02.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_fails_a_requirement_resting_on_d_alone
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_scoped_oracles_back_only_their_labels
+- id: PR-C03
+  claim: an A oracle without a § passes the checker
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-C03.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_fails_an_a_oracle_without_a_section
+- id: PR-C04
+  claim: an unknown oracle letter passes the checker
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-C04.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_fails_unknown_and_sourceless_oracles
+- id: PR-C05
+  claim: a malformed Python oracle mark is ignored
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-C05.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_fails_a_malformed_python_mark
+- id: PR-C06
+  claim: an A oracle citing Appendix A is refused
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-C06.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_accepts_an_appendix_source
+- id: PR-C07
+  claim: B-shared tests are left out of the owner's review list
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-C07.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_report_lists_b_shared_tests
+- id: PR-C08
+  claim: a scoped oracle backs every label of its test
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-C08.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_scoped_oracles_back_only_their_labels
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_fails_a_label_no_oracle_backs
+- id: PR-C09
+  claim: a label that no oracle backs passes the checker
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-C09.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_fails_a_label_no_oracle_backs
+- id: PR-C10
+  claim: an oracle scoped to a label the test does not carry passes the checker
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-C10.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_fails_a_scope_outside_the_labels
+- id: PR-C11
+  claim: unlabelled tests are required to declare an oracle
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-C11.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_ignores_unlabelled_tests
+- id: PR-C12
+  claim: an A oracle citing a § is refused
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-C12.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_passes_a_correctly_tagged_repo
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_fails_an_untagged_labelled_test
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_ignores_unlabelled_tests
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_report_lists_b_shared_tests
+  - python/sever_testkit_p2/tests/test_oracle_check.py::test_p2_oracle_check_fails_a_label_no_oracle_backs
+- id: PR-Q01
+  claim: a red proof holds although its tests stayed green
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-Q01.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_proofs.py::test_p2_proofs_verdicts
+- id: PR-Q02
+  claim: labels without a red proof are not reported
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-Q02.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_proofs.py::test_p2_proofs_every_label_needs_a_red_proof
+  - python/sever_testkit_p2/tests/test_proofs.py::test_p2_proofs_a_green_proof_does_not_prove_a_label
+- id: PR-Q03
+  claim: a green proof counts as proof of a label
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-Q03.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_proofs.py::test_p2_proofs_a_green_proof_does_not_prove_a_label
+- id: PR-Q04
+  claim: a red proof may name a test that does not carry its label
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-Q04.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_proofs.py::test_p2_proofs_a_red_proof_must_name_tests_with_that_label
+- id: PR-Q05
+  claim: a green proof may name a test that still carries the label
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-Q05.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_proofs.py::test_p2_proofs_a_green_proof_must_name_tests_without_that_label
+- id: PR-Q06
+  claim: duplicate proof IDs are accepted
+  kind: red
+  requirements:
+  - CLAUDE.md §6.3
+  patch: PR-Q06.patch
+  runner: pytest
+  tests:
+  - python/sever_testkit_p2/tests/test_proofs.py::test_p2_proofs_manifest_problems_are_reported
+- id: PR-F01:SR-14-1
+  claim: every §14.9 header and paged file says version 2 instead of 1
+  kind: red
+  requirements:
+  - SR-14-1
+  patch: PR-F01.patch
+  package: sever-format
+  tests:
+  - p2_format_append_store_file_header_bytes_are_the_spec_s
+  - p2_format_file_header_round_trips_and_checks_every_field
+  - p2_format_manifest_bytes_are_the_spec_s
+  - p2_format_secrets_bytes_are_the_spec_s
+  - p2_format_wal_segment_header_bytes_are_the_spec_s
+- id: PR-F01:SR-14.9-1
+  claim: every §14.9 header and paged file says version 2 instead of 1
+  kind: red
+  requirements:
+  - SR-14.9-1
+  patch: PR-F01.patch
+  package: sever-format
+  tests:
+  - p2_format_append_store_file_header_bytes_are_the_spec_s
+  - p2_format_manifest_bytes_are_the_spec_s
+  - p2_format_secrets_bytes_are_the_spec_s
+  - p2_format_wal_segment_header_bytes_are_the_spec_s
+- id: PR-F01:SR-14-2
+  claim: every §14.9 header and paged file says version 2 instead of 1
+  kind: red
+  requirements:
+  - SR-14-2
+  patch: PR-F01.patch
+  package: sever-format
+  tests:
+  - p2_format_file_header_round_trips_and_checks_every_field
+  - p2_format_headers_refuse_what_the_spec_refuses
+- id: PR-F02:SR-14-2
+  claim: file headers, MANIFEST, segment headers and SECRETS accept a wrong CRC
+  kind: red
+  requirements:
+  - SR-14-2
+  patch: PR-F02.patch
+  package: sever-format
+  tests:
+  - p2_format_every_single_bit_flip_in_a_manifest_is_detected
+  - p2_format_headers_refuse_what_the_spec_refuses
+- id: PR-F03:SR-14-2
+  claim: file headers accept another sealer_id
+  kind: red
+  requirements:
+  - SR-14-2
+  patch: PR-F03.patch
+  package: sever-format
+  tests:
+  - p2_format_file_header_round_trips_and_checks_every_field
+  - p2_format_headers_refuse_what_the_spec_refuses
+- id: PR-F04:SR-14-1
+  claim: MANIFEST is written without its sealer_id field
+  kind: red
+  requirements:
+  - SR-14-1
+  patch: PR-F04.patch
+  package: sever-format
+  tests:
+  - p2_format_manifest_and_segment_header_round_trip
+  - p2_format_manifest_bytes_are_the_spec_s
+- id: PR-F04:SR-14.9-1
+  claim: MANIFEST is written without its sealer_id field
+  kind: red
+  requirements:
+  - SR-14.9-1
+  patch: PR-F04.patch
+  package: sever-format
+  tests:
+  - p2_format_manifest_and_segment_header_round_trip
+  - p2_format_manifest_bytes_are_the_spec_s
+- id: PR-F05:SR-14-1
+  claim: the append-store file header is written without its version field
+  kind: red
+  requirements:
+  - SR-14-1
+  patch: PR-F05.patch
+  package: sever-format
+  tests:
+  - p2_format_append_store_file_header_bytes_are_the_spec_s
+  - p2_format_file_header_round_trips_and_checks_every_field
+- id: PR-F05:SR-14.9-1
+  claim: the append-store file header is written without its version field
+  kind: red
+  requirements:
+  - SR-14.9-1
+  patch: PR-F05.patch
+  package: sever-format
+  tests:
+  - p2_format_append_store_file_header_bytes_are_the_spec_s
+- id: PR-F06:SR-14.6-2
+  claim: COUNTERS payloads write k before N
+  kind: red
+  requirements:
+  - SR-14.6-2
+  patch: PR-F06.patch
+  package: sever-format
+  tests:
+  - p2_format_every_record_type_round_trips
+  - p2_format_wal_payloads_are_the_spec_s
+- id: PR-F07:SR-14.9-1
+  claim: locator.bin lists entries in descending scrambled_id order
+  kind: red
+  requirements:
+  - SR-14.9-1
+  patch: PR-F07.patch
+  package: sever-format
+  tests:
+  - p2_format_checkpoint_streams_are_the_spec_s
+- id: PR-F08:SR-14.3-1
+  claim: group headers write n before seal_version
+  kind: red
+  requirements:
+  - SR-14.3-1
+  patch: PR-F08.patch
+  package: sever-format
+  tests:
+  - p2_format_group_header_layout_by_offset
+- id: PR-F09:SR-14.4-1
+  claim: slots are padded to 16 bytes instead of 8
+  kind: red
+  requirements:
+  - SR-14.4-1
+  patch: PR-F09.patch
+  package: sever-format
+  tests:
+  - p2_format_part2_sizes_match_appendix_a
+  - p2_format_released_sizes_match_appendix_a
+- id: PR-F10:SR-14.4-1
+  claim: record IDs are padded to 255 bytes instead of 256
+  kind: red
+  requirements:
+  - SR-14.4-1
+  patch: PR-F10.patch
+  package: sever-format
+  tests:
+  - p2_format_extension_secret_goes_last
+  - p2_format_payload_layout_by_offset
+  - p2_format_slot_layout_and_padding
+- id: PR-F10:SR-14.4-2
+  claim: record IDs are padded to 255 bytes instead of 256
+  kind: red
+  requirements:
+  - SR-14.4-2
+  patch: PR-F10.patch
+  package: sever-format
+  tests:
+  - p2_format_payload_layout_by_offset
+- id: PR-F11:SR-14.8-1
+  claim: store values of 16 MiB + 1 byte are accepted
+  kind: red
+  requirements:
+  - SR-14.8-1
+  patch: PR-F11.patch
+  package: sever-format
+  tests:
+  - p2_format_store_values_are_at_most_16_mib
+- id: PR-F12:SR-14-2
+  claim: store records accept a wrong CRC
+  kind: red
+  requirements:
+  - SR-14-2
+  patch: PR-F12.patch
+  package: sever-format
+  tests:
+  - p2_format_store_record_detects_every_bit_flip_and_tear
+- id: PR-F13:SR-14.8-1
+  claim: store records write len before key
+  kind: red
+  requirements:
+  - SR-14.8-1
+  patch: PR-F13.patch
+  package: sever-format
+  tests:
+  - p2_format_store_record_layout_by_offset
+  - p2_format_store_values_are_at_most_16_mib
+- id: PR-F14:SR-14.6-1
+  claim: a WAL record's len counts one byte too many
+  kind: red
+  requirements:
+  - SR-14.6-1
+  patch: PR-F14.patch
+  package: sever-format
+  tests:
+  - p2_format_wal_parse_next_stops_at_anything_invalid
+  - p2_format_wal_record_layout_by_offset
+  - p2_format_wal_records_fit_a_64_mib_segment
+- id: PR-F15:SR-12.7-4
+  claim: WAL records accept a wrong CRC (as SB-11)
+  kind: red
+  requirements:
+  - SR-12.7-4
+  patch: PR-F15.patch
+  package: sever-format
+  tests:
+  - p2_format_wal_every_single_bit_flip_is_detected
+- id: PR-F15:SR-12.3-3
+  claim: WAL records accept a wrong CRC (as SB-11)
+  kind: red
+  requirements:
+  - SR-12.3-3
+  patch: PR-F15.patch
+  package: sever-format
+  tests:
+  - p2_format_wal_every_single_bit_flip_is_detected
+- id: PR-F16:SR-12.3-3
+  claim: WAL parsing accepts a torn record (no length or CRC check)
+  kind: red
+  requirements:
+  - SR-12.3-3
+  patch: PR-F16.patch
+  package: sever-format
+  tests:
+  - p2_format_wal_every_single_bit_flip_is_detected
+  - p2_format_wal_parse_next_stops_at_anything_invalid
+- id: PR-F17:SR-14.6-2
+  claim: PAYLOAD_REF counts as a participant record type
+  kind: red
+  requirements:
+  - SR-14.6-2
+  patch: PR-F17.patch
+  package: sever-format
+  tests:
+  - p2_format_participant_record_types_are_4_9_10_11_14
+- id: PR-F18:SR-14-2
+  claim: checkpoint pages accept a wrong CRC
+  kind: red
+  requirements:
+  - SR-14-2
+  patch: PR-F18.patch
+  package: sever-format
+  tests:
+  - p2_format_paged_detects_bit_flips_and_mixups
+- id: PR-F18:SR-12.7-4
+  claim: checkpoint pages accept a wrong CRC
+  kind: red
+  requirements:
+  - SR-12.7-4
+  patch: PR-F18.patch
+  package: sever-format
+  tests:
+  - p2_format_paged_detects_bit_flips_and_mixups
+- id: PR-F18:SR-14.2-1
+  claim: checkpoint pages accept a wrong CRC
+  kind: red
+  requirements:
+  - SR-14.2-1
+  patch: PR-F18.patch
+  package: sever-format
+  tests:
+  - p2_format_paged_refuses_a_broken_page_frame
+- id: PR-F19:SR-14.2-1
+  claim: data pages may carry a different wal_seq than the header page
+  kind: red
+  requirements:
+  - SR-14.2-1
+  patch: PR-F19.patch
+  package: sever-format
+  tests:
+  - p2_format_paged_refuses_a_wrong_data_page
+- id: PR-F19:SR-14-2
+  claim: data pages may carry a different wal_seq than the header page
+  kind: red
+  requirements:
+  - SR-14-2
+  patch: PR-F19.patch
+  package: sever-format
+  tests:
+  - p2_format_paged_detects_bit_flips_and_mixups
+- id: PR-F20:SR-14.2-1
+  claim: pages write wal_seq before page_no
+  kind: red
+  requirements:
+  - SR-14.2-1
+  patch: PR-F20.patch
+  package: sever-format
+  tests:
+  - p2_format_page_layout_by_offset
+  - p2_format_paged_layout_is_the_spec_s
+  - p2_format_paged_refuses_a_broken_page_frame
+  - p2_format_paged_refuses_a_wrong_data_page
+  - p2_format_paged_refuses_a_wrong_header_page
+- id: PR-F21:SR-14.2-1
+  claim: non-zero header-page padding is accepted (and zero padding refused)
+  kind: red
+  requirements:
+  - SR-14.2-1
+  patch: PR-F21.patch
+  package: sever-format
+  tests:
+  - p2_format_paged_refuses_a_wrong_header_page
+- id: PR-F22:SR-14-2
+  claim: meta.bin accepts a repeated collection ID
+  kind: red
+  requirements:
+  - SR-14-2
+  patch: PR-F22.patch
+  package: sever-format
+  tests:
+  - p2_format_checkpoint_streams_refuse_a_wrong_collection_order
+- id: PR-F23:SR-14-2
+  claim: locator.bin and its order are no longer checked
+  kind: red
+  requirements:
+  - SR-14-2
+  patch: PR-F23.patch
+  package: sever-format
+  tests:
+  - p2_format_checkpoint_streams_refuse_unsorted_locator_entries
+- id: PR-F24:SR-14-2
+  claim: a trailing byte after collections.bin is accepted
+  kind: red
+  requirements:
+  - SR-14-2
+  patch: PR-F24.patch
+  package: sever-format
+  tests:
+  - p2_format_checkpoint_streams_refuse_missing_extra_or_trailing_bytes
+- id: PR-F25:SR-14.4-1
+  claim: slots write the payload before the scrambled_id
+  kind: red
+  requirements:
+  - SR-14.4-1
+  patch: PR-F25.patch
+  package: sever-format
+  tests:
+  - p2_format_slot_layout_and_padding
+- id: PR-F26:SR-14.4-1
+  claim: the extension record secret comes before x̃ in the payload
+  kind: red
+  requirements:
+  - SR-14.4-1
+  patch: PR-F26.patch
+  package: sever-format
+  tests:
+  - p2_format_extension_secret_goes_last
+- id: PR-F27:SR-14.3-1
+  claim: the group header size omits seal_version
+  kind: red
+  requirements:
+  - SR-14.3-1
+  patch: PR-F27.patch
+  package: sever-format
+  tests:
+  - p2_format_group_header_layout_by_offset
+  - p2_format_part2_sizes_match_appendix_a
+  - p2_format_released_sizes_match_appendix_a
+- id: PR-F28:SR-14.4-1
+  claim: the payload size omits the extension record secret
+  kind: red
+  requirements:
+  - SR-14.4-1
+  patch: PR-F28.patch
+  package: sever-format
+  tests:
+  - p2_format_released_sizes_match_appendix_a
+- id: PR-V01:SR-12.2-3
+  claim: SimVfs keeps unsynced directory entries under DropAll
+  kind: red
+  requirements:
+  - SR-12.2-3
+  patch: PR-V01.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_sim_passes_crash_contract
+  - p2_vfs_sim_crash_at_every_operation_of_a_durable_create
+- id: PR-V02:SR-12.2-3
+  claim: SimVfs keeps unsynced file writes under DropAll
+  kind: red
+  requirements:
+  - SR-12.2-3
+  patch: PR-V02.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_sim_passes_crash_contract
+- id: PR-V03:SR-12.2-3
+  claim: fsync_dir makes nothing durable
+  kind: red
+  requirements:
+  - SR-12.2-3
+  patch: PR-V03.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_contract_rejects_a_backend_that_loses_nothing
+  - p2_vfs_ep5_sim_passes_crash_contract
+  - p2_vfs_prop_synced_state_survives_every_policy
+  - p2_vfs_sim_crash_at_every_operation_of_a_durable_create
+- id: PR-V03:SR-12.7-1
+  claim: fsync_dir makes nothing durable
+  kind: red
+  requirements:
+  - SR-12.7-1
+  patch: PR-V03.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_create_and_unlink_are_durable_when_they_return
+  - p2_vfs_rename_is_durable_when_it_returns
+- id: PR-V03:SR-12.4-2
+  claim: fsync_dir makes nothing durable
+  kind: red
+  requirements:
+  - SR-12.4-2
+  patch: PR-V03.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_replace_file_leaves_old_or_new_at_every_crash_point
+- id: PR-V04:SR-12.2-4
+  claim: SimVfs can no longer tear a write
+  kind: red
+  requirements:
+  - SR-12.2-4
+  patch: PR-V04.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_sim_tears_the_crashing_write_at_the_requested_byte
+- id: PR-V05:SR-12.2-4
+  claim: SimVfs can no longer fail an fsync
+  kind: red
+  requirements:
+  - SR-12.2-4
+  patch: PR-V05.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_sim_passes_crash_contract
+  - p2_vfs_sim_failed_dir_sync_never_makes_the_entry_durable
+  - p2_vfs_sim_fails_the_chosen_sync_counting_files_and_directories
+- id: PR-V05:SR-12.7-2
+  claim: SimVfs can no longer fail an fsync
+  kind: red
+  requirements:
+  - SR-12.7-2
+  patch: PR-V05.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_failed_dir_fsync_is_reported
+  - p2_vfs_failed_fsync_is_reported_never_retried
+- id: PR-V06:SR-12.2-4
+  claim: a failed fsync keeps its pending writes, so a retry saves them
+  kind: red
+  requirements:
+  - SR-12.2-4
+  patch: PR-V06.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_sim_passes_crash_contract
+- id: PR-V06:SR-12.2-3
+  claim: a failed fsync keeps its pending writes, so a retry saves them
+  kind: red
+  requirements:
+  - SR-12.2-3
+  patch: PR-V06.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_sim_passes_crash_contract
+- id: PR-V07:SR-12.2-5
+  claim: the Random crash policy mixes the clock into its seed
+  kind: red
+  requirements:
+  - SR-12.2-5
+  patch: PR-V07.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_sim_passes_crash_contract
+  - p2_vfs_prop_same_seed_same_disk
+- id: PR-V08:SR-12.7-2
+  claim: a failed fsync is retried (as SB-14)
+  kind: red
+  requirements:
+  - SR-12.7-2
+  patch: PR-V08.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_failed_fsync_is_reported_never_retried
+- id: PR-V09:SR-12.7-1
+  claim: creating a file does not fsync its directory
+  kind: red
+  requirements:
+  - SR-12.7-1
+  patch: PR-V09.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_create_and_unlink_are_durable_when_they_return
+- id: PR-V09:SR-12.7-2
+  claim: creating a file does not fsync its directory
+  kind: red
+  requirements:
+  - SR-12.7-2
+  patch: PR-V09.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_failed_dir_fsync_is_reported
+- id: PR-V10:SR-12.7-1
+  claim: a rename does not fsync its directory (as SB-12)
+  kind: red
+  requirements:
+  - SR-12.7-1
+  patch: PR-V10.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_rename_is_durable_when_it_returns
+- id: PR-V10:SR-12.4-2
+  claim: a rename does not fsync its directory (as SB-12)
+  kind: red
+  requirements:
+  - SR-12.4-2
+  patch: PR-V10.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_replace_file_leaves_old_or_new_at_every_crash_point
+- id: PR-V11:SR-12.4-2
+  claim: replace_file overwrites the file in place instead of tmp + rename
+  kind: red
+  requirements:
+  - SR-12.4-2
+  patch: PR-V11.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_replace_file_leaves_old_or_new_at_every_crash_point
+- id: PR-V12:SR-12.2-1
+  claim: SimVfs lists names in descending order
+  kind: red
+  requirements:
+  - SR-12.2-1
+  patch: PR-V12.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_sim_passes_functional_contract
+- id: PR-V13:SR-12.2-1
+  claim: PosixVfs lists names in descending order
+  kind: red
+  requirements:
+  - SR-12.2-1
+  patch: PR-V13.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_posix_passes_functional_contract_on_ext4
+  - p2_vfs_ep5_posix_passes_functional_contract_on_tmpfs
+- id: PR-V13:SR-12.2-2
+  claim: PosixVfs lists names in descending order
+  kind: red
+  requirements:
+  - SR-12.2-2
+  patch: PR-V13.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_posix_passes_functional_contract_on_ext4
+  - p2_vfs_ep5_posix_passes_functional_contract_on_tmpfs
+- id: PR-V14:SR-12.2-3
+  claim: the crash contract no longer checks that DropAll loses unsynced writes
+  kind: red
+  requirements:
+  - SR-12.2-3
+  patch: PR-V14.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_contract_rejects_a_backend_that_loses_nothing
+- id: PR-V15:SR-12.2-3
+  claim: the crash contract reports a lost synced entry as lost data
+  kind: red
+  requirements:
+  - SR-12.2-3
+  patch: PR-V15.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_contract_rejects_a_backend_that_loses_synced_data
+- id: PR-V16:SR-12.2-4
+  claim: the crash contract no longer checks that an fsync failure can be injected
+  kind: red
+  requirements:
+  - SR-12.2-4
+  patch: PR-V16.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_contract_rejects_a_backend_without_fsync_faults
+- id: PR-W01:SR-12.3-3
+  claim: recovery replays an uncommitted transaction (as SB-13)
+  kind: red
+  requirements:
+  - SR-12.3-3
+  patch: PR-W01.patch
+  package: sever-wal
+  tests:
+  - p2_wal_a_crash_during_recovery_changes_nothing
+  - p2_wal_an_open_transaction_at_the_tail_is_discarded_and_cut
+  - p2_wal_crash_at_every_512_byte_offset_of_a_large_write
+  - p2_wal_crash_at_every_operation_keeps_exactly_the_acknowledged_transactions
+  - p2_wal_prop_recovery_is_acknowledged_prefix
+  - p2_wal_uncommitted_transaction_is_never_replayed
+- id: PR-W01:SR-12.3-2
+  claim: recovery replays an uncommitted transaction (as SB-13)
+  kind: red
+  requirements:
+  - SR-12.3-2
+  patch: PR-W01.patch
+  package: sever-wal
+  tests:
+  - p2_wal_crash_at_every_operation_keeps_exactly_the_acknowledged_transactions
+  - p2_wal_prop_recovery_is_acknowledged_prefix
+- id: PR-W02:SR-12.3-2
+  claim: a commit is acknowledged without fsync
+  kind: red
+  requirements:
+  - SR-12.3-2
+  patch: PR-W02.patch
+  package: sever-wal
+  tests:
+  - p2_wal_crash_at_every_operation_keeps_exactly_the_acknowledged_transactions
+  - p2_wal_prop_recovery_is_acknowledged_prefix
+- id: PR-W02:SR-12.3-3
+  claim: a commit is acknowledged without fsync
+  kind: red
+  requirements:
+  - SR-12.3-3
+  patch: PR-W02.patch
+  package: sever-wal
+  tests:
+  - p2_wal_crash_at_every_operation_keeps_exactly_the_acknowledged_transactions
+  - p2_wal_prop_recovery_is_acknowledged_prefix
+- id: PR-W03:SR-12.3-3
+  claim: a damaged record followed by valid ones is dropped as if it were a torn tail
+  kind: red
+  requirements:
+  - SR-12.3-3
+  patch: PR-W03.patch
+  package: sever-wal
+  tests:
+  - p2_wal_a_damaged_committed_record_is_refused_not_dropped
+- id: PR-W03:SR-12.7-4
+  claim: a damaged record followed by valid ones is dropped as if it were a torn tail
+  kind: red
+  requirements:
+  - SR-12.7-4
+  patch: PR-W03.patch
+  package: sever-wal
+  tests:
+  - p2_wal_a_damaged_committed_record_is_refused_not_dropped
+- id: PR-W05:SR-12.3-2
+  claim: a change record outside its transaction is ignored instead of refused
+  kind: red
+  requirements:
+  - SR-12.3-2
+  patch: PR-W05.patch
+  package: sever-wal
+  tests:
+  - p2_wal_refuses_a_broken_transaction_structure
+- id: PR-W07:SR-15.6-4
+  claim: remove_covered also deletes the segment holding the checkpoint position
+  kind: red
+  requirements:
+  - SR-15.6-4
+  patch: PR-W07.patch
+  package: sever-wal
+  tests:
+  - p2_wal_remove_covered_deletes_whole_segments_only
+- id: PR-W08:SR-15.7-1
+  claim: recovery replays records the checkpoint already covers
+  kind: red
+  requirements:
+  - SR-15.7-1
+  patch: PR-W08.patch
+  package: sever-wal
+  tests:
+  - p2_wal_recovery_starts_at_the_checkpoint_s_wal_position
+- id: PR-W09:SR-14.9-1
+  claim: segment names of any digit count are accepted
+  kind: red
+  requirements:
+  - SR-14.9-1
+  patch: PR-W09.patch
+  package: sever-wal
+  tests:
+  - p2_wal_refuses_segment_names_that_are_not_20_digits
+- id: PR-W12:SR-12.3-2
+  claim: recovery drops committed transactions
+  kind: red
+  requirements:
+  - SR-12.3-2
+  patch: PR-W12.patch
+  package: sever-wal
+  tests:
+  - p2_wal_commit_then_recover_round_trips_across_segments
+  - p2_wal_crash_at_every_operation_keeps_exactly_the_acknowledged_transactions
+  - p2_wal_hand_written_log_with_two_transactions_recovers_both
+  - p2_wal_prop_recovery_is_acknowledged_prefix
+- id: PR-W12:SR-12.3-3
+  claim: recovery drops committed transactions
+  kind: red
+  requirements:
+  - SR-12.3-3
+  patch: PR-W12.patch
+  package: sever-wal
+  tests:
+  - p2_wal_a_tail_record_with_the_wrong_wal_seq_is_a_torn_tail
+  - p2_wal_an_open_transaction_at_the_tail_is_discarded_and_cut
+  - p2_wal_crash_at_every_512_byte_offset_of_a_large_write
+  - p2_wal_crash_at_every_operation_keeps_exactly_the_acknowledged_transactions
+  - p2_wal_prop_recovery_is_acknowledged_prefix
+  - p2_wal_uncommitted_transaction_is_never_replayed
+- id: PR-W14:SR-12.3-3
+  claim: recovery refuses a torn tail instead of discarding it
+  kind: red
+  requirements:
+  - SR-12.3-3
+  patch: PR-W14.patch
+  package: sever-wal
+  tests:
+  - p2_wal_a_crash_during_recovery_changes_nothing
+  - p2_wal_a_tail_record_with_the_wrong_wal_seq_is_a_torn_tail
+  - p2_wal_crash_at_every_512_byte_offset_of_a_large_write
+  - p2_wal_crash_at_every_operation_keeps_exactly_the_acknowledged_transactions
+  - p2_wal_prop_recovery_is_acknowledged_prefix
+- id: PR-W14:SR-12.3-2
+  claim: recovery refuses a torn tail instead of discarding it
+  kind: red
+  requirements:
+  - SR-12.3-2
+  patch: PR-W14.patch
+  package: sever-wal
+  tests:
+  - p2_wal_crash_at_every_operation_keeps_exactly_the_acknowledged_transactions
+  - p2_wal_prop_recovery_is_acknowledged_prefix
+- id: PR-K01:SR-15.6-1
+  claim: checkpoint files are written without fsync
+  kind: red
+  requirements:
+  - SR-15.6-1
+  patch: PR-K01.patch
+  package: sever-checkpoint
+  tests:
+  - p2_checkpoint_write_then_load_round_trips
+- id: PR-K01:SR-12.4-2
+  claim: checkpoint files are written without fsync
+  kind: red
+  requirements:
+  - SR-12.4-2
+  patch: PR-K01.patch
+  package: sever-checkpoint
+  tests:
+  - p2_checkpoint_interrupted_at_every_operation_leaves_old_or_new
+- id: PR-K02:SR-15.6-2
+  claim: the checkpoint directory rename is not followed by fsync of checkpoint/
+  kind: red
+  requirements:
+  - SR-15.6-2
+  patch: PR-K02.patch
+  package: sever-checkpoint
+  tests:
+  - p2_checkpoint_interrupted_at_every_operation_leaves_old_or_new
+  - p2_checkpoint_write_then_load_round_trips
+- id: PR-K02:SR-12.4-2
+  claim: the checkpoint directory rename is not followed by fsync of checkpoint/
+  kind: red
+  requirements:
+  - SR-12.4-2
+  patch: PR-K02.patch
+  package: sever-checkpoint
+  tests:
+  - p2_checkpoint_interrupted_at_every_operation_leaves_old_or_new
+- id: PR-K03:SR-15.6-3
+  claim: MANIFEST is overwritten in place instead of MANIFEST.tmp + fsync + rename + fsync
+  kind: red
+  requirements:
+  - SR-15.6-3
+  patch: PR-K03.patch
+  package: sever-checkpoint
+  tests:
+  - p2_checkpoint_interrupted_at_every_operation_leaves_old_or_new
+  - p2_checkpoint_write_then_load_round_trips
+- id: PR-K03:SR-12.4-2
+  claim: MANIFEST is overwritten in place instead of MANIFEST.tmp + fsync + rename + fsync
+  kind: red
+  requirements:
+  - SR-12.4-2
+  patch: PR-K03.patch
+  package: sever-checkpoint
+  tests:
+  - p2_checkpoint_interrupted_at_every_operation_leaves_old_or_new
+- id: PR-K03:SR-15.6-2
+  claim: MANIFEST is overwritten in place instead of MANIFEST.tmp + fsync + rename + fsync
+  kind: red
+  requirements:
+  - SR-15.6-2
+  patch: PR-K03.patch
+  package: sever-checkpoint
+  tests:
+  - p2_checkpoint_interrupted_at_every_operation_leaves_old_or_new
+  - p2_checkpoint_write_then_load_round_trips
+- id: PR-K04:SR-14.1-1
+  claim: locator.bin is written as locators.bin
+  kind: red
+  requirements:
+  - SR-14.1-1
+  patch: PR-K04.patch
+  package: sever-checkpoint
+  tests:
+  - p2_checkpoint_write_then_load_round_trips
+- id: PR-K-F03:SR-14-2
+  claim: file headers accept another sealer_id
+  kind: red
+  requirements:
+  - SR-14-2
+  patch: PR-F03.patch
+  package: sever-checkpoint
+  tests:
+  - p2_checkpoint_refuses_another_sealer
+- id: PR-K-F07:SR-14.9-1
+  claim: locator.bin lists entries in descending scrambled_id order
+  kind: red
+  requirements:
+  - SR-14.9-1
+  patch: PR-F07.patch
+  package: sever-checkpoint
+  tests:
+  - p2_checkpoint_write_then_load_round_trips
+- id: PR-A01:SR-14-1
+  claim: append stores use the magic SVDBSTOX
+  kind: red
+  requirements:
+  - SR-14-1
+  patch: PR-A01.patch
+  package: sever-appendstore
+  tests:
+  - p2_store_file_on_disk_is_the_spec_s
+- id: PR-A-F13:SR-14.8-1
+  claim: store records write len before key
+  kind: red
+  requirements:
+  - SR-14.8-1
+  patch: PR-F13.patch
+  package: sever-appendstore
+  tests:
+  - p2_store_ep8_file_store_passes_contract
+  - p2_store_file_on_disk_is_the_spec_s
+- id: PR-K-F18:SR-12.7-4
+  claim: checkpoint pages accept a wrong CRC
+  kind: red
+  requirements:
+  - SR-12.7-4
+  patch: PR-F18.patch
+  package: sever-checkpoint
+  tests:
+  - p2_checkpoint_corruption_is_refused
+- id: PR-K-F18:SR-14-2
+  claim: checkpoint pages accept a wrong CRC
+  kind: red
+  requirements:
+  - SR-14-2
+  patch: PR-F18.patch
+  package: sever-checkpoint
+  tests:
+  - p2_checkpoint_corruption_is_refused
+- id: PR-A03:SR-14.6-3
+  claim: opening a store does not cut the unsynced tail
+  kind: red
+  requirements:
+  - SR-14.6-3
+  patch: PR-A03.patch
+  package: sever-appendstore
+  tests:
+  - p2_store_synced_records_survive_and_unsynced_tail_is_cut
+- id: PR-W06:SR-12.3-3
+  claim: recovery does not cut the torn tail
+  kind: red
+  requirements:
+  - SR-12.3-3
+  patch: PR-W06.patch
+  package: sever-wal
+  tests:
+  - p2_wal_an_open_transaction_at_the_tail_is_discarded_and_cut
+  - p2_wal_crash_at_every_operation_keeps_exactly_the_acknowledged_transactions
+- id: PR-W06:SR-12.3-2
+  claim: recovery does not cut the torn tail
+  kind: red
+  requirements:
+  - SR-12.3-2
+  patch: PR-W06.patch
+  package: sever-wal
+  tests:
+  - p2_wal_crash_at_every_operation_keeps_exactly_the_acknowledged_transactions
+- id: PR-W04:SR-12.3-2
+  claim: a missing middle segment is accepted
+  kind: red
+  requirements:
+  - SR-12.3-2
+  patch: PR-W04.patch
+  package: sever-wal
+  tests:
+  - p2_wal_refuses_a_missing_middle_segment_or_a_bad_older_header
+- id: PR-T01:SR-15.1-1
+  claim: an insert's slot is not written to the WAL
+  kind: red
+  requirements:
+  - SR-15.1-1
+  patch: PR-T01.patch
+  package: sever-txn
+  tests:
+  - p2_txn_after_images_reproduce_the_index_through_inserts_flushes_and_deletes
+- id: PR-T02:SR-15.2-1
+  claim: a flush does not empty the holding area on disk
+  kind: red
+  requirements:
+  - SR-15.2-1
+  patch: PR-T02.patch
+  package: sever-txn
+  tests:
+  - p2_txn_after_images_reproduce_the_index_through_inserts_flushes_and_deletes
+- id: PR-T03:SR-15.3-1
+  claim: a delete does not move the last slot into the gap
+  kind: red
+  requirements:
+  - SR-15.3-1
+  patch: PR-T03.patch
+  package: sever-txn
+  tests:
+  - p2_txn_after_images_reproduce_the_index_through_inserts_flushes_and_deletes
+- id: PR-T04:SR-12.3-1
+  claim: accumulator groups get no GROUP_HEADER after-image
+  kind: red
+  requirements:
+  - SR-12.3-1
+  patch: PR-T04.patch
+  package: sever-txn
+  tests:
+  - p2_txn_after_images_reproduce_the_index_through_inserts_flushes_and_deletes
+- id: PR-T05:SR-12.6-1
+  claim: N and k changes are never logged (no COUNTERS record)
+  kind: red
+  requirements:
+  - SR-12.6-1
+  patch: PR-T05.patch
+  package: sever-txn
+  tests:
+  - p2_txn_after_images_reproduce_the_index_through_inserts_flushes_and_deletes
+- id: PR-T06:SR-14.6-2
+  claim: an insert's passage text gets no PAYLOAD_REF
+  kind: red
+  requirements:
+  - SR-14.6-2
+  patch: PR-T06.patch
+  package: sever-txn
+  tests:
+  - p2_txn_passage_text_is_stored_before_commit_and_referenced
+- id: PR-T07:SR-12.3-2
+  claim: changes are applied to memory before the COMMIT is durable (as SB-15)
+  kind: red
+  requirements:
+  - SR-12.3-2
+  patch: PR-T07.patch
+  package: sever-txn
+  tests:
+  - p2_txn_nothing_reaches_memory_before_the_commit_point
+- id: PR-T07:SR-15.8-1
+  claim: changes are applied to memory before the COMMIT is durable (as SB-15)
+  kind: red
+  requirements:
+  - SR-15.8-1
+  patch: PR-T07.patch
+  package: sever-txn
+  tests:
+  - p2_txn_a_failed_wal_write_changes_nothing_in_memory
+  - p2_txn_nothing_reaches_memory_before_the_commit_point
+- id: PR-T08:SR-14.6-2
+  claim: participant payloads are reversed instead of carried verbatim
+  kind: red
+  requirements:
+  - SR-14.6-2
+  patch: PR-T08.patch
+  package: sever-txn
+  tests:
+  - p2_txn_participants_run_in_protocol_order_and_their_records_are_logged
+- id: PR-T09:SR-14.3-1
+  claim: the holding area's header keeps its old n
+  kind: red
+  requirements:
+  - SR-14.3-1
+  patch: PR-T09.patch
+  package: sever-txn
+  tests:
+  - p2_txn_holding_header_counts_its_records
+- id: PR-T09:SR-7.4-1
+  claim: the holding area's header keeps its old n
+  kind: red
+  requirements:
+  - SR-7.4-1
+  patch: PR-T09.patch
+  package: sever-txn
+  tests:
+  - p2_txn_holding_header_counts_its_records
+- id: PR-T10:SR-14.4-1
+  claim: the plaintext sealer accepts a 1-byte envelope
+  kind: red
+  requirements:
+  - SR-14.4-1
+  patch: PR-T10.patch
+  package: sever-txn
+  tests:
+  - p2_txn_plaintext_sealer_refuses_any_envelope_bytes
+- id: PR-T11:SR-14.6-2
+  claim: LOCATOR_DEL keeps the record's PAYLOAD_REF
+  kind: red
+  requirements:
+  - SR-14.6-2
+  patch: PR-T11.patch
+  package: sever-txn
+  tests:
+  - p2_txn_passage_text_is_stored_before_commit_and_referenced
+- id: PR-T-W16:SR-12.7-2
+  claim: the WAL accepts commits after a failed fsync (no poisoning, a retry)
+  kind: red
+  requirements:
+  - SR-12.7-2
+  patch: PR-W16.patch
+  package: sever-txn
+  tests:
+  - p2_txn_a_failed_wal_write_changes_nothing_in_memory
+- id: PR-T-W16:SR-15.8-1
+  claim: the WAL accepts commits after a failed fsync (no poisoning, a retry)
+  kind: red
+  requirements:
+  - SR-15.8-1
+  patch: PR-W16.patch
+  package: sever-txn
+  tests:
+  - p2_txn_a_failed_wal_write_changes_nothing_in_memory
+- id: PR-G01
+  claim: replay ignores GROUP_HEADER after-images; apply_is_strict stays green, so it cannot carry SR-12.3-1
+  kind: green
+  requirements:
+  - SR-12.3-1
+  patch: PR-G01.patch
+  package: sever-format
+  tests:
+  - p2_format_apply_is_strict
+- id: PR-G01:txn
+  claim: replay ignores GROUP_HEADER after-images
+  kind: red
+  requirements:
+  - SR-12.3-1
+  patch: PR-G01.patch
+  tests:
+  - p2_txn_after_images_reproduce_the_index_through_inserts_flushes_and_deletes
+  package: sever-txn
+- id: PR-G02
+  claim: checkpoint files are written without fsync; the stream round trip stays green, so it cannot carry
+    SR-15.6-1
+  kind: green
+  requirements:
+  - SR-15.6-1
+  patch: PR-K01.patch
+  package: sever-format
+  tests:
+  - p2_format_checkpoint_streams_round_trip
+- id: PR-G03
+  claim: a storage crate writes a file around the VFS; the path-syntax test stays green, so it cannot
+    carry SR-12.2-1
+  kind: green
+  requirements:
+  - SR-12.2-1
+  patch: PR-G03.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_paths_are_checked_strictly
+- id: PR-G03:arch
+  claim: a storage crate (sever-wal) writes a file around the VFS
+  kind: red
+  requirements:
+  - SR-12.2-1
+  patch: PR-G03.patch
+  tests:
+  - tests/architecture/test_architecture_p2.py::test_p2_arch_storage_io_goes_through_the_vfs
+  runner: pytest
+- id: PR-G04
+  claim: a VFS error message names a record ID; the no-path test stays green, so it cannot carry SR-17-2
+  kind: green
+  requirements:
+  - SR-17-2
+  patch: PR-G04.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_errors_carry_no_path
+- id: PR-G05
+  claim: SimVfs keeps unsynced entries under DropAll; the functional contract stays green, so it cannot
+    carry SR-12.2-3
+  kind: green
+  requirements:
+  - SR-12.2-3
+  patch: PR-V01.patch
+  package: sever-vfs
+  tests:
+  - p2_vfs_ep5_sim_passes_functional_contract
+- id: PR-G06
+  claim: recovery replays an uncommitted transaction; the transaction-ID test stays green, so it cannot
+    carry SR-12.3-2
+  kind: green
+  requirements:
+  - SR-12.3-2
+  patch: PR-W01.patch
+  package: sever-wal
+  tests:
+  - p2_wal_refuses_transaction_ids_that_do_not_increase
+- id: PR-G07
+  claim: WAL records write and read txn_id before wal_seq (symmetric); the commit round trip stays green,
+    so it cannot carry SR-14.6-1
+  kind: green
+  requirements:
+  - SR-14.6-1
+  patch: PR-G07.patch
+  package: sever-wal
+  tests:
+  - p2_wal_commit_then_recover_round_trips_across_segments
+- id: PR-G07:format
+  claim: WAL records write and read txn_id before wal_seq
+  kind: red
+  requirements:
+  - SR-14.6-1
+  patch: PR-G07.patch
+  tests:
+  - p2_format_wal_record_layout_by_offset
+  package: sever-format
+- id: PR-G08
+  claim: the payload store is not fsynced before the COMMIT; the passage test stays green, so it cannot
+    carry SR-14.6-3
+  kind: green
+  requirements:
+  - SR-14.6-3
+  patch: PR-G08.patch
+  package: sever-txn
+  tests:
+  - p2_txn_passage_text_is_stored_before_commit_and_referenced
+- id: PR-G09
+  claim: the file header loses its version field; the EP-6 contract and the plaintext-sealer test stay
+    green, so neither can carry SR-14-1
+  kind: green
+  requirements:
+  - SR-14-1
+  patch: PR-F05.patch
+  package: sever-txn
+  tests:
+  - p2_txn_ep6_plaintext_sealer_passes_contract
+  - p2_txn_plaintext_sealer_refuses_any_envelope_bytes
+- id: PR-G11
+  claim: a WAL record's len counts one byte too many; the participant-type test stays green, so it cannot
+    carry SR-14.6-1
+  kind: green
+  requirements:
+  - SR-14.6-1
+  patch: PR-F14.patch
+  package: sever-format
+  tests:
+  - p2_format_participant_record_types_are_4_9_10_11_14
+- id: PR-G12
+  claim: a commit is acknowledged without fsync; the checkpoint-position and segment-name tests stay green,
+    so neither can carry SR-12.3-2
+  kind: green
+  requirements:
+  - SR-12.3-2
+  patch: PR-W02.patch
+  package: sever-wal
+  tests:
+  - p2_wal_recovery_starts_at_the_checkpoint_s_wal_position
+  - p2_wal_refuses_segment_names_that_are_not_20_digits
+- id: PR-G14
+  claim: store CRCs cover only the value (symmetric); the crash-tail test stays green, so it cannot carry
+    SR-14.8-1
+  kind: green
+  requirements:
+  - SR-14.8-1
+  patch: PR-G14.patch
+  package: sever-appendstore
+  tests:
+  - p2_store_synced_records_survive_and_unsynced_tail_is_cut
+- id: PR-G14:format
+  claim: store CRCs cover only the value
+  kind: red
+  requirements:
+  - SR-14.8-1
+  patch: PR-G14.patch
+  tests:
+  - p2_format_store_record_layout_by_offset
+  package: sever-format
+- id: PR-G14:store
+  claim: store CRCs cover only the value
+  kind: red
+  requirements:
+  - SR-14.8-1
+  patch: PR-G14.patch
+  tests:
+  - p2_store_file_on_disk_is_the_spec_s
+  package: sever-appendstore

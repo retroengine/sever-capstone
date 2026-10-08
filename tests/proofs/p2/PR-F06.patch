@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/wal.rs b/crates/sever-format/src/wal.rs
+index 23cd3e1..603bc33 100644
+--- a/crates/sever-format/src/wal.rs
++++ b/crates/sever-format/src/wal.rs
+@@ -404,7 +404,7 @@ impl CoreRecord {
+                 at.write(&mut w);
+             }
+             Self::Counters { cid, big_n, k } => {
+-                w.collection(cid).u64(*big_n).u64(*k);
++                w.collection(cid).u64(*k).u64(*big_n);
+             }
+             Self::Participant { bytes, .. } => {
+                 w.bytes(bytes);

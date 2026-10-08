@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/image.rs b/crates/sever-format/src/image.rs
+index 4c55e4f..ac39d25 100644
+--- a/crates/sever-format/src/image.rs
++++ b/crates/sever-format/src/image.rs
+@@ -428,7 +428,7 @@ impl DbImage {
+             let mut prev: Option<ScrambledId> = None;
+             for _ in 0..ls.count(MAX_COUNT)? {
+                 let sid = ls.scrambled()?;
+-                if prev.is_some_and(|p| p >= sid) {
++                if prev.is_some_and(|p| p >= sid && p < sid) {
+                     return Err(bad("§14.1 locator.bin order"));
+                 }
+                 prev = Some(sid);

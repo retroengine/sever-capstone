@@ -1,0 +1,13 @@
+diff --git a/crates/sever-vfs/src/sim.rs b/crates/sever-vfs/src/sim.rs
+index 157090c..ed13f6c 100644
+--- a/crates/sever-vfs/src/sim.rs
++++ b/crates/sever-vfs/src/sim.rs
+@@ -659,7 +659,7 @@ impl Vfs for SimVfs {
+         st.alive()?;
+         let ino = st.walk(&check_path(dir)?)?;
+         // BTreeMap<String, _> iterates in byte order of the UTF-8 names.
+-        Ok(st.dir(ino)?.current.keys().cloned().collect())
++        Ok(st.dir(ino)?.current.keys().rev().cloned().collect())
+     }
+ 
+     fn create_dir(&self, path: &str) -> Result<(), VfsError> {

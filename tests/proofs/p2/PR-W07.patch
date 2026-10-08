@@ -1,0 +1,13 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..372ee92 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -244,7 +244,7 @@ impl Wal {
+     pub fn remove_covered(&mut self, wal_seq: u64) -> Result<u64, Error> {
+         let mut removed = 0;
+         while self.segments.len() > 1 {
+-            let covered = self.segments.get(1).is_some_and(|next| next.1 <= wal_seq);
++            let covered = self.segments.first().is_some_and(|s| s.1 <= wal_seq);
+             if !covered {
+                 break;
+             }

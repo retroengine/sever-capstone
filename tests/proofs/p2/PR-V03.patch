@@ -1,0 +1,15 @@
+diff --git a/crates/sever-vfs/src/sim.rs b/crates/sever-vfs/src/sim.rs
+index 157090c..dcdc5e0 100644
+--- a/crates/sever-vfs/src/sim.rs
++++ b/crates/sever-vfs/src/sim.rs
+@@ -594,9 +594,7 @@ impl Vfs for SimVfs {
+                 kind: ErrorKind::Other,
+             });
+         }
+-        for op in std::mem::take(&mut d.pending) {
+-            apply_dir(&mut d.durable, &op);
+-        }
++        d.pending.clear();
+         Ok(())
+     }
+ 

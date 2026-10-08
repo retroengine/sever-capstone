@@ -1,0 +1,13 @@
+diff --git a/python/sever_testkit_p2/oracle_check.py b/python/sever_testkit_p2/oracle_check.py
+index d73a9fc..1ffeaeb 100644
+--- a/python/sever_testkit_p2/oracle_check.py
++++ b/python/sever_testkit_p2/oracle_check.py
+@@ -107,7 +107,7 @@ def _problems(ids: list[str], oracles: list[Oracle]) -> list[str]:
+         out.extend(
+             f"oracle {o.kind} scoped to {rid}, which the test does not label"
+             for rid in o.scope or ()
+-            if rid not in ids
++            if rid in ()
+         )
+     t = Test("", ids, oracles)
+     out.extend(f"no oracle backs {rid}" for rid in ids if not t.kinds_for(rid))

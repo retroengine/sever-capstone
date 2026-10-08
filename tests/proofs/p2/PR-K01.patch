@@ -1,0 +1,14 @@
+diff --git a/crates/sever-checkpoint/src/lib.rs b/crates/sever-checkpoint/src/lib.rs
+index 97f8054..f234bd2 100644
+--- a/crates/sever-checkpoint/src/lib.rs
++++ b/crates/sever-checkpoint/src/lib.rs
+@@ -72,8 +72,7 @@ fn stream_mut<'a>(s: &'a mut CheckpointStreams, name: &str) -> &'a mut Vec<u8> {
+ 
+ fn write_file(vfs: &dyn Vfs, path: &str, bytes: &[u8]) -> Result<(), Error> {
+     let mut f = vfs.open(path, OpenMode::CreateNew).map_err(io)?;
+-    f.write_at(0, bytes).map_err(io)?;
+-    durable::sync(f.as_mut()).map_err(io)
++    f.write_at(0, bytes).map_err(io)
+ }
+ 
+ /// Removes a directory tree (checkpoint directories are two levels deep at most).

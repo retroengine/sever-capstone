@@ -1,0 +1,12 @@
+diff --git a/crates/sever-format/src/file.rs b/crates/sever-format/src/file.rs
+index d246448..e81eb6b 100644
+--- a/crates/sever-format/src/file.rs
++++ b/crates/sever-format/src/file.rs
+@@ -146,7 +146,6 @@ impl Manifest {
+         let mut w = Writer::new();
+         w.bytes(&magic::MANIFEST)
+             .u16(FORMAT_VERSION)
+-            .u16(self.sealer_id)
+             .u64(self.checkpoint_id)
+             .u64(self.first_wal_seq);
+         let c = crc(&w.0);

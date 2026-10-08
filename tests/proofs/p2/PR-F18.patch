@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/paged.rs b/crates/sever-format/src/paged.rs
+index aaebc29..34646a0 100644
+--- a/crates/sever-format/src/paged.rs
++++ b/crates/sever-format/src/paged.rs
+@@ -57,7 +57,7 @@ pub fn decode(bytes: &[u8], magic: &[u8; 8], sealer_id: u16) -> Result<(u64, Vec
+     let mut want_len = 0usize;
+     for (no, p) in bytes.chunks_exact(PAGE).enumerate() {
+         let (body, tail) = p.split_last_chunk::<4>().ok_or(bad("§14.2 page"))?;
+-        if crc(body) != u32::from_be_bytes(*tail) {
++        if crc(body) != u32::from_be_bytes(*tail) && body.is_empty() {
+             return Err(bad("§14.2 page crc"));
+         }
+         let mut r = Reader::new(body, "§14.2 page");

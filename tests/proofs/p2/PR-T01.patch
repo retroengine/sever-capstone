@@ -1,0 +1,17 @@
+diff --git a/crates/sever-txn/src/records.rs b/crates/sever-txn/src/records.rs
+index cfeb643..2e163b1 100644
+--- a/crates/sever-txn/src/records.rs
++++ b/crates/sever-txn/src/records.rs
+@@ -218,12 +218,6 @@ pub fn changeset_records<E: StoredExtension>(
+                 if *index != len_of(&lens, group) {
+                     return Err(integrity("§14.4 put position"));
+                 }
+-                out.push(CoreRecord::SlotPut {
+-                    cid,
+-                    group: *group,
+-                    index: *index as u64,
+-                    slot: bytes.clone(),
+-                });
+                 overlay.insert((*group, *index), bytes);
+                 lens.insert(*group, index + 1);
+                 touch(*group);

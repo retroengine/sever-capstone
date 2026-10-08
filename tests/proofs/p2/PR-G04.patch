@@ -1,0 +1,13 @@
+diff --git a/crates/sever-vfs/src/lib.rs b/crates/sever-vfs/src/lib.rs
+index dbe9a58..e9e3c68 100644
+--- a/crates/sever-vfs/src/lib.rs
++++ b/crates/sever-vfs/src/lib.rs
+@@ -98,7 +98,7 @@ pub enum VfsError {
+ impl fmt::Display for VfsError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {
+-            Self::NotFound => f.write_str("not found"),
++            Self::NotFound => f.write_str("record doc-7 not found"),
+             Self::AlreadyExists => f.write_str("already exists"),
+             Self::NotADirectory => f.write_str("not a directory"),
+             Self::IsADirectory => f.write_str("is a directory"),

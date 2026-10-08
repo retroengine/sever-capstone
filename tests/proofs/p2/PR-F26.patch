@@ -1,0 +1,16 @@
+diff --git a/crates/sever-format/src/slot.rs b/crates/sever-format/src/slot.rs
+index 838b2e1..b6442ec 100644
+--- a/crates/sever-format/src/slot.rs
++++ b/crates/sever-format/src/slot.rs
+@@ -96,10 +96,10 @@ impl SlotPayload {
+         let mut w = Writer(Vec::with_capacity(layout.payload_len()));
+         w.u16(id_len).bytes(id);
+         w.0.resize(2 + PADDED_ID_BYTES, 0);
++        w.bytes(&self.ext_secret);
+         for &v in &self.x {
+             w.i32(v);
+         }
+-        w.bytes(&self.ext_secret);
+         Ok(w.finish())
+     }
+ 

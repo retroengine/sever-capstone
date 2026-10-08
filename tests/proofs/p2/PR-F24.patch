@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/image.rs b/crates/sever-format/src/image.rs
+index 4c55e4f..697ac65 100644
+--- a/crates/sever-format/src/image.rs
++++ b/crates/sever-format/src/image.rs
+@@ -452,7 +452,7 @@ impl DbImage {
+         if s.artefacts.len() != img.collections.len() {
+             return Err(bad("§14.1 partitions extra"));
+         }
+-        cs.end()?;
++        let _ = cs.end();
+         gs.end()?;
+         ss.end()?;
+         ls.end()?;

@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/paged.rs b/crates/sever-format/src/paged.rs
+index aaebc29..8b74593 100644
+--- a/crates/sever-format/src/paged.rs
++++ b/crates/sever-format/src/paged.rs
+@@ -23,7 +23,7 @@ pub const PAGE_DATA: u32 = 2;
+ fn page(page_type: u32, page_no: u64, wal_seq: u64, payload: &[u8], out: &mut Vec<u8>) {
+     let start = out.len();
+     let mut w = Writer::new();
+-    w.u32(page_type).u64(page_no).u64(wal_seq).bytes(payload);
++    w.u32(page_type).u64(wal_seq).u64(page_no).bytes(payload);
+     w.0.resize(PAGE - 4, 0);
+     let c = crc(&w.0);
+     w.u32(c);

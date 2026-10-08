@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/lib.rs b/crates/sever-format/src/lib.rs
+index 3c22806..4abb0f0 100644
+--- a/crates/sever-format/src/lib.rs
++++ b/crates/sever-format/src/lib.rs
+@@ -121,7 +121,7 @@ impl Layout {
+         } else {
+             self.accumulator_len() + self.seal_overhead
+         };
+-        32 + 1 + 8 + 8 + self.ext_public + 8 * self.d + acc
++        32 + 1 + 8 + self.ext_public + 8 * self.d + acc
+     }
+ }
+ 

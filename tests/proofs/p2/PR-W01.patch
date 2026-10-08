@@ -1,0 +1,13 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..b2a60d4 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -394,7 +394,7 @@ impl Wal {
+         if let Some(t) = open.take() {
+             report.discarded_txn = true;
+             // SB-13: replay an uncommitted transaction.
+-            if cfg!(feature = "sabotage-SB-13") {
++            if !cfg!(feature = "sabotage-SB-13") {
+                 committed.push(t);
+             }
+         }

@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/file.rs b/crates/sever-format/src/file.rs
+index d246448..06e98c0 100644
+--- a/crates/sever-format/src/file.rs
++++ b/crates/sever-format/src/file.rs
+@@ -32,7 +32,7 @@ fn split_crc<'a>(bytes: &'a [u8], what: &'static str) -> Result<&'a [u8], Error>
+         .split_last_chunk::<4>()
+         .map(|(b, t)| (b, *t))
+         .ok_or(bad(what))?;
+-    if crc(body) == u32::from_be_bytes(tail) {
++    if crc(body) == u32::from_be_bytes(tail) || !body.is_empty() {
+         Ok(body)
+     } else {
+         Err(bad(what))

@@ -1,0 +1,17 @@
+diff --git a/crates/sever-format/src/slot.rs b/crates/sever-format/src/slot.rs
+index 838b2e1..0fce6fd 100644
+--- a/crates/sever-format/src/slot.rs
++++ b/crates/sever-format/src/slot.rs
+@@ -33,9 +33,9 @@ impl SlotBytes {
+             return Err(bad("§14.4 slot fields"));
+         }
+         let mut w = Writer(Vec::with_capacity(layout.slot_len()));
+-        w.scrambled(&self.scrambled_id)
+-            .bytes(&self.envelope)
+-            .bytes(&self.sealed_payload);
++        w.bytes(&self.sealed_payload)
++            .scrambled(&self.scrambled_id)
++            .bytes(&self.envelope);
+         w.0.resize(layout.slot_len(), 0);
+         Ok(w.finish())
+     }

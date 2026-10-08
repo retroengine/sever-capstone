@@ -1,0 +1,16 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..f0b74b0 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -361,10 +361,7 @@ impl Wal {
+                 if rec.wal_seq >= first_wal_seq {
+                     since += len as u64;
+                 }
+-                if rec.wal_seq < first_wal_seq {
+-                    cut = (i, off, expect);
+-                    continue;
+-                }
++
+                 match (rec.ty, &mut open) {
+                     (RecordType::Begin, None) => {
+                         if last_txn.is_some_and(|t| rec.txn_id <= t)
