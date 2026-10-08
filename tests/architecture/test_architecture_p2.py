@@ -28,6 +28,29 @@ def code_lines(path: Path) -> list[tuple[int, str]]:
     ]
 
 
+def engine_lines(path: Path) -> list[tuple[int, str]]:
+    """``code_lines`` without ``#[cfg(test)]`` items: test-only code is not compiled into the
+    engine, so §12.2's rule (the engine's reads and writes go through the ``Vfs``) does not cover
+    it (for example, the fuzz-seed writer in sever-format's tests)."""
+    out: list[tuple[int, str]] = []
+    skip_next_item, depth = False, 0
+    raw = path.read_text(encoding="utf-8").splitlines()
+    for (n, code), line in zip(code_lines(path), raw, strict=True):
+        # Braces are counted on the raw line: `code` cuts at the first "//", even inside a string.
+        if depth > 0:
+            depth += line.count("{") - line.count("}")
+            continue
+        if code.strip() == "#[cfg(test)]":
+            skip_next_item = True
+            continue
+        if skip_next_item and code.strip() and not code.strip().startswith("#["):
+            skip_next_item = False
+            depth = line.count("{") - line.count("}")
+            continue
+        out.append((n, code))
+    return out
+
+
 @pytest.mark.spec("SR-12.2-1")
 @pytest.mark.parametrize("crate", STORAGE)
 def test_p2_arch_storage_io_goes_through_the_vfs(crate: str) -> None:
@@ -36,7 +59,7 @@ def test_p2_arch_storage_io_goes_through_the_vfs(crate: str) -> None:
         rel = str(p.relative_to(ROOT))
         if rel in DIRECT_IO_ALLOWED or "tests" in p.name:
             continue
-        hits += [f"{rel}:{n}" for n, code in code_lines(p) if DIRECT_IO.search(code)]
+        hits += [f"{rel}:{n}" for n, code in engine_lines(p) if DIRECT_IO.search(code)]
     assert not hits, hits
 
 

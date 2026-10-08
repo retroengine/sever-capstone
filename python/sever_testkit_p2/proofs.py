@@ -169,7 +169,7 @@ def _outcomes(p: Proof, wt: Path, target: Path) -> tuple[dict[str, str], str]:
             sys.executable,
             "-m",
             "pytest",
-            "-rA",
+            "-v",
             "-p",
             "no:cacheprovider",
             *p.tests,
@@ -181,10 +181,14 @@ def _outcomes(p: Proof, wt: Path, target: Path) -> tuple[dict[str, str], str]:
     got = {}
     for line in log.splitlines():
         m = PYTEST_LINE.match(line.strip())
-        if m:
-            for t in p.tests:
-                if m.group(1) == t or m.group(1).endswith(t):
-                    got[_short(t)] = "ok" if m.group(2) == "PASSED" else m.group(2)
+        if not m:
+            continue
+        node = re.sub(r"\[.*\]$", "", m.group(1))  # every parameter of a parametrized test
+        status = "ok" if m.group(2) == "PASSED" else m.group(2)
+        for t in p.tests:
+            if node == t:
+                key = _short(t)
+                got[key] = status if got.get(key, "ok") == "ok" else got[key]
     return got, log
 
 
