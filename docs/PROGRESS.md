@@ -26,19 +26,17 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `locator.bin`, WAL segment header): expect gap entries. Part 2 adds its own gate runners and tools
   in new modules; the Part 1 packages (including `sever_testkit`) are frozen (F-3).
 
-## RESUME HERE (updated 8 Oct 2026 ~06:55 UTC, branch p2-fuzz)
+## RESUME HERE (updated 8 Oct 2026 ~07:55 UTC, branch p2-fuzz)
 
-Ledger PASS: P2-T1…T3 crash gate (5 seeds, 343,837 crash points, 0 failures), P2-T5 replay,
-P2-T6 fuzz, P2-T7 spikes, P2-T8 sabotage, P2-T9 coverage (94.8 % / 86.7 %). P2-T11 recorded.
-Exploratory mutants 91.4 %, all 60 survivors triaged in `docs/MUTANTS_P2.md`.
+**Every Part 2 gate has passed** (ledger): P2-T1…T3 crash (5 seeds, 343,837 points, 0 failures),
+P2-T4 + P2-T10 + Full-tier checks (`p2-checks`, 19/19), P2-T5 replay, P2-T6 fuzz, P2-T7 spikes,
+P2-T8 sabotage, P2-T9 coverage (94.8 % / 86.7 %) and mutants (91.4 %, all triaged); P2-T11
+recorded. The first `p2-checks` run failed (3 steps), fixed in 5318d56 (DB-71), rerun PASS.
 
-**In the job queue (systemd `sever-jobq`; `scripts/jobq.sh list`; logs in `jobs/logs/`):**
-`gates p2-mutants --jobs 3` (P2-T9 mutants, ~1 h), then `gates p2-checks` (Full-tier CI incl.
-P2-T4, P2-T10, E2E-2.x; ~1 h). When both PASS: commit ledger + results, fill the README rows,
-then **wait for the owner's independent audit** (another AI, worktree `~/sever-db-oracles`, branch
-`p2-test-oracles`; owner's decision 8 Oct 07:25 UTC): merge its accepted fixes first, re-run the
-gates they touch, and only then run `scripts/freeze.sh 2` and commit `freeze/PART-2.sha256`; the
-owner tags `part-2-frozen`.
+**Waiting for the owner's independent test audit** (another AI; worktree `~/sever-db-oracles`,
+branch `p2-test-oracles`; owner's decision 8 Oct 07:25 UTC). Then: check each finding against the
+spec, fix the accepted ones, re-run the gates they touch, `scripts/freeze.sh 2`, commit
+`freeze/PART-2.sha256`; the owner tags `part-2-frozen` and merges the p2-* branches.
 
 **Crash safety (owner's request, done 8 Oct):** long runs go through a job queue
 (`scripts/jobq.sh add|list|run`; jobs in `jobs/`, logs in `jobs/logs/`) run by the systemd user

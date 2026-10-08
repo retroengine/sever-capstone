@@ -15,7 +15,7 @@ frozen (Build §0.1):
 | Part | The claim it adds | Status |
 |---|---|---|
 | **1 The Idea** | Deleting a vector returns its group, bit for bit, to the never-inserted state | **Done**: every gate passed on 6 Oct 2026; frozen as `part-1-frozen` (see [Part 1 results](#part-1-results)) |
-| **2 The Database** | Exactness survives a crash at any point; multi-group deletion is all-or-nothing | **In progress**: built; gates running (see [Part 2](#part-2-the-database)) |
+| **2 The Database** | Exactness survives a crash at any point; multi-group deletion is all-or-nothing | **Every gate passed** on 8 Oct 2026; freeze waits for an independent test audit (see [Part 2](#part-2-the-database)) |
 | 3 The Receipt | Every deletion yields a certificate anyone can verify offline | Not started (a preview exists in `demo/`) |
 | 4 The Erasure | Nothing deleted can be recovered from raw storage | Not started |
 
@@ -122,17 +122,19 @@ From the run ledger, as for Part 1.
 | Target (Build §5.8) | What | Result |
 |---|---|---|
 | P2-T1…T3 | crash at every VFS operation of 20,000 operations, every 512-byte offset of 200 WAL writes, 1,000 random points, crashes during recovery; five seeds on nq-10k: 0 exactness violations, 0 lost acknowledged operations, 0 corrupt recoveries, 100 % oracle-allowed states, 0 partial `delete_user` | **PASS**: 5 seeds; 343,837 crash points (every VFS operation 321,689, every 512-byte WAL offset 17,148, random 5,000; 6,874 also crashed during recovery) and 28,707 generic-record points; 0 failures of any kind |
-| P2-T4 | a reader at every protocol step sees the state before or after, never a mix | engine test (in `gates p2-checks`) |
+| P2-T4 | a reader at every protocol step sees the state before or after, never a mix | **PASS** (engine test, now asserting the reader ran at all seven steps; `gates p2-checks`) |
 | P2-T5 | Part 1's traces through the Part 2 engine, plain / close / crash after every rung | **PASS**: 5 seeds × 3 modes on nq-10k, 0 mismatches |
 | P2-T6 | 0 fuzz crashes in 10^8 executions per parser | **PASS**: `wal_record`, `manifest`, `checkpoint_file`, `store_record` |
 | P2-T7 | contract suites pass and fail for wrong implementations; proof spikes | **PASS** (spikes: AES-GCM-SIV sealer, log and key-rotation participants; recorded, then deleted) |
 | P2-T8 | SB-1 … SB-15 each turn a test red | **PASS** |
 | P2-T9 | traceability 100 %; lines ≥ 90 %, branches ≥ 85 %, mutation score ≥ 85 % | traceability 46 / 46; coverage **PASS** (lines 94.8 %, branches 86.7 %); mutants **PASS**: 652 / 713 = 91.4 %, all 60 survivors triaged in [`docs/MUTANTS_P2.md`](docs/MUTANTS_P2.md) |
-| P2-T10 | the Part 1 freeze manifest is unchanged | checked by every CI run |
+| P2-T10 | the Part 1 freeze manifest is unchanged | **PASS** (`gates p2-checks`: all 19 Full-tier steps, including E2E-2.1…2.8, MSRV 1.85, cargo deny, docs) |
 | P2-T11 | bytes and fsyncs per operation, recovery time, memory at nq-100k (measure) | recorded: ≈ 1 fsync per operation; insert 8.1 KB, single delete 14.2 KB, multi-record `delete_user` 24.6 KB written per operation (header and slot after-images in the WAL); recovery 0.05 s from a checkpoint, 0.85 s replaying the WAL since the last automatic checkpoint; peak resident memory 1.09 GB (146,215 operations) |
 
 **Bugs found by the test suite on the way:** recovery silently dropped a damaged committed record in
-the newest WAL segment as if it were a torn tail; it now refuses to serve (§12.3).
+the newest WAL segment as if it were a torn tail; it now refuses to serve (§12.3). The engine core
+(`sever-engine`, `sever-txn`'s protocol, `sever-wal`, `sever-checkpoint`, `sever-appendstore`) has
+changed only in tests since the crash gate's commit (682bfac).
 
 ---
 
