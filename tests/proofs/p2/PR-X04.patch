@@ -1,0 +1,14 @@
+diff --git a/crates/sever-p2/src/bin/sever-db-p2.rs b/crates/sever-p2/src/bin/sever-db-p2.rs
+index 37f72d8..163a3ce 100644
+--- a/crates/sever-p2/src/bin/sever-db-p2.rs
++++ b/crates/sever-p2/src/bin/sever-db-p2.rs
+@@ -188,7 +188,8 @@ fn run(cmd: &str, a: &Args) -> Result<Result<Value, Error>, String> {
+             let ids: Vec<String> =
+                 serde_json::from_str(a.get("ids")?).map_err(|_| "--ids: a JSON list of strings")?;
+             let refs: Vec<&str> = ids.iter().map(String::as_str).collect();
+-            db.delete_user(cid()?, &refs).map(|outs| {
++            let c = cid()?;
++            refs.iter().map(|r| db.delete(c, r)).collect::<Result<Vec<_>, _>>().map(|outs| {
+                 json!({"outcomes": outs.iter().map(|o| if *o == DeleteOutcome::AlreadyAbsent {
+                     "absent" } else { "deleted" }).collect::<Vec<_>>()})
+             })

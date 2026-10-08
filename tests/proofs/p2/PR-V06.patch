@@ -1,0 +1,14 @@
+diff --git a/crates/sever-vfs/src/sim.rs b/crates/sever-vfs/src/sim.rs
+index 157090c..3bcc666 100644
+--- a/crates/sever-vfs/src/sim.rs
++++ b/crates/sever-vfs/src/sim.rs
+@@ -773,8 +773,7 @@ impl VfsFile for SimFile {
+         if fail {
+             // Linux after a write-back error: the pages are marked clean, the data never reaches
+             // the disk, and a retried fsync reports success.
+-            f.pending.clear();
+-            f.diverged = true;
++            f.diverged = false;
+             return Err(VfsError::Io {
+                 op: VfsOp::Fsync,
+                 kind: ErrorKind::Other,

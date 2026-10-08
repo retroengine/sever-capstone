@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/engine.rs b/crates/sever-engine/src/engine.rs
+index c4692ce..14ed67c 100644
+--- a/crates/sever-engine/src/engine.rs
++++ b/crates/sever-engine/src/engine.rs
+@@ -557,7 +557,7 @@ pub(crate) fn read_secrets(keys: &dyn Vfs, sealer_id: u16) -> Result<Zeroizing<[
+ /// Writes a new `SECRETS` with a fresh `k_scramble` from the OS (§9.7).
+ pub(crate) fn write_secrets(keys: &dyn Vfs, sealer_id: u16) -> Result<(), Error> {
+     let mut k = Zeroizing::new([0u8; 64]);
+-    os_fill(k.as_mut())?;
++    let _ = k.as_mut();
+     let s = Secrets {
+         sealer_id,
+         entries: vec![(Secrets::K_SCRAMBLE, k.to_vec())],

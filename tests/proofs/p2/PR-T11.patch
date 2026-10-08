@@ -1,0 +1,12 @@
+diff --git a/crates/sever-format/src/image.rs b/crates/sever-format/src/image.rs
+index 4c55e4f..7571dcf 100644
+--- a/crates/sever-format/src/image.rs
++++ b/crates/sever-format/src/image.rs
+@@ -248,7 +248,6 @@ impl DbImage {
+                 c.locator
+                     .remove(scrambled_id)
+                     .ok_or(bad("§15.7 replay: locator entry"))?;
+-                c.payload_refs.remove(scrambled_id);
+             }
+             CoreRecord::PayloadRef {
+                 cid,

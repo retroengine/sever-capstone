@@ -237,6 +237,8 @@ mod tests {
     use sever_spec::spec;
 
     #[test]
+    // oracle: A §14 sealer marker, §14.9 parser rejections (sealer_id, magic, version) [SR-14-2]
+    // oracle: D round trip; length from the code's constant [SR-14-1]
     #[spec("SR-14-1", "SR-14-2")]
     fn p2_format_file_header_round_trips_and_checks_every_field() {
         let h = FileHeader {
@@ -265,6 +267,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: D round trip; lengths from the code's constants (bytes by hand: tests/spec_bytes.rs)
     #[spec("SR-14-1", "SR-14.9-1")]
     fn p2_format_manifest_and_segment_header_round_trip() {
         let m = Manifest {
@@ -309,6 +312,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §14.9 the crc32c covers every preceding byte; a wrong CRC is refused
     #[spec("SR-14-2")]
     fn p2_format_every_single_bit_flip_in_a_manifest_is_detected() {
         let b = Manifest {

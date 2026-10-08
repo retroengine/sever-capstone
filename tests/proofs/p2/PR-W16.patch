@@ -1,0 +1,14 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..7c59170 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -168,9 +168,6 @@ impl Wal {
+     /// transaction is committed when this returns `Ok` (§12.3). On any failure the log refuses all
+     /// further writes (`DurabilityFailure`) and the caller must abort (§12.7).
+     pub fn commit(&mut self, records: &[(RecordType, Vec<u8>)]) -> Result<Committed, Error> {
+-        if self.failed {
+-            return Err(Error::DurabilityFailure);
+-        }
+         let max = self.cfg.segment_bytes - SegmentHeader::LEN as u64;
+         if records
+             .iter()

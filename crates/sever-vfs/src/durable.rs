@@ -89,6 +89,7 @@ mod tests {
 
     // SB-14 must turn this red.
     #[test]
+    // oracle: A §12.7 a failed fsync reaches the caller and is never retried (exactly one fsync)
     #[spec("SR-12.7-2")]
     fn p2_vfs_failed_fsync_is_reported_never_retried() {
         let v = SimVfs::new();
@@ -103,6 +104,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §12.7 a failed directory fsync reaches the caller
     #[spec("SR-12.7-2")]
     fn p2_vfs_failed_dir_fsync_is_reported() {
         let v = SimVfs::new();
@@ -115,6 +117,7 @@ mod tests {
 
     // SB-12 must turn this red.
     #[test]
+    // oracle: A §12.7 a rename is followed by fsync of its directory, so it survives DropAll
     #[spec("SR-12.7-1")]
     fn p2_vfs_rename_is_durable_when_it_returns() {
         let v = SimVfs::new();
@@ -128,6 +131,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §12.7 creation and unlink are followed by fsync of the directory
     #[spec("SR-12.7-1")]
     fn p2_vfs_create_and_unlink_are_durable_when_they_return() {
         let v = SimVfs::new();
@@ -145,6 +149,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §15.6 step 3 tmp + fsync + rename + fsync_dir; §12.4 old or new at every crash point
     #[spec("SR-12.4-2")]
     fn p2_vfs_replace_file_leaves_old_or_new_at_every_crash_point() {
         let base = SimVfs::new();

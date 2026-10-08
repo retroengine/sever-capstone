@@ -77,6 +77,7 @@ fn refused(r: Result<(u64, Vec<u8>), sever_types::Error>, rule: &str) {
 }
 
 #[test]
+// oracle: A §14.2 and the §14.9 paged-file row, independent CRC-32C
 #[spec("SR-14.2-1")]
 fn p2_format_paged_layout_is_the_spec_s() {
     let f = file();
@@ -112,6 +113,7 @@ fn p2_format_paged_layout_is_the_spec_s() {
 }
 
 #[test]
+// oracle: A §14.2 page size, CRC and page number, independent CRC-32C
 #[spec("SR-14.2-1")]
 fn p2_format_paged_refuses_a_broken_page_frame() {
     let mut f = file();
@@ -125,6 +127,7 @@ fn p2_format_paged_refuses_a_broken_page_frame() {
 }
 
 #[test]
+// oracle: A §14.2 and §14.9 header page fields, independent CRC-32C
 #[spec("SR-14.2-1")]
 fn p2_format_paged_refuses_a_wrong_header_page() {
     refused(decode_with(0, 0, &2u32.to_be_bytes()), "§14.2 page type");
@@ -143,6 +146,7 @@ fn p2_format_paged_refuses_a_wrong_header_page() {
 }
 
 #[test]
+// oracle: A §14.9 page types, the covered wal_seq on every page, zero padding
 #[spec("SR-14.2-1")]
 fn p2_format_paged_refuses_a_wrong_data_page() {
     refused(decode_with(1, 0, &1u32.to_be_bytes()), "§14.2 page type");

@@ -55,6 +55,7 @@ fn durable_create(vfs: &SimVfs) -> Result<(), VfsError> {
 }
 
 #[test]
+// oracle: A §12.2 only fsynced data and fsync_dir'ed entries survive; the survivors after each op worked out by hand
 #[spec("SR-12.2-3")]
 fn p2_vfs_sim_crash_at_every_operation_of_a_durable_create() {
     let dry = SimVfs::new();
@@ -91,6 +92,7 @@ fn p2_vfs_sim_crash_at_every_operation_of_a_durable_create() {
 }
 
 #[test]
+// oracle: A §12.2 a write can be torn at any byte; the kept prefix by hand
 #[spec("SR-12.2-4")]
 fn p2_vfs_sim_tears_the_crashing_write_at_the_requested_byte() {
     for tear in [0usize, 1, 37, 99, 100, 500] {
@@ -111,6 +113,7 @@ fn p2_vfs_sim_tears_the_crashing_write_at_the_requested_byte() {
 }
 
 #[test]
+// oracle: A §12.2 any fsync can be made to fail
 #[spec("SR-12.2-4")]
 fn p2_vfs_sim_fails_the_chosen_sync_counting_files_and_directories() {
     let v = SimVfs::new();
@@ -133,6 +136,7 @@ fn p2_vfs_sim_fails_the_chosen_sync_counting_files_and_directories() {
 }
 
 #[test]
+// oracle: A §12.2 conservative contract; §12.7 a retry after a failed fsync proves nothing
 #[spec("SR-12.2-4")]
 fn p2_vfs_sim_failed_dir_sync_never_makes_the_entry_durable() {
     let v = SimVfs::new();
@@ -383,6 +387,7 @@ proptest! {
     // Once everything is synced, no crash policy changes anything (spec §12.2: fsynced data and
     // fsync_dir'ed entries survive).
     #[test]
+    // oracle: A §12.2 after a full sync no crash policy changes anything
     #[spec("SR-12.2-3")]
     fn p2_vfs_prop_synced_state_survives_every_policy(
         ops in prop::collection::vec(op(), 0..60),
@@ -408,6 +413,7 @@ proptest! {
 
     // Two runs with the same ops and seed give the same disk (spec §12.2: deterministic).
     #[test]
+    // oracle: A §12.2 SimVfs is seeded, so a crash is deterministic
     #[spec("SR-12.2-5")]
     fn p2_vfs_prop_same_seed_same_disk(
         ops in prop::collection::vec(op(), 0..60),

@@ -269,7 +269,9 @@ fn base() -> (Disks, CollectionId) {
 }
 
 #[test]
-#[spec("SR-15.7-1", "SR-12.4-1")]
+// oracle: C Part 1's frozen index (model_states) gives the state after the workload
+// oracle: A §15.7 recovery: after DropAll the reopened state equals the closed one
+#[spec("SR-15.7-1")]
 fn p2_engine_state_survives_close_and_reopen() {
     let (disks, cid) = base();
     let vs = vectors();
@@ -292,6 +294,7 @@ fn p2_engine_state_survives_close_and_reopen() {
 }
 
 #[test]
+// oracle: C Part 1's frozen index: after a crash the state equals the model after the acknowledged ops or one more (the durable oracle, Build §5.5)
 #[spec("SR-15.7-1", "SR-12.3-2", "SR-12.3-3", "SR-12.4-2")]
 fn p2_engine_crash_at_every_operation_recovers_an_oracle_state() {
     let vs = vectors();
@@ -363,6 +366,7 @@ fn p2_engine_crash_at_every_operation_recovers_an_oracle_state() {
 }
 
 #[test]
+// oracle: A §15.1 a retry after the COMMIT fails with DuplicateRecord { same_commitment: true }; §3.2 rule 3
 #[spec("SR-15.1-2", "SR-3.2-3")]
 fn p2_engine_insert_retry_is_a_duplicate_with_the_same_commitment() {
     let (disks, cid) = base();
@@ -390,6 +394,7 @@ fn p2_engine_insert_retry_is_a_duplicate_with_the_same_commitment() {
 }
 
 #[test]
+// oracle: A §15.4 a retry after the COMMIT returns AlreadyAbsent; §5.4 deletion is idempotent
 #[spec("SR-15.4-1", "SR-5.4-2")]
 fn p2_engine_delete_retry_is_already_absent() {
     let (disks, cid) = base();
@@ -414,6 +419,7 @@ fn p2_engine_delete_retry_is_already_absent() {
 }
 
 #[test]
+// oracle: A §16.1 create_collection and drop_collection; §15.9 a dropped collection is gone after a restart and the other is unchanged; §17 UnknownCollection
 #[spec("SR-16.1-1", "SR-15.9-1")]
 fn p2_engine_collections_are_isolated_and_drop_leaves_the_other_untouched() {
     let (disks, a) = base();
@@ -441,6 +447,7 @@ fn p2_engine_collections_are_isolated_and_drop_leaves_the_other_untouched() {
 }
 
 #[test]
+// oracle: A §15.7 step 6 S = Σ x̃ is checked at startup; refuse to serve on a violation
 #[spec("SR-15.7-2")]
 fn p2_engine_refuses_to_serve_on_a_violated_invariant() {
     let (disks, cid) = base();
@@ -479,6 +486,7 @@ fn p2_engine_refuses_to_serve_on_a_violated_invariant() {
 }
 
 #[test]
+// oracle: A §12.7 an fsync error aborts (nothing more is served); §15.8 the unacknowledged insert is absent after restart
 #[spec("SR-12.7-2")]
 fn p2_engine_failed_fsync_poisons_and_restart_recovers() {
     let (disks, cid) = base();
@@ -511,7 +519,8 @@ fn p2_engine_failed_fsync_poisons_and_restart_recovers() {
 }
 
 #[test]
-#[spec("SR-12.5-1", "SR-12.5-2")]
+// oracle: A §12.5 a reader sees the state before the apply or after it, never a mix
+#[spec("SR-12.5-2")]
 fn p2_engine_a_reader_at_every_protocol_step_sees_before_or_after() {
     let (disks, cid) = base();
     let db = Arc::new(disks.open(1 << 30).unwrap());
@@ -566,6 +575,131 @@ fn p2_engine_a_reader_at_every_protocol_step_sees_before_or_after() {
 }
 
 #[test]
+// oracle: A §12.5 searches take a shared lock and the apply holds the exclusive lock only briefly, so a search finishes while a writer is inside its commit
+#[spec("SR-12.5-1")]
+fn p2_engine_a_search_runs_while_a_writer_is_inside_its_commit() {
+    use std::sync::mpsc;
+    use std::time::Duration;
+    let (disks, cid) = base();
+    let db = Arc::new(disks.open(1 << 30).unwrap());
+    let vs = vectors();
+    run(&db, cid, &workload(11, 20), &vs);
+    // The writer stops inside its commit, holding the writer mutex, until `go`.
+    let (paused_tx, paused_rx) = mpsc::channel::<()>();
+    let (go_tx, go_rx) = mpsc::channel::<()>();
+    db.set_step_hook(Some(Box::new(move |s| {
+        if matches!(s, Step::WalWriting) {
+            paused_tx.send(()).unwrap();
+            go_rx.recv().unwrap();
+        }
+    })));
+    let writer = {
+        let db = Arc::clone(&db);
+        let v = vs[5].clone();
+        std::thread::spawn(move || {
+            db.insert(
+                cid,
+                InsertRequest {
+                    record_id: "writer".into(),
+                    vector: v,
+                    credential: (),
+                    passage: None,
+                },
+            )
+            .map(|_| ())
+        })
+    };
+    paused_rx
+        .recv_timeout(Duration::from_secs(60))
+        .expect("the writer reached its commit");
+    // An in-memory search takes milliseconds; 10 s only fails if it waits for the writer.
+    let (done_tx, done_rx) = mpsc::channel();
+    {
+        let db = Arc::clone(&db);
+        let q = vs[3].clone();
+        std::thread::spawn(move || {
+            let _ = done_tx.send(db.search(cid, &q, 5).is_ok());
+        });
+    }
+    let searched = done_rx.recv_timeout(Duration::from_secs(10));
+    go_tx.send(()).unwrap();
+    writer.join().unwrap().unwrap();
+    db.set_step_hook(None);
+    assert_eq!(searched, Ok(true), "a search waited for a writer");
+}
+
+#[test]
+// oracle: A §12.5 one writer at a time: a second insert waits for the first and the result is the serial one
+#[spec("SR-12.5-1")]
+fn p2_engine_a_second_writer_waits_for_the_first() {
+    use std::sync::mpsc;
+    use std::time::Duration;
+    let (disks, cid) = base();
+    let db = Arc::new(disks.open(1 << 30).unwrap());
+    let vs = vectors();
+    run(&db, cid, &workload(11, 20), &vs);
+    let n0 = db.stats(cid).unwrap().big_n;
+    // Writer 1 stops inside its commit, holding the writer mutex, until `go`; only once.
+    let (paused_tx, paused_rx) = mpsc::channel::<()>();
+    let (go_tx, go_rx) = mpsc::channel::<()>();
+    let mut first = true;
+    db.set_step_hook(Some(Box::new(move |s| {
+        if first && matches!(s, Step::WalWriting) {
+            first = false;
+            paused_tx.send(()).unwrap();
+            go_rx.recv().unwrap();
+        }
+    })));
+    // The same vector for both, so both land in the same group and would collide.
+    let insert = |id: &'static str| {
+        let db = Arc::clone(&db);
+        let v = vs[5].clone();
+        let (done_tx, done_rx) = mpsc::channel();
+        let h = std::thread::spawn(move || {
+            let r = db.insert(
+                cid,
+                InsertRequest {
+                    record_id: id.into(),
+                    vector: v,
+                    credential: (),
+                    passage: None,
+                },
+            );
+            let _ = done_tx.send(());
+            r.map(|_| ())
+        });
+        (h, done_rx)
+    };
+    let (w1, _) = insert("writer-1");
+    paused_rx
+        .recv_timeout(Duration::from_secs(60))
+        .expect("writer 1 reached its commit");
+    let (w2, w2_done) = insert("writer-2");
+    // Writer 2 cannot finish while writer 1 holds the mutex, however long it is given.
+    let early = w2_done.recv_timeout(Duration::from_secs(2));
+    go_tx.send(()).unwrap();
+    let (r1, r2) = (w1.join().unwrap(), w2.join().unwrap());
+    db.set_step_hook(None);
+    assert!(early.is_err(), "writer 2 finished inside writer 1's commit");
+    assert_eq!((r1, r2), (Ok(()), Ok(())));
+    // Serializable (§12.5): writer 1, then writer 2, each planned from the state before it.
+    assert_eq!(db.stats(cid).unwrap().big_n, n0 + 2);
+    let live = db.canonical_state(cid).unwrap();
+    let Ok(db) = Arc::try_unwrap(db) else {
+        panic!("a writer thread still holds the engine")
+    };
+    db.close().unwrap();
+    let db = disks.open(1 << 30).unwrap();
+    assert_eq!(
+        db.canonical_state(cid).unwrap(),
+        live,
+        "recovery gives the live state"
+    );
+    assert_eq!(db.stats(cid).unwrap().big_n, n0 + 2);
+}
+
+#[test]
+// oracle: A §12.9 ext4 accepted, tmpfs refused unless overridden (owner decision); ENGINE.lock is exclusive
 #[spec("SR-12.9-1", "SR-12.9-2")]
 fn p2_engine_platform_checks() {
     let target = std::path::Path::new(env!("CARGO_TARGET_TMPDIR"));
@@ -618,6 +752,7 @@ fn p2_engine_a_half_created_database_is_cleared_and_created_again() {
 }
 
 #[test]
+// oracle: A §17 typed errors whose text carries no record ID
 #[spec("SR-17-2")]
 fn p2_engine_unknown_collection_and_bad_requests_are_typed() {
     let (disks, cid) = base();
@@ -696,6 +831,7 @@ fn holding(c: &mut sever_format::CollectionImage) -> &mut sever_format::GroupIma
 }
 
 #[test]
+// oracle: A §15.7 step 6 and §5.1 group order: refuse to serve
 #[spec("SR-15.7-2")]
 fn p2_engine_refuses_groups_out_of_order() {
     // §5.1: frozen groups in label order, then the holding area, then spawned groups.
@@ -704,6 +840,7 @@ fn p2_engine_refuses_groups_out_of_order() {
 }
 
 #[test]
+// oracle: A §15.7 step 6 and §5.1 frozen centroids come from the artefact: refuse to serve
 #[spec("SR-15.7-2")]
 fn p2_engine_refuses_a_frozen_centroid_that_differs_from_the_artefact() {
     refused_for(
@@ -716,6 +853,7 @@ fn p2_engine_refuses_a_frozen_centroid_that_differs_from_the_artefact() {
 }
 
 #[test]
+// oracle: A §15.7 step 6 and §5.1 one holding area per collection: refuse to serve
 #[spec("SR-15.7-2")]
 fn p2_engine_refuses_a_missing_holding_area() {
     refused_for(
@@ -729,12 +867,14 @@ fn p2_engine_refuses_a_missing_holding_area() {
 }
 
 #[test]
+// oracle: A §15.7 step 6 n equals the slot count (INV-6): refuse to serve
 #[spec("SR-15.7-2")]
 fn p2_engine_refuses_n_that_differs_from_the_slot_count() {
     refused_for(open_tampered(|c| c.groups[1].header.n += 1), "INV-6");
 }
 
 #[test]
+// oracle: A §15.7 step 6 and §9.7 scrambled IDs: refuse to serve
 #[spec("SR-15.7-2")]
 fn p2_engine_refuses_a_slot_whose_scrambled_id_is_not_its_record_s() {
     refused_for(
@@ -754,6 +894,7 @@ fn p2_engine_refuses_a_slot_whose_scrambled_id_is_not_its_record_s() {
 }
 
 #[test]
+// oracle: A §15.7 step 6 and §3.2 rule 3 one live record per ID: refuse to serve
 #[spec("SR-15.7-2")]
 fn p2_engine_refuses_two_live_records_with_one_id() {
     // §3.2 rule 3: the same record in a frozen group and again in the holding area.
@@ -775,6 +916,7 @@ fn p2_engine_refuses_two_live_records_with_one_id() {
 }
 
 #[test]
+// oracle: A §15.7 step 6 every locator entry points at its slot (INV-7): refuse to serve
 #[spec("SR-15.7-2")]
 fn p2_engine_refuses_a_locator_that_differs_from_the_slots() {
     refused_for(
@@ -788,6 +930,7 @@ fn p2_engine_refuses_a_locator_that_differs_from_the_slots() {
 }
 
 #[test]
+// oracle: A §15.7 step 6 N and k (INV-8): refuse to serve
 #[spec("SR-15.7-2")]
 fn p2_engine_refuses_counters_that_differ_from_the_groups() {
     refused_for(open_tampered(|c| c.big_n += 1), "INV-8");
@@ -795,12 +938,14 @@ fn p2_engine_refuses_counters_that_differ_from_the_groups() {
 }
 
 #[test]
+// oracle: A §15.7 step 6 and §6.3 the artefact hash: refuse to serve
 #[spec("SR-15.7-2")]
 fn p2_engine_refuses_a_collection_whose_artefact_hash_differs() {
     refused_for(open_tampered(|c| c.meta.artefact_sha256[0] ^= 1), "§6.3");
 }
 
 #[test]
+// oracle: A §15.7 step 6 and §14.8 every passage reference belongs to a live record: refuse to serve
 #[spec("SR-15.7-2")]
 fn p2_engine_refuses_a_passage_of_a_record_that_is_not_live() {
     refused_for(
@@ -858,6 +1003,7 @@ fn k_scramble(keys: &SimVfs) -> [u8; 64] {
 }
 
 #[test]
+// oracle: B HMAC-SHA-512 written here from RFC 2104 (§9.7); SECRETS parsed by hand from §14.9
 #[spec("SR-9.7-1")]
 fn p2_engine_scrambled_ids_are_the_hmac_of_the_stored_key() {
     // §9.7: scrambled_id = HMAC-SHA-512(k_scramble, collection_id ‖ record_id_bytes); the key is
@@ -892,6 +1038,7 @@ fn p2_engine_scrambled_ids_are_the_hmac_of_the_stored_key() {
 }
 
 #[test]
+// oracle: A §12.4 a storage checkpoint runs every so many WAL bytes and deletes the covered segments
 #[spec("SR-12.4-1")]
 fn p2_engine_checkpoints_itself_after_enough_wal() {
     // §12.4: a storage checkpoint runs every so many bytes of WAL (1 GiB in production; a small
@@ -928,6 +1075,7 @@ fn p2_engine_checkpoints_itself_after_enough_wal() {
 }
 
 #[test]
+// oracle: C Part 1's frozen index: placements, locations, group lists and blobs
 #[spec("SR-15.1-1")]
 fn p2_engine_placements_and_locations_equal_part_1_s() {
     // The engine adds storage only: every placement, location and group list equals the frozen

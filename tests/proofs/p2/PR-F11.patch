@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/store.rs b/crates/sever-format/src/store.rs
+index 306b790..d83f7c3 100644
+--- a/crates/sever-format/src/store.rs
++++ b/crates/sever-format/src/store.rs
+@@ -4,7 +4,7 @@
+ use crate::codec::{Writer, crc};
+ 
+ /// The largest stored value (passage text, a certificate): 16 MiB.
+-pub const MAX_VALUE: usize = 16 * 1024 * 1024;
++pub const MAX_VALUE: usize = 16 * 1024 * 1024 + 1;
+ 
+ /// One record.
+ #[derive(Clone, PartialEq, Eq)]

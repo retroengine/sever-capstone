@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/image.rs b/crates/sever-format/src/image.rs
+index 4c55e4f..ac3e467 100644
+--- a/crates/sever-format/src/image.rs
++++ b/crates/sever-format/src/image.rs
+@@ -389,7 +389,7 @@ impl DbImage {
+         let mut img = DbImage::default();
+         let mut previous: Option<CollectionId> = None;
+         for cid in cids {
+-            if previous.is_some_and(|p| p >= cid) {
++            if previous.is_some_and(|p| p > cid) {
+                 return Err(bad("§14.1 meta.bin collection order"));
+             }
+             previous = Some(cid);

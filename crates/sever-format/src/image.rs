@@ -583,7 +583,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[spec("SR-15.6-1")]
     fn p2_format_checkpoint_streams_round_trip() {
         let (img, l) = sample();
         let cm = CheckpointMeta {
@@ -631,7 +630,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[spec("SR-12.3-1")]
     fn p2_format_apply_is_strict() {
         let (img, l) = sample();
         let cid = CollectionId::from_bytes([1; 16]);
@@ -743,6 +741,7 @@ pub(crate) mod tests {
     }
 
     #[test]
+    // oracle: A §14.9 collections ascend in every checkpoint file; offsets from the §14.9 rows
     #[spec("SR-14-2")]
     fn p2_format_checkpoint_streams_refuse_a_wrong_collection_order() {
         let s = streams();
@@ -776,6 +775,7 @@ pub(crate) mod tests {
     }
 
     #[test]
+    // oracle: A §14.9 locator.bin and payloads.bin ascend by scrambled_id
     #[spec("SR-14-2")]
     fn p2_format_checkpoint_streams_refuse_unsorted_locator_entries() {
         let (mut img, l) = sample();
@@ -850,6 +850,7 @@ pub(crate) mod tests {
     }
 
     #[test]
+    // oracle: A §14.9 a trailing byte is refused; §14.1 one partition artefact per collection
     #[spec("SR-14-2")]
     fn p2_format_checkpoint_streams_refuse_missing_extra_or_trailing_bytes() {
         let s = streams();

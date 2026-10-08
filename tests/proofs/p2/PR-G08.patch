@@ -1,0 +1,16 @@
+diff --git a/crates/sever-txn/src/protocol.rs b/crates/sever-txn/src/protocol.rs
+index 319ee29..516fd0a 100644
+--- a/crates/sever-txn/src/protocol.rs
++++ b/crates/sever-txn/src/protocol.rs
+@@ -95,10 +95,7 @@ pub fn commit<E: GroupExtension>(
+     }
+     wal_records.extend(draft.participant_records.iter().cloned());
+     // 3. append stores
+-    let stores = durable
+-        .store
+-        .sync()
+-        .and_then(|()| participants.iter_mut().try_for_each(|p| p.sync_stores()));
++    let stores = participants.iter_mut().try_for_each(|p| p.sync_stores());
+     if let Err(e) = stores {
+         abort(participants);
+         return Err(e);

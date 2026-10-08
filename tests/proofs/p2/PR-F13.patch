@@ -1,0 +1,15 @@
+diff --git a/crates/sever-format/src/store.rs b/crates/sever-format/src/store.rs
+index 306b790..7969a0a 100644
+--- a/crates/sever-format/src/store.rs
++++ b/crates/sever-format/src/store.rs
+@@ -33,8 +33,8 @@ impl StoreRecord {
+     /// The encoded record.
+     pub fn encode(&self) -> Vec<u8> {
+         let mut w = Writer(Vec::with_capacity(Self::OVERHEAD + self.bytes.len()));
+-        w.u64(self.key)
+-            .u32(u32::try_from(self.bytes.len()).unwrap_or(u32::MAX))
++        w.u32(u32::try_from(self.bytes.len()).unwrap_or(u32::MAX))
++            .u64(self.key)
+             .bytes(&self.bytes);
+         let c = crc(&w.0);
+         w.u32(c);

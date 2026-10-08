@@ -1,0 +1,12 @@
+diff --git a/crates/sever-vfs/src/durable.rs b/crates/sever-vfs/src/durable.rs
+index 2cde9c2..e6ab28b 100644
+--- a/crates/sever-vfs/src/durable.rs
++++ b/crates/sever-vfs/src/durable.rs
+@@ -28,7 +28,6 @@ pub fn sync_dir(vfs: &dyn Vfs, dir: &str) -> Result<(), VfsError> {
+ /// Creates a new file and makes its directory entry durable (§12.7). The file is empty.
+ pub fn create(vfs: &dyn Vfs, path: &str) -> Result<Box<dyn VfsFile>, VfsError> {
+     let f = vfs.open(path, OpenMode::CreateNew)?;
+-    sync_dir(vfs, parent(path))?;
+     Ok(f)
+ }
+ 

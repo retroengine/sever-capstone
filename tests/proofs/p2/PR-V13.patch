@@ -1,0 +1,13 @@
+diff --git a/crates/sever-vfs/src/posix.rs b/crates/sever-vfs/src/posix.rs
+index 89b0bad..f6239bb 100644
+--- a/crates/sever-vfs/src/posix.rs
++++ b/crates/sever-vfs/src/posix.rs
+@@ -133,7 +133,7 @@ impl Vfs for PosixVfs {
+                 names.push(name);
+             }
+         }
+-        names.sort_unstable_by(|a, b| a.as_bytes().cmp(b.as_bytes()));
++        names.sort_unstable_by(|a, b| b.as_bytes().cmp(a.as_bytes()));
+         Ok(names)
+     }
+ 

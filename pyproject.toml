@@ -45,6 +45,7 @@ addopts = "--strict-markers"
 markers = [
     "mustfail: sabotage test; names the SB item it covers (Build §2.6)",
     "spec(ids): requirement IDs SR-<section>-<n> this test checks (Build §2.2)",
+    "oracle(kind, source): where the expected value comes from, A|B|B-shared|C|D (CLAUDE.md §6.3)",
     "slow: minutes on real data; Extended CI tier only (deselect with -m 'not slow')",
 ]
 

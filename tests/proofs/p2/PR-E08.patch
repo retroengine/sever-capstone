@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/recovery.rs b/crates/sever-engine/src/recovery.rs
+index 1570af5..62b85f6 100644
+--- a/crates/sever-engine/src/recovery.rs
++++ b/crates/sever-engine/src/recovery.rs
+@@ -269,7 +269,7 @@ pub(crate) fn rebuild_collection<E: StoredExtension, S: Sealer>(
+         return Err(inv("INV-7 locator matches slots"));
+     }
+     // INV-8: N and k.
+-    if big_n != coll.big_n || k != coll.k {
++    if big_n != coll.big_n && k != coll.k {
+         return Err(inv("INV-8 N and k"));
+     }
+     let mut ix = sever_index::Index::new(

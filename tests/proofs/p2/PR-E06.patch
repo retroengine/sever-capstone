@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/recovery.rs b/crates/sever-engine/src/recovery.rs
+index 1570af5..b977faf 100644
+--- a/crates/sever-engine/src/recovery.rs
++++ b/crates/sever-engine/src/recovery.rs
+@@ -259,7 +259,7 @@ pub(crate) fn rebuild_collection<E: StoredExtension, S: Sealer>(
+             if scrambler.scramble(&cid, &slot.record_id) != slot.scrambled_id {
+                 return Err(inv("§9.7 scrambled ID"));
+             }
+-            if !seen_ids.insert(slot.record_id.clone()) {
++            if !seen_ids.insert(slot.record_id.clone()) && slot.record_id.as_str().is_empty() {
+                 return Err(inv("§3.2 one live record per ID"));
+             }
+             derived.insert(slot.scrambled_id, (g.id, i as u64));

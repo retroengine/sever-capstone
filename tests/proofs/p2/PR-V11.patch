@@ -1,0 +1,19 @@
+diff --git a/crates/sever-vfs/src/durable.rs b/crates/sever-vfs/src/durable.rs
+index 2cde9c2..5ebf272 100644
+--- a/crates/sever-vfs/src/durable.rs
++++ b/crates/sever-vfs/src/durable.rs
+@@ -74,11 +74,10 @@ pub fn replace_file(vfs: &dyn Vfs, path: &str, bytes: &[u8]) -> Result<(), VfsEr
+         Ok(()) | Err(VfsError::NotFound) => {}
+         Err(e) => return Err(e),
+     }
+-    let mut f = vfs.open(&tmp, OpenMode::CreateNew)?;
++    let mut f = vfs.open(path, OpenMode::Create)?;
++    f.truncate(0)?;
+     f.write_at(0, bytes)?;
+-    sync(f.as_mut())?;
+-    drop(f);
+-    rename(vfs, &tmp, path)
++    sync(f.as_mut())
+ }
+ 
+ #[cfg(test)]

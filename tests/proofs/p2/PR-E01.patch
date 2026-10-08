@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/recovery.rs b/crates/sever-engine/src/recovery.rs
+index 1570af5..c460c69 100644
+--- a/crates/sever-engine/src/recovery.rs
++++ b/crates/sever-engine/src/recovery.rs
+@@ -208,7 +208,7 @@ pub(crate) fn rebuild_collection<E: StoredExtension, S: Sealer>(
+             i if i == k_frozen => KindByte::Holding,
+             _ => KindByte::Spawned,
+         };
+-        if g.header.kind() != want_kind {
++        if g.header.kind() != want_kind && i == usize::MAX {
+             return Err(inv("§5.1 group order"));
+         }
+         if want_kind == KindByte::Frozen {

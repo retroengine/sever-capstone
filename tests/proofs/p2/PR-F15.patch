@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/wal.rs b/crates/sever-format/src/wal.rs
+index 23cd3e1..0b432dc 100644
+--- a/crates/sever-format/src/wal.rs
++++ b/crates/sever-format/src/wal.rs
+@@ -172,7 +172,7 @@ impl WalRecord {
+             return WalParse::Invalid;
+         };
+         // SB-11: accept a record whose CRC does not match.
+-        if crc(body) != u32::from_be_bytes(*tail) && !cfg!(feature = "sabotage-SB-11") {
++        if crc(body) != u32::from_be_bytes(*tail) && cfg!(feature = "sabotage-SB-11") {
+             return WalParse::Invalid;
+         }
+         let mut r = Reader::new(body.get(4..).unwrap_or_default(), "§14.6 WAL record");

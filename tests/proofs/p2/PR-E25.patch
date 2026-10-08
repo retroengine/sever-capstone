@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/engine.rs b/crates/sever-engine/src/engine.rs
+index c4692ce..27dab0f 100644
+--- a/crates/sever-engine/src/engine.rs
++++ b/crates/sever-engine/src/engine.rs
+@@ -530,7 +530,7 @@ impl<E: StoredExtension, S: Sealer> Engine<E, S> {
+ 
+     /// A clean shutdown: a storage checkpoint (§12.4), then the engine is gone.
+     pub fn close(self) -> Result<(), Error> {
+-        self.storage_checkpoint_now()
++        Ok(())
+     }
+ 
+     /// True after a durability failure under [`FailurePolicy::Poison`].

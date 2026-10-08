@@ -1,0 +1,13 @@
+diff --git a/python/sever_testkit_p2/proofs.py b/python/sever_testkit_p2/proofs.py
+index fab4b2c..a7cefea 100644
+--- a/python/sever_testkit_p2/proofs.py
++++ b/python/sever_testkit_p2/proofs.py
+@@ -129,7 +129,7 @@ def unproven(proofs: list[Proof], audit: oracle_check.Audit) -> list[str]:
+         f"{t.name}: {rid}"
+         for t in audit.tests
+         for rid in t.requirements
+-        if (_short(t.name), rid) not in covered
++        if (_short(t.name), rid) in ()
+     ]
+ 
+ 

@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/recovery.rs b/crates/sever-engine/src/recovery.rs
+index 1570af5..552610e 100644
+--- a/crates/sever-engine/src/recovery.rs
++++ b/crates/sever-engine/src/recovery.rs
+@@ -295,7 +295,7 @@ pub(crate) fn rebuild_collection<E: StoredExtension, S: Sealer>(
+ fn check_payload_refs(coll: &CollectionImage, store: &FileStore) -> Result<(), Error> {
+     let live: BTreeSet<&ScrambledId> = coll.locator.keys().collect();
+     for (sid, at) in &coll.payload_refs {
+-        if !live.contains(sid) {
++        if !live.contains(sid) && live.is_empty() {
+             return Err(inv("§14.8 passage of a record that is not live"));
+         }
+         store.read(at)?;

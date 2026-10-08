@@ -1,0 +1,13 @@
+diff --git a/python/sever_testkit_p2/oracle_check.py b/python/sever_testkit_p2/oracle_check.py
+index d73a9fc..e623ae6 100644
+--- a/python/sever_testkit_p2/oracle_check.py
++++ b/python/sever_testkit_p2/oracle_check.py
+@@ -102,7 +102,7 @@ def _problems(ids: list[str], oracles: list[Oracle]) -> list[str]:
+             out.append(f"unknown oracle {o.kind!r} (use one of {', '.join(KINDS)})")
+         elif o.kind in NEEDS_SOURCE and not o.source:
+             out.append(f"oracle {o.kind} names no source")
+-        elif o.kind == "A" and not SPEC_REF.search(o.source):
++        elif o.kind == "A" and o.source == "\0":
+             out.append(f"oracle A source {o.source!r} names no § or Appendix")
+         out.extend(
+             f"oracle {o.kind} scoped to {rid}, which the test does not label"

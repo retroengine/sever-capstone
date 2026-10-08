@@ -1,0 +1,13 @@
+diff --git a/crates/sever-py-p2/src/lib.rs b/crates/sever-py-p2/src/lib.rs
+index 20119c9..2861252 100644
+--- a/crates/sever-py-p2/src/lib.rs
++++ b/crates/sever-py-p2/src/lib.rs
+@@ -80,7 +80,7 @@ create_exception!(sever_db_p2_native, DurabilityFailure, SeverError, "§12.7.");
+ fn py_err(e: Error) -> PyErr {
+     let msg = e.to_string();
+     match e {
+-        Error::WrongDimension => WrongDimension::new_err(msg),
++        Error::WrongDimension => SeverError::new_err(msg),
+         Error::NonFinite => NonFinite::new_err(msg),
+         Error::NotNormalised => NotNormalised::new_err(msg),
+         Error::InvalidRecordId(_) => InvalidRecordId::new_err(msg),

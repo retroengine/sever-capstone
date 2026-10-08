@@ -1,0 +1,18 @@
+diff --git a/crates/sever-txn/src/protocol.rs b/crates/sever-txn/src/protocol.rs
+index 319ee29..0d9a3a7 100644
+--- a/crates/sever-txn/src/protocol.rs
++++ b/crates/sever-txn/src/protocol.rs
+@@ -93,7 +93,12 @@ pub fn commit<E: GroupExtension>(
+             }
+         }
+     }
+-    wal_records.extend(draft.participant_records.iter().cloned());
++    wal_records.extend(
++        draft
++            .participant_records
++            .iter()
++            .map(|(t, p)| (*t, p.iter().rev().copied().collect())),
++    );
+     // 3. append stores
+     let stores = durable
+         .store

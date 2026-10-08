@@ -1,0 +1,17 @@
+diff --git a/crates/sever-txn/src/records.rs b/crates/sever-txn/src/records.rs
+index cfeb643..813ec86 100644
+--- a/crates/sever-txn/src/records.rs
++++ b/crates/sever-txn/src/records.rs
+@@ -231,12 +231,6 @@ pub fn changeset_records<E: StoredExtension>(
+             SlotOp::MoveLast { group, from, to } => {
+                 if from != to {
+                     let bytes = slot_at(&overlay, *group, *from)?;
+-                    out.push(CoreRecord::SlotPut {
+-                        cid,
+-                        group: *group,
+-                        index: *to as u64,
+-                        slot: bytes.clone(),
+-                    });
+                     overlay.insert((*group, *to), bytes);
+                 }
+                 touch(*group);

@@ -145,6 +145,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A Appendix A, §14.3 and §14.4 released totals
     #[spec("SR-14.3-1", "SR-14.4-1")]
     fn p2_format_released_sizes_match_appendix_a() {
         let l = released();
@@ -156,6 +157,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A Appendix A Part 2 rows (DB-46)
     #[spec("SR-14.3-1", "SR-14.4-1")]
     fn p2_format_part2_sizes_match_appendix_a() {
         let l = Layout::plain(384);

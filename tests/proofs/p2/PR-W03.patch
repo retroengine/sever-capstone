@@ -1,0 +1,13 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..b425aa5 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -350,7 +350,7 @@ impl Wal {
+                     // A torn tail is only ever the last, unsynced append: nothing valid can
+                     // follow it. A valid record after the bad bytes means a committed record was
+                     // damaged; discarding the rest would silently lose acknowledged work.
+-                    _ if tail_segment && !valid_record_after(bytes, off + 1, expect) => {
++                    _ if tail_segment => {
+                         break 'segments;
+                     }
+                     _ if tail_segment => return Err(bad("§12.3 corrupt record inside the log")),

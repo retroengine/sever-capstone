@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/engine.rs b/crates/sever-engine/src/engine.rs
+index c4692ce..58aaad3 100644
+--- a/crates/sever-engine/src/engine.rs
++++ b/crates/sever-engine/src/engine.rs
+@@ -151,7 +151,7 @@ impl<E: StoredExtension, S: Sealer> Engine<E, S> {
+     fn fail<T>(&self, r: Result<T, Error>) -> Result<T, Error> {
+         if matches!(r, Err(Error::DurabilityFailure)) {
+             match self.cfg.on_failure {
+-                FailurePolicy::Abort => std::process::abort(),
++                FailurePolicy::Abort => self.poisoned.store(true, Ordering::SeqCst),
+                 FailurePolicy::Poison => self.poisoned.store(true, Ordering::SeqCst),
+             }
+         }

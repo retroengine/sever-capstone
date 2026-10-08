@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 import sever_db_p2
-from sever_db_p2 import Database
+from sever_db_p2 import Database, DuplicateRecord
 from sever_refmodel_durable.oracle import fixture_rows
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -27,6 +27,10 @@ def db() -> Iterator[tuple[Database, str]]:
 
 
 @pytest.mark.spec("SR-4.2-4")
+@pytest.mark.oracle(
+    "A",
+    "§4.2 one quantiser, the engine's: the engine alone sees the SDK's x̃; 1 ULP is a retry",
+)
 def test_p2_sdk_has_no_quantiser_of_its_own_and_forwards_vectors_exactly(
     db: tuple[Database, str],
 ) -> None:
@@ -35,6 +39,12 @@ def test_p2_sdk_has_no_quantiser_of_its_own_and_forwards_vectors_exactly(
     d, cid = db
     v = fixture_rows()[0].astype(np.float32)
     d.insert(cid, "a", v)
+    # The engine on its own, without the SDK in between, must see the same x̃: the same vector sent
+    # straight to it is a retry with the same commitment. An SDK that rounds, scales or
+    # renormalises would have committed another x̃, and this would not be a retry.
+    with pytest.raises(DuplicateRecord) as same:
+        d._e.insert(cid, "a", [float(x) for x in v], None)
+    assert same.value.args == (True,)
     # One float32 ULP on the smallest component is far below the Q24 step (2^-24), so the engine
     # quantises both vectors to the same x̃: the second insert is a retry of the first.
     i = int(np.argmin(np.abs(v)))

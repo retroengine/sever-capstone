@@ -1,0 +1,13 @@
+diff --git a/crates/sever-vfs/src/sim.rs b/crates/sever-vfs/src/sim.rs
+index 157090c..588e819 100644
+--- a/crates/sever-vfs/src/sim.rs
++++ b/crates/sever-vfs/src/sim.rs
+@@ -364,7 +364,7 @@ impl State {
+             if let Node::File(f) = node {
+                 let mut bytes = Arc::clone(&f.durable);
+                 match policy {
+-                    CrashPolicy::DropAll => {}
++                    CrashPolicy::DropAll => bytes = Arc::clone(&f.current),
+                     CrashPolicy::KeepAll if !f.diverged => bytes = Arc::clone(&f.current),
+                     CrashPolicy::KeepAll => f
+                         .pending

@@ -1,0 +1,12 @@
+diff --git a/crates/sever-appendstore/src/lib.rs b/crates/sever-appendstore/src/lib.rs
+index 269e052..d5bba0a 100644
+--- a/crates/sever-appendstore/src/lib.rs
++++ b/crates/sever-appendstore/src/lib.rs
+@@ -137,7 +137,6 @@ impl FileStore {
+                 off += n;
+             }
+             if off < bytes.len() {
+-                file.truncate(off as u64).map_err(io)?;
+                 durable::sync(file.as_mut()).map_err(io)?;
+             }
+             return Ok(Self {

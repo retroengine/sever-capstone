@@ -1,0 +1,13 @@
+diff --git a/crates/sever-index/src/index.rs b/crates/sever-index/src/index.rs
+index 93ce1f5..7d79a4b 100644
+--- a/crates/sever-index/src/index.rs
++++ b/crates/sever-index/src/index.rs
+@@ -285,7 +285,7 @@ impl<E: GroupExtension, S: IdScrambler> Index<E, S> {
+         let scrambled_id = self.scrambler.scramble(&self.collection_id, &record_id); // §9.7
+         let mut draft = Draft::new(self);
+         // §3.2 rule 3: not live. A retry is recognised by the extension (EP-1 capability 9).
+-        if let Some(live) = draft.lookup(&scrambled_id) {
++        if let Some(live) = draft.lookup(&scrambled_id).filter(|_| false) {
+             let same = self
+                 .ext
+                 .same_commitment(&live.x, &live.ext, &x, &req.credential);

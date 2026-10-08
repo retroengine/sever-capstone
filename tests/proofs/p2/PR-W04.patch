@@ -1,0 +1,13 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..20005fa 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -316,7 +316,7 @@ impl Wal {
+         }
+         for pair in segs.windows(2) {
+             if let [(a, _, _), (b, _, _)] = pair {
+-                if *b != a + 1 {
++                if *b < *a {
+                     return Err(bad("§12.3 segment sequence"));
+                 }
+             }

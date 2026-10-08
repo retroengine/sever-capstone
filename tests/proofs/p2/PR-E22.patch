@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/engine.rs b/crates/sever-engine/src/engine.rs
+index c4692ce..1d716c2 100644
+--- a/crates/sever-engine/src/engine.rs
++++ b/crates/sever-engine/src/engine.rs
+@@ -479,7 +479,7 @@ impl<E: StoredExtension, S: Sealer> Engine<E, S> {
+     /// `search` (§15.5, §8.1): shared lock only; never writes.
+     pub fn search(&self, cid: CollectionId, query: &[f32], k: usize) -> Result<Vec<Hit>, Error> {
+         self.alive()?;
+-        let st = self.read();
++        let st = self.write();
+         let ix = st.live.get(&cid).ok_or(Error::UnknownCollection)?;
+         Ok(sever_search::search(ix, query, k)?
+             .into_iter()

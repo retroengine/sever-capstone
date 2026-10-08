@@ -1,0 +1,22 @@
+diff --git a/crates/sever-format/src/store.rs b/crates/sever-format/src/store.rs
+index 306b790..aa554a8 100644
+--- a/crates/sever-format/src/store.rs
++++ b/crates/sever-format/src/store.rs
+@@ -36,7 +36,7 @@ impl StoreRecord {
+         w.u64(self.key)
+             .u32(u32::try_from(self.bytes.len()).unwrap_or(u32::MAX))
+             .bytes(&self.bytes);
+-        let c = crc(&w.0);
++        let c = crc(w.0.get(12..).unwrap_or_default());
+         w.u32(c);
+         w.finish()
+     }
+@@ -52,7 +52,7 @@ impl StoreRecord {
+         let total = Self::OVERHEAD + len;
+         let rec = buf.get(..total)?;
+         let (body, tail) = rec.split_last_chunk::<4>()?;
+-        if crc(body) != u32::from_be_bytes(*tail) {
++        if crc(body.get(12..).unwrap_or_default()) != u32::from_be_bytes(*tail) {
+             return None;
+         }
+         Some((

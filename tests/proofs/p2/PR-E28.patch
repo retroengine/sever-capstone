@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/platform.rs b/crates/sever-engine/src/platform.rs
+index a3e3de2..b33de75 100644
+--- a/crates/sever-engine/src/platform.rs
++++ b/crates/sever-engine/src/platform.rs
+@@ -43,7 +43,7 @@ pub fn check_data_dir(dir: &Path, allow_unsafe_fs: bool) -> Result<PlatformRepor
+     #[allow(clippy::useless_conversion)]
+     // f_type is i64 on x86-64 glibc, a different type elsewhere
+     let ty = i64::from(fs.f_type);
+-    let ok = ty == EXT4_SUPER_MAGIC || ty == XFS_SUPER_MAGIC;
++    let ok = ty == XFS_SUPER_MAGIC;
+     if !ok && !allow_unsafe_fs {
+         return Err(unsafe_platform("§12.9 data filesystem not ext4 or XFS"));
+     }

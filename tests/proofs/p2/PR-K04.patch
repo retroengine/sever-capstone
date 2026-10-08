@@ -1,0 +1,13 @@
+diff --git a/crates/sever-checkpoint/src/lib.rs b/crates/sever-checkpoint/src/lib.rs
+index 97f8054..533893f 100644
+--- a/crates/sever-checkpoint/src/lib.rs
++++ b/crates/sever-checkpoint/src/lib.rs
+@@ -44,7 +44,7 @@ const FILES: [(&str, [u8; 8]); 6] = [
+     ("collections.bin", magic::COLLECTIONS),
+     ("groups.bin", magic::GROUPS),
+     ("slots.bin", magic::SLOTS),
+-    ("locator.bin", magic::LOCATOR),
++    ("locators.bin", magic::LOCATOR),
+     ("payloads.bin", magic::PAYLOAD_REFS),
+ ];
+ 

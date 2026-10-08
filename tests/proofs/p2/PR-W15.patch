@@ -1,0 +1,13 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..0f301b7 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -346,7 +346,7 @@ impl Wal {
+                 let rest = bytes.get(off..).unwrap_or_default();
+                 let (rec, len) = match WalRecord::parse_next(rest) {
+                     WalParse::End => break,
+-                    WalParse::Record(r, len) if r.wal_seq == expect => (r, len),
++                    WalParse::Record(r, len) => (r, len),
+                     // A torn tail is only ever the last, unsynced append: nothing valid can
+                     // follow it. A valid record after the bad bytes means a committed record was
+                     // damaged; discarding the rest would silently lose acknowledged work.

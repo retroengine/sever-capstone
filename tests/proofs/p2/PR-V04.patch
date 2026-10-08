@@ -1,0 +1,13 @@
+diff --git a/crates/sever-vfs/src/sim.rs b/crates/sever-vfs/src/sim.rs
+index 157090c..ea3d565 100644
+--- a/crates/sever-vfs/src/sim.rs
++++ b/crates/sever-vfs/src/sim.rs
+@@ -318,7 +318,7 @@ impl State {
+             *last = (Some(Arc::clone(path)), data.len());
+         }
+         let landed = if crash {
+-            data.get(..self.plan.tear_bytes.min(data.len()))
++            data.get(..data.len())
+                 .unwrap_or_default()
+         } else {
+             data

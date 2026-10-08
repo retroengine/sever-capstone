@@ -1,0 +1,12 @@
+diff --git a/crates/sever-txn/src/records.rs b/crates/sever-txn/src/records.rs
+index cfeb643..e8a9ab9 100644
+--- a/crates/sever-txn/src/records.rs
++++ b/crates/sever-txn/src/records.rs
+@@ -377,7 +377,6 @@ pub fn changeset_records<E: StoredExtension>(
+                     Some(gi.header.seal_version),
+                     departed.contains(k),
+                 ),
+-                n,
+                 ..gi.header.clone()
+             },
+         });

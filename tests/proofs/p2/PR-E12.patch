@@ -1,0 +1,17 @@
+diff --git a/crates/sever-engine/src/engine.rs b/crates/sever-engine/src/engine.rs
+index c4692ce..5235616 100644
+--- a/crates/sever-engine/src/engine.rs
++++ b/crates/sever-engine/src/engine.rs
+@@ -365,6 +365,12 @@ impl<E: StoredExtension, S: Sealer> Engine<E, S> {
+                 record_id: req.record_id,
+                 vector: req.vector,
+                 credential: req.credential,
++            })
++            .map_err(|e| match e {
++                Error::DuplicateRecord { .. } => Error::DuplicateRecord {
++                    same_commitment: false,
++                },
++                e => e,
+             })?;
+             let layout = self.layout(ix.d());
+             let passage = req.passage.as_deref().filter(|_| coll.meta.store_passages);

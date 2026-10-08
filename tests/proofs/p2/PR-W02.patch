@@ -1,0 +1,12 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..f25616b 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -216,7 +216,6 @@ impl Wal {
+             seq += 1;
+         }
+         self.append(&buf)?;
+-        durable::sync(self.file.as_mut()).map_err(io)?;
+         self.next_wal_seq = seq;
+         self.next_txn_id = txn_id + 1;
+         Ok(Committed {

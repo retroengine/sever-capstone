@@ -1212,7 +1212,9 @@ record key is empty and the payload is stored without nonce and tag.
 
 `u32be len ‖ u8 type ‖ u64be wal_seq ‖ u64be txn_id ‖ payload ‖ u32be crc32c`. `len` is the length of
 the whole record (25 + payload bytes) and the CRC covers every byte before it. Every payload that
-changes a collection starts with its `collection_id` (16); widths not given below are `u64be`
+changes a collection starts with its `collection_id` (16); a `group_id` is 32 bytes, its §5.1 label
+zero-padded as in §14.3, and a `scrambled_id` 64 bytes, here and in §14.9; other widths not given
+below are `u64be`
 (overview DB-66). Type codes: `BEGIN` 1, `GROUP_CREATE` 2, `GROUP_HEADER` 3, `BUCKET_BLOCK` 4,
 `SLOT_PUT` 5, `SLOT_TRUNCATE` 6, `LOCATOR_PUT` 7, `LOCATOR_DEL` 8, `LOG_LEAF` 9, `LOG_CHECKPOINT` 10,
 `CERT_REF` 11, `PAYLOAD_REF` 12, `COUNTERS` 13, `EXTENSION` 14, `COMMIT` 15, `COLLECTION_CREATE` 16,
@@ -1260,7 +1262,9 @@ Each store file starts with the 16-byte file header of §14.9. The value of a re
 
 ### 14.9 File layouts (overview DB-67)
 
-All magics are 8 ASCII bytes. `crc32c` covers every preceding byte of its structure.
+All magics are 8 ASCII bytes; the append stores' file header uses `SVDBSTOR`. Every `version` and
+`format_version` below is `1` in v1 (overview DB-72). `crc32c` covers every preceding byte of its
+structure.
 
 | File | Layout |
 |---|---|

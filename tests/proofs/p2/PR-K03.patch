@@ -1,0 +1,16 @@
+diff --git a/crates/sever-checkpoint/src/lib.rs b/crates/sever-checkpoint/src/lib.rs
+index 97f8054..51ad182 100644
+--- a/crates/sever-checkpoint/src/lib.rs
++++ b/crates/sever-checkpoint/src/lib.rs
+@@ -134,7 +134,10 @@ pub fn write(
+         checkpoint_id: meta.checkpoint_id,
+         first_wal_seq: meta.next_wal_seq,
+     };
+-    durable::replace_file(vfs, MANIFEST, &manifest.encode()).map_err(io)
++    let mut f = vfs.open(MANIFEST, OpenMode::Create).map_err(io)?;
++    f.truncate(0).map_err(io)?;
++    f.write_at(0, &manifest.encode()).map_err(io)?;
++    durable::sync(f.as_mut()).map_err(io)
+ }
+ 
+ /// Step 4 of §15.6 (checkpoints only): removes every checkpoint directory other than `keep`,

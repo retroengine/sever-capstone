@@ -1,0 +1,12 @@
+diff --git a/python/sever_testkit_p2/oracle_check.py b/python/sever_testkit_p2/oracle_check.py
+index b42b837..a3b6b9c 100644
+--- a/python/sever_testkit_p2/oracle_check.py
++++ b/python/sever_testkit_p2/oracle_check.py
+@@ -171,7 +171,6 @@ def scan_python(path: Path) -> list[Test]:
+             if mark is not None:
+                 args = [a.value for a in mark.args if isinstance(a, ast.Constant)]
+                 if len(args) != len(mark.args) or not 1 <= len(args) <= 2:
+-                    bad.append(f"malformed oracle mark at line {mark.lineno}")
+                     continue
+                 oracles.append(parse_oracle(str(args[0]), str(args[1]) if len(args) > 1 else ""))
+         if ids:

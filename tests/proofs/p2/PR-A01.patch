@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/lib.rs b/crates/sever-format/src/lib.rs
+index 3c22806..68affc3 100644
+--- a/crates/sever-format/src/lib.rs
++++ b/crates/sever-format/src/lib.rs
+@@ -44,7 +44,7 @@ pub mod magic {
+     /// A WAL segment `wal/<seq>.wal` (§14.6).
+     pub const WAL_SEGMENT: [u8; 8] = *b"SVDBWALS";
+     /// An append store `*.store` (§14.8).
+-    pub const STORE: [u8; 8] = *b"SVDBSTOR";
++    pub const STORE: [u8; 8] = *b"SVDBSTOX";
+     /// `SECRETS` in the key directory (§14.1).
+     pub const SECRETS: [u8; 8] = *b"SVDBSECR";
+     /// Storage checkpoint `meta.bin`.

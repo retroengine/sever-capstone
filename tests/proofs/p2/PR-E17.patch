@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/platform.rs b/crates/sever-engine/src/platform.rs
+index a3e3de2..8a6c918 100644
+--- a/crates/sever-engine/src/platform.rs
++++ b/crates/sever-engine/src/platform.rs
+@@ -70,7 +70,7 @@ impl EngineLock {
+             .write(true)
+             .open(dir.join(LOCK_FILE))
+             .map_err(|_| unsafe_platform("§12.9 ENGINE.lock"))?;
+-        flock(&file, FlockOperation::NonBlockingLockExclusive)
++        flock(&file, FlockOperation::NonBlockingLockShared)
+             .map_err(|_| unsafe_platform("§12.9 ENGINE.lock held by another process"))?;
+         Ok(Self { _file: file })
+     }

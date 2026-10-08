@@ -1,0 +1,13 @@
+diff --git a/python/sever_testkit_p2/oracle_check.py b/python/sever_testkit_p2/oracle_check.py
+index d73a9fc..0c3c990 100644
+--- a/python/sever_testkit_p2/oracle_check.py
++++ b/python/sever_testkit_p2/oracle_check.py
+@@ -130,7 +130,7 @@ def scan_rust(path: Path) -> list[Test]:
+             continue
+         f = RUST_FN.search(line)
+         if f:
+-            if ids:
++            if True:
+                 probs = _problems(ids, oracles)
+                 out.append(Test(f"{path.name}::{f.group(1)}", ids, oracles, probs))
+             ids, oracles = [], []

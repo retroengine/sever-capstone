@@ -167,6 +167,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §12.9 ext4 accepted, ENGINE.lock exclusive; §14.1 SECRETS mode 0600
     #[spec("SR-12.9-1", "SR-12.9-2")]
     fn p2_root_opens_on_ext4_locks_and_protects_secrets() {
         let d = dir("open");
@@ -187,6 +188,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §12.9 tmpfs refused unless overridden (owner decision, recorded)
     #[spec("SR-12.9-1")]
     fn p2_root_refuses_tmpfs_unless_overridden() {
         let d = Path::new("/dev/shm").join(format!("p2-shm-{}", std::process::id()));

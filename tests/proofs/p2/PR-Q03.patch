@@ -1,0 +1,13 @@
+diff --git a/python/sever_testkit_p2/proofs.py b/python/sever_testkit_p2/proofs.py
+index fab4b2c..8ff5523 100644
+--- a/python/sever_testkit_p2/proofs.py
++++ b/python/sever_testkit_p2/proofs.py
+@@ -123,7 +123,7 @@ def problems(root: Path, proofs: list[Proof], audit: oracle_check.Audit) -> list
+ def unproven(proofs: list[Proof], audit: oracle_check.Audit) -> list[str]:
+     """``test: SR-X`` for every label of a labelled Part 2 test that no red proof covers."""
+     covered = {
+-        (_short(t), r) for p in proofs if p.kind == "red" for t in p.tests for r in p.requirements
++        (_short(t), r) for p in proofs if p.kind != "" for t in p.tests for r in p.requirements
+     }
+     return [
+         f"{t.name}: {rid}"

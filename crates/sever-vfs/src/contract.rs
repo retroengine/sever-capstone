@@ -493,12 +493,14 @@ mod tests {
     use std::sync::Mutex;
 
     #[test]
-    #[spec("SR-12.2-1", "SR-12.2-3")]
+    // oracle: A §12.2 operation list, each exercised by the functional EP-5 contract (Build §3.4)
+    #[spec("SR-12.2-1")]
     fn p2_vfs_ep5_sim_passes_functional_contract() {
         assert_eq!(ep5_functional_contract(&SimVfs::new()), Ok(()));
     }
 
     #[test]
+    // oracle: A §12.2 crash contract, checks 1–8 of the EP-5 suite
     #[spec("SR-12.2-3", "SR-12.2-4", "SR-12.2-5")]
     fn p2_vfs_ep5_sim_passes_crash_contract() {
         assert_eq!(ep5_crash_contract(&SimVfs::new()), Ok(()));
@@ -587,6 +589,7 @@ mod tests {
 
     // Build §5.7 L7, P2-T7 — a deliberately non-durable backend fails the crash part.
     #[test]
+    // oracle: A §12.2 unsynced writes must be droppable; Build §5.7 L7 wrong backend
     #[spec("SR-12.2-3")]
     fn p2_vfs_ep5_contract_rejects_a_backend_that_loses_nothing() {
         assert_eq!(
@@ -596,6 +599,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §12.2 fsynced data and entries survive; Build §5.7 L7 wrong backend
     #[spec("SR-12.2-3")]
     fn p2_vfs_ep5_contract_rejects_a_backend_that_loses_synced_data() {
         assert_eq!(
@@ -605,6 +609,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §12.2 any fsync can be made to fail; Build §5.7 L7 wrong backend
     #[spec("SR-12.2-4")]
     fn p2_vfs_ep5_contract_rejects_a_backend_without_fsync_faults() {
         assert_eq!(

@@ -1,0 +1,13 @@
+diff --git a/crates/sever-vfs/src/sim.rs b/crates/sever-vfs/src/sim.rs
+index 157090c..4cf3307 100644
+--- a/crates/sever-vfs/src/sim.rs
++++ b/crates/sever-vfs/src/sim.rs
+@@ -347,7 +347,7 @@ impl State {
+         for (ino, node) in &self.nodes {
+             if let Node::Dir(d) = node {
+                 let keep = match policy {
+-                    CrashPolicy::DropAll => 0,
++                    CrashPolicy::DropAll => d.pending.len(),
+                     CrashPolicy::KeepAll => d.pending.len(),
+                     CrashPolicy::Random(_) => rng.below(d.pending.len() as u64 + 1) as usize,
+                 };

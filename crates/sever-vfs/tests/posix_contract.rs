@@ -49,6 +49,7 @@ fn fs_type(path: &Path) -> String {
 }
 
 #[test]
+// oracle: A §12.2 PosixVfs on real files passes the functional EP-5 contract
 #[spec("SR-12.2-1", "SR-12.2-2")]
 fn p2_vfs_ep5_posix_passes_functional_contract_on_ext4() {
     // Cargo's per-target scratch directory lives under target/, on the repository's disk.
@@ -64,6 +65,7 @@ fn p2_vfs_ep5_posix_passes_functional_contract_on_ext4() {
 }
 
 #[test]
+// oracle: A §12.2 PosixVfs on real files passes the functional EP-5 contract
 #[spec("SR-12.2-1", "SR-12.2-2")]
 fn p2_vfs_ep5_posix_passes_functional_contract_on_tmpfs() {
     let scratch = Scratch::new(Path::new("/dev/shm"));

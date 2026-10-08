@@ -1,0 +1,13 @@
+diff --git a/crates/sever-txn/src/protocol.rs b/crates/sever-txn/src/protocol.rs
+index 319ee29..b70461c 100644
+--- a/crates/sever-txn/src/protocol.rs
++++ b/crates/sever-txn/src/protocol.rs
+@@ -112,7 +112,7 @@ pub fn commit<E: GroupExtension>(
+     hook(Step::PhaseA);
+     // SB-15: apply the change to memory before its COMMIT is durable.
+     let mut apply = Some(apply);
+-    if cfg!(feature = "sabotage-SB-15") {
++    if !cfg!(feature = "sabotage-SB-15") {
+         if let Some(f) = apply.take() {
+             f(&draft.records);
+         }

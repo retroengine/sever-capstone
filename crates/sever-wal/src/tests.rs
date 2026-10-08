@@ -74,7 +74,8 @@ fn run(v: &SimVfs, segment_bytes: u64, s: &Script) -> usize {
 }
 
 #[test]
-#[spec("SR-12.3-2", "SR-14.6-1")]
+// oracle: A §12.3 every committed transaction is recovered whole and in order; wal_seq counts BEGIN, records and COMMIT, by hand
+#[spec("SR-12.3-2")]
 fn p2_wal_commit_then_recover_round_trips_across_segments() {
     let seg = 600;
     let v = fresh(seg);
@@ -106,6 +107,7 @@ fn p2_wal_commit_then_recover_round_trips_across_segments() {
 }
 
 #[test]
+// oracle: A §12.3 committed exactly when COMMIT is durable, §15.8: recovered = the acknowledged prefix, or that plus the one in flight
 #[spec("SR-12.3-2", "SR-12.3-3")]
 fn p2_wal_crash_at_every_operation_keeps_exactly_the_acknowledged_transactions() {
     let seg = 500;
@@ -150,6 +152,7 @@ fn p2_wal_crash_at_every_operation_keeps_exactly_the_acknowledged_transactions()
 }
 
 #[test]
+// oracle: A §12.3 a torn tail is discarded whole; cut bytes by hand from the 25-byte framing of §14.6
 #[spec("SR-12.3-3")]
 fn p2_wal_crash_at_every_512_byte_offset_of_a_large_write() {
     let seg = DEFAULT_SEGMENT_BYTES;
@@ -175,6 +178,7 @@ fn p2_wal_crash_at_every_512_byte_offset_of_a_large_write() {
 }
 
 #[test]
+// oracle: D metamorphic: recovery after a crashed recovery equals recovery of the same disk
 #[spec("SR-12.3-3")]
 fn p2_wal_a_crash_during_recovery_changes_nothing() {
     let seg = 400;
@@ -216,6 +220,7 @@ fn p2_wal_a_crash_during_recovery_changes_nothing() {
 
 // SB-13 must turn this red.
 #[test]
+// oracle: A §12.3 a transaction without a valid COMMIT is discarded whole; records written by hand
 #[spec("SR-12.3-3")]
 fn p2_wal_uncommitted_transaction_is_never_replayed() {
     let seg = DEFAULT_SEGMENT_BYTES;
@@ -288,6 +293,7 @@ fn p2_wal_rejects_a_record_larger_than_a_segment_before_writing() {
 }
 
 #[test]
+// oracle: A §15.6 step 4 a segment is covered when the next one starts at or before the checkpoint position; worked out from the segment list
 #[spec("SR-15.6-4")]
 fn p2_wal_remove_covered_deletes_whole_segments_only() {
     let seg = 300;
@@ -365,6 +371,7 @@ proptest! {
     // Any workload, any crash point, any tear, any policy: the recovered transactions are the
     // acknowledged ones, possibly plus the one in flight, whole (§12.3).
     #[test]
+    // oracle: A §12.3 and §15.8 recovered = the acknowledged prefix, or that plus the one in flight
     #[spec("SR-12.3-2", "SR-12.3-3")]
     fn p2_wal_prop_recovery_is_acknowledged_prefix(
         n in 1u8..8,
@@ -388,6 +395,7 @@ proptest! {
 
 // SB-11 must turn this red too: a damaged committed record is never mistaken for a torn tail.
 #[test]
+// oracle: A §12.7 every record has a CRC-32C; §12.3 only a tail may be discarded, so damage before valid records is refused; offset by hand
 #[spec("SR-12.7-4", "SR-12.3-3")]
 fn p2_wal_a_damaged_committed_record_is_refused_not_dropped() {
     let seg = DEFAULT_SEGMENT_BYTES;
@@ -435,6 +443,7 @@ fn log_of(recs: &[(RecordType, u64)]) -> SimVfs {
 use RecordType::{Begin as B, Commit as C, SlotPut as P};
 
 #[test]
+// oracle: A §12.3 BEGIN, change records, COMMIT; log written by hand
 #[spec("SR-12.3-2")]
 fn p2_wal_hand_written_log_with_two_transactions_recovers_both() {
     let v = log_of(&[(B, 1), (P, 1), (C, 1), (B, 2), (P, 2), (P, 2), (C, 2)]);
@@ -450,6 +459,7 @@ fn p2_wal_hand_written_log_with_two_transactions_recovers_both() {
 }
 
 #[test]
+// oracle: A §12.3 a transaction is a BEGIN, change records and a COMMIT; logs written by hand
 #[spec("SR-12.3-2")]
 fn p2_wal_refuses_a_broken_transaction_structure() {
     let bad_logs: [&[(RecordType, u64)]; 4] = [
@@ -473,7 +483,6 @@ fn p2_wal_refuses_a_broken_transaction_structure() {
 }
 
 #[test]
-#[spec("SR-12.3-2")]
 fn p2_wal_refuses_transaction_ids_that_do_not_increase() {
     let v = log_of(&[(B, 2), (C, 2), (B, 2), (C, 2)]);
     assert_eq!(
@@ -489,6 +498,7 @@ fn p2_wal_refuses_transaction_ids_that_do_not_increase() {
 }
 
 #[test]
+// oracle: A §12.3 an open transaction at the tail is discarded whole, never repaired
 #[spec("SR-12.3-3")]
 fn p2_wal_an_open_transaction_at_the_tail_is_discarded_and_cut() {
     let v = log_of(&[(B, 1), (P, 1), (C, 1), (B, 2), (P, 2)]);
@@ -501,9 +511,16 @@ fn p2_wal_an_open_transaction_at_the_tail_is_discarded_and_cut() {
         4,
         "the cut records' wal_seqs are reused"
     );
+    // The cut is on disk: a new transaction lands right after transaction 1.
+    drop(wal);
+    let (mut wal, _, _) = open(&v, DEFAULT_SEGMENT_BYTES).unwrap();
+    wal.commit(&txn(9, 4)).unwrap();
+    let (_, again, _) = open(&v, DEFAULT_SEGMENT_BYTES).unwrap();
+    assert_eq!(again.iter().map(|t| t.txn_id).collect::<Vec<_>>(), [1, 2]);
 }
 
 #[test]
+// oracle: A §12.3 nothing past the last valid COMMIT is kept
 #[spec("SR-12.3-3")]
 fn p2_wal_a_tail_record_with_the_wrong_wal_seq_is_a_torn_tail() {
     let v = log_of(&[(B, 1), (P, 1), (C, 1)]);
@@ -515,7 +532,8 @@ fn p2_wal_a_tail_record_with_the_wrong_wal_seq_is_a_torn_tail() {
 }
 
 #[test]
-#[spec("SR-12.3-2")]
+// oracle: A §15.6 step 3 and §15.7 replay starts at the first WAL position the MANIFEST names
+#[spec("SR-15.7-1")]
 fn p2_wal_recovery_starts_at_the_checkpoint_s_wal_position() {
     let v = log_of(&[(B, 1), (P, 1), (C, 1), (B, 2), (P, 2), (C, 2)]);
     let (wal, txns, _) =
@@ -542,6 +560,7 @@ fn p2_wal_recovery_starts_at_the_checkpoint_s_wal_position() {
 }
 
 #[test]
+// oracle: A §12.3 a committed transaction is never silently lost, so a missing segment is refused; §14.9 a wrong segment header is refused
 #[spec("SR-12.3-2")]
 fn p2_wal_refuses_a_missing_middle_segment_or_a_bad_older_header() {
     let seg = 300;
@@ -559,7 +578,8 @@ fn p2_wal_refuses_a_missing_middle_segment_or_a_bad_older_header() {
 }
 
 #[test]
-#[spec("SR-12.3-2")]
+// oracle: A §14.9 segments are named wal/<segment_seq, 20 digits>.wal
+#[spec("SR-14.9-1")]
 fn p2_wal_refuses_segment_names_that_are_not_20_digits() {
     for name in [
         "0000000000000000000a.wal",

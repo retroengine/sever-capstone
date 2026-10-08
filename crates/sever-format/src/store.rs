@@ -72,6 +72,7 @@ mod tests {
     use sever_spec::spec;
 
     #[test]
+    // oracle: A §14.8 record layout by hand (the CRC value comes from the crate)
     #[spec("SR-14.8-1")]
     fn p2_format_store_record_layout_by_offset() {
         let r = StoreRecord {
@@ -87,6 +88,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §14.9 a wrong CRC is refused; §14.8 a torn record is not a record
     #[spec("SR-14-2")]
     fn p2_format_store_record_detects_every_bit_flip_and_tear() {
         let b = StoreRecord {

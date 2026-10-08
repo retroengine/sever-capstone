@@ -279,6 +279,7 @@ mod tests {
     use sever_spec::spec;
 
     #[test]
+    // oracle: A §12.3 recovered = the map after the acknowledged steps or one more (a plain BTreeMap); §12.7 creations, renames and unlinks are durable
     #[spec("SR-12.3-2", "SR-12.3-3", "SR-12.7-1")]
     fn p2_crashkit_generic_records_survive_a_crash_at_every_operation() {
         let mut sink = Vec::new();

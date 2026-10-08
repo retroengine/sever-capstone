@@ -1,0 +1,12 @@
+diff --git a/crates/sever-wal/src/lib.rs b/crates/sever-wal/src/lib.rs
+index f13d57e..2e5ef1a 100644
+--- a/crates/sever-wal/src/lib.rs
++++ b/crates/sever-wal/src/lib.rs
+@@ -419,7 +419,6 @@ impl Wal {
+             .map_err(io)?;
+         if bytes.len() > keep_off {
+             report.truncated_bytes = (bytes.len() - keep_off) as u64;
+-            file.truncate(keep_off as u64).map_err(io)?;
+             durable::sync(file.as_mut()).map_err(io)?;
+         }
+         let next_txn_id = last_txn.map_or(next_txn_id_floor, |t| (t + 1).max(next_txn_id_floor));

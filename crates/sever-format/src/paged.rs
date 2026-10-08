@@ -108,6 +108,7 @@ mod tests {
     use sever_spec::spec;
 
     #[test]
+    // oracle: A §14.2 page frame by offset (page-type constants and CRC from the crate)
     #[spec("SR-14.2-1")]
     fn p2_format_page_layout_by_offset() {
         let f = encode(b"SVDBTEST", 0, 77, &[5; 10]);
@@ -141,6 +142,7 @@ mod tests {
     }
 
     #[test]
+    // oracle: A §14.9 every page carries the covered wal_seq; a wrong CRC, magic or sealer_id is refused
     #[spec("SR-14-2", "SR-12.7-4")]
     fn p2_format_paged_detects_bit_flips_and_mixups() {
         let f = encode(b"SVDBTEST", 0, 5, &[1; 100]);

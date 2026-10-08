@@ -1,0 +1,13 @@
+diff --git a/crates/sever-txn/src/records.rs b/crates/sever-txn/src/records.rs
+index cfeb643..b153d37 100644
+--- a/crates/sever-txn/src/records.rs
++++ b/crates/sever-txn/src/records.rs
+@@ -383,7 +383,7 @@ pub fn changeset_records<E: StoredExtension>(
+         });
+     }
+ 
+-    if cs.counters_after != cs.counters_before {
++    if cs.counters_after != cs.counters_before && cs.counters_after.k == u64::MAX {
+         out.push(CoreRecord::Counters {
+             cid,
+             big_n: cs.counters_after.big_n,

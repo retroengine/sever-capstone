@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/engine.rs b/crates/sever-engine/src/engine.rs
+index c4692ce..bb22460 100644
+--- a/crates/sever-engine/src/engine.rs
++++ b/crates/sever-engine/src/engine.rs
+@@ -433,7 +433,7 @@ impl<E: StoredExtension, S: Sealer> Engine<E, S> {
+             )?;
+             if cs.is_noop() {
+                 // §15.3 step 1: nothing is live; touch nothing.
+-                return Ok(vec![DeleteOutcome::AlreadyAbsent; cs.outcomes.len()]);
++                return Err(Error::UnknownCollection);
+             }
+             let layout = self.layout(ix.d());
+             let records = changeset_records(coll, &layout, &cs, &self.sealer, None, &mut |_| {

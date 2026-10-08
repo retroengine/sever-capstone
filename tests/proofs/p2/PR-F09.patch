@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/lib.rs b/crates/sever-format/src/lib.rs
+index 3c22806..07732ea 100644
+--- a/crates/sever-format/src/lib.rs
++++ b/crates/sever-format/src/lib.rs
+@@ -106,7 +106,7 @@ impl Layout {
+ 
+     /// A slot: `scrambled_id ‖ envelope ‖ sealed payload`, zero-padded to a multiple of 8 (§14.4).
+     pub fn slot_len(&self) -> usize {
+-        (64 + self.envelope + self.payload_len() + self.seal_overhead).div_ceil(8) * 8
++        (64 + self.envelope + self.payload_len() + self.seal_overhead).div_ceil(16) * 16
+     }
+ 
+     /// Accumulator plaintext: `S as d × i64be ‖ extension group secret` (§14.3).

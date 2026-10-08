@@ -7,7 +7,8 @@ use sever_format::{RecordType, StoreRecord, WalParse, WalRecord};
 use sever_spec::spec;
 
 #[test]
-#[spec("SR-14.6-1")]
+// oracle: A §14.6 type codes 1–17; participant types 4, 9, 10, 11, 14
+#[spec("SR-14.6-2")]
 fn p2_format_participant_record_types_are_4_9_10_11_14() {
     // §14.6: "The payloads of types 4, 9, 10, 11 and 14 belong to transaction participants".
     for code in 0u8..=255 {
@@ -24,6 +25,7 @@ fn p2_format_participant_record_types_are_4_9_10_11_14() {
 }
 
 #[test]
+// oracle: A §14.8 a value is at most 16 MiB; a record is 8 + 4 + len + 4 bytes
 #[spec("SR-14.8-1")]
 fn p2_format_store_values_are_at_most_16_mib() {
     // §14.8: `u64be key ‖ u32be len ‖ bytes ‖ u32be crc32c`; "the value of a record is at most 16 MiB".
@@ -48,6 +50,7 @@ fn p2_format_store_values_are_at_most_16_mib() {
 }
 
 #[test]
+// oracle: A §14.6 len = 25 + payload; §12.3 64 MiB segments with the 32-byte §14.9 header
 #[spec("SR-14.6-1")]
 fn p2_format_wal_records_fit_a_64_mib_segment() {
     // §14.6: len is the whole record, 25 + payload bytes. A segment is 64 MiB with a 32-byte

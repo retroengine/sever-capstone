@@ -1,0 +1,13 @@
+diff --git a/crates/sever-vfs/src/sim.rs b/crates/sever-vfs/src/sim.rs
+index 157090c..0e786f5 100644
+--- a/crates/sever-vfs/src/sim.rs
++++ b/crates/sever-vfs/src/sim.rs
+@@ -221,7 +221,7 @@ impl State {
+     /// Counts one `fsync` or `fsync_dir`; `true` means it fails.
+     fn begin_sync(&mut self) -> bool {
+         self.syncs += 1;
+-        self.plan.fail_sync_at == Some(self.syncs)
++        self.plan.fail_sync_at == Some(u64::MAX)
+     }
+ 
+     fn die(&mut self) -> VfsError {

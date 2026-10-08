@@ -1,0 +1,31 @@
+diff --git a/crates/sever-engine/src/engine.rs b/crates/sever-engine/src/engine.rs
+index c4692ce..e958703 100644
+--- a/crates/sever-engine/src/engine.rs
++++ b/crates/sever-engine/src/engine.rs
+@@ -356,16 +356,21 @@ impl<E: StoredExtension, S: Sealer> Engine<E, S> {
+         cid: CollectionId,
+         req: InsertRequest<E::Credential>,
+     ) -> Result<InsertReceipt, Error> {
+-        let mut w = self.writer()?;
+-        let (cs, records, layout) = {
++        let early = {
+             let st = self.read();
+             let ix = st.live.get(&cid).ok_or(Error::UnknownCollection)?;
+-            let coll = st.image.collection(&cid).ok_or(Error::UnknownCollection)?;
+-            let cs = ix.plan_insert(sever_index::InsertRequest {
++            ix.plan_insert(sever_index::InsertRequest {
+                 record_id: req.record_id,
+                 vector: req.vector,
+                 credential: req.credential,
+-            })?;
++            })?
++        };
++        let mut w = self.writer()?;
++        let (cs, records, layout) = {
++            let st = self.read();
++            let ix = st.live.get(&cid).ok_or(Error::UnknownCollection)?;
++            let coll = st.image.collection(&cid).ok_or(Error::UnknownCollection)?;
++            let cs = early;
+             let layout = self.layout(ix.d());
+             let passage = req.passage.as_deref().filter(|_| coll.meta.store_passages);
+             let Writer {

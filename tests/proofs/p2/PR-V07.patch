@@ -1,0 +1,17 @@
+diff --git a/crates/sever-vfs/src/sim.rs b/crates/sever-vfs/src/sim.rs
+index 157090c..59350f8 100644
+--- a/crates/sever-vfs/src/sim.rs
++++ b/crates/sever-vfs/src/sim.rs
+@@ -339,7 +339,11 @@ impl State {
+     /// The state after a power cut and reboot under `policy`.
+     fn restart(&mut self, policy: CrashPolicy) {
+         let mut rng = SplitMix64::new(match policy {
+-            CrashPolicy::Random(seed) => seed,
++            CrashPolicy::Random(seed) => {
++                seed ^ std::time::SystemTime::now()
++                    .duration_since(std::time::UNIX_EPOCH)
++                    .map_or(0, |t| t.subsec_nanos().into())
++            }
+             _ => 0,
+         });
+         // 1. Directory entries: the durable entries plus a prefix of the unsynced changes.

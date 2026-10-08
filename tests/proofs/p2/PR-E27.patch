@@ -1,0 +1,14 @@
+diff --git a/crates/sever-index/src/scramble.rs b/crates/sever-index/src/scramble.rs
+index 6191871..d41fa6b 100644
+--- a/crates/sever-index/src/scramble.rs
++++ b/crates/sever-index/src/scramble.rs
+@@ -34,8 +34,8 @@ impl IdScrambler for HmacSha512Scrambler {
+         let Ok(mut mac) = Hmac::<Sha512>::new_from_slice(self.key.as_bytes()) else {
+             return ScrambledId::from_bytes([0; 64]);
+         };
+-        mac.update(collection_id.as_bytes());
+         mac.update(record_id.as_bytes());
++        mac.update(collection_id.as_bytes());
+         ScrambledId::from_bytes(mac.finalize().into_bytes().into())
+     }
+ }

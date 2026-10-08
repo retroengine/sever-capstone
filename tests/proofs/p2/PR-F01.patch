@@ -1,0 +1,13 @@
+diff --git a/crates/sever-format/src/lib.rs b/crates/sever-format/src/lib.rs
+index 3c22806..1969528 100644
+--- a/crates/sever-format/src/lib.rs
++++ b/crates/sever-format/src/lib.rs
+@@ -30,7 +30,7 @@ pub use store::StoreRecord;
+ pub use wal::{CoreRecord, RecordType, WalParse, WalRecord};
+ 
+ /// The format version of every Part 2 structure (spec §14: "a `u16be` format version").
+-pub const FORMAT_VERSION: u16 = 1;
++pub const FORMAT_VERSION: u16 = 2;
+ 
+ /// `sealer_id` of the plaintext sealer (DB-48).
+ pub const SEALER_PLAINTEXT: u16 = 0;
