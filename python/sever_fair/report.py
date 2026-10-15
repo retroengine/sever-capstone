@@ -93,6 +93,20 @@ def _test_source(run: "Run", tid: str) -> str:
     return p.read_text(encoding="utf-8")[:12000] if p.exists() else ""
 
 
+def mutants_gate(root: Path, part: int) -> str | None:
+    """DB-75: the latest PASS of the part's cargo-mutants gate in the run ledger, as a commit."""
+    ledger = root / "docs/RUN_LEDGER.jsonl"
+    found = None
+    for line in ledger.read_text(encoding="utf-8").splitlines() if ledger.exists() else []:
+        e = json.loads(line)
+        if (
+            str(e.get("command", "")).startswith(f"gates p{part}-mutants")
+            and e.get("outcome") == "PASS"
+        ):
+            found = str(e.get("commit", ""))[:12]
+    return found
+
+
 def verdict(
     run: "Run",
     tri: dict[str, Any],
@@ -123,7 +137,23 @@ def verdict(
             str(n["ORACLE_DISAGREE"]),
             n["ORACLE_DISAGREE"] <= rule["oracle_disagreements"],
         ),
-        ("valid planted bugs", f"{valid} of {len(scored)}", valid >= rule["min_valid_plants"]),
+        *(
+            [
+                (
+                    "valid planted bugs (AI planter)",
+                    f"{valid} of {len(scored)}",
+                    valid >= rule["min_valid_plants"],
+                )
+            ]
+            if run.cfg.raw.get("planted_bugs") == "ai"
+            else [
+                (
+                    "planted bugs: cargo-mutants gate PASS in the ledger (DB-75)",
+                    mutants_gate(run.repo, run.scope.part) or "none",
+                    run.stub or mutants_gate(run.repo, run.scope.part) is not None,
+                )
+            ]
+        ),
         ("judge outputs complete", "; ".join(problems) or "yes", not problems),
     ]
     ok = all(r[2] for r in rows)

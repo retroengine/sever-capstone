@@ -28,7 +28,10 @@ CLAUDE.md §6.3 (declared oracles, proofs); CLAUDE.md §6.4 and overview DB-73 m
 - **FT-5 Different judges.** Failures and escaped bugs are judged by a different model from the one
   that wrote the tests (`configs/fair.yaml`, `models`), again in a clean room, with the spec as the
   only authority. A judge reads; it never edits a test.
-- **FT-6 Blind planted bugs.** A fresh session plants `plant_count` behaviour bugs in a copy of the
+- **FT-6 Blind planted bugs.** Since DB-75 (`planted_bugs: cargo-mutants`), the blind bugs are the
+  mutants of the part's own `cargo-mutants` gate (`gates pN-mutants`): a tool chooses them, nobody
+  scored on them chooses them, and it costs no tokens; a run passes only with that gate's PASS in the
+  ledger. With `planted_bugs: ai` (the original rule): a fresh session plants `plant_count` behaviour bugs in a copy of the
   source, each citing the § it breaks. Neither the tester nor the builder sees them before scoring.
   A planted bug that both suites miss, and that the judge rules a real spec violation, is a **test
   gap**.
@@ -60,6 +63,7 @@ CLAUDE.md §6.3 (declared oracles, proofs); CLAUDE.md §6.4 and overview DB-73 m
 | 2 seal | script | — | `seal.json` (SHA-256 of every file) |
 | 3 run | script (sandbox, no network) | sealed tests, real engine | `results/cleanroom.xml` |
 | 4 triage | judge (fresh, sandbox) | spec, sealed tests, failures | each failure: `ENGINE_BUG`, `TEST_ERROR` or `SPEC_GAP` |
+| 5–7 (with `planted_bugs: ai` only; DB-75 uses the cargo-mutants gate) | | | |
 | 5 plant | planter (fresh, sandbox) | spec, source copy (no clean-room tests) | `bugs/NN.patch` + `NN.json` |
 | 6 score | script | — | each bug: applied?, builds?, caught by own suite?, by clean room? |
 | 7 escapes | judge (fresh, sandbox) | spec, the escaped patch | `TEST_GAP` or `EQUIVALENT` |

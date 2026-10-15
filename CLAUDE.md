@@ -16,7 +16,7 @@ and a signed deletion certificate let anyone verify a deletion without database 
 secret is stored encrypted under a three-level key hierarchy, and every deletion destroys the old key
 (crypto-shredding). It is built in **four parts**, each adding one claim and then frozen (Build §0.1):
 the Rust engine, with the Python partition builder C-15 and reference model C-18 beside it. **The
-current part is Part 1, The Idea.**
+current part is Part 3, The Receipt** (Parts 1 and 2 are frozen; Part 2 at `part-2-frozen-e1`).
 
 ---
 
@@ -151,9 +151,9 @@ part adds exactly one claim and is built on the frozen parts before it.
 
 | Part | The one claim it adds | Spec | Overview phases | Gates (must pass) | Measures (recorded as found) | Sabotage it owns | Demo | Tag |
 |---|---|---|---|---|---|---|---|---|
-| **1 The Idea** (current) | Deleting a vector returns its group, bit for bit, to the state it would have had if the vector had never arrived | §2–§8, §9.7 | P0, P1, index part of P5, P7 | P1-T1…T6, P1-T8…T13 (Build §4.8) | P1-T7, P1-T14 | SB-1…SB-10 | `sever-demo idea` (Build §4.9) | `part-1-frozen` |
+| **1 The Idea** | Deleting a vector returns its group, bit for bit, to the state it would have had if the vector had never arrived | §2–§8, §9.7 | P0, P1, index part of P5, P7 | P1-T1…T6, P1-T8…T13 (Build §4.8) | P1-T7, P1-T14 | SB-1…SB-10 | `sever-demo idea` (Build §4.9) | `part-1-frozen` |
 | **2 The Database** | Exactness survives a crash at any point; no acknowledged operation is lost; a multi-group deletion is all-or-nothing | §12, §14 (not §14.5, §14.7), §15, §16.1, §17 | P3, storage part of P5, P8 | P2-T1…T10 (Build §5.8) | P2-T11 | SB-11…SB-15 | `sever-demo-p2 durable` (Build §5.9, DB-69) | `part-2-frozen` |
-| **3 The Receipt** | Every deletion yields a certificate that anyone can verify offline, with no database access | §9, §10, §11, §16.2–16.3 | P2, P6 | P3-T1…T12 (Build 3-4 §1.9) | P3-T13 | SB-16…SB-23 | `sever-demo receipt` (Build 3-4 §1.10) | `part-3-frozen` |
+| **3 The Receipt** (current) | Every deletion yields a certificate that anyone can verify offline, with no database access | §9, §10, §11, §16.2–16.3 | P2, P6 | P3-T1…T12 (Build 3-4 §1.9) | P3-T13 | SB-16…SB-23 | `sever-demo receipt` (Build 3-4 §1.10) | `part-3-frozen` |
 | **4 The Erasure** | After a deletion is acknowledged, nothing deleted can be recovered from raw storage; the full evaluation | §12.8–12.9, §13, §14.5, §14.7, §15.3–15.4, §15.8–15.9 | P4, P9 | P4-T1…T11 (Build 3-4 §2.10) | P4-T12…T15 | SB-24…SB-30 | `sever-demo erase` (Build 3-4 §2.11) | `part-4-frozen` / `v1.0.0` |
 
 - **Order.** Part N starts only when Part N−1 is frozen (Build 3-4 §0). Erasure comes after receipts

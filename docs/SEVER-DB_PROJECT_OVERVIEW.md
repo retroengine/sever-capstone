@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-50, DB-55 … DB-74)](#6-decision-register-db-1--db-50-db-55--db-74)
+6. [Decision register (DB-1 … DB-50, DB-55 … DB-75)](#6-decision-register-db-1--db-50-db-55--db-75)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-50, DB-55 … DB-74)
+## 6. Decision register (DB-1 … DB-50, DB-55 … DB-75)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -972,6 +972,20 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-75 — Blind bugs from cargo-mutants, not an AI planter (15 October 2026)
+
+**Decision.** Fair testing (DB-73) takes its blind planted bugs from the part's own `cargo-mutants`
+gate (`gates pN-mutants`, Build §2.1 L11) instead of an AI planter session; a fairness run passes
+only when that gate's PASS is in the run ledger (`configs/fair.yaml`, `planted_bugs: cargo-mutants`).
+The clean-room tester, the triage judge and the oracle audit are unchanged. **Why.** A tool chooses
+the mutants, so nobody who is scored on them chose them, which is what FT-6 asks; the gate is already
+required for every part (P2-T9, P3-T9) and costs no tokens, while each AI planter run cost about
+$5–10 of the owner's plan. The bug that fair testing found in Part 2 came from the clean-room
+tester, not from planted bugs (erratum E-1). **Rejected.** Keeping the AI planter (cost, and it
+largely repeats the mutants gate); no planted bugs at all (FT-6 needs evidence that the suite catches
+bugs). **Consequence.** Mutants are syntactic; subtler semantic bugs (durability order) stay the job
+of the sabotage items (SB-N) and the crash campaign. Amends DB-73.
 
 #### DB-74 — Fair testing within a token budget (8 October 2026)
 
@@ -1826,6 +1840,8 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **15 October 2026 — Erratum E-1 and blind bugs from cargo-mutants.** DB-75 (fair testing takes
+  its planted bugs from the cargo-mutants gate). Erratum E-1 (`ERRATA.md`): Part 2 SDK deadlock.
 - **8 October 2026 — Fair testing within a budget.** DB-74 (confirm before spending, cost caps,
   stop on the usage limit; no change to what is tested).
 - **8 October 2026 — Fair testing.** DB-73 (clean-room sessions, blind planted bugs, random oracle

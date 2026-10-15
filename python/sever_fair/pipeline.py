@@ -534,9 +534,12 @@ def execute(run: Run) -> dict[str, Any]:
     run.say("stage 3: sealed tests against the real engine (no network)")
     baseline = measure(run, "baseline", run.dir / "engine/site", run.dir / "engine/bin")
     tri = triage(run, baseline)
-    plant(run)
-    scored = score(run, baseline)
-    esc = escapes(run, scored)
+    if run.cfg.raw.get("planted_bugs") == "ai":
+        plant(run)
+        scored = score(run, baseline)
+        esc = escapes(run, scored)
+    else:  # DB-75: blind bugs come from the part's cargo-mutants gate, not from a session
+        scored, esc = [], {"escaped": [], "verdicts": {}, "problems": []}
     orc = oracle_audit(run)
     summary = report.write(run, baseline, tri, scored, esc, orc)
     # the build worktree is several GB; everything the report and a fix need is kept outside it

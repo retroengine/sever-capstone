@@ -52,8 +52,44 @@ fixed engine 255 passed / 0 failed / 1 skipped (ledger). Freeze manifest updated
 `part-2-frozen-e1`. The AI planter, judges and oracle audit of that run were not run (owner's token
 budget, DB-74); `docs/audit/FAIRNESS_P2.md` is the void run of 8 Oct (usage limit).
 
-**Next: Part 3, The Receipt** (Build 3-4 §1). Before it: decide whether Part 3's fair testing keeps
-the AI bug planter or uses `cargo-mutants` instead (a DB entry either way).
+Fair testing now takes its blind bugs from the `cargo-mutants` gate (DB-75, owner 15 Oct 2026).
+
+## Part 3, The Receipt — ready to start (prepared 15 Oct 2026, branch `p3-prep`)
+
+Claim: every deletion yields a certificate anyone can verify offline (Build 3-4 §1). Scope: spec
+§3.3, §4.5, §9, §10, §11, the certificate and log steps of §15.1 and §15.3, §16.2, §16.3; INV-3,
+INV-10, INV-15; Appendix B vectors 1, 2, 3, 4, 6, 8, 9. Out: encryption and erasure (Part 4).
+
+**Step 0, design review (before any code):**
+1. Decide the proposals Part 3 needs: DB-51 (pure-Python ristretto255 in the certificate model),
+   DB-52 (`expand_message_xmd` in `sever-crypto` if `curve25519-dalek` 4.1.3 lacks it: check the
+   pinned crate first), DB-53 (EP-10 `Witness`).
+2. Requirements catalogue: `spec/requirements.yaml` has 4 Part 3 entries; add one `SR-` per MUST of
+   the in-scope sections (Build §2.2), before tests.
+3. Registers: attacks AT-1…AT-17 and auditor faults AF-1…AF-5 (Build 3-4 §3), sabotage SB-16…SB-23.
+4. Pin the crypto dependencies (spec §20.2/§20.3: one `rand_core`, `digest`, `curve25519-dalek`).
+
+**Module order** (dependencies first; each module: tests first with oracles, CLAUDE.md §4 and §6.3):
+
+| # | Module | Spec | Status |
+|---|---|---|---|
+| 1 | `sever-crypto` (generators + self-check, scalar map, commitments, PoK, hedged nonces, Ed25519, HMAC) | §4.5, §9 | not started |
+| 2 | `sever_refmodel_certs` (Python, from the spec only: the independent oracle) | §5.3, §9.3, §11.3 | not started |
+| 3 | `sever-commit` (EP-1 `CommitmentExtension`) | §5.3, §9.3–9.4 | not started |
+| 4 | `sever-log` (RFC 9162 tree, proofs, checkpoints, EP-7 participant, EP-10 + `SimulatedWitness`) | §10 | not started |
+| 5 | `sever-cert` (TLV, builder, epoch signing) | §11.1–11.2 | not started |
+| 6 | `sever-p3` (composition root, CLI `sever-db-p3`) | — | not started |
+| 7 | `sever-py-p3` / `sever_db_p3` (SDK: `UserKey`, `prepare_insert`, no injectable randomness) | §16.2 | not started |
+| 8 | `verifier/` (separate workspace, `sever-verify`, shares no code) | §11.3 | not started |
+| 9 | `audit/` (`sever-audit`, copies verifier code) | §11.3 | not started |
+| 10 | `docs/SOUNDNESS.md` (extractor and simulator as tests) | §9 | not started |
+| 11 | demo `sever-demo-p3 receipt` (DB-69 pattern), gates P3-T1…T12, measure P3-T13, proof spike | Build 3-4 §1.9–1.11 | not started |
+
+**Testing for Part 3:** CLAUDE.md §6.3 (oracles, proofs) and §6.4 (fair testing). Fair testing per
+module and per part: clean-room tester (Opus) + triage and oracle audit (Sonnet); blind bugs from
+`gates p3-mutants` (DB-75). Every fair run starts only on the owner's `--yes` (DB-74).
+`configs/fair.yaml` has the Part 3 scope; `scripts/freeze.sh` has the planned ownership list.
+
 
 ## RESUME HERE (updated 8 Oct 2026 ~13:00 UTC, branch p2-fuzz)
 

@@ -181,3 +181,18 @@ def test_fair_cost_settings_do_not_change_the_fairness_digest() -> None:
     fewer_bugs = base | {"plant_count": 5}
     assert testing_digest(base) == testing_digest(cheaper)
     assert testing_digest(base) != testing_digest(fewer_bugs)
+
+
+def test_fair_planted_bugs_come_from_the_cargo_mutants_gate(tmp_path: Path) -> None:
+    """DB-75: the latest PASS of `gates pN-mutants` in the ledger stands for the blind bugs."""
+    from sever_fair.report import mutants_gate
+
+    (tmp_path / "docs").mkdir()
+    lines = [
+        {"command": "gates p2-mutants --jobs 3", "outcome": "started", "commit": "a" * 40},
+        {"command": "gates p2-mutants --jobs 3", "outcome": "PASS", "commit": "b" * 40},
+        {"command": "gates p3-mutants", "outcome": "FAIL", "commit": "c" * 40},
+    ]
+    (tmp_path / "docs/RUN_LEDGER.jsonl").write_text("".join(json.dumps(x) + "\n" for x in lines))
+    assert mutants_gate(tmp_path, 2) == "b" * 12
+    assert mutants_gate(tmp_path, 3) is None

@@ -110,7 +110,9 @@ def doctor(live: bool = False) -> int:
     return 0 if ok else 1
 
 
-RUN_ROLES = ["tester", "triage", "planter", "escape", "oracle"]
+def run_roles() -> list[str]:
+    ai = config.load(ROOT).raw.get("planted_bugs") == "ai"
+    return ["tester", "triage", *(["planter", "escape"] if ai else []), "oracle"]
 
 
 def history() -> dict[str, list[float]]:
@@ -153,7 +155,7 @@ def run_cmd(part: int, module: str | None, stub: bool, rev: str = "HEAD") -> dic
 def remaining(run_id: str) -> list[str]:
     s = json.loads((pipeline.RUNS / run_id / "state.json").read_text())
     done = {x["role"] for x in s.get("sessions", []) if x.get("rc") == 0}
-    return [r for r in RUN_ROLES if r not in done]
+    return [r for r in run_roles() if r not in done]
 
 
 def resume(run_id: str) -> dict[str, Any]:
@@ -270,7 +272,7 @@ def main() -> int:
     a = ap.parse_args()
     if a.cmd == "doctor":
         return doctor(a.live)
-    if a.cmd == "run" and not gate(a.yes, RUN_ROLES):
+    if a.cmd == "run" and not gate(a.yes, run_roles()):
         return 2
     if a.cmd == "resume" and not gate(a.yes, remaining(a.run_id)):
         return 2
@@ -280,7 +282,7 @@ def main() -> int:
             return 2
     if a.cmd == "cycle" and not gate(
         a.yes,
-        RUN_ROLES,
+        run_roles(),
         f"; then fixes and fresh runs, up to {config.load(ROOT).number('fix_rounds')} more rounds",
     ):
         return 2

@@ -7,7 +7,8 @@ models:
   planter: sonnet   # plants the blind bugs (stage 5)
   fixer: opus       # regression test and fix sessions (FT-9)
 
-plant_count: 10     # bugs the planter must write
+planted_bugs: cargo-mutants  # DB-75: the part's cargo-mutants gate (tool-chosen, blind, free), or "ai"
+plant_count: 10     # bugs the AI planter writes (only with planted_bugs: ai)
 oracle_sample: 10   # labelled tests re-derived by the judge
 fix_rounds: 3       # run → fix → run cycles before handing over to the owner
 session_timeout_s: 5400
@@ -17,7 +18,7 @@ pass:               # a run passes only when every line holds
   spec_gaps: 0              # failures the judge rules a spec gap (each becomes a G-N)
   test_gaps: 0              # planted bugs that escaped both suites and are real spec violations
   oracle_disagreements: 0   # audited tests whose expected value contradicts the spec
-  min_valid_plants: 8       # planted bugs that applied and built (fewer: the run is void)
+  min_valid_plants: 8       # AI planter only: planted bugs that applied and built
   baseline_green: true      # the part's own suite passes on the unpatched build
 
 parts:
@@ -73,6 +74,52 @@ parts:
       sever-checkpoint: {sections: ["12.4", "15.6"], plant: [crates/sever-checkpoint/src]}
       sever-txn: {sections: ["12.5", "15"], plant: [crates/sever-txn/src]}
       sever-engine: {sections: ["12.7", "12.9", "15.7", "16.1"], plant: [crates/sever-engine/src]}
+
+  3:                        # Part 3, The Receipt (Build 3-4 §1); API paths are the planned ones (Build 3-4 §1.4)
+    sections: ["3.3", "4.5", "9", "10", "11", "15.1", "15.3", "16.2", "16.3"]
+    not_sections: []
+    docs:
+      - docs/SEVER-DB_SPECIFICATION.md
+      - docs/SEVER-DB_PROJECT_OVERVIEW.md
+      - docs/SEVER-DB_BUILD_PLAN_PART_3-4.md
+      - docs/SPEC_GAPS.md
+      - spec/requirements.yaml
+    api_docs:
+      - file: README.md
+        from: "## Part 3: The Receipt"
+        to: "### Part 3 results"
+        as: PART3_API.md
+    api_files:
+      - python/sever_db_p3_native.pyi
+      - python/sever_db_p3/__init__.py
+    inputs:
+      - golden/p1_partition_small.svp
+      - golden/p1_partition_small.json
+      - artefacts/partition-seed42.svp
+      - artefacts/partition-seed42.json
+    sdk:
+      crate: crates/sever-py-p3/Cargo.toml
+      package: python/sever_db_p3
+      native: sever_db_p3_native
+      stub: python/sever_db_p3_native.pyi
+    cli:
+      package: sever-p3
+      bins: [sever-db-p3]
+    own_suite:
+      - ["cargo", "test", "--workspace", "-q"]
+      - ["uv", "run", "--no-sync", "pytest", "-q", "-x", "-m", "not slow", "-p", "no:cacheprovider"]
+    plant_paths:            # used only with planted_bugs: ai
+      - crates/sever-crypto/src
+      - crates/sever-commit/src
+      - crates/sever-log/src
+      - crates/sever-cert/src
+      - crates/sever-p3/src
+      - crates/sever-py-p3/src
+    modules:
+      sever-crypto: {sections: ["4.5", "9"], plant: [crates/sever-crypto/src]}
+      sever-commit: {sections: ["5.3", "9.3", "9.4"], plant: [crates/sever-commit/src]}
+      sever-log: {sections: ["10"], plant: [crates/sever-log/src]}
+      sever-cert: {sections: ["11.1", "11.2"], plant: [crates/sever-cert/src]}
 
 # Cost control (DB-74). These decide when a command stops, never what is tested, so they are not
 # part of the fairness digest (FT-8): models, counts, the pass rule and the scopes above are.
