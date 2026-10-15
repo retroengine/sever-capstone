@@ -1,0 +1,51 @@
+# Part 3 registers (Build 3-4 §1.8; overview EX-4, DB-76; Build §2.6): every attack, auditor fault and
+# sabotage item of Part 3, tied to the requirements it checks (spec/requirements.yaml).
+# Checked in the Fast tier by `python -m sever_testkit_p3.registers check`; read by the attack suite
+# (P3-T2), the auditor fault suite (P3-T6) and the sabotage runner (P3-T9).
+#
+# attacks: `resign: true` means the attack certificate is re-signed with the operator's key (a
+#   dishonest operator holds it), so the rule under attack is reached instead of failing at the
+#   trailer; `steps` are the spec §11.3 steps that may reject it, and the suite checks that the
+#   verifier's rejection names one of them. AT-4 alone is not re-signed: it shows that the trailer
+#   covers every field.
+# sabotage: built with feature `sabotage-SB-N` of `crate` (Build §2.6); `caught_by` is the test that
+#   must go red, in plain words, until the test exists.
+
+attacks:
+  - {id: AT-1, text: "A forged proof", resign: true, steps: [6], requirements: [SR-9.5-6, SR-11.3-6]}
+  - {id: AT-2, text: "A proof copied from another certificate", resign: true, steps: [6], requirements: [SR-9.5-1, SR-9.5-3, SR-11.3-6]}
+  - {id: AT-3, text: "A substituted C_t", resign: true, steps: [3, 6], requirements: [SR-9.3-2, SR-11.3-3, SR-11.3-6]}
+  - {id: AT-4, text: "Each single-field tamper: tags 1–13 and the trailer (14 variants)", resign: false, steps: [1, 2], requirements: [SR-9.8-4, SR-11.1-1, SR-11.3-2]}
+  - {id: AT-5, text: "A certificate under an unknown operator epoch", resign: true, steps: [2], requirements: [SR-9.8-5, SR-11.3-2]}
+  - {id: AT-6, text: "An insert leaf from another collection", resign: true, steps: [3], requirements: [SR-11.3-3]}
+  - {id: AT-7, text: "A wrong inclusion path", resign: true, steps: [3], requirements: [SR-10.1-2, SR-11.3-3]}
+  - {id: AT-8, text: "A log checkpoint signed by the wrong key", resign: true, steps: [3], requirements: [SR-9.8-2, SR-11.3-3]}
+  - {id: AT-9, text: "Three instead of four cosignatures", resign: true, steps: [4], requirements: [SR-10.4-2, SR-11.3-4]}
+  - {id: AT-10, text: "Cosignatures over a different log checkpoint", resign: true, steps: [4], requirements: [SR-9.8-3, SR-11.3-4]}
+  - {id: AT-11, text: "A non-canonical point or scalar", resign: true, steps: [1], requirements: [SR-9.9-1, SR-11.3-1]}
+  - {id: AT-12, text: "The identity as C_t", resign: true, steps: [1], requirements: [SR-9.9-2, SR-11.3-1]}
+  - {id: AT-13, text: "A holding-area certificate that carries arithmetic fields (tags 2–4 not empty, or tag 11 = 1)", resign: true, steps: [7], requirements: [SR-11.3-7]}
+  - {id: AT-14, text: "group_emptied_by_this_deletion inconsistent with C_S_post", resign: true, steps: [6], requirements: [SR-11.3-6]}
+  - {id: AT-15, text: "database_lsn not after the insert leaf", resign: true, steps: [5], requirements: [SR-11.3-5]}
+  - {id: AT-16, text: "A malformed TLV: missing, repeated or reordered tag, or trailing bytes", resign: true, steps: [1], requirements: [SR-11.1-2, SR-11.3-1]}
+  - {id: AT-17, text: "Four cosignatures where two come from the same witness", resign: true, steps: [4], requirements: [SR-11.3-4]}
+  - {id: AT-18, text: "A fixed-size field with the wrong length, or tag 11 or 12 outside {0, 1}", resign: true, steps: [1], requirements: [SR-11.1-2, SR-11.1-3]}
+  - {id: AT-19, text: "An insert leaf whose type is not 0x01, or an insert_inclusion version other than 1", resign: true, steps: [1, 3], requirements: [SR-11.2-1, SR-11.3-3]}
+  - {id: AT-20, text: "A log checkpoint or a cosignature under an epoch or a witness index that is not in the anchors", resign: true, steps: [3, 4], requirements: [SR-11.3-3, SR-11.3-4]}
+
+faults:
+  - {id: AF-1, text: "A skipped deletion leaf", requirements: [SR-11.3-10, SR-10.2-2]}
+  - {id: AF-2, text: "A broken chain (C_S_pre ≠ the previous C_S_post)", requirements: [SR-11.3-10]}
+  - {id: AF-3, text: "Two log checkpoints that are not consistent (a forked log)", requirements: [SR-11.3-10, SR-10.1-2]}
+  - {id: AF-4, text: "A leaf at database_lsn that does not match its certificate", requirements: [SR-11.3-10, SR-10.2-2]}
+  - {id: AF-5, text: "A log checkpoint root that does not match the tree at its size", requirements: [SR-11.3-10, SR-21-15]}
+
+sabotage:
+  - {id: SB-16, text: "Swap the order of the challenge preimage", crate: sever-crypto, requirements: [SR-9.5-3, SR-B-3], caught_by: "golden vector 3: the challenge of the fixed (C_S_post, A, ctx) differs"}
+  - {id: SB-17, text: "Omit the deletion context from the challenge", crate: sever-crypto, requirements: [SR-9.5-1, SR-9.5-3], caught_by: "golden vector 3; a proof made for one ctx is rejected under another"}
+  - {id: SB-18, text: "Reuse a proof nonce", crate: sever-crypto, requirements: [SR-9.6-2, SR-9.6-3], caught_by: "two proofs of the same statement must have different A; a compile-fail test that a seedable RNG cannot reach the prove function"}
+  - {id: SB-19, text: "Accept a non-canonical point or scalar", crate: sever-crypto, requirements: [SR-9.9-1], caught_by: "canonical-decoding tests with the RFC 9496 non-canonical encodings and scalars ≥ ℓ"}
+  - {id: SB-20, text: "Accept three of five cosignatures", crate: sever-log, requirements: [SR-10.4-2, SR-10.3-3], caught_by: "a log checkpoint with three valid cosignatures is not witnessed, so a deletion does not certify against it"}
+  - {id: SB-21, text: "Issue a certificate for a rolled-back deletion", crate: sever-p3, requirements: [SR-15.3-5], caught_by: "a crash before the deletion's COMMIT is durable leaves no certificate and no delete leaf after recovery"}
+  - {id: SB-22, text: "Set group_emptied_by_this_deletion wrongly", crate: sever-cert, requirements: [SR-11.1-3, SR-11.3-6], caught_by: "deleting a group's last member gives tag 11 = 1, any other deletion 0; the verifier accepts the honest certificate"}
+  - {id: SB-23, text: "Reduce the challenge from 32 bytes instead of 64", crate: sever-crypto, requirements: [SR-9.5-3, SR-B-3], caught_by: "golden vector 3: the challenge differs"}

@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-75)](#6-decision-register-db-1--db-53-db-55--db-75)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-76)](#6-decision-register-db-1--db-53-db-55--db-76)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-75)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-76)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1018,6 +1018,20 @@ part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the fr
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
 
+#### DB-76 — Four more certificate attacks (15 October 2026)
+
+**Decision.** The certificate attack suite (EX-4; Build 3-4 §1.8, AT-N) gains AT-18 (a fixed-size
+field of the wrong length, or tag 11 or 12 outside {0, 1}), AT-19 (an insert leaf whose type is not
+`0x01`, or an `insert_inclusion` version other than 1) and AT-20 (a log checkpoint or a cosignature
+under an epoch or witness index not in the anchors), and the EX-4 list now also names the build
+plan's AT-17 (two cosignatures from one witness). AT-13 explicitly includes a holding-area
+certificate with tag 11 = 1. The target is unchanged: 100 % of attack certificates rejected (T-4,
+gate P3-T2). **Why.** At Part 3's design review each rule of spec §11.1–11.3 was matched to an
+attack; these rules had none, and AT-4's random single-field tampers would hit them only by chance.
+No certificate exists yet, so no target moves after a result (§3.4). **Rejected.** Keeping the 17
+attacks (the rules would rest on parser unit tests alone). **Consequence.** P3-T2 runs AT-1 … AT-20;
+the Part 3 register (`spec/registers_p3.yaml`) ties every attack to the requirements it checks.
+
 #### DB-75 — Blind bugs from cargo-mutants, not an AI planter (15 October 2026)
 
 **Decision.** Fair testing (DB-73) takes its blind planted bugs from the part's own `cargo-mutants`
@@ -1484,7 +1498,11 @@ under an unknown operator epoch; an insert leaf from another collection; a wrong
 checkpoint signed by the wrong key; three instead of four cosignatures; cosignatures over a different log
 checkpoint; a non-canonical point or scalar; the identity as `C_t`; a holding-area certificate with
 arithmetic fields; `group_emptied_by_this_deletion` inconsistent with `C_S_post`; `database_lsn` not after
-the insert leaf; a malformed TLV (missing, repeated or reordered tag; trailing bytes).
+the insert leaf; a malformed TLV (missing, repeated or reordered tag; trailing bytes); four
+cosignatures where two come from the same witness; a fixed-size field of the wrong length or a flag
+outside {0, 1}; an insert leaf of the wrong type or an `insert_inclusion` of the wrong version; a log
+checkpoint or cosignature under an epoch or witness not in the anchors (the last four added by DB-76,
+before any result).
 
 **Statistics** (§3.4). One confirmatory test: Welch's t-test on per-seed drift, SEVER-DB against
 soft-delete, n = 5 each, α = 0.005, two-sided [R53]. TOST at Δ = 0.005 is reported with the recorded
@@ -1885,6 +1903,8 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **15 October 2026 — Part 3 attack suite.** DB-76 (AT-18 … AT-20 added before any result; AT-17 in
+  the EX-4 list). Specification sections touched: none.
 - **15 October 2026 — Part 3 design review.** DB-51 (pure-Python ristretto255 in the certificate
   model, closes G-3), DB-52 (`expand_message_xmd` implemented by the project) and DB-53's EP-10
   `Witness` accepted from the build plan; EP-11 waits for Part 4. Specification sections touched:

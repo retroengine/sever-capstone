@@ -251,11 +251,14 @@ be rejected:
 | AT-10 | Cosignatures over a different log checkpoint |
 | AT-11 | A non-canonical point or scalar |
 | AT-12 | The identity as `C_t` |
-| AT-13 | A holding-area certificate that carries arithmetic fields |
+| AT-13 | A holding-area certificate that carries arithmetic fields (tags 2–4 not empty, or tag 11 = 1; spec §11.3 step 7) |
 | AT-14 | `group_emptied_by_this_deletion` inconsistent with `C_S_post` |
 | AT-15 | `database_lsn` not after the insert leaf |
 | AT-16 | A malformed TLV: missing, repeated or reordered tag, or trailing bytes |
 | AT-17 | Four cosignatures where two come from the same witness (spec §11.3 requires distinct witnesses) |
+| AT-18 | A fixed-size field with the wrong length, or tag 11 or 12 outside {0, 1} (spec §11.1; DB-76) |
+| AT-19 | An insert leaf whose type is not `0x01`, or an `insert_inclusion` version other than 1 (spec §11.2, §11.3 step 3; DB-76) |
+| AT-20 | A log checkpoint or a cosignature under an epoch or a witness index that is not in the anchors (spec §11.3 steps 3–4; DB-76) |
 
 **Auditor fault injection.** Each fault must be reported:
 
@@ -284,7 +287,7 @@ checkpoint time.
 | ID | Target | Kind |
 |---|---|---|
 | **P3-T1** | 100 % of honest certificates accepted by the independent verifier (overview T-4) | Gate |
-| **P3-T2** | 100 % of attack certificates rejected: AT-1 to AT-17 on 1,000 honest certificates per seed (overview T-4) | Gate |
+| **P3-T2** | 100 % of attack certificates rejected: AT-1 to AT-20 on 1,000 honest certificates per seed (overview T-4) | Gate |
 | **P3-T3** | 100 % of RFC test vectors and golden vectors pass, in the engine **and** in the verifier | Gate |
 | **P3-T4** | Across the crash campaign: 0 exactness violations, 0 lost acknowledged operations, 0 certificates for rolled-back deletions, 0 orphaned leaves (overview T-1, complete) | Gate |
 | **P3-T5** | 0 mismatches on the five-field equivalence and the certificate arithmetic against the model, `nq-100k`, five seeds (overview T-3, complete) | Gate |

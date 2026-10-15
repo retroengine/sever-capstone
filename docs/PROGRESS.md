@@ -88,6 +88,11 @@ INV-10, INV-15; Appendix B vectors 1, 2, 3, 4, 6, 8, 9. Out: encryption and eras
    `SR-B-<vector number>`. Open for the owner: G-4 (genesis checkpoint, SR-11.3-9); SR-4.2-3 (part 3)
    repeats SR-4.2-4 (part 2).
 3. Registers: attacks AT-1…AT-17 and auditor faults AF-1…AF-5 (Build 3-4 §3), sabotage SB-16…SB-23.
+   **Done 15 Oct 2026:** `spec/registers_p3.yaml` ties AT-1…AT-20, AF-1…AF-5 and SB-16…SB-23 to
+   their requirements (attacks: the §11.3 step that must reject, re-signed by the operator except
+   AT-4; sabotage: owning crate, the test that must go red); `registers check` in `ci.sh fast` (20/20
+   steps PASS). DB-76 (owner): AT-18…AT-20 added before any result. Each SB item joins
+   `tests/sabotage/run.sh` when its crate is built.
 4. Pin the crypto dependencies (spec §20.2/§20.3: one `rand_core`, `digest`, `curve25519-dalek`).
 
 **Module order** (dependencies first; each module: tests first with oracles, CLAUDE.md §4 and §6.3):
