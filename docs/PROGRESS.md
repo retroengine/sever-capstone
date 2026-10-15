@@ -40,6 +40,21 @@ audit of frozen code: a test gap is fixed by new test files; an engine bug or an
 file is reported for an erratum (F-6, owner). From Part 3 on, `scripts/freeze.sh N` refuses without
 a PASS on the exact owned files.
 
+## Erratum E-1 (15 Oct 2026): Part 2 SDK deadlock, found by the clean room
+
+The sealed clean-room tests of fair-testing run 20261008T164154Z-p2-42fc06df (written by a fresh
+Opus session from the spec alone) ran against the engine with no AI: 254 passed, 1 skipped (opt-in,
+a million inserts), and 1 **deadlocked**: the Python SDK took the engine mutex while holding the GIL,
+so threads searching one `Database` during `delete_user` hung forever (§12.5). Fixed as erratum E-1
+(`ERRATA.md`): red test first (a494354), fix in `crates/sever-py-p2`, red proof PR-ERR1 PROVEN,
+`scripts/ci.sh fast` 16/16, `gates p2-checks` PASS on 1e64226 (ledger), clean-room suite on the
+fixed engine 255 passed / 0 failed / 1 skipped (ledger). Freeze manifest updated (248 files); tag
+`part-2-frozen-e1`. The AI planter, judges and oracle audit of that run were not run (owner's token
+budget, DB-74); `docs/audit/FAIRNESS_P2.md` is the void run of 8 Oct (usage limit).
+
+**Next: Part 3, The Receipt** (Build 3-4 §1). Before it: decide whether Part 3's fair testing keeps
+the AI bug planter or uses `cargo-mutants` instead (a DB entry either way).
+
 ## RESUME HERE (updated 8 Oct 2026 ~13:00 UTC, branch p2-fuzz)
 
 **Part 2 is done and frozen.** Every Part 2 gate has passed (ledger): P2-T1…T3 crash (5 seeds,

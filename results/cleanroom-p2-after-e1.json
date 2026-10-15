@@ -1,0 +1,12 @@
+{
+ "run_id": "20261008T164154Z-p2-42fc06df",
+ "engine": "HEAD (erratum E-1)",
+ "tests": 256,
+ "passed": 255,
+ "failed": 0,
+ "skipped": [
+  "test_errors::test_group_capacity_exceeded (opt-in, SEVER_SLOW)"
+ ],
+ "seal": "bca5768444d2426f",
+ "before_e1": "254 passed, 1 skipped, 1 deadlocked (test_concurrent_reader_sees_all_or_nothing)"
+}
