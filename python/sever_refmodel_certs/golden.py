@@ -5,8 +5,10 @@ that owns a vector generates it once, from an implementation independent of the 
     PYTHONPATH=python uv run python -m sever_refmodel_certs.golden check   # Fast tier
 
 Files: ``p3_generators.json`` (Appendix B vectors 1 and 2: ``H``, ``G_0``, ``G_383``, §9.2;
-``gdigest``, §9.6) and ``p3_commitments.json`` (§9.3 record and group commitments and the transition
-check). Once committed, a golden file changes only with a recorded reason (CLAUDE.md §6.2).
+``gdigest``, §9.6), ``p3_commitments.json`` (§9.3 record and group commitments and the transition
+check) and ``p3_posk.json`` (Appendix B vector 3: a fixed challenge, §9.5; and one complete proof
+at d = 16 with fixed nonces). Once committed, a golden file changes only with a recorded reason
+(CLAUDE.md §6.2).
 
 The blinding values in ``p3_commitments.json`` are fixed test data (SHA-512 of a label, reduced mod
 ℓ), never a database's ``r_t``: production ``r_t`` come only from the OS CSPRNG (§9.4).
@@ -19,11 +21,12 @@ import sys
 from pathlib import Path
 from typing import Any, Final
 
-from sever_refmodel_certs import spec
+from sever_refmodel_certs import posk, spec
 from sever_refmodel_certs.ristretto import IDENTITY, L, encode, encode_scalar
 
 OUT_GENERATORS: Final = Path("golden/p3_generators.json")
 OUT_COMMITMENTS: Final = Path("golden/p3_commitments.json")
+OUT_POSK: Final = Path("golden/p3_posk.json")
 
 
 def generators_vector() -> dict[str, Any]:
@@ -98,6 +101,46 @@ def commitments_vector() -> dict[str, Any]:
     }
 
 
+def posk_vector() -> dict[str, Any]:
+    t = commitments_vector()["transition"]
+    c_s_pre, c_t, c_s_post = (bytes.fromhex(t["C_S_pre"]), bytes.fromhex(t["C_t"][2]),
+                              bytes.fromhex(t["C_S_post"]))  # fmt: skip
+    scrambled_id = hashlib.sha512(b"SEVER-DB p3 posk scrambled_id").digest()
+    collection_id = hashlib.sha512(b"SEVER-DB p3 posk collection_id").digest()[:16]
+    lsn = 0x0102030405060708
+    ctx = posk.ctx_bytes(c_s_pre, c_t, scrambled_id, lsn, collection_id)
+    h, _ = spec.generators(16)
+    a_fixed = encode(h * 7)  # Appendix B vector 3: any fixed point serves as A
+    c = posk.challenge(c_s_post, a_fixed, ctx)
+    c_swapped = posk.challenge(a_fixed, c_s_post, ctx)
+    k_r = _blind("SEVER-DB p3 posk k_r")
+    k = [_blind(f"SEVER-DB p3 posk k_{i}") for i in range(16)]
+    r_post = int.from_bytes(bytes.fromhex(t["r_agg_post"]), "little")
+    proof = posk.prove(t["S_post"], r_post, ctx, k_r, k)
+    if not posk.verify(c_s_post, ctx, proof, 16) or c == c_swapped:
+        raise RuntimeError("model self-check failed")
+    return {
+        "source": "sever_refmodel_certs (DB-51); spec §9.5; Appendix B vector 3",
+        "ctx_fields": {
+            "C_S_pre": t["C_S_pre"],
+            "C_t": t["C_t"][2],
+            "scrambled_id": scrambled_id.hex(),
+            "database_lsn": lsn,
+            "collection_id": collection_id.hex(),
+        },
+        "ctx": ctx.hex(),
+        "vector3": {"C_S_post": t["C_S_post"], "A": a_fixed.hex(), "c": encode_scalar(c).hex()},
+        "proof_d16": {
+            "S_post": t["S_post"],
+            "r_post": t["r_agg_post"],
+            "C_S_post": t["C_S_post"],
+            "k_r": encode_scalar(k_r).hex(),
+            "k": [encode_scalar(x).hex() for x in k],
+            "proof": proof.hex(),
+        },
+    }
+
+
 def _dump(data: dict[str, Any]) -> str:
     return json.dumps(data, indent=1) + "\n"
 
@@ -111,6 +154,7 @@ def main(argv: list[str]) -> int:
     for rel, data in (
         (OUT_GENERATORS, generators_vector()),
         (OUT_COMMITMENTS, commitments_vector()),
+        (OUT_POSK, posk_vector()),
     ):
         path, text = args.root / rel, _dump(data)
         if args.command == "write":

@@ -1,0 +1,12 @@
+--- a/crates/sever-crypto/src/posk.rs
++++ b/crates/sever-crypto/src/posk.rs
+@@ -37,8 +37,8 @@
+     pub fn to_bytes(&self) -> [u8; CTX_LEN] {
+         let mut out = [0u8; CTX_LEN];
+         let parts: [&[u8]; 5] = [
+-            &self.c_s_pre,
+             &self.c_t,
++            &self.c_s_pre,
+             &self.scrambled_id,
+             &self.database_lsn.to_be_bytes(),
+             &self.collection_id,

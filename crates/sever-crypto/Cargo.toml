@@ -8,7 +8,10 @@ publish.workspace = true
 
 [features]
 # Build §2.6: each builds the crate with exactly one deliberate bug. A test must go red.
+sabotage-SB-16 = [] # swap the order of the challenge preimage
+sabotage-SB-17 = [] # omit the deletion context from the challenge
 sabotage-SB-19 = [] # accept a non-canonical point or scalar
+sabotage-SB-23 = [] # reduce the challenge from 32 bytes instead of 64
 
 [dependencies]
 curve25519-dalek = "=4.1.3" # spec §20.1

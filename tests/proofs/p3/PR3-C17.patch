@@ -1,0 +1,10 @@
+--- a/crates/sever-crypto/src/posk.rs
++++ b/crates/sever-crypto/src/posk.rs
+@@ -56,7 +56,6 @@
+ /// `c = from_bytes_mod_order_wide(SHA-512(DST_POSK ‖ C_S_post ‖ A ‖ ctx))` (§9.5).
+ pub fn challenge(c_s_post: &[u8; 32], a: &[u8; 32], ctx: &[u8; CTX_LEN]) -> Scalar {
+     let mut h = Sha512::new();
+-    h.update(DST_POSK);
+     #[cfg(not(feature = "sabotage-SB-16"))]
+     {
+         h.update(c_s_post);

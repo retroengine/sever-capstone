@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/posk.rs
++++ b/crates/sever-crypto/src/posk.rs
+@@ -152,7 +152,7 @@
+     );
+     let c = challenge(&encode_point(&c_s_post), &encode_point(&a), &ctx.to_bytes());
+     let z_r = k_r + c * r_post;
+-    let z = k.iter().zip(&s).map(|(ki, si)| ki + c * si).collect();
++    let z = k.iter().zip(&s).map(|(ki, si)| ki - c * si).collect();
+     Ok(Proof { a, z_r, z })
+ }
+ 

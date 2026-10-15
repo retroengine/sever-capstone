@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/posk.rs
++++ b/crates/sever-crypto/src/posk.rs
+@@ -95,7 +95,7 @@
+ impl Proof {
+     /// The encoded size at dimension `d`: `32 + 32 + 32·d` (12,352 bytes at d = 384).
+     pub fn encoded_len(d: usize) -> usize {
+-        64 + 32 * d
++        64 + 32 * d + 32
+     }
+ 
+     /// `A ‖ z_r ‖ z_0 ‖ … ‖ z_{d−1}`.

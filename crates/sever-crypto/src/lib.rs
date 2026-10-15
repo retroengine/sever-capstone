@@ -9,7 +9,8 @@
 //! - canonical decoding of points and scalars (§9.9) and their encodings (§0.2);
 //! - the integer-to-scalar map `scalar(v)` (§4.5);
 //! - the generators `H, G_0 … G_{d−1}`, `gdigest` and the startup self-check (§9.2, §9.6, INV-10);
-//! - record and group commitments and the public transition check (§9.3).
+//! - record and group commitments and the public transition check (§9.3);
+//! - the proof of knowledge of the group state: context, challenge, proof, verifier (§9.5).
 
 #![forbid(unsafe_code)]
 
@@ -17,6 +18,7 @@ mod commit;
 pub mod dst;
 pub(crate) mod generators;
 mod group;
+pub(crate) mod posk;
 mod xmd;
 
 pub use commit::{commit_group, commit_record, decode_record_commitment, transition_holds};
@@ -29,6 +31,7 @@ pub use group::{
     decode_point, decode_scalar, encode_point, encode_scalar, hash_to_group, map_to_group,
     scalar_from_i64,
 };
+pub use posk::{CHALLENGE_PREIMAGE_LEN, CTX_LEN, DeletionContext, Proof, challenge, verify};
 pub use xmd::expand_message_xmd_sha512;
 
 /// Why a cryptographic input was refused. Carries no input bytes (§17).
@@ -44,6 +47,8 @@ pub enum CryptoError {
     ExpandOutOfRange,
     /// §9.9: a record commitment `C_t` is the identity.
     IdentityCommitment,
+    /// §9.5: the proof of knowledge does not verify.
+    ProofInvalid,
     /// §9.2 startup self-check failed (INV-10); names the check, never a value.
     SelfCheck(&'static str),
 }

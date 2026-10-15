@@ -155,3 +155,75 @@
   package: sever-crypto
   tests:
   - crates/sever-crypto/src/tests.rs::p3_crypto_a_record_commitment_may_not_be_the_identity
+- id: PR3-C16
+  claim: the deletion context puts C_t before C_S_pre (§9.5)
+  kind: red
+  requirements:
+  - SR-9.5-1
+  patch: PR3-C16.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_deletion_context_is_the_152_byte_concatenation_of_section_9_5
+- id: PR3-C17
+  claim: the challenge preimage leaves out DST_POSK (§9.5, §2.3)
+  kind: red
+  requirements:
+  - SR-9.5-3
+  - SR-B-3
+  patch: PR3-C17.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_challenge_matches_section_9_5_and_golden_vector_3
+- id: PR3-C18
+  claim: A multiplies the nonces with the generators shifted by one (k_r·G_0 …) (§9.5)
+  kind: red
+  requirements:
+  - SR-9.5-2
+  patch: PR3-C18.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_proof_equals_the_models_for_the_same_nonces
+- id: PR3-C19
+  claim: z_i = k_i − c·s_i instead of k_i + c·s_i (§9.5)
+  kind: red
+  requirements:
+  - SR-9.5-4
+  patch: PR3-C19.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_proof_equals_the_models_for_the_same_nonces
+- id: PR3-C20
+  claim: the proof encodes z_r after z_0 … z_{d−1} (§9.5 layout)
+  kind: red
+  requirements:
+  - SR-9.5-5
+  patch: PR3-C20.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_proof_equals_the_models_for_the_same_nonces
+- id: PR3-C21
+  claim: the verifier accepts without checking z_r·H + Σ z_i·G_i = A + c·C_S_post (§9.5)
+  kind: red
+  requirements:
+  - SR-9.5-6
+  patch: PR3-C21.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_verifier_accepts_the_honest_proof_and_rejects_every_change
+- id: PR3-C22
+  claim: the proof is 32 bytes longer than 32 + 32 + 32·d (§9.5, Appendix A)
+  kind: red
+  requirements:
+  - SR-9.5-5
+  - SR-A-1
+  patch: PR3-C22.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_a_proof_at_d_384_is_12352_bytes_and_verifies

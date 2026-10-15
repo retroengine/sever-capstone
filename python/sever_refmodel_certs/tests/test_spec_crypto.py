@@ -56,3 +56,19 @@ def test_p3_model_commitments_are_additive_and_empty_is_identity() -> None:
     assert pre.equals(spec.commit(s, 11) + spec.commit(x, 22))
     assert (pre - spec.commit(x, 22)).equals(spec.commit(s, 11))  # C_S_post + C_t = C_S_pre
     assert r.encode(spec.commit([0] * 8, 0)) == bytes(32)
+
+
+def test_p3_model_proof_verifies_and_rejects_changes() -> None:
+    # §9.5: an honest proof verifies; another context, statement or response does not.
+    from sever_refmodel_certs import posk
+
+    s, rr = [3, -1, 2**30, 0, -(2**24), 7, 8, -9], 12345
+    ctx = posk.ctx_bytes(bytes(32), bytes(32), bytes(64), 9, bytes(16))
+    proof = posk.prove(s, rr, ctx, 77, [i + 1 for i in range(8)])
+    c_s_post = r.encode(spec.commit(s, rr))
+    assert len(proof) == 32 + 32 + 32 * 8
+    assert posk.verify(c_s_post, ctx, proof, 8)
+    assert not posk.verify(c_s_post, ctx[:-1] + b"\x01", proof, 8)
+    assert not posk.verify(r.encode(spec.commit(s, rr + 1)), ctx, proof, 8)
+    z_r = (int.from_bytes(proof[32:64], "little") + 1) % r.L
+    assert not posk.verify(c_s_post, ctx, proof[:32] + r.encode_scalar(z_r) + proof[64:], 8)

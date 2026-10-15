@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/posk.rs
++++ b/crates/sever-crypto/src/posk.rs
+@@ -148,7 +148,7 @@
+     // A = k_r·H + Σ k_i·G_i, constant time: the nonces are secret.
+     let a = RistrettoPoint::multiscalar_mul(
+         std::iter::once(k_r).chain(k.iter()),
+-        std::iter::once(gens.h()).chain(gens.g().iter()),
++        gens.g().iter().chain(std::iter::once(gens.h())),
+     );
+     let c = challenge(&encode_point(&c_s_post), &encode_point(&a), &ctx.to_bytes());
+     let z_r = k_r + c * r_post;

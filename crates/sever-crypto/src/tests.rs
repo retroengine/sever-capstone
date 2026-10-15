@@ -526,3 +526,174 @@ fn p3_crypto_commitments_are_additive_and_need_d_components() {
         Err(CryptoError::WrongLength)
     );
 }
+
+const POSK: &str = include_str!("../../../golden/p3_posk.json");
+
+fn arr<const N: usize>(v: &Value) -> [u8; N] {
+    unhex(v.as_str().unwrap()).try_into().unwrap()
+}
+
+fn golden_ctx() -> DeletionContext {
+    let f = &json(POSK)["ctx_fields"];
+    DeletionContext {
+        c_s_pre: arr(&f["C_S_pre"]),
+        c_t: arr(&f["C_t"]),
+        scrambled_id: arr(&f["scrambled_id"]),
+        database_lsn: f["database_lsn"].as_u64().unwrap(),
+        collection_id: arr(&f["collection_id"]),
+    }
+}
+
+/// The d = 16 reference proof of golden/p3_posk.json, made by the engine with the same nonces.
+fn engine_proof_d16() -> (Generators, Vec<u8>) {
+    let p = &json(POSK)["proof_d16"];
+    let g = Generators::derive(16).unwrap();
+    let k: Vec<Scalar> = p["k"].as_array().unwrap().iter().map(scalar_hex).collect();
+    let proof = posk::prove_with_nonces(
+        &g,
+        &ints::<i64>(&p["S_post"]),
+        &scalar_hex(&p["r_post"]),
+        &golden_ctx(),
+        &scalar_hex(&p["k_r"]),
+        &k,
+    )
+    .unwrap();
+    (g, proof.to_bytes())
+}
+
+#[test]
+// oracle: A §9.5 deletion context layout, bytes written by hand from the field order
+#[spec("SR-9.5-1")]
+fn p3_crypto_deletion_context_is_the_152_byte_concatenation_of_section_9_5() {
+    let ctx = DeletionContext {
+        c_s_pre: [0x11; 32],
+        c_t: [0x22; 32],
+        scrambled_id: [0x33; 64],
+        database_lsn: 0x0102_0304_0506_0708,
+        collection_id: [0x44; 16],
+    };
+    let mut want = Vec::new();
+    want.extend([0x11; 32]);
+    want.extend([0x22; 32]);
+    want.extend([0x33; 64]);
+    want.extend([1, 2, 3, 4, 5, 6, 7, 8]); // u64be
+    want.extend([0x44; 16]);
+    assert_eq!(CTX_LEN, 152);
+    assert_eq!(ctx.to_bytes().as_slice(), want.as_slice());
+    assert_eq!(
+        hex(&golden_ctx().to_bytes()),
+        json(POSK)["ctx"].as_str().unwrap()
+    );
+}
+
+#[test]
+// oracle: A §9.5 challenge formula, computed in the test with SHA-512 over the hand-built 231-byte
+// preimage [SR-9.5-3]
+// oracle: B-shared golden/p3_posk.json vector3 (Appendix B vector 3) and its must-fail swap [SR-B-3]
+#[spec("SR-9.5-3", "SR-B-3")]
+fn p3_crypto_challenge_matches_section_9_5_and_golden_vector_3() {
+    let v = &json(POSK)["vector3"];
+    let (c_s_post, a) = (arr::<32>(&v["C_S_post"]), arr::<32>(&v["A"]));
+    let ctx = golden_ctx().to_bytes();
+    let mut pre = Vec::new();
+    pre.extend_from_slice(b"SEVERDB_POSK_V1");
+    pre.extend_from_slice(&c_s_post);
+    pre.extend_from_slice(&a);
+    pre.extend_from_slice(&ctx);
+    assert_eq!(pre.len(), CHALLENGE_PREIMAGE_LEN);
+    assert_eq!(pre.len(), 231);
+    use sha2::Digest;
+    let wide: [u8; 64] = sha2::Sha512::digest(&pre).into();
+    let by_hand = Scalar::from_bytes_mod_order_wide(&wide);
+    let c = challenge(&c_s_post, &a, &ctx);
+    assert_eq!(c, by_hand);
+    assert_eq!(hex(&encode_scalar(&c)), v["c"].as_str().unwrap());
+    // Appendix B vector 3's must-fail: swapping A and C_S_post changes c.
+    assert_ne!(challenge(&a, &c_s_post, &ctx), c);
+}
+
+#[test]
+// oracle: B-shared golden/p3_posk.json proof_d16 (the model's prover with the same fixed nonces)
+#[spec("SR-9.5-2", "SR-9.5-4", "SR-9.5-5")]
+fn p3_crypto_proof_equals_the_models_for_the_same_nonces() {
+    let (_, proof) = engine_proof_d16();
+    assert_eq!(proof.len(), 32 + 32 + 32 * 16);
+    assert_eq!(
+        hex(&proof),
+        json(POSK)["proof_d16"]["proof"].as_str().unwrap()
+    );
+}
+
+#[test]
+// oracle: A §9.5 verifier (accept iff z_r·H + Σ z_i·G_i = A + c·C_S_post; canonical decoding)
+#[spec("SR-9.5-6")]
+fn p3_crypto_verifier_accepts_the_honest_proof_and_rejects_every_change() {
+    let (g, proof) = engine_proof_d16();
+    let ctx = golden_ctx();
+    let c_s_post = arr::<32>(&json(POSK)["proof_d16"]["C_S_post"]);
+    assert_eq!(verify(&g, &c_s_post, &ctx, &proof), Ok(()));
+    let model = unhex(json(POSK)["proof_d16"]["proof"].as_str().unwrap());
+    assert_eq!(
+        verify(&g, &c_s_post, &ctx, &model),
+        Ok(()),
+        "the model's proof"
+    );
+    // Another statement or another context: the proof cannot be replayed (§9.5).
+    assert_eq!(
+        verify(&g, &ctx.c_s_pre, &ctx, &proof),
+        Err(CryptoError::ProofInvalid)
+    );
+    let other = DeletionContext {
+        database_lsn: ctx.database_lsn + 1,
+        ..ctx
+    };
+    assert_eq!(
+        verify(&g, &c_s_post, &other, &proof),
+        Err(CryptoError::ProofInvalid)
+    );
+    // z_r + 1, and the last z replaced: invalid.
+    let mut bad = proof.clone();
+    let z_r = decode_scalar(&bad[32..64]).unwrap() + Scalar::ONE;
+    bad[32..64].copy_from_slice(&encode_scalar(&z_r));
+    assert_eq!(
+        verify(&g, &c_s_post, &ctx, &bad),
+        Err(CryptoError::ProofInvalid)
+    );
+    // A replaced by another valid point.
+    let mut bad = proof.clone();
+    bad[..32].copy_from_slice(&encode_point(g.h()));
+    assert_eq!(
+        verify(&g, &c_s_post, &ctx, &bad),
+        Err(CryptoError::ProofInvalid)
+    );
+    // A non-canonical z (ℓ itself) and a truncated proof are refused before any arithmetic.
+    let mut bad = proof.clone();
+    let l = unhex("edd3f55c1a631258d69cf7a2def9de1400000000000000000000000000000010");
+    bad[64..96].copy_from_slice(&l);
+    assert_eq!(
+        verify(&g, &c_s_post, &ctx, &bad),
+        Err(CryptoError::NonCanonicalScalar)
+    );
+    assert_eq!(
+        verify(&g, &c_s_post, &ctx, &proof[..proof.len() - 1]),
+        Err(CryptoError::WrongLength)
+    );
+}
+
+#[test]
+// oracle: A §9.5 proof size 32 + 32 + 32·d and Appendix A (12,352 bytes at d = 384)
+#[spec("SR-9.5-5", "SR-A-1")]
+fn p3_crypto_a_proof_at_d_384_is_12352_bytes_and_verifies() {
+    let g = Generators::derive(384).unwrap();
+    let s: Vec<i64> = (0..384).map(|i| (i - 192) * 1_000_003).collect();
+    let r = Scalar::from(987_654_321u64);
+    let k: Vec<Scalar> = (0..384u64).map(|i| Scalar::from(i * 7 + 1)).collect();
+    let c_s_post = encode_point(&commit_group(&g, &s, &r).unwrap());
+    let ctx = golden_ctx();
+    let proof = posk::prove_with_nonces(&g, &s, &r, &ctx, &Scalar::from(5u64), &k)
+        .unwrap()
+        .to_bytes();
+    assert_eq!(Proof::encoded_len(384), 12_352);
+    assert_eq!(proof.len(), 12_352);
+    assert_eq!(verify(&g, &c_s_post, &ctx, &proof), Ok(()));
+}

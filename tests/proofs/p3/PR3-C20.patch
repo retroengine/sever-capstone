@@ -1,0 +1,14 @@
+--- a/crates/sever-crypto/src/posk.rs
++++ b/crates/sever-crypto/src/posk.rs
+@@ -102,10 +102,10 @@
+     pub fn to_bytes(&self) -> Vec<u8> {
+         let mut out = Vec::with_capacity(Self::encoded_len(self.z.len()));
+         out.extend_from_slice(&encode_point(&self.a));
+-        out.extend_from_slice(self.z_r.as_bytes());
+         for zi in &self.z {
+             out.extend_from_slice(zi.as_bytes());
+         }
++        out.extend_from_slice(self.z_r.as_bytes());
+         out
+     }
+ 
