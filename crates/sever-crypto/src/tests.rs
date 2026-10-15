@@ -697,3 +697,123 @@ fn p3_crypto_a_proof_at_d_384_is_12352_bytes_and_verifies() {
     assert_eq!(proof.len(), 12_352);
     assert_eq!(verify(&g, &c_s_post, &ctx, &proof), Ok(()));
 }
+
+/// A fixed entropy source for following §9.6 step by step in tests (never reaches `prove`).
+struct FixedEntropy(u8);
+impl rand_core::RngCore for FixedEntropy {
+    fn next_u32(&mut self) -> u32 {
+        u32::from(self.0)
+    }
+    fn next_u64(&mut self) -> u64 {
+        u64::from(self.0)
+    }
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        dest.fill(self.0)
+    }
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
+        dest.fill(self.0);
+        Ok(())
+    }
+}
+impl rand_core::CryptoRng for FixedEntropy {}
+
+#[test]
+// oracle: A §9.6 transcript steps, followed by hand with merlin in this test (labels gens, stmt,
+// ctx, r, s; entropy at finalize; 64 bytes per nonce reduced wide, k_r first)
+#[spec("SR-9.6-2")]
+fn p3_crypto_nonce_derivation_follows_section_9_6_step_by_step() {
+    use rand_core::RngCore;
+    let g = Generators::derive(16).unwrap();
+    let ctx = golden_ctx();
+    let s_post: Vec<i64> = (0..16).map(|i| i * 1000 - 7000).collect();
+    let r_post = Scalar::from(4242u64);
+    let s: Vec<Scalar> = s_post.iter().map(|&v| scalar_from_i64(v)).collect();
+    let c_s_post = encode_point(&commit_group(&g, &s_post, &r_post).unwrap());
+
+    let mut t = merlin::Transcript::new(b"SEVERDB_POSK_NONCE_V1");
+    t.append_message(b"gens", g.gdigest());
+    t.append_message(b"stmt", &c_s_post);
+    t.append_message(b"ctx", &ctx.to_bytes());
+    let mut b = t
+        .build_rng()
+        .rekey_with_witness_bytes(b"r", &encode_scalar(&r_post));
+    for si in &s {
+        b = b.rekey_with_witness_bytes(b"s", &encode_scalar(si));
+    }
+    let mut rng = b.finalize(&mut FixedEntropy(9));
+    let mut want = Vec::new();
+    for _ in 0..17 {
+        let mut buf = [0u8; 64];
+        rng.fill_bytes(&mut buf);
+        want.push(Scalar::from_bytes_mod_order_wide(&buf));
+    }
+
+    let (k_r, k) = nonce::hedged_nonces(&g, &c_s_post, &ctx, &r_post, &s, &mut FixedEntropy(9));
+    assert_eq!(k_r, want[0]);
+    assert_eq!(k, want[1..]);
+    // The nonces depend on the entropy, the witness and the context.
+    assert_ne!(
+        nonce::hedged_nonces(&g, &c_s_post, &ctx, &r_post, &s, &mut FixedEntropy(8)).0,
+        k_r
+    );
+    let r2 = r_post + Scalar::ONE;
+    assert_ne!(
+        nonce::hedged_nonces(&g, &c_s_post, &ctx, &r2, &s, &mut FixedEntropy(9)).0,
+        k_r
+    );
+    let ctx2 = DeletionContext {
+        database_lsn: ctx.database_lsn + 1,
+        ..ctx
+    };
+    assert_ne!(
+        nonce::hedged_nonces(&g, &c_s_post, &ctx2, &r_post, &s, &mut FixedEntropy(9)).0,
+        k_r
+    );
+}
+
+#[test]
+// oracle: A §9.6 (fresh OS entropy at finalize: proving one statement twice never repeats the
+// nonce vector) and §9.5 (each proof verifies)
+#[spec("SR-9.6-2")]
+fn p3_crypto_proving_one_statement_twice_uses_fresh_nonces() {
+    let g = Generators::derive(16).unwrap();
+    let ctx = golden_ctx();
+    let s_post: Vec<i64> = (0..16).map(|i| 3 * i - 20).collect();
+    let r_post = Scalar::from(99u64);
+    let c_s_post = encode_point(&commit_group(&g, &s_post, &r_post).unwrap());
+    let mut rng = StrictProofRng::new();
+    let p1 = prove(&g, &s_post, &r_post, &ctx, &mut rng)
+        .unwrap()
+        .to_bytes();
+    let p2 = prove(&g, &s_post, &r_post, &ctx, &mut rng)
+        .unwrap()
+        .to_bytes();
+    assert_ne!(p1[..32], p2[..32], "A repeated: a nonce vector was reused");
+    assert_eq!(verify(&g, &c_s_post, &ctx, &p1), Ok(()));
+    assert_eq!(verify(&g, &c_s_post, &ctx, &p2), Ok(()));
+}
+
+#[test]
+// oracle: A §9.6 (StrictProofRng is a zero-sized wrapper around OsRng, RngCore + CryptoRng, the
+// only type prove accepts); the not-SeedableRng half is the compile_fail doc tests on the type
+#[spec("SR-9.6-3")]
+fn p3_crypto_prove_takes_the_zero_sized_strict_proof_rng() {
+    fn crypto_rng<T: rand_core::RngCore + rand_core::CryptoRng>(_: &T) {}
+    let mut rng = StrictProofRng::new();
+    crypto_rng(&rng);
+    assert_eq!(std::mem::size_of::<StrictProofRng>(), 0);
+    let mut a = [0u8; 32];
+    let mut b = [0u8; 32];
+    rand_core::RngCore::fill_bytes(&mut rng, &mut a);
+    rand_core::RngCore::fill_bytes(&mut rng, &mut b);
+    assert_ne!(a, b, "two OS draws of 32 bytes coincided");
+    let g = Generators::derive(384).unwrap();
+    let s: Vec<i64> = (0..384).map(|i| i - 100).collect();
+    let r = Scalar::from(5u64);
+    let proof = prove(&g, &s, &r, &golden_ctx(), &mut rng)
+        .unwrap()
+        .to_bytes();
+    let c_s_post = encode_point(&commit_group(&g, &s, &r).unwrap());
+    assert_eq!(proof.len(), 12_352);
+    assert_eq!(verify(&g, &c_s_post, &golden_ctx(), &proof), Ok(()));
+}

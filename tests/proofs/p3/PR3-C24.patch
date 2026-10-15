@@ -1,0 +1,35 @@
+--- a/crates/sever-crypto/src/nonce.rs
++++ b/crates/sever-crypto/src/nonce.rs
+@@ -90,9 +90,9 @@
+ 
+ /// SB-18 (Build §2.6): a source with no entropy, so proving the same statement twice reuses the
+ /// nonce vector.
+-#[cfg(feature = "sabotage-SB-18")]
++#[cfg(all())]
+ struct NoEntropy;
+-#[cfg(feature = "sabotage-SB-18")]
++#[cfg(all())]
+ impl RngCore for NoEntropy {
+     fn next_u32(&mut self) -> u32 {
+         0
+@@ -108,7 +108,7 @@
+         Ok(())
+     }
+ }
+-#[cfg(feature = "sabotage-SB-18")]
++#[cfg(all())]
+ impl CryptoRng for NoEntropy {}
+ 
+ /// §9.6: the hedged nonces `(k_r, k_0 … k_{d−1})` for statement `C_S_post`, context `ctx` and
+@@ -156,9 +156,9 @@
+ ) -> Result<Proof, CryptoError> {
+     let c_s_post = encode_point(&commit_group(gens, s_post, r_post)?);
+     let mut s: Vec<Scalar> = s_post.iter().map(|&v| scalar_from_i64(v)).collect();
+-    #[cfg(not(feature = "sabotage-SB-18"))]
++    #[cfg(any())]
+     let (mut k_r, mut k) = hedged_nonces(gens, &c_s_post, ctx, r_post, &s, rng);
+-    #[cfg(feature = "sabotage-SB-18")]
++    #[cfg(all())]
+     let (mut k_r, mut k) = {
+         let _ = rng;
+         hedged_nonces(gens, &c_s_post, ctx, r_post, &s, &mut NoEntropy)

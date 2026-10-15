@@ -1,0 +1,18 @@
+--- a/crates/sever-crypto/src/nonce.rs
++++ b/crates/sever-crypto/src/nonce.rs
+@@ -61,13 +61,13 @@
+ /// ```
+ #[derive(Debug, Default)]
+ pub struct StrictProofRng {
+-    _private: (),
++    _private: [u8; 32],
+ }
+ 
+ impl StrictProofRng {
+     /// The OS random source; there is no constructor that takes a seed.
+     pub fn new() -> Self {
+-        Self { _private: () }
++        Self { _private: [0; 32] }
+     }
+ }
+ 

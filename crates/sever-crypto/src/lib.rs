@@ -10,7 +10,8 @@
 //! - the integer-to-scalar map `scalar(v)` (§4.5);
 //! - the generators `H, G_0 … G_{d−1}`, `gdigest` and the startup self-check (§9.2, §9.6, INV-10);
 //! - record and group commitments and the public transition check (§9.3);
-//! - the proof of knowledge of the group state: context, challenge, proof, verifier (§9.5).
+//! - the proof of knowledge of the group state: context, challenge, proof, verifier (§9.5), with
+//!   hedged nonces and a prover that accepts only [`StrictProofRng`] (§9.6).
 
 #![forbid(unsafe_code)]
 
@@ -18,6 +19,7 @@ mod commit;
 pub mod dst;
 pub(crate) mod generators;
 mod group;
+mod nonce;
 pub(crate) mod posk;
 mod xmd;
 
@@ -31,6 +33,7 @@ pub use group::{
     decode_point, decode_scalar, encode_point, encode_scalar, hash_to_group, map_to_group,
     scalar_from_i64,
 };
+pub use nonce::{StrictProofRng, prove};
 pub use posk::{CHALLENGE_PREIMAGE_LEN, CTX_LEN, DeletionContext, Proof, challenge, verify};
 pub use xmd::expand_message_xmd_sha512;
 

@@ -1,0 +1,12 @@
+--- a/crates/sever-crypto/src/nonce.rs
++++ b/crates/sever-crypto/src/nonce.rs
+@@ -129,9 +129,6 @@
+     let mut b = t
+         .build_rng()
+         .rekey_with_witness_bytes(b"r", r_post.as_bytes());
+-    for si in s {
+-        b = b.rekey_with_witness_bytes(b"s", si.as_bytes());
+-    }
+     let mut rng = b.finalize(entropy); // injects 32 bytes from `entropy`
+     let mut buf = [0u8; 64];
+     let mut next = || {

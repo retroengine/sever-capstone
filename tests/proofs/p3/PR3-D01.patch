@@ -1,0 +1,17 @@
+--- a/crates/sever-crypto/src/nonce.rs
++++ b/crates/sever-crypto/src/nonce.rs
+@@ -147,12 +147,12 @@
+ 
+ /// §9.5 prover with §9.6 hedged nonces: proves knowledge of `(r_post, scalar(S_post_i))` for
+ /// `C_S_post = r_post·H + Σ scalar(S_post_i)·G_i`, bound to `ctx`. Accepts only [`StrictProofRng`].
+-pub fn prove(
++pub fn prove<R: RngCore + CryptoRng>(
+     gens: &Generators,
+     s_post: &[i64],
+     r_post: &Scalar,
+     ctx: &DeletionContext,
+-    rng: &mut StrictProofRng,
++    rng: &mut R,
+ ) -> Result<Proof, CryptoError> {
+     let c_s_post = encode_point(&commit_group(gens, s_post, r_post)?);
+     let mut s: Vec<Scalar> = s_post.iter().map(|&v| scalar_from_i64(v)).collect();

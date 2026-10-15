@@ -227,3 +227,33 @@
   package: sever-crypto
   tests:
   - crates/sever-crypto/src/tests.rs::p3_crypto_a_proof_at_d_384_is_12352_bytes_and_verifies
+- id: PR3-C23
+  claim: the nonce transcript is not rekeyed with the s_i witness bytes (§9.6)
+  kind: red
+  requirements:
+  - SR-9.6-2
+  patch: PR3-C23.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_nonce_derivation_follows_section_9_6_step_by_step
+- id: PR3-C24
+  claim: prove takes no fresh entropy, so proving one statement twice reuses the nonces (§9.6, SB-18)
+  kind: red
+  requirements:
+  - SR-9.6-2
+  patch: PR3-C24.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_proving_one_statement_twice_uses_fresh_nonces
+- id: PR3-C25
+  claim: StrictProofRng carries 32 bytes of state instead of being a zero-sized OsRng wrapper (§9.6)
+  kind: red
+  requirements:
+  - SR-9.6-3
+  patch: PR3-C25.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_prove_takes_the_zero_sized_strict_proof_rng

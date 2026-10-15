@@ -1,0 +1,12 @@
+--- a/crates/sever-crypto/src/nonce.rs
++++ b/crates/sever-crypto/src/nonce.rs
+@@ -169,3 +169,9 @@
+     s.zeroize();
+     proof
+ }
++impl rand_core::SeedableRng for StrictProofRng {
++    type Seed = [u8; 32];
++    fn from_seed(_: [u8; 32]) -> Self {
++        Self::new()
++    }
++}

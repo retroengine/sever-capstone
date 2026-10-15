@@ -127,7 +127,6 @@ impl Proof {
 
 /// The §9.5 prover with the nonces `(k_r, k_0 … k_{d−1})` given. Only the hedged prover of §9.6
 /// may call it outside tests: reusing a nonce vector would reveal the group's sum.
-#[cfg_attr(not(test), allow(dead_code))] // the hedged prover (§9.6) is its caller
 pub(crate) fn prove_with_nonces(
     gens: &Generators,
     s_post: &[i64],
