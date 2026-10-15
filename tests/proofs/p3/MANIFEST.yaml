@@ -62,3 +62,56 @@
   package: sever-crypto
   tests:
   - crates/sever-crypto/src/tests.rs::p3_crypto_scalar_map_follows_section_4_5
+- id: PR3-C07
+  claim: G_i is derived from b"G" ‖ u32le(i) instead of u32be(i) (§9.2)
+  kind: red
+  requirements:
+  - SR-9.2-1
+  patch: PR3-C07.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_generators_match_the_golden_file
+  - crates/sever-crypto/src/tests.rs::p3_crypto_generators_follow_section_9_2_byte_for_byte
+- id: PR3-C08
+  claim: H is derived from a message other than b"H" (Appendix B vector 1)
+  kind: red
+  requirements:
+  - SR-B-1
+  patch: PR3-C08.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_generators_match_the_golden_file
+- id: PR3-C09
+  claim: gdigest leaves H out of the hashed generators (§9.6, Appendix B vector 2)
+  kind: red
+  requirements:
+  - SR-9.6-1
+  - SR-B-2
+  patch: PR3-C09.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_gdigest_matches_the_golden_file
+- id: PR3-C10
+  claim: the startup self-check does not compare H with the golden file (§9.2, INV-10)
+  kind: red
+  requirements:
+  - SR-9.2-3
+  - SR-21-10
+  patch: PR3-C10.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_self_check_passes_honestly_and_refuses_any_drift
+- id: PR3-C11
+  claim: gdigest leaves H out of the hashed generators (§9.6), seen by the byte-for-byte test
+  kind: red
+  requirements:
+  - SR-9.6-1
+  patch: PR3-C09.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_generators_follow_section_9_2_byte_for_byte

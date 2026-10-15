@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/generators.rs
++++ b/crates/sever-crypto/src/generators.rs
+@@ -20,7 +20,7 @@
+ fn generator_g(i: u32) -> Result<RistrettoPoint, CryptoError> {
+     let mut msg = [0u8; 5];
+     msg[0] = b'G';
+-    msg[1..].copy_from_slice(&i.to_be_bytes());
++    msg[1..].copy_from_slice(&i.to_le_bytes());
+     hash_to_group(&msg, DST_GEN)
+ }
+ 

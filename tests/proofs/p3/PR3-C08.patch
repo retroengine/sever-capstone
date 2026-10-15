@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/generators.rs
++++ b/crates/sever-crypto/src/generators.rs
+@@ -26,7 +26,7 @@
+ 
+ /// §9.2: `H` from `msg = b"H"`.
+ fn generator_h() -> Result<RistrettoPoint, CryptoError> {
+-    hash_to_group(b"H", DST_GEN)
++    hash_to_group(b"H\x00", DST_GEN)
+ }
+ 
+ impl Generators {

@@ -108,7 +108,7 @@ INV-10, INV-15; Appendix B vectors 1, 2, 3, 4, 6, 8, 9. Out: encryption and eras
 
 | # | Module | Spec | Status |
 |---|---|---|---|
-| 1 | `sever-crypto` (generators + self-check, scalar map, commitments, PoK, hedged nonces, Ed25519, HMAC) | §4.5, §9 | in progress: RFC vectors extracted; primitives layer done (domain strings, `expand_message_xmd`, one-way map, canonical decoding, `scalar(v)`: 9 tests, 6 red proofs, SB-19). Next: generators + gdigest (golden values from `sever_refmodel_certs`) |
+| 1 | `sever-crypto` (generators + self-check, scalar map, commitments, PoK, hedged nonces, Ed25519, HMAC) | §4.5, §9 | in progress: RFC vectors extracted; primitives, generators, gdigest and the startup self-check done (14 tests, 11 red proofs, SB-19; engine and pure-Python model agree on H, G_0, G_383, gdigest). G-20 open (self-check at d ≠ 384). Next: commitments (§9.3) |
 | 2 | `sever_refmodel_certs` (Python, from the spec only: the independent oracle) | §5.3, §9.3, §11.3 | in progress: pure-Python ristretto255 + `expand_message_xmd` (all RFC vectors pass), `scalar`, generators, gdigest; wrote `golden/p3_generators.json` (Appendix B 1–2). Prototype cross-check of B-1 pending (no prototype values in the repo) |
 | 3 | `sever-commit` (EP-1 `CommitmentExtension`) | §5.3, §9.3–9.4 | not started |
 | 4 | `sever-log` (RFC 9162 tree, proofs, checkpoints, EP-7 participant, EP-10 + `SimulatedWitness`) | §10 | not started |

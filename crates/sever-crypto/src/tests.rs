@@ -239,3 +239,154 @@ fn p3_crypto_hash_to_group_is_the_map_of_the_expanded_bytes() {
         hash_to_group(b"G", DST_GEN).unwrap()
     );
 }
+
+const GENS: &str = include_str!("../../../golden/p3_generators.json");
+
+#[test]
+// oracle: B-shared golden/p3_generators.json, written by sever_refmodel_certs (Appendix B vector 1)
+#[spec("SR-9.2-1", "SR-B-1")]
+fn p3_crypto_generators_match_the_golden_file() {
+    let golden = json(GENS);
+    let gens = Generators::derive(384).unwrap();
+    assert_eq!(gens.d(), 384);
+    assert_eq!(hex(&encode_point(gens.h())), golden["H"].as_str().unwrap());
+    assert_eq!(
+        hex(&encode_point(&gens.g()[0])),
+        golden["G_0"].as_str().unwrap()
+    );
+    assert_eq!(
+        hex(&encode_point(&gens.g()[383])),
+        golden["G_383"].as_str().unwrap()
+    );
+}
+
+#[test]
+// oracle: B-shared golden/p3_generators.json (Appendix B vector 2)
+#[spec("SR-9.6-1", "SR-B-2")]
+fn p3_crypto_gdigest_matches_the_golden_file() {
+    let golden = json(GENS);
+    let gens = Generators::derive(384).unwrap();
+    assert_eq!(hex(gens.gdigest()), golden["gdigest"].as_str().unwrap());
+}
+
+#[test]
+// oracle: A §9.2 (msg b"H"; b"G" ‖ u32be(i); DST_GEN; one call per generator) and §9.6 (gdigest =
+// SHA-512 of the encodings in order), composed from the RFC-checked hash_to_group
+#[spec("SR-9.2-1", "SR-9.6-1")]
+fn p3_crypto_generators_follow_section_9_2_byte_for_byte() {
+    let gens = Generators::derive(300).unwrap();
+    assert_eq!(*gens.h(), hash_to_group(b"H", DST_GEN).unwrap());
+    // i = 1 and i = 256 tell big-endian from little-endian; i = 299 is the last one.
+    for (i, msg) in [
+        (1usize, *b"G\x00\x00\x00\x01"),
+        (256, *b"G\x00\x00\x01\x00"),
+        (299, *b"G\x00\x00\x01\x2b"),
+    ] {
+        assert_eq!(gens.g()[i], hash_to_group(&msg, DST_GEN).unwrap(), "G_{i}");
+    }
+    // Each generator is its own call, so a smaller d gives a prefix of a larger one.
+    let small = Generators::derive(16).unwrap();
+    assert_eq!(small.g(), &gens.g()[..16]);
+    let mut all = encode_point(gens.h()).to_vec();
+    gens.g()
+        .iter()
+        .for_each(|g| all.extend_from_slice(&encode_point(g)));
+    use sha2::Digest;
+    assert_eq!(
+        gens.gdigest().as_slice(),
+        sha2::Sha512::digest(&all).as_slice()
+    );
+}
+
+#[test]
+// oracle: A §9.2 self-check (refuse on any mismatch with the golden file) and §21 INV-10
+#[spec("SR-9.2-3", "SR-21-10")]
+fn p3_crypto_self_check_passes_honestly_and_refuses_any_drift() {
+    for d in [16, 384] {
+        let gens = Generators::derive(d).unwrap();
+        assert_eq!(self_check(&gens), Ok(()), "d = {d}");
+    }
+    let gens = Generators::derive(384).unwrap();
+    // A golden file that differs in one generator, or in gdigest, is refused.
+    let flip = |s: &'static str| -> &'static str {
+        Box::leak(
+            format!("{}{}", if s.starts_with('0') { '1' } else { '0' }, &s[1..]).into_boxed_str(),
+        )
+    };
+    for (name, golden) in [
+        (
+            "H",
+            GeneratorGolden {
+                h: flip(GOLDEN.h),
+                ..GOLDEN
+            },
+        ),
+        (
+            "G_0",
+            GeneratorGolden {
+                g_0: flip(GOLDEN.g_0),
+                ..GOLDEN
+            },
+        ),
+        (
+            "G_383",
+            GeneratorGolden {
+                g_383: flip(GOLDEN.g_383),
+                ..GOLDEN
+            },
+        ),
+        (
+            "gdigest",
+            GeneratorGolden {
+                gdigest_384: flip(GOLDEN.gdigest_384),
+                ..GOLDEN
+            },
+        ),
+    ] {
+        assert!(
+            matches!(
+                generators::self_check_against(&gens, &golden),
+                Err(CryptoError::SelfCheck(_))
+            ),
+            "{name}"
+        );
+    }
+    // Generators swapped in memory are refused.
+    let mut swapped = gens.clone();
+    swapped.swap_h_g0_for_test();
+    assert!(matches!(
+        self_check(&swapped),
+        Err(CryptoError::SelfCheck(_))
+    ));
+}
+
+#[test]
+// oracle: B the golden files the embedded constants were copied from
+fn p3_crypto_embedded_constants_equal_their_golden_files() {
+    let g = json(GENS);
+    assert_eq!(GOLDEN.h, g["H"].as_str().unwrap());
+    assert_eq!(GOLDEN.g_0, g["G_0"].as_str().unwrap());
+    assert_eq!(GOLDEN.g_383, g["G_383"].as_str().unwrap());
+    let digest: String = GOLDEN.gdigest_384.split_whitespace().collect();
+    assert_eq!(digest, g["gdigest"].as_str().unwrap());
+    let k3 = json(K3);
+    assert_eq!(KAT_XMD_DST, k3["dst"].as_str().unwrap());
+    assert!(
+        k3["vectors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|v| v["msg"] == KAT_XMD.0
+                && v["len_in_bytes"] == KAT_XMD.1
+                && v["uniform_bytes"] == KAT_XMD.2)
+    );
+    let r = json(R9496);
+    let input: String = KAT_MAP.0.split_whitespace().collect();
+    assert!(
+        r["from_uniform_bytes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|p| p["input"] == input.as_str() && p["output"] == KAT_MAP.1)
+    );
+}

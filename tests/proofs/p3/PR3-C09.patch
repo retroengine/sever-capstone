@@ -1,0 +1,10 @@
+--- a/crates/sever-crypto/src/generators.rs
++++ b/crates/sever-crypto/src/generators.rs
+@@ -37,7 +37,6 @@
+         let h = generator_h()?;
+         let g = (0..d32).map(generator_g).collect::<Result<Vec<_>, _>>()?;
+         let mut sha = Sha512::new();
+-        sha.update(encode_point(&h));
+         for gi in &g {
+             sha.update(encode_point(gi));
+         }
