@@ -46,3 +46,13 @@ def test_p3_model_uses_only_the_standard_library() -> None:
                 continue
             for n in names:
                 assert n.split(".")[0] in allowed, (f.name, n)
+
+
+def test_p3_model_commitments_are_additive_and_empty_is_identity() -> None:
+    # §9.3 and §5.3: C(S + x̃, r_agg + r_t) = C(S, r_agg) + C(x̃, r_t).
+    # §5.4: S = 0 and r_agg = 0 give the identity.
+    s, x = [5, -7, 2**40, -(2**40), 0, 1, -1, 3], [-(2**24), 2**24 + 16, 9, -9, 0, 0, 4, -4]
+    pre = spec.commit([a + b for a, b in zip(s, x, strict=True)], (11 + 22) % r.L)
+    assert pre.equals(spec.commit(s, 11) + spec.commit(x, 22))
+    assert (pre - spec.commit(x, 22)).equals(spec.commit(s, 11))  # C_S_post + C_t = C_S_pre
+    assert r.encode(spec.commit([0] * 8, 0)) == bytes(32)

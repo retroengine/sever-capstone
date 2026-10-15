@@ -1,0 +1,12 @@
+--- a/crates/sever-crypto/src/commit.rs
++++ b/crates/sever-crypto/src/commit.rs
+@@ -19,7 +19,8 @@
+     if values.len() != gens.d() {
+         return Err(CryptoError::WrongLength);
+     }
+-    let scalars = std::iter::once(*blind).chain(values.map(scalar_from_i64));
++    let b = if *blind == Scalar::ZERO { Scalar::ONE } else { *blind };
++    let scalars = std::iter::once(b).chain(values.map(scalar_from_i64));
+     let points = std::iter::once(gens.h()).chain(gens.g().iter());
+     Ok(RistrettoPoint::multiscalar_mul(scalars, points))
+ }

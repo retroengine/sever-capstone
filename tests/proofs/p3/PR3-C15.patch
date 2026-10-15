@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/commit.rs
++++ b/crates/sever-crypto/src/commit.rs
+@@ -55,8 +55,5 @@
+ /// "C_t MUST NOT be the identity").
+ pub fn decode_record_commitment(bytes: &[u8]) -> Result<RistrettoPoint, CryptoError> {
+     let c = decode_point(bytes)?;
+-    if c == RistrettoPoint::identity() {
+-        return Err(CryptoError::IdentityCommitment);
+-    }
+     Ok(c)
+ }

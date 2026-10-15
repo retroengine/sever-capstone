@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/commit.rs
++++ b/crates/sever-crypto/src/commit.rs
+@@ -48,7 +48,7 @@
+     c_t: &RistrettoPoint,
+     c_s_pre: &RistrettoPoint,
+ ) -> bool {
+-    c_s_post + c_t == *c_s_pre
++    c_s_post - c_t == *c_s_pre
+ }
+ 
+ /// Decodes an untrusted record commitment `C_t`: canonical (§9.9) and not the identity (§9.9,

@@ -115,3 +115,43 @@
   package: sever-crypto
   tests:
   - crates/sever-crypto/src/tests.rs::p3_crypto_generators_follow_section_9_2_byte_for_byte
+- id: PR3-C12
+  claim: the commitment drops the blinding term r·H (§9.3)
+  kind: red
+  requirements:
+  - SR-9.3-1
+  patch: PR3-C12.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_record_and_group_commitments_match_the_model
+- id: PR3-C13
+  claim: the transition check subtracts C_t from C_S_post instead of adding it (§9.3)
+  kind: red
+  requirements:
+  - SR-9.3-2
+  patch: PR3-C13.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_transition_check_holds_for_a_deletion_and_fails_otherwise
+- id: PR3-C14
+  claim: a zero blinding scalar is replaced by one, so the empty group is not the identity (§5.4, §9)
+  kind: red
+  requirements:
+  - SR-5.4-4
+  patch: PR3-C14.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_the_empty_group_commits_to_the_identity
+- id: PR3-C15
+  claim: the identity is accepted as a record commitment (§9.9)
+  kind: red
+  requirements:
+  - SR-9.9-2
+  patch: PR3-C15.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_a_record_commitment_may_not_be_the_identity

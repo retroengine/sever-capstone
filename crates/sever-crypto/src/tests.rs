@@ -390,3 +390,139 @@ fn p3_crypto_embedded_constants_equal_their_golden_files() {
             .any(|p| p["input"] == input.as_str() && p["output"] == KAT_MAP.1)
     );
 }
+
+const COMMITS: &str = include_str!("../../../golden/p3_commitments.json");
+
+fn ints<T: TryFrom<i64>>(v: &Value) -> Vec<T>
+where
+    T::Error: std::fmt::Debug,
+{
+    v.as_array()
+        .unwrap()
+        .iter()
+        .map(|n| T::try_from(n.as_i64().unwrap()).unwrap())
+        .collect()
+}
+
+fn scalar_hex(v: &Value) -> Scalar {
+    decode_scalar(&unhex(v.as_str().unwrap())).unwrap()
+}
+
+#[test]
+// oracle: B-shared golden/p3_commitments.json, written by sever_refmodel_certs
+#[spec("SR-9.3-1")]
+fn p3_crypto_record_and_group_commitments_match_the_model() {
+    let c = json(COMMITS);
+    let g384 = Generators::derive(384).unwrap();
+    for r in c["records"].as_array().unwrap() {
+        let x: Vec<i32> = ints(&r["x"]);
+        let got = commit_record(&g384, &x, &scalar_hex(&r["r"])).unwrap();
+        assert_eq!(
+            hex(&encode_point(&got)),
+            r["C"].as_str().unwrap(),
+            "{}",
+            r["name"]
+        );
+    }
+    let g16 = Generators::derive(16).unwrap();
+    for g in c["groups"].as_array().unwrap() {
+        let s: Vec<i64> = ints(&g["S"]);
+        let got = commit_group(&g16, &s, &scalar_hex(&g["r_agg"])).unwrap();
+        assert_eq!(
+            hex(&encode_point(&got)),
+            g["C_S"].as_str().unwrap(),
+            "{}",
+            g["name"]
+        );
+    }
+}
+
+#[test]
+// oracle: B-shared golden/p3_commitments.json (C_t, C_S_pre, C_S_post of a three-record group, S and
+// r_agg after deleting the third record by §5.3), checked with the §9.3 transition formula
+#[spec("SR-9.3-2")]
+fn p3_crypto_transition_check_holds_for_a_deletion_and_fails_otherwise() {
+    let t = json(COMMITS)["transition"].clone();
+    let g = Generators::derive(16).unwrap();
+    let pt = |v: &Value| decode_point(&unhex(v.as_str().unwrap())).unwrap();
+    let c_t: Vec<RistrettoPoint> = t["C_t"].as_array().unwrap().iter().map(pt).collect();
+    let (pre, post) = (pt(&t["C_S_pre"]), pt(&t["C_S_post"]));
+    assert_eq!(
+        commit_group(&g, &ints::<i64>(&t["S_pre"]), &scalar_hex(&t["r_agg_pre"])).unwrap(),
+        pre
+    );
+    assert_eq!(
+        commit_group(
+            &g,
+            &ints::<i64>(&t["S_post"]),
+            &scalar_hex(&t["r_agg_post"])
+        )
+        .unwrap(),
+        post
+    );
+    assert!(
+        transition_holds(&post, &c_t[2], &pre),
+        "deleting the third record"
+    );
+    assert!(
+        !transition_holds(&post, &c_t[1], &pre),
+        "a different record's C_t"
+    );
+    assert!(
+        !transition_holds(&pre, &c_t[2], &post),
+        "pre and post swapped"
+    );
+}
+
+#[test]
+// oracle: A §5.4 (an empty group has S = 0, r_agg = 0, C_S = identity) and §0.2 (the identity is
+// 32 zero bytes); §9: the zero scalar is accepted
+#[spec("SR-5.4-4")]
+fn p3_crypto_the_empty_group_commits_to_the_identity() {
+    let g = Generators::derive(16).unwrap();
+    let c = commit_group(&g, &[0; 16], &Scalar::ZERO).unwrap();
+    assert_eq!(encode_point(&c), [0u8; 32]);
+}
+
+#[test]
+// oracle: A §9.9 (C_t MUST NOT be the identity; points canonical on parse)
+#[spec("SR-9.9-2")]
+fn p3_crypto_a_record_commitment_may_not_be_the_identity() {
+    assert_eq!(
+        decode_record_commitment(&[0u8; 32]),
+        Err(CryptoError::IdentityCommitment)
+    );
+    let r = json(R9496);
+    let bad = unhex(r["invalid_encodings"][0].as_str().unwrap());
+    assert_eq!(
+        decode_record_commitment(&bad),
+        Err(CryptoError::NonCanonicalPoint)
+    );
+    let b1 = unhex(r["generator_multiples"][1].as_str().unwrap());
+    assert!(decode_record_commitment(&b1).is_ok());
+}
+
+#[test]
+// oracle: A §9.3 (each commitment is linear in its inputs) and the d-component rule of §2.1
+fn p3_crypto_commitments_are_additive_and_need_d_components() {
+    let g = Generators::derive(8).unwrap();
+    let (s, x) = (
+        [5i64, -7, 1 << 40, -(1 << 40), 0, 1, -1, 3],
+        [-(1i32 << 24), 16_777_232, 9, -9, 0, 0, 4, -4],
+    );
+    let (r_agg, r_t) = (Scalar::from(11u64), Scalar::from(22u64));
+    let sum: Vec<i64> = s.iter().zip(x).map(|(a, b)| a + i64::from(b)).collect();
+    let pre = commit_group(&g, &sum, &(r_agg + r_t)).unwrap();
+    assert_eq!(
+        pre,
+        commit_group(&g, &s, &r_agg).unwrap() + commit_record(&g, &x, &r_t).unwrap()
+    );
+    assert_eq!(
+        commit_record(&g, &x[..7], &r_t),
+        Err(CryptoError::WrongLength)
+    );
+    assert_eq!(
+        commit_group(&g, &[0; 9], &r_agg),
+        Err(CryptoError::WrongLength)
+    );
+}

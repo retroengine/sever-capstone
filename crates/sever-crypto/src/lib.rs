@@ -8,15 +8,18 @@
 //! - `hash_to_group`: RFC 9496's one-way map on 64 expanded bytes (§9.2);
 //! - canonical decoding of points and scalars (§9.9) and their encodings (§0.2);
 //! - the integer-to-scalar map `scalar(v)` (§4.5);
-//! - the generators `H, G_0 … G_{d−1}`, `gdigest` and the startup self-check (§9.2, §9.6, INV-10).
+//! - the generators `H, G_0 … G_{d−1}`, `gdigest` and the startup self-check (§9.2, §9.6, INV-10);
+//! - record and group commitments and the public transition check (§9.3).
 
 #![forbid(unsafe_code)]
 
+mod commit;
 pub mod dst;
 pub(crate) mod generators;
 mod group;
 mod xmd;
 
+pub use commit::{commit_group, commit_record, decode_record_commitment, transition_holds};
 pub use curve25519_dalek::ristretto::RistrettoPoint;
 pub use curve25519_dalek::scalar::Scalar;
 pub use generators::{
@@ -39,6 +42,8 @@ pub enum CryptoError {
     NonCanonicalScalar,
     /// RFC 9380 §5.3.1 step 3: the requested length or the DST is out of range.
     ExpandOutOfRange,
+    /// §9.9: a record commitment `C_t` is the identity.
+    IdentityCommitment,
     /// §9.2 startup self-check failed (INV-10); names the check, never a value.
     SelfCheck(&'static str),
 }

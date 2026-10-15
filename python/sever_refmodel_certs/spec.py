@@ -44,3 +44,16 @@ def gdigest(d: int = D_V1) -> bytes:
     """§9.6: ``SHA-512(H ‖ G_0 ‖ … ‖ G_{d−1})`` over the 32-byte encodings."""
     h, gs = generators(d)
     return hashlib.sha512(encode(h) + b"".join(encode(g) for g in gs)).digest()
+
+
+def commit(values: list[int], blind: int, d: int | None = None) -> Point:
+    """§9.3: ``blind·H + Σ_i scalar(values_i)·G_i``, the record commitment ``C_t`` (values = x̃,
+    i32) or the group commitment ``C_S`` (values = S, i64)."""
+    n = len(values) if d is None else d
+    if len(values) != n:
+        raise ValueError("commit: wrong number of components")
+    h, gs = generators(n)
+    acc = h * (blind % L)
+    for v, g in zip(values, gs, strict=True):
+        acc = acc + g * scalar(v)
+    return acc
