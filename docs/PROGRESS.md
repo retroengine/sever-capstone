@@ -94,6 +94,15 @@ INV-10, INV-15; Appendix B vectors 1, 2, 3, 4, 6, 8, 9. Out: encryption and eras
    steps PASS). DB-76 (owner): AT-18…AT-20 added before any result. Each SB item joins
    `tests/sabotage/run.sh` when its crate is built.
 4. Pin the crypto dependencies (spec §20.2/§20.3: one `rand_core`, `digest`, `curve25519-dalek`).
+   **Done 15 Oct 2026:** a throwaway spike (temporary worktree, deleted) with `curve25519-dalek
+   =4.1.3`, `ed25519-dalek =2.2.0`, `merlin =3.0.0`, `sha2 =0.10.9`, `hmac =0.12.1`, `rand_core
+   =0.6.4`, `zeroize =1.9.0` resolved offline to one `rand_core` 0.6.4, `digest` 0.10.7, `getrandom`
+   0.2.17 and `curve25519-dalek` 4.1.3 (§20.3 checks 1–2), built on 1.98.1 and 1.85 (check 6), and
+   passed `cargo deny` licences, advisories, bans and sources (check 5; the existing `syn`
+   duplicate warning is unchanged); a standalone verifier-style workspace resolved the same way.
+   New `ci.sh fast` step `dalek-pinned` (check 2 in every lockfile), and `crypto-deps` also covers
+   `verifier/` once it exists. Each Part 3 crate pins these exactly in its own `Cargo.toml`
+   (`"=x.y.z" # spec §20.1`), as Parts 1–2 do. Step 0 is complete; next: module 1, `sever-crypto`.
 
 **Module order** (dependencies first; each module: tests first with oracles, CLAUDE.md §4 and §6.3):
 

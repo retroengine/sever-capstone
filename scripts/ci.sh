@@ -19,8 +19,18 @@ step() { # $1 = name, rest = command
   if "$@" >"/tmp/sever-ci-$name.log" 2>&1; then echo "STEP $name: PASS"
   else echo "STEP $name: FAIL (log: /tmp/sever-ci-$name.log)"; tail -20 "/tmp/sever-ci-$name.log"; failed=1; fi
 }
-no_duplicate_crypto_deps() { # spec §20.3 check 1
-  ! cargo tree -d --workspace 2>/dev/null | grep -E "^(rand_core|digest|getrandom|curve25519-dalek) v"
+no_duplicate_crypto_deps() { # spec §20.3 check 1, in the main workspace and (once it exists) verifier/
+  ! cargo tree -d --workspace 2>/dev/null | grep -E "^(rand_core|digest|getrandom|curve25519-dalek) v" || return 1
+  [ ! -e verifier/Cargo.toml ] || ! (cd verifier && cargo tree -d --workspace 2>/dev/null) \
+    | grep -E "^(rand_core|digest|getrandom|curve25519-dalek) v"
+}
+dalek_pinned() { # spec §20.3 check 2: every lockfile that has curve25519-dalek has exactly 4.1.3
+  local lock v
+  for lock in Cargo.lock verifier/Cargo.lock audit/Cargo.lock; do
+    [ -e "$lock" ] || continue
+    v=$(awk '$0 == "name = \"curve25519-dalek\"" { getline; gsub(/"/, "", $3); print $3 }' "$lock" | sort -u)
+    [ -z "$v" ] || [ "$v" = "4.1.3" ] || { echo "$lock: curve25519-dalek ${v//$'\n'/ }, spec §20.1 pins 4.1.3"; return 1; }
+  done
 }
 freeze_guard() { # F-2: no file of a frozen part changes (Build §0.3)
   local m; for m in freeze/PART-*.sha256; do [ -e "$m" ] || continue; sha256sum --quiet -c "$m" || return 1; done
@@ -46,6 +56,7 @@ fast() {
   step proofs-check-p3 uv run --no-sync python -m sever_testkit_p3.proofs check
   step registers-p3 uv run --no-sync python -m sever_testkit_p3.registers check
   step crypto-deps no_duplicate_crypto_deps
+  step dalek-pinned dalek_pinned
   step freeze-guard freeze_guard
   step fair-check scripts/fair.sh check
 }
