@@ -1,0 +1,11 @@
+--- a/crates/sever-log/src/merkle.rs
++++ b/crates/sever-log/src/merkle.rs
+@@ -20,7 +20,7 @@
+ /// `SHA-256(0x00 ‖ leaf)` (RFC 9162 §2.1.1).
+ pub fn leaf_hash(leaf: &[u8]) -> Hash {
+     let mut h = Sha256::new();
+-    h.update([0u8]);
++    h.update([1u8]);
+     h.update(leaf);
+     h.finalize().into()
+ }

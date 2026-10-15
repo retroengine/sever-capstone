@@ -1,0 +1,12 @@
+--- a/crates/sever-log/src/merkle.rs
++++ b/crates/sever-log/src/merkle.rs
+@@ -149,8 +149,8 @@
+         }
+         let k = split(len);
+         if m < k {
+-            self.path(m, start, k, out)?;
+             out.push(self.subtree(start + k, len - k)?);
++            self.path(m, start, k, out)?;
+         } else {
+             self.path(m - k, start + k, len - k, out)?;
+             out.push(self.subtree(start, k)?);

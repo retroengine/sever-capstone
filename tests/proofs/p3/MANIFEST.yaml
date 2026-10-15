@@ -451,3 +451,54 @@
   package: sever-commit
   tests:
   - crates/sever-commit/src/tests.rs::p3_commit_full_blob_matches_golden_vector_8
+- id: PR3-L01
+  claim: leaf_hash uses the node prefix 0x01 instead of 0x00 (RFC 9162 §2.1.1)
+  kind: red
+  requirements:
+  - SR-10.1-1
+  patch: PR3-L01.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/tests.rs::p3_log_tree_matches_the_rfc9162_worked_example
+- id: PR3-L02
+  claim: PATH lists the sibling before the deeper nodes (RFC 9162 §2.1.3.1)
+  kind: red
+  requirements:
+  - SR-10.1-2
+  patch: PR3-L02.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/tests.rs::p3_log_tree_matches_the_rfc9162_worked_example
+  - crates/sever-log/src/tests.rs::p3_log_proofs_match_golden_vector_9_and_verify
+- id: PR3-L03
+  claim: PATH out of order, seen by golden vector 9 (Appendix B)
+  kind: red
+  requirements:
+  - SR-B-9
+  patch: PR3-L02.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/tests.rs::p3_log_proofs_match_golden_vector_9_and_verify
+- id: PR3-L04
+  claim: consistency verification does not check the first root (RFC 9162 §2.1.4.2 step 7)
+  kind: red
+  requirements:
+  - SR-10.1-2
+  patch: PR3-L04.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/tests.rs::p3_log_verifiers_reject_altered_proofs
+- id: PR3-L05
+  claim: subtree hashes are rebuilt from the leaves instead of read from the stored levels (§10.5)
+  kind: red
+  requirements:
+  - SR-10.5-2
+  patch: PR3-L05.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/tests.rs::p3_log_proofs_cost_logarithmic_work_at_any_size

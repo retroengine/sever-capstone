@@ -1,0 +1,21 @@
+[package]
+name = "sever-log"
+version = "0.1.0"
+description = "RFC 9162 transparency log: tree, proofs, leaves, log checkpoints, witnesses (Part 3, spec §10)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[features]
+# Build §2.6: each builds the crate with exactly one deliberate bug. A test must go red.
+sabotage-SB-20 = [] # accept three of five cosignatures
+
+[dependencies]
+sha2 = "=0.10.9" # spec §20.1
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+serde_json = "1"
+
+[lints]
+workspace = true

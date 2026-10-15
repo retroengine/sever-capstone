@@ -8,9 +8,10 @@ Files: ``p3_generators.json`` (Appendix B vectors 1 and 2: ``H``, ``G_0``, ``G_3
 ``gdigest``, §9.6), ``p3_commitments.json`` (§9.3 record and group commitments and the transition
 check), ``p3_scalar_map.json`` (Appendix B vector 4, §4.5), ``p3_full_blob.json`` (Appendix B
 vector 8, full form), ``p3_group_stream.json`` (a scripted insert/delete stream and every state,
-§5.3–5.5) and ``p3_posk.json`` (Appendix B
-vector 3: a fixed challenge, §9.5; and one complete proof at d = 16 with fixed nonces). Once
-committed, a golden file changes only with a recorded reason (CLAUDE.md §6.2).
+§5.3–5.5), ``p3_merkle_7.json`` (Appendix B vector 9, RFC 9162 proofs of a 7-leaf tree) and
+``p3_posk.json`` (Appendix B vector 3: a fixed challenge, §9.5; and one complete proof at d = 16
+with fixed nonces). Once committed, a golden file changes only with a recorded reason
+(CLAUDE.md §6.2).
 
 The blinding values in ``p3_commitments.json`` are fixed test data (SHA-512 of a label, reduced mod
 ℓ), never a database's ``r_t``: production ``r_t`` come only from the OS CSPRNG (§9.4).
@@ -23,7 +24,7 @@ import sys
 from pathlib import Path
 from typing import Any, Final
 
-from sever_refmodel_certs import posk, spec
+from sever_refmodel_certs import merkle, posk, spec
 from sever_refmodel_certs.group import CertGroup
 from sever_refmodel_certs.ristretto import IDENTITY, L, encode, encode_scalar
 
@@ -33,6 +34,7 @@ OUT_POSK: Final = Path("golden/p3_posk.json")
 OUT_SCALARS: Final = Path("golden/p3_scalar_map.json")
 OUT_FULL_BLOB: Final = Path("golden/p3_full_blob.json")
 OUT_STREAM: Final = Path("golden/p3_group_stream.json")
+OUT_MERKLE: Final = Path("golden/p3_merkle_7.json")
 
 
 def generators_vector() -> dict[str, Any]:
@@ -159,6 +161,26 @@ def stream_vector() -> dict[str, Any]:
             "steps": steps}  # fmt: skip
 
 
+def merkle_vector() -> dict[str, Any]:
+    """Appendix B vector 9: RFC 9162 roots, inclusion and consistency proofs of a 7-leaf tree."""
+    d = [f"d{i}".encode() for i in range(7)]
+    return {
+        "source": "sever_refmodel_certs (RFC 9162 §2.1 definitions); spec §10.1; Appendix B 9",
+        "leaves": [x.hex() for x in d],
+        "roots": [merkle.mth(d[:n]).hex() for n in range(8)],
+        "inclusion": [
+            {"index": i, "size": n, "path": [h.hex() for h in merkle.path(i, d[:n])]}
+            for n in range(1, 8)
+            for i in range(n)
+        ],
+        "consistency": [
+            {"first": a, "second": n, "proof": [h.hex() for h in merkle.proof(a, d[:n])]}
+            for n in range(2, 8)
+            for a in range(1, n)
+        ],
+    }
+
+
 def scalar_vector() -> dict[str, Any]:
     """Appendix B vector 4: ``scalar(v)`` for ``v ∈ {0, 1, −1, 2^44, −2^44}`` (§4.5)."""
     vs = [0, 1, -1, 2**44, -(2**44)]
@@ -225,6 +247,7 @@ def main(argv: list[str]) -> int:
         (OUT_SCALARS, scalar_vector()),
         (OUT_FULL_BLOB, full_blob_vector(args.root)),
         (OUT_STREAM, stream_vector()),
+        (OUT_MERKLE, merkle_vector()),
     ):
         path, text = args.root / rel, _dump(data)
         if args.command == "write":

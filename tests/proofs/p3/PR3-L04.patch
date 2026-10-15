@@ -1,0 +1,9 @@
+--- a/crates/sever-log/src/merkle.rs
++++ b/crates/sever-log/src/merkle.rs
+@@ -270,5 +270,5 @@
+         fn_ >>= 1; // 6c
+         sn >>= 1;
+     }
+-    fr == *first_hash && sr == *second_hash && sn == 0 // step 7
++    sr == *second_hash && sn == 0 // step 7 without fr
+ }
