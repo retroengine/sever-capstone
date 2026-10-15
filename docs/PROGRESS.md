@@ -119,6 +119,15 @@ Tools for proofs: write patches with a scratch script (diff -u of one replaced s
 manifest entries, verify each with `cargo test -p <pkg> -- --exact tests::<name>` (must FAIL), then
 `python -m sever_testkit_p3.proofs check`. rustfmt rewraps lines: match the formatted text.
 
+**Erratum E-2 (15 Oct 2026; `ERRATA.md`).** Building step 4c showed that the frozen Part 2 engine
+never called EP-7's `pre_transaction`, so the on-demand log checkpoint could not be its own committed
+transaction (§15.3 step 3). Red test first (8c314a5), fix a244264 (branch `p2-erratum-e2`): the engine
+calls the hook after planning and commits a requested pre-transaction on its own first. Red proof
+PR-ERR2 PROVEN; `scripts/ci.sh fast` PASS; `gates p2-checks` PASS on a244264 (ledger, 29/29 steps);
+the sealed clean-room suite of the Part 2 fair run on the E-2 engine 255 passed / 0 failed / 1
+skipped (ledger; run with the run's own `configs/fair.yaml`, FT-8). Freeze manifest updated (250
+files). **Owner: tag `part-2-frozen-e2`** on a244264 when convenient.
+
 **Decisions taken in grind mode** (owner, 15 Oct 2026: "at each decision don't ask me"; commit
 only, no push). Each is recorded as a DB entry; review them when convenient:
 
