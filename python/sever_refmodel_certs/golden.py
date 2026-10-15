@@ -6,7 +6,9 @@ that owns a vector generates it once, from an implementation independent of the 
 
 Files: ``p3_generators.json`` (Appendix B vectors 1 and 2: ``H``, ``G_0``, ``G_383``, §9.2;
 ``gdigest``, §9.6), ``p3_commitments.json`` (§9.3 record and group commitments and the transition
-check), ``p3_scalar_map.json`` (Appendix B vector 4, §4.5) and ``p3_posk.json`` (Appendix B
+check), ``p3_scalar_map.json`` (Appendix B vector 4, §4.5), ``p3_full_blob.json`` (Appendix B
+vector 8, full form), ``p3_group_stream.json`` (a scripted insert/delete stream and every state,
+§5.3–5.5) and ``p3_posk.json`` (Appendix B
 vector 3: a fixed challenge, §9.5; and one complete proof at d = 16 with fixed nonces). Once
 committed, a golden file changes only with a recorded reason (CLAUDE.md §6.2).
 
@@ -22,12 +24,15 @@ from pathlib import Path
 from typing import Any, Final
 
 from sever_refmodel_certs import posk, spec
+from sever_refmodel_certs.group import CertGroup
 from sever_refmodel_certs.ristretto import IDENTITY, L, encode, encode_scalar
 
 OUT_GENERATORS: Final = Path("golden/p3_generators.json")
 OUT_COMMITMENTS: Final = Path("golden/p3_commitments.json")
 OUT_POSK: Final = Path("golden/p3_posk.json")
 OUT_SCALARS: Final = Path("golden/p3_scalar_map.json")
+OUT_FULL_BLOB: Final = Path("golden/p3_full_blob.json")
+OUT_STREAM: Final = Path("golden/p3_group_stream.json")
 
 
 def generators_vector() -> dict[str, Any]:
@@ -102,6 +107,58 @@ def commitments_vector() -> dict[str, Any]:
     }
 
 
+def _state(g: CertGroup) -> dict[str, Any]:
+    return {"n": g.n, "S": g.s, "r_agg": encode_scalar(g.r_agg).hex(), "C_S": encode(g.c_s).hex(),
+            "blob": g.full_blob().hex()}  # fmt: skip
+
+
+def full_blob_vector(root: Path) -> dict[str, Any]:
+    """Appendix B vector 8, full form: Part 1's three-member group (golden/p1_core_blob.json) with
+    fixed test blinding values."""
+    core = json.loads((root / "golden/p1_core_blob.json").read_text(encoding="utf-8"))
+    g = CertGroup(core["d"])
+    members = []
+    for k, (rid, x) in enumerate(core["members"].items()):
+        r = _blind(f"SEVER-DB p3 full blob r_t {k}")
+        g.insert(rid, tuple(x), r)
+        members.append({"id": rid, "x": x, "r_t": encode_scalar(r).hex()})
+    return {"source": "sever_refmodel_certs (DB-51); spec §5.5 full form (DB-47); Appendix B 8",
+            "d": core["d"], "members": members, **_state(g)}  # fmt: skip
+
+
+def stream_vector() -> dict[str, Any]:
+    """A scripted stream at d = 8 and the full state after each step (§5.3, §5.4, §5.5)."""
+    big = 2**24 + 16
+    xs = {
+        "a": (1, -2, 3, -4, 5, -6, 7, -8),
+        "Z": (big, -big, 0, 0, big, -big, 1, -1),
+        "é": (-(2**24), 2**24, 9, 9, 9, 9, -9, 0),
+        "a2": (0, 0, 0, 0, 0, 0, 0, 1),
+    }
+    script = [("insert", "a", "a"), ("insert", "Z", "Z"), ("insert", "é", "é"), ("delete", "Z", ""),
+              ("delete", "Z", ""), ("insert", "Z", "a2"), ("delete", "a", ""), ("delete", "é", ""),
+              ("delete", "Z", "")]  # fmt: skip
+    g = CertGroup(8)
+    steps: list[dict[str, Any]] = []
+    for k, (op, rid, xkey) in enumerate(script):
+        step: dict[str, Any] = {"op": op, "id": rid}
+        if op == "insert":
+            r = _blind(f"SEVER-DB p3 stream r_t {k}")
+            step |= {"x": list(xs[xkey]), "r_t": encode_scalar(r).hex()}
+            step["C_t"] = g.insert(rid, xs[xkey], r).hex()
+        else:
+            rem = g.delete(rid)
+            step["absent"] = rem is None
+            if rem is not None:
+                step |= {"C_S_pre": rem.c_s_pre.hex(), "C_t": rem.c_t.hex(),
+                         "C_S_post": rem.c_s_post.hex(),
+                         "group_emptied": rem.group_emptied}  # fmt: skip
+        step["after"] = _state(g)
+        steps.append(step)
+    return {"source": "sever_refmodel_certs (DB-51); spec §5.3-5.5, §9.3-9.4", "d": 8,
+            "steps": steps}  # fmt: skip
+
+
 def scalar_vector() -> dict[str, Any]:
     """Appendix B vector 4: ``scalar(v)`` for ``v ∈ {0, 1, −1, 2^44, −2^44}`` (§4.5)."""
     vs = [0, 1, -1, 2**44, -(2**44)]
@@ -166,6 +223,8 @@ def main(argv: list[str]) -> int:
         (OUT_COMMITMENTS, commitments_vector()),
         (OUT_POSK, posk_vector()),
         (OUT_SCALARS, scalar_vector()),
+        (OUT_FULL_BLOB, full_blob_vector(args.root)),
+        (OUT_STREAM, stream_vector()),
     ):
         path, text = args.root / rel, _dump(data)
         if args.command == "write":
