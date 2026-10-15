@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-78)](#6-decision-register-db-1--db-53-db-55--db-78)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-79)](#6-decision-register-db-1--db-53-db-55--db-79)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-78)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-79)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1017,6 +1017,21 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-79 — The genesis log checkpoint (15 October 2026)
+
+**Decision.** The genesis log checkpoint is `(tree_size 0, root SHA-256(""), timestamp_ms =
+database creation time, epoch 0)`, signed by the operator when the database is created. Every
+witness starts from it as its last cosigned checkpoint; a witness accepts any first real checkpoint
+as an extension of it (every tree extends the empty one, and RFC 9162 proofs need `0 < first`). The
+verifier's anchors no longer list a genesis checkpoint. **Why.** §11.3 listed a genesis checkpoint
+as a verifier input that no step used, and §10.4's witnesses needed a starting point that was never
+defined (G-4). The empty-tree root is RFC 9162's `MTH({})`, and signing it at creation fixes the
+genesis time from which epochs count (§9.8). **Rejected.** Keeping genesis in the verifier anchors
+(no step would use it, and it would tie each verifier release to one database); witnesses starting
+from the first real checkpoint unchecked (that first cosignature would vouch for nothing).
+**Consequence.** Closes G-4; spec §10.3, §10.4 and §11.3 amended; `sever-log` implements
+`LogCheckpoint::genesis` and starts `SimulatedWitness` from it.
 
 #### DB-78 — A malformed insert credential is a `CommitmentMismatch` (15 October 2026)
 
@@ -1929,6 +1944,8 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **15 October 2026 — Genesis log checkpoint.** DB-79 (defined; witnesses start from it; dropped
+  from the verifier anchors; closes G-4). Specification sections touched: §10.3, §10.4, §11.3.
 - **15 October 2026 — Insert credential errors.** DB-78 (a malformed `C_t` or `r_t` is
   `CommitmentMismatch`). No specification section touched.
 - **15 October 2026 — Generator self-check.** DB-77 (H, G_0 and G_383 at every d; gdigest at

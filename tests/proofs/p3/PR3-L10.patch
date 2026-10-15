@@ -1,0 +1,15 @@
+--- a/crates/sever-log/src/checkpoint.rs
++++ b/crates/sever-log/src/checkpoint.rs
+@@ -172,10 +172,8 @@
+     for c in cosigs {
+         if c.verify(cp, witnesses) {
+             if let Some(s) = seen.get_mut(usize::from(c.witness_index)) {
+-                if !*s {
+-                    *s = true;
+-                    valid += 1;
+-                }
++                *s = true;
++                valid += 1;
+             }
+         }
+     }

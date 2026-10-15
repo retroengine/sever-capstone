@@ -1,0 +1,11 @@
+--- a/crates/sever-log/src/leaf.rs
++++ b/crates/sever-log/src/leaf.rs
+@@ -3,7 +3,7 @@
+ /// Leaf type byte of an insert leaf.
+ pub const LEAF_INSERT: u8 = 0x01;
+ /// Leaf type byte of a delete leaf.
+-pub const LEAF_DELETE: u8 = 0x02;
++pub const LEAF_DELETE: u8 = 0x03;
+ /// Size of an insert leaf (§10.2, Appendix A).
+ pub const INSERT_LEAF_LEN: usize = 209;
+ 

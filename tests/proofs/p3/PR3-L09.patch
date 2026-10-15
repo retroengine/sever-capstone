@@ -1,0 +1,11 @@
+--- a/crates/sever-log/src/checkpoint.rs
++++ b/crates/sever-log/src/checkpoint.rs
+@@ -7,7 +7,7 @@
+ use crate::merkle::{Hash, empty_root};
+ 
+ /// Checkpoint cadence (§2.2, §10.3): one whenever `tree_size` reaches a multiple of this.
+-pub const CHECKPOINT_EVERY: u64 = 10_000;
++pub const CHECKPOINT_EVERY: u64 = 1_000;
+ /// Number of witnesses (§2.2, §10.4).
+ pub const WITNESSES: u8 = 5;
+ /// Cosignatures from distinct witnesses that make a checkpoint witnessed (§2.2, §10.4).

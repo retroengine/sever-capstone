@@ -1,0 +1,12 @@
+--- a/crates/sever-log/src/leaf.rs
++++ b/crates/sever-log/src/leaf.rs
+@@ -39,8 +39,8 @@
+         let parts: [&[u8]; 6] = [
+             &[LEAF_INSERT],
+             &self.collection_id,
+-            &self.scrambled_id,
+             &self.c_t,
++            &self.scrambled_id,
+             &self.user_public_key,
+             &self.user_signature,
+         ];

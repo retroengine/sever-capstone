@@ -104,11 +104,29 @@ INV-10, INV-15; Appendix B vectors 1, 2, 3, 4, 6, 8, 9. Out: encryption and eras
    `verifier/` once it exists. Each Part 3 crate pins these exactly in its own `Cargo.toml`
    (`"=x.y.z" # spec §20.1`), as Parts 1–2 do. Step 0 is complete; next: module 1, `sever-crypto`.
 
+**RESUME HERE (15 Oct 2026, ~19:30 UTC, grind mode).** Branch `p3-sever-log` (built on
+`p3-sever-commit` ← `p3-refmodel-certs` ← `p3-sever-crypto`; nothing merged to `main`, nothing pushed
+since `p3-sever-crypto`@60a8bf5, by the owner's rule "commit only, no push"). Done: step 0; modules
+1 (closed locally; fair run deferred until SDK/CLI exist), 2 (partial: no §11.3 certificate model
+yet), 3, 4a, 4b. Next, in order: module 5 `sever-cert` (TLV §11.1–11.2, builder, epoch signing;
+model certificate checks + golden Appendix B 6; SB-22), then 4c (`LogParticipant`, EP-7, needs
+`sever-cert` through a `CertificateIssuer` trait declared in `sever-log` to avoid a crate cycle), 6
+`sever-p3` (composition root, key store, five `SimulatedWitness`es, CLI `sever-db-p3`; SB-21), 7 SDK
+`sever-py-p3`/`sever_db_p3` (`UserKey`, `prepare_insert`, `SeededNonceForbidden`), 8 `verifier/`
+(separate workspace; DB-77 self-check; AT-1…AT-20), 9 `audit/` (AF-1…AF-5), 10 `SOUNDNESS.md`, 11
+demo + gates P3-T1…T12 (crash campaign with certificates, fuzz 10^8, p3-mutants, coverage, fair
+run part 3) + measure P3-T13 + proof spike, then the freeze manifest (tag left to the owner).
+Tools for proofs: write patches with a scratch script (diff -u of one replaced string), add
+manifest entries, verify each with `cargo test -p <pkg> -- --exact tests::<name>` (must FAIL), then
+`python -m sever_testkit_p3.proofs check`. rustfmt rewraps lines: match the formatted text.
+
 **Decisions taken in grind mode** (owner, 15 Oct 2026: "at each decision don't ask me"; commit
 only, no push). Each is recorded as a DB entry; review them when convenient:
 
 - DB-78: a malformed insert credential (non-canonical or identity `C_t`, non-canonical `r_t`) is
   `CommitmentMismatch`.
+- DB-79 (closes G-4): the genesis log checkpoint is `(0, SHA-256(""), creation time, epoch 0)`,
+  signed at creation; witnesses start from it; dropped from the verifier anchors.
 - `sever-commit` reads the log through a `LeafLog` trait (next leaf index at `admit`; the insert
   leaf's `C_t` at removal), so module 3 does not depend on `sever-log` (module 4). One writer at a
   time (§12.5) makes the next leaf index the insert's own.
@@ -120,7 +138,7 @@ only, no push). Each is recorded as a DB entry; review them when convenient:
 | 1 | `sever-crypto` (generators + self-check, scalar map, commitments, PoK, hedged nonces, Ed25519, HMAC) | §4.5, §9 | **built and closed locally, 15 Oct 2026**: 32 tests + 3 doc tests; 33 red proofs hold on HEAD (`docs/PROOFS_P3.md`) + 2 doc-test proofs (`tests/proofs/p3/doctests.sh`); SB-16/17/18/19/23 each turn tests red; RFC 8032/9380/9496 vectors pass; engine = model byte for byte (Appendix B 1–4, commitments, a proof). Its §9 rules are traced except those of later modules (9.2-4 verifier; 9.3-3, 9.4-2 sever-commit; 9.4-1, 9.6-4 SDK; 9.8-6, 9.8-8 key store/witnesses). **Fair run deferred** (owner gave `--yes` 15 Oct): `fair.sh` tests through the SDK and CLI (`sever-py-p3`, `sever-p3`, modules 6–7) and needs a `p3-mutants` PASS (all its crates); the offline dry run stopped at `cargo build -p sever-p3`, no session started, nothing spent. Run it when modules 6–7 exist |
 | 2 | `sever_refmodel_certs` (Python, from the spec only: the independent oracle) | §5.3, §9.3, §11.3 | in progress: pure-Python ristretto255 + `expand_message_xmd` (all RFC vectors pass), `scalar`, generators, gdigest, commitments, proof of knowledge, group state (§5.3–5.5: S, n, r_agg, C_S together; full-form `SEVERG` blob and parser): 19 tests. Goldens: generators (B 1–2), commitments, posk (B 3), scalar map (B 4), full blob (B 8), a group stream, RFC 9162 Merkle (B 9). Still to come with module 5: the §11.3 certificate checks (B 6). Prototype cross-check of B-1 pending |
 | 3 | `sever-commit` (EP-1 `CommitmentExtension`) | §5.3, §9.3–9.4 | built (branch `p3-sever-commit`): EP-1 + `StoredExtension` (C_S 32, r_agg 32, record secret 41), admit (recompute C_t, `verify_strict` signature), removal check against the logged C_t, INV-3, full-form blob; 9 tests (frozen EP-1 contract passes; model stream and Appendix B 8 match byte for byte); 11 red proofs (PR3-M01…M11) |
-| 4 | `sever-log` (RFC 9162 tree, proofs, checkpoints, EP-7 participant, EP-10 + `SimulatedWitness`) | §10 | in progress (branch `p3-sever-log`): 4a Merkle tree done (every complete subtree kept, roots at any past size, PATH/PROOF and the RFC verifiers; RFC 9162 worked example and Appendix B 9 match; O(log n) work checked): 5 tests, 5 red proofs. Next 4b: leaves, log checkpoints, witnesses (EP-10, SB-20, G-4); 4c the EP-7 participant after module 5 |
+| 4 | `sever-log` (RFC 9162 tree, proofs, checkpoints, EP-7 participant, EP-10 + `SimulatedWitness`) | §10 | in progress (branch `p3-sever-log`): 4a Merkle tree done (5 tests, PR3-L01…L05). 4b done: leaves (209-byte insert, `0x02 ‖ cert` delete), log checkpoints (116-byte encoding, cadence 10,000, genesis DB-79), keys by epoch (old keys resolvable), cosignatures and the 4-of-5 distinct threshold (SB-20), EP-10 `Witness` + `SimulatedWitness` + contract (passes; a careless witness fails: P3-T12's negative half): 13 tests, PR3-L06…L13 all red. Next 4c: the EP-7 `LogParticipant` (WAL records LOG_LEAF / LOG_CHECKPOINT / CERT_REF, append stores, replay, INV-15, on-demand checkpoint) after module 5 `sever-cert` |
 | 5 | `sever-cert` (TLV, builder, epoch signing) | §11.1–11.2 | not started |
 | 6 | `sever-p3` (composition root, CLI `sever-db-p3`) | — | not started |
 | 7 | `sever-py-p3` / `sever_db_p3` (SDK: `UserKey`, `prepare_insert`, no injectable randomness) | §16.2 | not started |

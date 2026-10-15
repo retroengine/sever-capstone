@@ -502,3 +502,84 @@
   package: sever-log
   tests:
   - crates/sever-log/src/tests.rs::p3_log_proofs_cost_logarithmic_work_at_any_size
+- id: PR3-L06
+  claim: the insert leaf puts C_t before scrambled_id (§10.2)
+  kind: red
+  requirements:
+  - SR-10.2-1
+  patch: PR3-L06.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/tests.rs::p3_log_insert_leaf_is_the_209_byte_layout
+- id: PR3-L07
+  claim: the delete leaf type byte is not 0x02 (§10.2)
+  kind: red
+  requirements:
+  - SR-10.2-2
+  patch: PR3-L07.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/tests.rs::p3_log_delete_leaf_is_0x02_and_the_certificate
+- id: PR3-L08
+  claim: the checkpoint encodes epoch little-endian (§11.2)
+  kind: red
+  requirements:
+  - SR-10.3-1
+  patch: PR3-L08.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/tests.rs::p3_log_checkpoint_is_signed_over_section_9_8_and_encodes_in_116_bytes
+- id: PR3-L09
+  claim: a checkpoint every 1,000 leaves instead of 10,000 (§10.3)
+  kind: red
+  requirements:
+  - SR-10.3-2
+  patch: PR3-L09.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/tests.rs::p3_log_checkpoint_cadence_is_every_10000_leaves
+- id: PR3-L10
+  claim: cosignatures are counted without requiring distinct witnesses (§10.4, §11.3 step 4)
+  kind: red
+  requirements:
+  - SR-10.4-2
+  - SR-2.2-2
+  patch: PR3-L10.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/tests.rs::p3_log_a_checkpoint_is_witnessed_by_four_distinct_valid_cosignatures
+- id: PR3-L11
+  claim: SimulatedWitness cosigns without checking consistency (§10.4)
+  kind: red
+  requirements:
+  - SR-10.4-1
+  patch: PR3-L11.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/tests.rs::p3_log_ep10_contract_passes_for_simulated_and_fails_for_careless_witnesses
+- id: PR3-L12
+  claim: a new epoch key replaces the old ones, so old public keys stop resolving (§9.8)
+  kind: red
+  requirements:
+  - SR-9.8-6
+  patch: PR3-L12.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/tests.rs::p3_log_old_epoch_keys_stay_resolvable
+- id: PR3-L13
+  claim: the genesis checkpoint's root is not SHA-256("") (DB-79)
+  kind: red
+  requirements:
+  - SR-10.3-4
+  patch: PR3-L13.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/tests.rs::p3_log_genesis_checkpoint_is_the_signed_empty_tree

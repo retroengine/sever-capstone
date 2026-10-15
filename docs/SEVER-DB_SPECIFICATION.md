@@ -793,9 +793,14 @@ message in §9.8. The engine issues one:
 - **on demand** before a deletion, if the record's insert leaf is not yet covered by any log checkpoint,
   because the certificate must prove inclusion against a signed, cosigned log checkpoint (§11.2).
 
+The **genesis log checkpoint** is `(tree_size 0, root SHA-256(""), timestamp_ms = database creation
+time, epoch 0)`, signed by the operator when the database is created (DB-79). It is the first
+checkpoint every witness remembers.
+
 ### 10.4 Witnesses
 
-Five witnesses, threshold four. Each witness remembers the last log checkpoint it cosigned, requests the
+Five witnesses, threshold four. Each witness remembers the last log checkpoint it cosigned (the genesis
+log checkpoint at first, §10.3), requests the
 RFC 9162 consistency proof from that log checkpoint to the new one, verifies it, and only then cosigns.
 A log checkpoint with at least four valid cosignatures is **witnessed**. In v1 the witnesses are simulated
 by the project; the mechanism is built and tested, but the guarantee it would give needs genuinely
@@ -870,7 +875,7 @@ commitment was inserted under a user key published in a signed, witnessed log ch
 ### 11.3 Verification algorithm (verifier, C-16)
 
 Inputs: the certificate, and trust anchors bundled with the verifier release (operator public keys by
-epoch, witness public keys by epoch, a genesis log checkpoint, and the generator golden file).
+epoch, witness public keys by epoch, and the generator golden file; DB-79).
 
 1. **Parse** strictly (§11.1). Decode every point and scalar canonically. Reject if `C_t` is the
    identity.

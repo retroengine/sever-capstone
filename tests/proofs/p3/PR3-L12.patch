@@ -1,0 +1,10 @@
+--- a/crates/sever-log/src/keys.rs
++++ b/crates/sever-log/src/keys.rs
+@@ -19,6 +19,7 @@
+ 
+     /// Adds (or confirms) the key of `epoch`; returns false if a different key is already there.
+     pub fn insert(&mut self, epoch: u32, public: [u8; 32]) -> bool {
++        self.keys.clear();
+         *self.keys.entry(epoch).or_insert(public) == public
+     }
+ 

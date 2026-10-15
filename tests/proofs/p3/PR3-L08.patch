@@ -1,0 +1,11 @@
+--- a/crates/sever-log/src/checkpoint.rs
++++ b/crates/sever-log/src/checkpoint.rs
+@@ -84,7 +84,7 @@
+             &self.tree_size.to_be_bytes(),
+             &self.root,
+             &self.timestamp_ms.to_be_bytes(),
+-            &self.epoch.to_be_bytes(),
++            &self.epoch.to_le_bytes(),
+             &self.operator_signature,
+         ];
+         let mut rest = out.as_mut_slice();
