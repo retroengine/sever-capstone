@@ -10,11 +10,13 @@ check), ``p3_scalar_map.json`` (Appendix B vector 4, §4.5), ``p3_full_blob.json
 vector 8, full form), ``p3_group_stream.json`` (a scripted insert/delete stream and every state,
 §5.3–5.5), ``p3_merkle_7.json`` (Appendix B vector 9, RFC 9162 proofs of a 7-leaf tree) and
 ``p3_posk.json`` (Appendix B vector 3: a fixed challenge, §9.5; and one complete proof at d = 16
-with fixed nonces). Once committed, a golden file changes only with a recorded reason
-(CLAUDE.md §6.2).
+with fixed nonces) and ``p3_certificates.json`` (Appendix B vector 6: an honest group-deletion
+certificate and a holding-area certificate at d = 384 with every intermediate value, §10–§11).
+Once committed, a golden file changes only with a recorded reason (CLAUDE.md §6.2).
 
-The blinding values in ``p3_commitments.json`` are fixed test data (SHA-512 of a label, reduced mod
-ℓ), never a database's ``r_t``: production ``r_t`` come only from the OS CSPRNG (§9.4).
+The blinding values, nonces and signing keys in these files are fixed test data (SHA-512 of a
+label), never a database's ``r_t`` or key: production ``r_t``, nonces and keys come only from the
+OS CSPRNG (§9.4, §9.6, §9.8).
 """
 
 import argparse
@@ -24,7 +26,7 @@ import sys
 from pathlib import Path
 from typing import Any, Final
 
-from sever_refmodel_certs import merkle, posk, spec
+from sever_refmodel_certs import cert, ed25519, merkle, posk, spec
 from sever_refmodel_certs.group import CertGroup
 from sever_refmodel_certs.ristretto import IDENTITY, L, encode, encode_scalar
 
@@ -35,6 +37,7 @@ OUT_SCALARS: Final = Path("golden/p3_scalar_map.json")
 OUT_FULL_BLOB: Final = Path("golden/p3_full_blob.json")
 OUT_STREAM: Final = Path("golden/p3_group_stream.json")
 OUT_MERKLE: Final = Path("golden/p3_merkle_7.json")
+OUT_CERTS: Final = Path("golden/p3_certificates.json")
 
 
 def generators_vector() -> dict[str, Any]:
@@ -230,6 +233,167 @@ def posk_vector() -> dict[str, Any]:
     }
 
 
+GENESIS_MS: Final = 1_790_000_000_000
+EPOCH_MS: Final = 90 * 24 * 60 * 60 * 1000  # §9.8
+
+
+def _key(label: str) -> dict[str, str]:
+    sk = cert.secret(label)
+    return {"secret": sk.hex(), "public": ed25519.public_key(sk).hex()}
+
+
+def certificate_vector(d: int = spec.D_V1) -> dict[str, Any]:
+    """Appendix B vector 6 (at d = 384; tests use a smaller d): five records inserted under one user
+    key (leaves 0–4), a checkpoint at tree size 5 in operator epoch 0 with all five cosignatures,
+    then record ``C`` (leaf 2) deleted from its group (``A``, ``B``, ``C``) at ``database_lsn`` 5
+    and record ``D`` (leaf 3) deleted from the holding area at 6, both certified in operator epoch
+    1 (old keys stay resolvable, §9.8)."""
+    operators = {e: _key(f"SEVER-DB p3 cert operator epoch {e}") for e in (0, 1)}
+    witnesses = [_key(f"SEVER-DB p3 cert witness {i} epoch 0") for i in range(5)]
+    user = _key("SEVER-DB p3 cert user")
+    usk = bytes.fromhex(user["secret"])
+    coll = hashlib.sha512(b"SEVER-DB p3 cert collection_id").digest()[:16]
+    records: list[dict[str, Any]] = []
+    for k, name in enumerate("ABCDE"):
+        x = [((k + 1) * 7919 * (i + 5)) % 2**25 - 2**24 for i in range(d)]
+        r = _blind(f"SEVER-DB p3 cert r_t {name}")
+        c_t = encode(spec.commit(x, r))
+        sid = hashlib.sha512(f"SEVER-DB p3 cert scrambled_id {name}".encode()).digest()
+        usig = ed25519.sign(usk, cert.insert_message(coll, c_t))
+        leaf = cert.insert_leaf(coll, sid, c_t, bytes.fromhex(user["public"]), usig)
+        records.append(
+            {
+                "name": name,
+                "x": x,
+                "r_t": encode_scalar(r).hex(),
+                "C_t": c_t.hex(),
+                "scrambled_id": sid.hex(),
+                "user_signature": usig.hex(),
+                "leaf_index": k,
+                "leaf": leaf.hex(),
+                "leaf_hash": merkle.leaf_hash(leaf).hex(),
+            }
+        )
+    leaves = [bytes.fromhex(r["leaf"]) for r in records]
+    root = merkle.mth(leaves)
+    ts = GENESIS_MS + 1000
+    cp_msg = cert.checkpoint_message(len(leaves), root, ts, 0)
+    cp = cert.Checkpoint(
+        len(leaves), root, ts, 0, ed25519.sign(bytes.fromhex(operators[0]["secret"]), cp_msg)
+    )
+    cosigs = [
+        cert.Cosig(i, 0, ed25519.sign(bytes.fromhex(w["secret"]), cert.cosign_message(cp_msg)))
+        for i, w in enumerate(witnesses)
+    ]
+    anchors = cert.Anchors(
+        {e: bytes.fromhex(k["public"]) for e, k in operators.items()},
+        {(i, 0): bytes.fromhex(w["public"]) for i, w in enumerate(witnesses)},
+        d,
+    )
+    op1 = bytes.fromhex(operators[1]["secret"])
+    certified_ms = GENESIS_MS + EPOCH_MS + 5000
+
+    def common(rec: dict[str, Any], lsn: int) -> tuple[dict[int, bytes], cert.Inclusion]:
+        inc = cert.Inclusion(
+            bytes.fromhex(rec["leaf"]),
+            rec["leaf_index"],
+            cp,
+            merkle.path(rec["leaf_index"], leaves),
+        )
+        values = {
+            1: bytes.fromhex(rec["C_t"]),
+            5: bytes.fromhex(rec["user_signature"]),
+            6: inc.to_bytes(),
+            7: cert.cosignatures_value(cosigs),
+            8: (1).to_bytes(4, "big"),
+            9: bytes.fromhex(rec["scrambled_id"]),
+            10: lsn.to_bytes(8, "big"),
+            13: coll,
+        }
+        return values, inc
+
+    # Group deletion of C from the group {A, B, C}.
+    a, b, c = records[0], records[1], records[2]
+    s_pre = [sum(t) for t in zip(a["x"], b["x"], c["x"], strict=True)]
+    s_post = [sum(t) for t in zip(a["x"], b["x"], strict=True)]
+    rs = [int.from_bytes(bytes.fromhex(r["r_t"]), "little") for r in (a, b, c)]
+    r_pre, r_post = sum(rs) % L, (rs[0] + rs[1]) % L
+    c_s_pre, c_s_post = encode(spec.commit(s_pre, r_pre)), encode(spec.commit(s_post, r_post))
+    lsn_g = 5
+    ctx = posk.ctx_bytes(
+        c_s_pre, bytes.fromhex(c["C_t"]), bytes.fromhex(c["scrambled_id"]), lsn_g, coll
+    )
+    k_r = _blind("SEVER-DB p3 cert posk k_r")
+    nonces = [_blind(f"SEVER-DB p3 cert posk k_{i}") for i in range(d)]
+    proof = posk.prove(s_post, r_post, ctx, k_r, nonces)
+    gv, g_inc = common(c, lsn_g)
+    gv |= {2: c_s_pre, 3: c_s_post, 4: proof, 11: b"\x00", 12: b"\x00"}
+    group_cert = cert.sign_certificate(gv, op1)
+    # Holding-area deletion of D.
+    lsn_h = 6
+    hv, h_inc = common(records[3], lsn_h)
+    hv |= {2: b"", 3: b"", 4: b"", 11: b"\x00", 12: b"\x01"}
+    holding_cert = cert.sign_certificate(hv, op1)
+    for crt in (group_cert, holding_cert):
+        cert.verify(crt, anchors)  # the model's own §11.3 check; raises on failure
+
+    def out(values: dict[int, bytes], crt: bytes, inc: cert.Inclusion) -> dict[str, Any]:
+        return {
+            "tags": {str(t): values[t].hex() for t in cert.TAGS},
+            "inclusion": {"leaf_index": inc.leaf_index, "path": [h.hex() for h in inc.path]},
+            "body": crt[:-69].hex(),
+            "operator_signature": crt[-64:].hex(),
+            "certificate": crt.hex(),
+            "size": len(crt),
+        }
+
+    return {
+        "source": "sever_refmodel_certs (DB-51; pure-Python RFC 8032 Ed25519); spec §9.8, §10, "
+        "§11.1-11.3; Appendix B vector 6",
+        "d": d,
+        "genesis_ms": GENESIS_MS,
+        "certified_ms": certified_ms,
+        "collection_id": coll.hex(),
+        "keys": {
+            "operator": {str(e): k for e, k in operators.items()},
+            "witness_epoch0": witnesses,
+            "user": user,
+        },
+        "records": records,
+        "tree": {"size": len(leaves), "root": root.hex()},
+        "checkpoint": {
+            "tree_size": cp.tree_size,
+            "root": root.hex(),
+            "timestamp_ms": ts,
+            "epoch": 0,
+            "message": cp_msg.hex(),
+            "operator_signature": cp.signature.hex(),
+            "encoded": cp.to_bytes().hex(),
+            "cosign_message": cert.cosign_message(cp_msg).hex(),
+        },
+        "cosignatures": [
+            {"witness_index": x.index, "witness_epoch": x.epoch, "signature": x.signature.hex()}
+            for x in cosigs
+        ],
+        "group_deletion": {
+            "record": "C",
+            "S_pre": s_pre,
+            "r_agg_pre": encode_scalar(r_pre).hex(),
+            "C_S_pre": c_s_pre.hex(),
+            "S_post": s_post,
+            "r_agg_post": encode_scalar(r_post).hex(),
+            "C_S_post": c_s_post.hex(),
+            "database_lsn": lsn_g,
+            "ctx": ctx.hex(),
+            "k_r": encode_scalar(k_r).hex(),
+            "k": [encode_scalar(x).hex() for x in nonces],
+            "challenge": encode_scalar(posk.challenge(c_s_post, proof[:32], ctx)).hex(),
+            **out(gv, group_cert, g_inc),
+        },
+        "holding_deletion": {"record": "D", "database_lsn": lsn_h, **out(hv, holding_cert, h_inc)},
+    }
+
+
 def _dump(data: dict[str, Any]) -> str:
     return json.dumps(data, indent=1) + "\n"
 
@@ -248,6 +412,7 @@ def main(argv: list[str]) -> int:
         (OUT_FULL_BLOB, full_blob_vector(args.root)),
         (OUT_STREAM, stream_vector()),
         (OUT_MERKLE, merkle_vector()),
+        (OUT_CERTS, certificate_vector()),
     ):
         path, text = args.root / rel, _dump(data)
         if args.command == "write":
