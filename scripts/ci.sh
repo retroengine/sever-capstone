@@ -55,6 +55,7 @@ fast() {
   step oracle-check-p3 uv run --no-sync python -m sever_testkit_p3.oracle_check check
   step proofs-check-p3 uv run --no-sync python -m sever_testkit_p3.proofs check
   step registers-p3 uv run --no-sync python -m sever_testkit_p3.registers check
+  step rfc-vectors-p3 uv run --no-sync python -m sever_testkit_p3.rfc_vectors check
   step crypto-deps no_duplicate_crypto_deps
   step dalek-pinned dalek_pinned
   step freeze-guard freeze_guard
