@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/encoding.rs
++++ b/crates/sever-cert/src/encoding.rs
+@@ -67,7 +67,7 @@
+         let mut out = Vec::with_capacity(INCLUSION_FIXED + 32 * self.path.len());
+         out.push(VERSION);
+         out.extend_from_slice(&self.leaf.to_bytes());
+-        out.extend_from_slice(&self.leaf_index.to_be_bytes());
++        out.extend_from_slice(&self.leaf_index.to_le_bytes());
+         out.extend_from_slice(&self.checkpoint.to_bytes());
+         // A path never exceeds 64 hashes (RFC 9162: one per tree level); the builder refuses more
+         // than 255.

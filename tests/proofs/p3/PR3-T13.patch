@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/encoding.rs
++++ b/crates/sever-cert/src/encoding.rs
+@@ -214,7 +214,7 @@
+         tlv(&mut out, 5, &self.user_signature);
+         tlv(&mut out, 6, &self.inclusion.to_bytes());
+         let mut cosigs = Vec::with_capacity(1 + COSIGNATURE_LEN * self.cosignatures.len());
+-        cosigs.push(u8::try_from(self.cosignatures.len()).unwrap_or(u8::MAX));
++        cosigs.extend_from_slice(&u16::try_from(self.cosignatures.len()).unwrap_or(u16::MAX).to_be_bytes());
+         for c in &self.cosignatures {
+             cosigs.extend_from_slice(&c.to_bytes());
+         }

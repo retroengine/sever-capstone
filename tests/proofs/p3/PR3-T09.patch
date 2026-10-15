@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/encoding.rs
++++ b/crates/sever-cert/src/encoding.rs
+@@ -199,7 +199,7 @@
+ impl Certificate {
+     /// `deletion_kind` (tag 12): 0 from a group, 1 from the holding area.
+     pub fn deletion_kind(&self) -> u8 {
+-        u8::from(self.group.is_none())
++        u8::from(self.group.is_some())
+     }
+ 
+     /// Every byte before the trailer: tags 1 … 13 in ascending order (§11.1).

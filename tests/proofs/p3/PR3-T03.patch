@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/encoding.rs
++++ b/crates/sever-cert/src/encoding.rs
+@@ -82,7 +82,7 @@
+         const TAG: u8 = 6;
+         let len = ParseError::Length { tag: TAG };
+         let (&version, rest) = b.split_first().ok_or(len)?;
+-        if version != VERSION {
++        if version == 0 {
+             return Err(ParseError::Version);
+         }
+         let (leaf, rest) = rest.split_first_chunk::<INSERT_LEAF_LEN>().ok_or(len)?;

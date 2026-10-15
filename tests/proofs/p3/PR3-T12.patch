@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/builder.rs
++++ b/crates/sever-cert/src/builder.rs
+@@ -131,7 +131,7 @@
+                 c_s_pre,
+                 c_t: leaf.c_t,
+                 scrambled_id: leaf.scrambled_id,
+-                database_lsn,
++                database_lsn: database_lsn + 1,
+                 collection_id: leaf.collection_id,
+             };
+             let proof = prove(gens, s_post, r_post, &ctx, rng)?.to_bytes();

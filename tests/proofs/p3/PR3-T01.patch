@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/encoding.rs
++++ b/crates/sever-cert/src/encoding.rs
+@@ -152,7 +152,7 @@
+ fn tlv(out: &mut Vec<u8>, tag: u8, value: &[u8]) {
+     out.push(tag);
+     // Every value is far below 4 GiB (the largest, tag 4, is 64 + 32·d bytes).
+-    out.extend_from_slice(&u32::try_from(value.len()).unwrap_or(u32::MAX).to_be_bytes());
++    out.extend_from_slice(&u32::try_from(value.len()).unwrap_or(u32::MAX).to_le_bytes());
+     out.extend_from_slice(value);
+ }
+ 

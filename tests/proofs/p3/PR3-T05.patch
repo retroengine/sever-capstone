@@ -1,0 +1,11 @@
+--- a/golden/p3_certificates.json
++++ b/golden/p3_certificates.json
+@@ -2454,7 +2454,7 @@
+    -31896216
+   ],
+   "r_agg_pre": "7132461709a25ce075a0388eae7c9977ef3f82022702f644527a13025706a80d",
+-  "C_S_pre": "4c2c12e5b7158bea628200bd0345c8e017cb6035f7480e37dc6fda7be7c22a5f",
++  "C_S_pre": "4d2c12e5b7158bea628200bd0345c8e017cb6035f7480e37dc6fda7be7c22a5f",
+   "S_post": [
+    -33435647,
+    -33411890,

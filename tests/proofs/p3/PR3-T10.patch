@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/encoding.rs
++++ b/crates/sever-cert/src/encoding.rs
+@@ -279,7 +279,7 @@
+                 proof: t4.to_vec(),
+                 emptied,
+             }),
+-            (true, None, None, true) if !emptied => None,
++            (true, None, None, true) => None,
+             _ => return Err(ParseError::Kind),
+         };
+         Ok(Self {

@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/encoding.rs
++++ b/crates/sever-cert/src/encoding.rs
+@@ -231,7 +231,7 @@
+     /// Signs the body with the operator's key of epoch `key_period` (§9.8: over
+     /// `DST_CERT ‖ body`).
+     pub fn sign(&mut self, operator: &KeyPair) {
+-        self.operator_signature = operator.sign(&certificate_message(&self.body()));
++        self.operator_signature = operator.sign(&self.body());
+     }
+ 
+     /// The certificate: the body, then `0xFF ‖ u32be 64 ‖ operator_signature`.

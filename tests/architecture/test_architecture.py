@@ -43,6 +43,7 @@ PART = {
     "sever-crypto": 3,
     "sever-commit": 3,
     "sever-log": 3,
+    "sever-cert": 3,
 }
 #: Composition roots and tooling: nothing in the core may depend on them.
 OUTER = ("sever-p1", "sever-tracekit", "sever-crashkit", "sever-p2", "sever-py-p2")

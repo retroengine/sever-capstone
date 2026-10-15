@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/encoding.rs
++++ b/crates/sever-cert/src/encoding.rs
+@@ -259,7 +259,7 @@
+         let c_t = fixed(t1, 1)?;
+         let c_s_pre = optional_point(t2, 2)?;
+         let c_s_post = optional_point(t3, 3)?;
+-        if !t4.is_empty() && t4.len() != Proof::encoded_len(d) {
++        if !t4.is_empty() && t4.len() < Proof::encoded_len(d) {
+             return Err(ParseError::Length { tag: 4 });
+         }
+         let user_signature = fixed(t5, 5)?;

@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/encoding.rs
++++ b/crates/sever-cert/src/encoding.rs
+@@ -182,7 +182,7 @@
+ fn flag(v: &[u8], tag: u8) -> Result<bool, ParseError> {
+     match fixed::<1>(v, tag)? {
+         [0] => Ok(false),
+-        [1] => Ok(true),
++        [_] => Ok(true),
+         _ => Err(ParseError::Value { tag }),
+     }
+ }

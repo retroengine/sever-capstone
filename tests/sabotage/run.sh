@@ -55,4 +55,5 @@ rust SB-15 sever-txn
 # Part 3 (Build §2.6; spec/registers_p3.yaml): each item joins when its crate is built
 for sb in SB-16 SB-17 SB-18 SB-19 SB-23; do rust "$sb" sever-crypto; done
 rust SB-20 sever-log
+rust SB-22 sever-cert
 exit $fail

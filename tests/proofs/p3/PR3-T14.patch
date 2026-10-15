@@ -1,0 +1,12 @@
+--- a/crates/sever-log/src/keys.rs
++++ b/crates/sever-log/src/keys.rs
+@@ -74,6 +74,9 @@
+     /// The key of `epoch`, created if this is its first use.
+     pub fn key(&mut self, epoch: u32) -> &KeyPair {
+         let ring = &mut self.ring;
++        if !self.keys.contains_key(&epoch) {
++            *ring = Keyring::new();
++        }
+         self.keys.entry(epoch).or_insert_with(|| {
+             let k = KeyPair::generate();
+             ring.insert(epoch, k.public());

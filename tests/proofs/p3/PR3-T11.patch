@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/builder.rs
++++ b/crates/sever-cert/src/builder.rs
+@@ -136,7 +136,7 @@
+             };
+             let proof = prove(gens, s_post, r_post, &ctx, rng)?.to_bytes();
+             #[cfg(not(feature = "sabotage-SB-22"))]
+-            let emptied = n_post == 0;
++            let emptied = n_post <= 1;
+             #[cfg(feature = "sabotage-SB-22")]
+             let emptied = n_post <= 1; // SB-22: tag 11 set wrongly
+             Some(GroupFields {
