@@ -1,0 +1,5 @@
+# Proofs for Part 3 (CLAUDE.md §6.3). Each entry: a patch that breaks one rule and the tests that
+# must go red (red), stay green (green: the label was removed), or stay green while keeping the
+# label (limit: what the test does not notice). A cargo proof in a separate workspace names it:
+# `workspace: verifier` or `workspace: audit`. Run: python -m sever_testkit_p3.proofs run
+[]

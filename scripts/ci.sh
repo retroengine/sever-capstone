@@ -6,6 +6,8 @@
 #                              register (P1-T8, P2-T8), the MSRV build, cargo deny, the API docs
 # Part 2 adds the SDK's native module and Part 2's spec-trace to fast; its Full-tier gates are
 # python -m sever_testkit_p2.gates p2-crash | p2-replay | p2-fuzz | p2-sabotage | p2-spikes.
+# Part 3 adds its spec-trace, oracle and proof checks to fast (sever_testkit_p3; CLAUDE.md §6.3); its
+# Full-tier gates are python -m sever_testkit_p3.gates p3-mutants | ….
 # The long Full-tier gates write the run ledger themselves (python -m sever_testkit.gates …).
 # Prints one "STEP <name>: PASS|FAIL" line per step; exits 1 if any step failed.
 set -u
@@ -38,6 +40,10 @@ fast() {
   step spec-trace-p2 uv run --no-sync python -m sever_testkit_p2.spec_trace check --part 2 --complete
   step oracle-check-p2 uv run --no-sync python -m sever_testkit_p2.oracle_check check
   step proofs-check-p2 uv run --no-sync python -m sever_testkit_p2.proofs check
+  # Part 3 is being built: unknown IDs fail now; --complete joins when its modules are done.
+  step spec-trace-p3 uv run --no-sync python -m sever_testkit_p3.spec_trace check --part 3
+  step oracle-check-p3 uv run --no-sync python -m sever_testkit_p3.oracle_check check
+  step proofs-check-p3 uv run --no-sync python -m sever_testkit_p3.proofs check
   step crypto-deps no_duplicate_crypto_deps
   step freeze-guard freeze_guard
   step fair-check scripts/fair.sh check

@@ -67,6 +67,13 @@ INV-10, INV-15; Appendix B vectors 1, 2, 3, 4, 6, 8, 9. Out: encryption and eras
    `tests/proofs/p3/`), a `gates p3-mutants` runner (DB-75 needs its PASS), and the matching steps in
    `scripts/ci.sh fast` (spec-trace-p3, oracle-check-p3, proofs-check-p3). Until then a Part 3 test
    is unchecked against CLAUDE.md §6.3.
+   **Done 15 Oct 2026** (uncommitted): `python/sever_testkit_p3` (`spec_trace`, `oracle_check`,
+   `proofs` import Part 2's rules and add the Part 3 paths, including `verifier/` and `audit/` and
+   `tests/**/test_p3_*.py`, `test_*_p3.py`; proofs may name `workspace: verifier|audit`),
+   `tests/proofs/p3/MANIFEST.yaml` (empty), `gates p3-mutants` (P3-T9: ≥ 90 % `sever-crypto` and
+   the verifier, ≥ 85 % `sever-cert`, `sever-log`; survivors and timeouts triaged in
+   `docs/MUTANTS_P3.md`; refuses until the crates exist), 12 unit tests; `scripts/ci.sh fast`
+   19/19 PASS. Still to do: `spec-trace-p3` gets `--complete` when Part 3's modules are done.
 1. Decide the proposals Part 3 needs: DB-51 (pure-Python ristretto255 in the certificate model),
    DB-52 (`expand_message_xmd` in `sever-crypto` if `curve25519-dalek` 4.1.3 lacks it: check the
    pinned crate first), DB-53 (EP-10 `Witness`).
