@@ -635,6 +635,7 @@ name = "sever-log"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+ "sever-crypto",
  "sever-spec",
  "sha2",
 ]
