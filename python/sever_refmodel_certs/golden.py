@@ -6,9 +6,9 @@ that owns a vector generates it once, from an implementation independent of the 
 
 Files: ``p3_generators.json`` (Appendix B vectors 1 and 2: ``H``, ``G_0``, ``G_383``, §9.2;
 ``gdigest``, §9.6), ``p3_commitments.json`` (§9.3 record and group commitments and the transition
-check) and ``p3_posk.json`` (Appendix B vector 3: a fixed challenge, §9.5; and one complete proof
-at d = 16 with fixed nonces). Once committed, a golden file changes only with a recorded reason
-(CLAUDE.md §6.2).
+check), ``p3_scalar_map.json`` (Appendix B vector 4, §4.5) and ``p3_posk.json`` (Appendix B
+vector 3: a fixed challenge, §9.5; and one complete proof at d = 16 with fixed nonces). Once
+committed, a golden file changes only with a recorded reason (CLAUDE.md §6.2).
 
 The blinding values in ``p3_commitments.json`` are fixed test data (SHA-512 of a label, reduced mod
 ℓ), never a database's ``r_t``: production ``r_t`` come only from the OS CSPRNG (§9.4).
@@ -27,6 +27,7 @@ from sever_refmodel_certs.ristretto import IDENTITY, L, encode, encode_scalar
 OUT_GENERATORS: Final = Path("golden/p3_generators.json")
 OUT_COMMITMENTS: Final = Path("golden/p3_commitments.json")
 OUT_POSK: Final = Path("golden/p3_posk.json")
+OUT_SCALARS: Final = Path("golden/p3_scalar_map.json")
 
 
 def generators_vector() -> dict[str, Any]:
@@ -101,6 +102,15 @@ def commitments_vector() -> dict[str, Any]:
     }
 
 
+def scalar_vector() -> dict[str, Any]:
+    """Appendix B vector 4: ``scalar(v)`` for ``v ∈ {0, 1, −1, 2^44, −2^44}`` (§4.5)."""
+    vs = [0, 1, -1, 2**44, -(2**44)]
+    return {
+        "source": "sever_refmodel_certs (DB-51); spec §4.5; Appendix B vector 4",
+        "scalars": [{"v": v, "scalar": encode_scalar(spec.scalar(v)).hex()} for v in vs],
+    }
+
+
 def posk_vector() -> dict[str, Any]:
     t = commitments_vector()["transition"]
     c_s_pre, c_t, c_s_post = (bytes.fromhex(t["C_S_pre"]), bytes.fromhex(t["C_t"][2]),
@@ -155,6 +165,7 @@ def main(argv: list[str]) -> int:
         (OUT_GENERATORS, generators_vector()),
         (OUT_COMMITMENTS, commitments_vector()),
         (OUT_POSK, posk_vector()),
+        (OUT_SCALARS, scalar_vector()),
     ):
         path, text = args.root / rel, _dump(data)
         if args.command == "write":

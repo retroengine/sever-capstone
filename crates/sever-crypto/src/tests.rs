@@ -946,3 +946,20 @@ fn p3_crypto_epochs_are_90_day_windows_from_genesis() {
     assert_eq!(epoch_of(g, g + 3 * 7_776_000_000 + 5), Some(3));
     assert_eq!(epoch_of(g, g - 1), None);
 }
+
+#[test]
+// oracle: B-shared golden/p3_scalar_map.json (Appendix B vector 4, written by sever_refmodel_certs)
+#[spec("SR-B-4")]
+fn p3_crypto_scalar_map_matches_golden_vector_4() {
+    let g = json(include_str!("../../../golden/p3_scalar_map.json"));
+    let rows = g["scalars"].as_array().unwrap();
+    assert_eq!(rows.len(), 5);
+    for r in rows {
+        let v = r["v"].as_i64().unwrap();
+        assert_eq!(
+            hex(&encode_scalar(&scalar_from_i64(v))),
+            r["scalar"].as_str().unwrap(),
+            "scalar({v})"
+        );
+    }
+}

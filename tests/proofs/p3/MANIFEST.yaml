@@ -317,3 +317,22 @@
   package: sever-crypto
   tests:
   - crates/sever-crypto/src/tests.rs::p3_crypto_epochs_are_90_day_windows_from_genesis
+- id: PR3-A01
+  claim: sever-crypto depends on a hash crate that §9.1 does not list (blake2)
+  kind: red
+  requirements:
+  - SR-9.1-1
+  patch: PR3-A01.patch
+  runner: pytest
+  tests:
+  - tests/architecture/test_architecture_p3.py::test_p3_arch_crypto_uses_only_the_pinned_primitives
+- id: PR3-C32
+  claim: scalar(v) for v < 0 is off by one, seen by golden vector 4 (§4.5, Appendix B)
+  kind: red
+  requirements:
+  - SR-B-4
+  patch: PR3-C06.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_scalar_map_matches_golden_vector_4
