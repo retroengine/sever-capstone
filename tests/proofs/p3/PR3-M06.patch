@@ -1,0 +1,11 @@
+--- a/crates/sever-commit/src/lib.rs
++++ b/crates/sever-commit/src/lib.rs
+@@ -153,7 +153,7 @@
+ 
+     fn admit(&self, x: &QVec, credential: InsertCredential) -> Result<RecordBlind, Error> {
+         // §15.1 step 2 and §9.3: recompute C_t from x̃ and r_t; it must equal the supplied C_t.
+-        let supplied = decode_record_commitment(&credential.c_t).map_err(|_| MISMATCH)?; // §9.9, DB-78
++        let supplied = decode_point(&credential.c_t).map_err(|_| MISMATCH)?; // §9.9, DB-78
+         let r_t = decode_scalar(&credential.r_t).map_err(|_| MISMATCH)?;
+         if self.record_commitment(x, &r_t)? != supplied {
+             return Err(MISMATCH);

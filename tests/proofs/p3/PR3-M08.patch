@@ -1,0 +1,12 @@
+--- a/crates/sever-commit/src/lib.rs
++++ b/crates/sever-commit/src/lib.rs
+@@ -285,9 +285,6 @@
+         let bad = || integrity("DB-46 record secret");
+         let (idx, rest) = b.split_first_chunk::<8>().ok_or_else(bad)?;
+         let (has_rt, r_t) = rest.split_first().ok_or_else(bad)?;
+-        if *has_rt != 1 {
+-            return Err(integrity("§14.4 has_rt")); // SR-14.4-3
+-        }
+         if r_t.len() != 32 {
+             return Err(bad());
+         }

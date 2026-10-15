@@ -536,6 +536,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-commit"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sever-crypto",
+ "sever-index",
+ "sever-quant",
+ "sever-spec",
+ "sever-txn",
+ "sever-types",
+ "zeroize",
+]
+
+[[package]]
 name = "sever-crashkit"
 version = "0.1.0"
 dependencies = [

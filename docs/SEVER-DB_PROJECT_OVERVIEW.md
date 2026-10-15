@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-77)](#6-decision-register-db-1--db-53-db-55--db-77)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-78)](#6-decision-register-db-1--db-53-db-55--db-78)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-77)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-78)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1017,6 +1017,19 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-78 — A malformed insert credential is a `CommitmentMismatch` (15 October 2026)
+
+**Decision.** At insert, a supplied `C_t` that is not a canonical point or is the identity, or an
+`r_t` that is not a canonical scalar, is rejected with `CommitmentMismatch` (spec §17), before the
+signature is checked. **Why.** §9.9 requires canonical encodings and forbids the identity as `C_t`,
+but §17 has no row of its own for them; each case means the supplied `C_t` is not a valid
+commitment to the record, which is what `CommitmentMismatch` reports. A new error kind would add a
+§17 row and an SDK error for a case only a broken or hostile backend produces. **Rejected.** A new
+`InvalidCredential` error (more surface for no behavioural gain); `IntegrityViolation` (that stops
+the engine, and nothing stored is corrupt). **Consequence.** Implemented in `sever-commit`'s
+`admit`; the SDK maps it like any `CommitmentMismatch`. No specification section changes (it applies
+§9.9 and §17 as written).
 
 #### DB-77 — The generator self-check at any dimension (15 October 2026)
 
@@ -1916,6 +1929,8 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **15 October 2026 — Insert credential errors.** DB-78 (a malformed `C_t` or `r_t` is
+  `CommitmentMismatch`). No specification section touched.
 - **15 October 2026 — Generator self-check.** DB-77 (H, G_0 and G_383 at every d; gdigest at
   d = 384; closes G-20). Specification sections touched: §9.2.
 - **15 October 2026 — Part 3 attack suite.** DB-76 (AT-18 … AT-20 added before any result; AT-17 in

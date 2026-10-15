@@ -1,0 +1,11 @@
+--- a/crates/sever-commit/src/lib.rs
++++ b/crates/sever-commit/src/lib.rs
+@@ -192,7 +192,7 @@
+     ) {
+         // §5.3: the exact inverse of `add`.
+         if let Ok(c_t) = self.record_commitment(x, &record.r_t) {
+-            public.0 -= c_t;
++            let _ = c_t;
+             secret.0 -= record.r_t;
+         }
+     }

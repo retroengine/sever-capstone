@@ -1,0 +1,12 @@
+--- a/crates/sever-commit/src/lib.rs
++++ b/crates/sever-commit/src/lib.rs
+@@ -275,8 +275,8 @@
+     fn encode_record_secret(r: &RecordBlind) -> Vec<u8> {
+         // §14.4, DB-46: u64be insert_leaf_index ‖ u8 has_rt ‖ r_t (32).
+         let mut out = Vec::with_capacity(41);
+-        out.extend_from_slice(&r.insert_leaf_index.to_be_bytes());
+         out.push(r.has_rt);
++        out.extend_from_slice(&r.insert_leaf_index.to_be_bytes());
+         out.extend_from_slice(&encode_scalar(&r.r_t));
+         out
+     }

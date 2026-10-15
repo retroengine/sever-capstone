@@ -1,0 +1,13 @@
+--- a/crates/sever-commit/src/lib.rs
++++ b/crates/sever-commit/src/lib.rs
+@@ -155,9 +155,7 @@
+         // §15.1 step 2 and §9.3: recompute C_t from x̃ and r_t; it must equal the supplied C_t.
+         let supplied = decode_record_commitment(&credential.c_t).map_err(|_| MISMATCH)?; // §9.9, DB-78
+         let r_t = decode_scalar(&credential.r_t).map_err(|_| MISMATCH)?;
+-        if self.record_commitment(x, &r_t)? != supplied {
+-            return Err(MISMATCH);
+-        }
++        let _ = supplied;
+         // §15.1 step 2, §9.8: the user signature over DST_INSERT ‖ collection_id ‖ C_t.
+         let msg = insert_message(&credential.collection_id, &credential.c_t);
+         verify_signature(&credential.user_public_key, &msg, &credential.signature)

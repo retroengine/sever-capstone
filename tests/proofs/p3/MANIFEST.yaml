@@ -336,3 +336,118 @@
   package: sever-crypto
   tests:
   - crates/sever-crypto/src/tests.rs::p3_crypto_scalar_map_matches_golden_vector_4
+- id: PR3-M01
+  claim: remove leaves C_S unchanged, so it is not the inverse of add (§5.3)
+  kind: red
+  requirements:
+  - SR-5.3-2
+  patch: PR3-M01.patch
+  runner: cargo
+  package: sever-commit
+  tests:
+  - crates/sever-commit/src/tests.rs::p3_commit_stream_matches_the_model_step_by_step
+  - crates/sever-commit/src/tests.rs::p3_commit_passes_the_frozen_ep1_contract
+- id: PR3-M02
+  claim: remove leaves C_S unchanged, so an emptied group is not the identity (§5.4)
+  kind: red
+  requirements:
+  - SR-5.4-4
+  patch: PR3-M01.patch
+  runner: cargo
+  package: sever-commit
+  tests:
+  - crates/sever-commit/src/tests.rs::p3_commit_stream_matches_the_model_step_by_step
+- id: PR3-M03
+  claim: deletion does not subtract the stored r_t from r_agg (§9.4)
+  kind: red
+  requirements:
+  - SR-9.4-2
+  patch: PR3-M03.patch
+  runner: cargo
+  package: sever-commit
+  tests:
+  - crates/sever-commit/src/tests.rs::p3_commit_stream_matches_the_model_step_by_step
+- id: PR3-M04
+  claim: admit does not recompute C_t from x̃ and r_t (§9.3, §15.1 step 2)
+  kind: red
+  requirements:
+  - SR-9.3-3
+  - SR-15.1-3
+  - SR-17-3
+  patch: PR3-M04.patch
+  runner: cargo
+  package: sever-commit
+  tests:
+  - crates/sever-commit/src/tests.rs::p3_commit_admit_recomputes_c_t_and_checks_the_signature
+- id: PR3-M05
+  claim: admit does not verify the user signature (§15.1 step 2, §17)
+  kind: red
+  requirements:
+  - SR-15.1-3
+  - SR-17-4
+  patch: PR3-M05.patch
+  runner: cargo
+  package: sever-commit
+  tests:
+  - crates/sever-commit/src/tests.rs::p3_commit_admit_recomputes_c_t_and_checks_the_signature
+- id: PR3-M06
+  claim: admit accepts the identity as C_t (§9.9)
+  kind: red
+  requirements:
+  - SR-9.9-2
+  patch: PR3-M06.patch
+  runner: cargo
+  package: sever-commit
+  tests:
+  - crates/sever-commit/src/tests.rs::p3_commit_admit_refuses_an_identity_or_non_canonical_credential
+- id: PR3-M07
+  claim: the record secret puts has_rt before insert_leaf_index (§14.4, DB-46)
+  kind: red
+  requirements:
+  - SR-14.4-4
+  patch: PR3-M07.patch
+  runner: cargo
+  package: sever-commit
+  tests:
+  - crates/sever-commit/src/tests.rs::p3_commit_record_secret_has_the_41_byte_layout
+- id: PR3-M08
+  claim: a stored record secret with has_rt ≠ 1 is accepted (§14.4)
+  kind: red
+  requirements:
+  - SR-14.4-3
+  patch: PR3-M08.patch
+  runner: cargo
+  package: sever-commit
+  tests:
+  - crates/sever-commit/src/tests.rs::p3_commit_record_secret_has_the_41_byte_layout
+- id: PR3-M09
+  claim: the removal check does not compare with the logged C_t (§15.3 step 2)
+  kind: red
+  requirements:
+  - SR-15.3-2
+  patch: PR3-M09.patch
+  runner: cargo
+  package: sever-commit
+  tests:
+  - crates/sever-commit/src/tests.rs::p3_commit_removal_check_compares_with_the_logged_c_t
+- id: PR3-M10
+  claim: INV-3 is not checked (§21)
+  kind: red
+  requirements:
+  - SR-21-3
+  patch: PR3-M10.patch
+  runner: cargo
+  package: sever-commit
+  tests:
+  - crates/sever-commit/src/tests.rs::p3_commit_group_check_is_inv_3
+- id: PR3-M11
+  claim: the blob region is r_agg ‖ C_S instead of C_S ‖ r_agg (§5.5, Appendix B 8)
+  kind: red
+  requirements:
+  - SR-5.5-5
+  - SR-B-8
+  patch: PR3-M11.patch
+  runner: cargo
+  package: sever-commit
+  tests:
+  - crates/sever-commit/src/tests.rs::p3_commit_full_blob_matches_golden_vector_8
