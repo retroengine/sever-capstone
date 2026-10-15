@@ -61,6 +61,12 @@ Claim: every deletion yields a certificate anyone can verify offline (Build 3-4 
 INV-10, INV-15; Appendix B vectors 1, 2, 3, 4, 6, 8, 9. Out: encryption and erasure (Part 4).
 
 **Step 0, design review (before any code):**
+0. **Test enforcement for Part 3 first** (the rules apply, the checks do not yet): a new
+   `python/sever_testkit_p3` (Part 2's testkit is frozen) with `spec_trace`, `oracle_check` and
+   `proofs` scanning the Part 3 paths (reuse Part 2's functions by import, own path lists and
+   `tests/proofs/p3/`), a `gates p3-mutants` runner (DB-75 needs its PASS), and the matching steps in
+   `scripts/ci.sh fast` (spec-trace-p3, oracle-check-p3, proofs-check-p3). Until then a Part 3 test
+   is unchecked against CLAUDE.md §6.3.
 1. Decide the proposals Part 3 needs: DB-51 (pure-Python ristretto255 in the certificate model),
    DB-52 (`expand_message_xmd` in `sever-crypto` if `curve25519-dalek` 4.1.3 lacks it: check the
    pinned crate first), DB-53 (EP-10 `Witness`).
