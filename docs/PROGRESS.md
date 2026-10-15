@@ -8,24 +8,14 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
 
 ## Now
 
-- **Phase:** **Part 2, The Database** (Build §5), 7–8 Oct 2026: done and frozen
-  (`freeze/PART-2.sha256`, tag `part-2-frozen`). Part 1 is frozen (`freeze/PART-1.sha256`, tag
-  `part-1-frozen`); the freeze guard checks both. Next: Part 3, The Receipt.
-- **Working copy:** `~/sever-db` on the WSL ext4 disk since 4 Oct (the `C:` copy is a backup).
-- **Git:** you commit from now on; Claude only leaves changes in the working tree and hands you the
-  commands. The trunk is `main`. Part 2 work goes on short branches, one per module
-  (`p2-sever-vfs`, `p2-sever-format`, …).
-- **Decisions (7 Oct, Part 2 design review):** DB-46 (slot payload `id ‖ x̃ ‖ extension secret`;
-  header `seal_version`) and DB-48 (`sealer_id` in every file; plaintext database, no
-  confidentiality claim before Part 4) accepted; DB-65 (`create_dir`/`remove_dir` in the `Vfs`)
-  closes G-13. DB-51 … DB-54 wait for Parts 3 and 4.
-- **Machine:** WSL now has 10 GB (`C:\Users\saiki\.wslconfig`, `memory=10GB`), so the nq-100k
-  gate runs three seeds at once (`--jobs 3`, 80 min).
-- **Next:** `sever-format` (spec §14: pages, group header, slot, WAL records, `MANIFEST`,
-  checkpoint files, append-store records; strict parsers). It must first define the byte layouts
-  §14 leaves open (file headers with `sealer_id`, `MANIFEST`, `meta.bin`, `collections.bin`,
-  `locator.bin`, WAL segment header): expect gap entries. Part 2 adds its own gate runners and tools
-  in new modules; the Part 1 packages (including `sever_testkit`) are frozen (F-3).
+- **Phase:** **Part 3, The Receipt** (Build 3-4 §1), in progress in grind mode (owner, 15 Oct 2026:
+  decide autonomously, commit only, no push). Parts 1 and 2 are frozen (Part 2 at
+  `part-2-frozen-e1`; erratum E-2 is committed and waits for the owner's tag `part-2-frozen-e2`).
+- **Where to resume:** the "RESUME HERE" paragraph in the Part 3 section below (branch, what is
+  done, the next module, the proof-making routine). It is the only current resume point.
+- **Working copy:** `~/sever-db` on the WSL ext4 disk (the `C:` copy is a backup).
+- **Git:** Claude commits on short `p3-*` branches (conventional messages, no AI attribution);
+  nothing is pushed or merged to `main` without the owner's word.
 
 ## Fair testing (8 Oct 2026)
 
@@ -171,7 +161,7 @@ module and per part: clean-room tester (Opus) + triage and oracle audit (Sonnet)
 `configs/fair.yaml` has the Part 3 scope; `scripts/freeze.sh` has the planned ownership list.
 
 
-## RESUME HERE (updated 8 Oct 2026 ~13:00 UTC, branch p2-fuzz)
+## Part 2 summary (8 Oct 2026, archived; the current resume point is in the Part 3 section)
 
 **Part 2 is done and frozen.** Every Part 2 gate has passed (ledger): P2-T1…T3 crash (5 seeds,
 343,837 points, 0 failures), P2-T5 replay, P2-T6 fuzz, P2-T7 spikes, P2-T8 sabotage, P2-T9 coverage
@@ -309,6 +299,10 @@ report and the rebuilt artefact identical apart from timing); the freeze manifes
 
 ## Session log
 
+- **15 Oct 2026 (evening, grind mode)**: Part 3 modules 2 (certificate model, golden B 6) and 5
+  (`sever-cert`, SB-22), step 4c (`LogStore`, `LogParticipant`); erratum E-2 on Part 2 with every
+  gate re-run; DB-80 … DB-82, G-21 and G-22 closed; 89 red proofs. Owner asked to stop here; resume
+  from "RESUME HERE" (module 6, `sever-p3`).
 - **7 Oct 2026 (later)**: built sever-format, -wal, -appendstore, -checkpoint, -txn, -engine,
   -crashkit, sever_refmodel_durable, sever-p2 (CLI, demo), sever-py-p2 + SDK, E2E-2.1…2.8, Part 2
   architecture tests, traceability 46/46, fuzz-p2 targets. Gaps G-14…G-17 → DB-66…DB-70. Crash gate
