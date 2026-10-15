@@ -1,12 +1,12 @@
 --- a/crates/sever-crypto/src/generators.rs
 +++ b/crates/sever-crypto/src/generators.rs
-@@ -160,9 +160,6 @@
+@@ -158,9 +158,6 @@
          return Err(fail("RFC 9496 A.3 known answer"));
      }
      // The generators against the golden file.
 -    if !same_point(gens.h(), golden.h) {
 -        return Err(fail("generator H"));
 -    }
-     let (Some(g_0), Some(g_last)) = (gens.g().first(), gens.g().last()) else {
+     let Some(g_0) = gens.g().first() else {
          return Err(fail("no generators"));
      };

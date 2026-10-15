@@ -133,13 +133,11 @@ fn same_point(p: &RistrettoPoint, golden_hex: &str) -> bool {
         .is_some_and(|q| q == *p)
 }
 
-/// §9.2 startup self-check (INV-10): `H`, `G_0` and `G_{d−1}` equal the golden file, and the
-/// RFC 9496 one-way-map and RFC 9380 K.3 known answers hold. On any mismatch the engine refuses
-/// to run; the error names the failed check, never a value.
-///
-/// The golden file holds `G_383` (the v1 `d`, §2.2). For another `d` the check compares
-/// `G_{d−1}` with a fresh derivation and also derives `G_383` and compares it with the golden file,
-/// so a drift in the derivation is caught at every `d`; `gdigest` is compared when `d = 384`.
+/// §9.2 startup self-check (INV-10, DB-77): the RFC 9496 one-way-map and RFC 9380 K.3 known
+/// answers hold, and `H`, `G_0` and `G_383` equal the golden file at every `d` (`G_383` is the
+/// generator in use when `d > 383`, and is derived for the check otherwise); `gdigest` is compared
+/// when `d = 384`. On any mismatch the engine refuses to run; the error names the failed check,
+/// never a value.
 pub fn self_check(gens: &Generators) -> Result<(), CryptoError> {
     self_check_against(gens, &GOLDEN)
 }
@@ -163,20 +161,15 @@ pub(crate) fn self_check_against(
     if !same_point(gens.h(), golden.h) {
         return Err(fail("generator H"));
     }
-    let (Some(g_0), Some(g_last)) = (gens.g().first(), gens.g().last()) else {
+    let Some(g_0) = gens.g().first() else {
         return Err(fail("no generators"));
     };
     if !same_point(g_0, golden.g_0) {
         return Err(fail("generator G_0"));
     }
-    let last = u32::try_from(gens.d() - 1).map_err(|_| fail("generator G_{d-1}"))?;
-    if *g_last != generator_g(last)? {
-        return Err(fail("generator G_{d-1}"));
-    }
-    let g_383 = if gens.d() == 384 {
-        *g_last
-    } else {
-        generator_g(383)?
+    let g_383 = match gens.g().get(383) {
+        Some(g) => *g,
+        None => generator_g(383)?,
     };
     if !same_point(&g_383, golden.g_383) {
         return Err(fail("generator G_383"));

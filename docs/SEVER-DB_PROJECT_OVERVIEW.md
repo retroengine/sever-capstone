@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-76)](#6-decision-register-db-1--db-53-db-55--db-76)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-77)](#6-decision-register-db-1--db-53-db-55--db-77)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-76)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-77)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1017,6 +1017,19 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-77 — The generator self-check at any dimension (15 October 2026)
+
+**Decision.** The startup self-check of spec §9.2 compares `H`, `G_0` and `G_383` with the golden
+file at every dimension `d` (deriving `G_383` for the check when `d ≤ 383`), and compares `gdigest`
+(§9.6) only when `d = 384`; the RFC known-answer tests are unchanged. **Why.** The golden file holds
+the v1 values (d = 384, Appendix B), while the code runs at any `d` (DB-49), for example the d = 16
+fixtures, so "`G_{d−1}`" had no golden value to compare with (G-20). Every generator comes from the
+same derivation, so `H`, `G_0` and `G_383` catch a drift at every `d`, and `G_0` and `G_383` exercise
+both ends of the 4-byte index. **Rejected.** Golden values for every `d` in use and a refusal at
+any other `d` (narrows DB-49 and catches nothing more); comparing `G_{d−1}` with a fresh derivation
+of itself (it can never fail). **Consequence.** Closes G-20; spec §9.2 amended; `sever-crypto`'s
+`self_check` follows it, and the verifier will too.
 
 #### DB-76 — Four more certificate attacks (15 October 2026)
 
@@ -1903,6 +1916,8 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **15 October 2026 — Generator self-check.** DB-77 (H, G_0 and G_383 at every d; gdigest at
+  d = 384; closes G-20). Specification sections touched: §9.2.
 - **15 October 2026 — Part 3 attack suite.** DB-76 (AT-18 … AT-20 added before any result; AT-17 in
   the EX-4 list). Specification sections touched: none.
 - **15 October 2026 — Part 3 design review.** DB-51 (pure-Python ristretto255 in the certificate

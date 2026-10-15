@@ -351,6 +351,16 @@ fn p3_crypto_self_check_passes_honestly_and_refuses_any_drift() {
             "{name}"
         );
     }
+    // At d = 16, G_383 is derived for the check, so its drift is caught too (DB-77).
+    let g16 = Generators::derive(16).unwrap();
+    let drifted = GeneratorGolden {
+        g_383: flip(GOLDEN.g_383),
+        ..GOLDEN
+    };
+    assert!(matches!(
+        generators::self_check_against(&g16, &drifted),
+        Err(CryptoError::SelfCheck("generator G_383"))
+    ));
     // Generators swapped in memory are refused.
     let mut swapped = gens.clone();
     swapped.swap_h_g0_for_test();

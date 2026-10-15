@@ -642,9 +642,11 @@ G_i = ristretto255_from_uniform_bytes( expand_message_xmd_sha512( msg = b"G" ‖
 One independent `expand_message` call per generator, one fixed DST, a fixed-width big-endian index.
 This is the standard `hash_to_group` construction.
 
-**Startup self-check (MUST, refuse to run on mismatch):** re-derive `H`, `G_0` and `G_{d−1}` and
-compare them with the frozen golden file (Appendix B); run the RFC 9496 known-answer tests for the
-one-way map and the RFC 9380 Appendix K.3 known-answer tests for `expand_message_xmd` (DB-52). The verifier (C-16) performs the same checks with its own code.
+**Startup self-check (MUST, refuse to run on mismatch):** re-derive `H`, `G_0` and `G_383` and
+compare them with the frozen golden file (Appendix B), at every `d` (`G_383` is derived for the
+check when `d ≤ 383`), and compare `gdigest` (§9.6) with the golden file when `d = 384` (DB-77); run
+the RFC 9496 known-answer tests for the one-way map and the RFC 9380 Appendix K.3 known-answer tests
+for `expand_message_xmd` (DB-52). The verifier (C-16) performs the same checks with its own code.
 
 ### 9.3 Commitments
 
