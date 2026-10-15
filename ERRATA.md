@@ -24,3 +24,29 @@ Gates re-run:   Part 2 (no later part exists): scripts/ci.sh fast, proofs run --
                 gates p2-checks (ledger), the sealed clean-room suite of the run above
 New freeze tag: part-2-frozen-e1
 ```
+
+## E-2
+
+```
+E-2  Part: 2   Found by: building Part 3's LogParticipant (Build 3-4 §1.5), 15 Oct 2026
+Symptom:        a participant's pre_transaction (EP-7, Build §3.3: "may request a separate committed
+                transaction first") is never called, so Part 3 cannot commit its on-demand log
+                checkpoint as its own transaction before a deletion (spec §15.3 step 3, SR-15.3-3)
+Root cause:     crates/sever-engine declared the hook through sever-txn but no engine path invoked it;
+                Part 2 registers no participant, so no Part 2 test could notice
+Regression test: crates/sever-engine/tests/errata_e2.rs::
+                p2_errata_e2_a_pre_transaction_commits_on_its_own_before_the_deletion, committed at
+                8c314a5 before the fix (red: the deletion is prepared with no pre-transaction)
+Fix:            Engine::run calls every participant's pre_transaction after planning (an absent record
+                or a failed integrity check returns before it: §15.3 steps 1-2) and commits a
+                requested PreTxn as its own WAL transaction, confirmed by after_commit (abort if the
+                WAL write fails), before the operation's transaction; the hook's documentation and the
+                Build §3.3 table say "after planning"; files changed: crates/sever-engine/src/engine.rs,
+                crates/sever-txn/src/participant.rs (doc comments only); the regression test's restart
+                drops the engine instead of closing it (a storage checkpoint truncates the WAL, §12.4,
+                so replay would not show the earlier transactions); red proof PR-ERR2
+Gates re-run:   Part 2 (the Part 2 build registers no participant, so the new loop is empty there):
+                scripts/ci.sh fast, proofs run --only PR-ERR2, gates p2-checks (ledger), the sealed
+                clean-room suite of fair run 20261008T164154Z-p2-42fc06df (ledger)
+New freeze tag: part-2-frozen-e2 (left to the owner)
+```

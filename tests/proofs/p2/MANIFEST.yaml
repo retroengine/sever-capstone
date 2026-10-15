@@ -2037,3 +2037,13 @@
   - tests/errata/test_p2_e1_sdk_threads.py::test_p2_errata_e1_sdk_searches_from_threads_during_delete_user
   build:
   - native
+- id: PR-ERR2
+  claim: 'erratum E-2 undone: the engine never calls pre_transaction, so no participant transaction
+    is committed on its own before a deletion'
+  kind: red
+  requirements:
+  - SR-15.3-3
+  patch: PR-ERR2.patch
+  package: sever-engine
+  tests:
+  - p2_errata_e2_a_pre_transaction_commits_on_its_own_before_the_deletion

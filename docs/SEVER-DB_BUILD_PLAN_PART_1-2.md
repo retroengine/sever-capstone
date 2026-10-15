@@ -430,7 +430,7 @@ come out exactly as in spec §14.3–§14.4.
 
 | Hook | When | Part 3 uses it to | Part 4 uses it to |
 |---|---|---|---|
-| `pre_transaction` | Before planning; may request a separate committed transaction first | Create an on-demand log checkpoint (spec §15.3 step 3) | — |
+| `pre_transaction` | After planning (only when there is something to do), before `prepare`; may request a separate transaction, which the engine commits on its own first (erratum E-2: spec §15.3 orders the integrity check of step 2 before the checkpoint of step 3, and an absent record touches nothing) | Create an on-demand log checkpoint (spec §15.3 step 3) | — |
 | `prepare` | After `plan`, before any write | Build leaves, the proof and the certificate; list append-store bytes | Generate new keys; re-wrap bucket keys and survivor record keys; re-seal accumulators |
 | `phase_a` | Durable side effects that must precede `COMMIT` | — | Write the new group key into the inactive key-file slot and `fsync` |
 | `wal_records` | Inside the WAL transaction | `LOG_LEAF`, `CERT_REF`, `LOG_CHECKPOINT` records | New bucket blocks and key envelopes |

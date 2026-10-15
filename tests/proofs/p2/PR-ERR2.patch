@@ -1,0 +1,20 @@
+--- a/crates/sever-engine/src/engine.rs
++++ b/crates/sever-engine/src/engine.rs
+@@ -188,17 +188,6 @@
+         records: Vec<CoreRecord>,
+         then: impl FnOnce(&mut State<E>),
+     ) -> Result<sever_txn::Acknowledged, Error> {
+-        // EP-7 pre-transactions (E-2; spec §15.3 step 3): after planning, so an absent record or a
+-        // failed integrity check touches nothing (steps 1–2); each is committed on its own, first.
+-        for p in w.participants.iter_mut() {
+-            if let Some(pre) = p.pre_transaction(kind, &cid)? {
+-                if let Err(e) = w.wal.commit(&pre.records) {
+-                    p.abort();
+-                    return Err(e);
+-                }
+-                p.after_commit()?;
+-            }
+-        }
+         let draft = TxnDraft {
+             kind,
+             collection: cid,

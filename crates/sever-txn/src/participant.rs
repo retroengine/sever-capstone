@@ -56,8 +56,8 @@ impl<E: GroupExtension> core::fmt::Debug for TxnDraft<'_, E> {
     }
 }
 
-/// A transaction a participant asks for before the next one is planned (Part 3: an on-demand log
-/// checkpoint, spec §15.3 step 3). It is committed on its own, first.
+/// A transaction a participant asks for before the planned one is prepared (Part 3: an on-demand
+/// log checkpoint, spec §15.3 step 3). It is committed on its own, first (E-2).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PreTxn {
     /// Its participant records.
@@ -74,7 +74,9 @@ pub trait TxnParticipant<E: GroupExtension>: Send {
         &[]
     }
 
-    /// Before planning: may request a separate committed transaction first.
+    /// After planning (and only if there is something to do), before `prepare`: may request a
+    /// separate transaction, which the engine commits on its own first and confirms with
+    /// `after_commit` (or `abort` if its WAL write fails) (E-2; spec §15.3 steps 1–3).
     fn pre_transaction(
         &mut self,
         _kind: TxnKind,

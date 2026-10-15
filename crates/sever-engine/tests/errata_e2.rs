@@ -171,7 +171,7 @@ fn p2_errata_e2_a_pre_transaction_commits_on_its_own_before_the_deletion() {
         take(&log),
         ["pre Delete", "after_commit", "prepare", "after_commit"]
     );
-    db.close().unwrap();
+    drop(db); // no storage checkpoint, so recovery replays the whole WAL (§12.3)
     disks.data.restart(CrashPolicy::DropAll);
     disks.keys.restart(CrashPolicy::DropAll);
 
