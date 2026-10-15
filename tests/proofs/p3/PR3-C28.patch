@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/sig.rs
++++ b/crates/sever-crypto/src/sig.rs
+@@ -92,7 +92,7 @@
+ /// §9.8 witness cosignature message: `DST_COSIGN ‖` the 66-byte log-checkpoint message (83 bytes).
+ pub fn cosign_message(checkpoint: &[u8; CHECKPOINT_MESSAGE_LEN]) -> [u8; COSIGN_MESSAGE_LEN] {
+     let mut m = [0u8; COSIGN_MESSAGE_LEN];
+-    fill(&mut m, &[DST_COSIGN, checkpoint]);
++    fill(&mut m, &[b"SEVERDB-COSIGN-V2", checkpoint]);
+     m
+ }
+ 

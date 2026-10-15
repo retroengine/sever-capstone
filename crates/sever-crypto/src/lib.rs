@@ -11,7 +11,9 @@
 //! - the generators `H, G_0 … G_{d−1}`, `gdigest` and the startup self-check (§9.2, §9.6, INV-10);
 //! - record and group commitments and the public transition check (§9.3);
 //! - the proof of knowledge of the group state: context, challenge, proof, verifier (§9.5), with
-//!   hedged nonces and a prover that accepts only [`StrictProofRng`] (§9.6).
+//!   hedged nonces and a prover that accepts only [`StrictProofRng`] (§9.6);
+//! - Ed25519 signatures over the domain-separated messages of §9.8, checked with `verify_strict`,
+//!   and the 90-day key epochs.
 
 #![forbid(unsafe_code)]
 
@@ -21,6 +23,7 @@ pub(crate) mod generators;
 mod group;
 mod nonce;
 pub(crate) mod posk;
+mod sig;
 mod xmd;
 
 pub use commit::{commit_group, commit_record, decode_record_commitment, transition_holds};
@@ -35,6 +38,11 @@ pub use group::{
 };
 pub use nonce::{StrictProofRng, prove};
 pub use posk::{CHALLENGE_PREIMAGE_LEN, CTX_LEN, DeletionContext, Proof, challenge, verify};
+pub use sig::{
+    CHECKPOINT_MESSAGE_LEN, COSIGN_MESSAGE_LEN, EPOCH_MS, INSERT_MESSAGE_LEN, KeyPair,
+    certificate_message, checkpoint_message, cosign_message, epoch_of, insert_message,
+    verify_signature,
+};
 pub use xmd::expand_message_xmd_sha512;
 
 /// Why a cryptographic input was refused. Carries no input bytes (§17).
@@ -50,6 +58,8 @@ pub enum CryptoError {
     ExpandOutOfRange,
     /// §9.9: a record commitment `C_t` is the identity.
     IdentityCommitment,
+    /// §9.8: a signature does not verify with `verify_strict`, or its key cannot be decoded.
+    BadSignature,
     /// §9.5: the proof of knowledge does not verify.
     ProofInvalid,
     /// §9.2 startup self-check failed (INV-10); names the check, never a value.

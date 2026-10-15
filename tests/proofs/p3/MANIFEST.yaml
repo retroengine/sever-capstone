@@ -257,3 +257,63 @@
   package: sever-crypto
   tests:
   - crates/sever-crypto/src/tests.rs::p3_crypto_prove_takes_the_zero_sized_strict_proof_rng
+- id: PR3-C26
+  claim: the insert message puts C_t before collection_id (§9.8)
+  kind: red
+  requirements:
+  - SR-9.8-1
+  patch: PR3-C26.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_signed_messages_have_the_layouts_of_section_9_8
+- id: PR3-C27
+  claim: the checkpoint message encodes timestamp_ms little-endian (§9.8)
+  kind: red
+  requirements:
+  - SR-9.8-2
+  patch: PR3-C27.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_signed_messages_have_the_layouts_of_section_9_8
+- id: PR3-C28
+  claim: the cosignature message uses another domain string (§9.8, §2.3)
+  kind: red
+  requirements:
+  - SR-9.8-3
+  patch: PR3-C28.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_signed_messages_have_the_layouts_of_section_9_8
+- id: PR3-C29
+  claim: the certificate signature message leaves out DST_CERT (§9.8)
+  kind: red
+  requirements:
+  - SR-9.8-4
+  patch: PR3-C29.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_signed_messages_have_the_layouts_of_section_9_8
+- id: PR3-C30
+  claim: signatures are checked with plain verify instead of verify_strict (§9.8)
+  kind: red
+  requirements:
+  - SR-9.8-7
+  patch: PR3-C30.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_signatures_are_checked_strictly
+- id: PR3-C31
+  claim: a key epoch is 30 days instead of 90 (§9.8, §2.2)
+  kind: red
+  requirements:
+  - SR-9.8-5
+  patch: PR3-C31.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_epochs_are_90_day_windows_from_genesis

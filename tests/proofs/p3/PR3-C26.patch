@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/sig.rs
++++ b/crates/sever-crypto/src/sig.rs
+@@ -65,7 +65,7 @@
+ /// §9.8 user insert signature message: `DST_INSERT ‖ collection_id ‖ C_t` (65 bytes).
+ pub fn insert_message(collection_id: &[u8; 16], c_t: &[u8; 32]) -> [u8; INSERT_MESSAGE_LEN] {
+     let mut m = [0u8; INSERT_MESSAGE_LEN];
+-    fill(&mut m, &[DST_INSERT, collection_id, c_t]);
++    fill(&mut m, &[DST_INSERT, c_t, collection_id]);
+     m
+ }
+ 

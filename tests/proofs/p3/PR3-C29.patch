@@ -1,0 +1,10 @@
+--- a/crates/sever-crypto/src/sig.rs
++++ b/crates/sever-crypto/src/sig.rs
+@@ -99,7 +99,6 @@
+ /// §9.8 operator certificate signature message: `DST_CERT ‖` certificate body (§11.1).
+ pub fn certificate_message(body: &[u8]) -> Vec<u8> {
+     let mut m = Vec::with_capacity(DST_CERT.len() + body.len());
+-    m.extend_from_slice(DST_CERT);
+     m.extend_from_slice(body);
+     m
+ }

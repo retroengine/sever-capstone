@@ -827,3 +827,122 @@ fn p3_crypto_prove_takes_the_zero_sized_strict_proof_rng() {
     assert_eq!(proof.len(), 12_352);
     assert_eq!(verify(&g, &c_s_post, &golden_ctx(), &proof), Ok(()));
 }
+
+const R8032: &str = include_str!("../../../golden/p3_rfc8032_ed25519.json");
+
+#[test]
+// oracle: B RFC 8032 §7.1 (golden/p3_rfc8032_ed25519.json): public keys and signatures, byte for byte
+fn p3_crypto_ed25519_matches_rfc8032() {
+    let e = json(R8032);
+    let vs = e["vectors"].as_array().unwrap();
+    assert_eq!(vs.len(), 5);
+    for v in vs {
+        let k = KeyPair::from_secret(&arr::<32>(&v["secret_key"]));
+        let msg = unhex(v["message"].as_str().unwrap());
+        assert_eq!(
+            hex(&k.public()),
+            v["public_key"].as_str().unwrap(),
+            "TEST {}",
+            v["name"]
+        );
+        let sig = k.sign(&msg);
+        assert_eq!(
+            hex(&sig),
+            v["signature"].as_str().unwrap(),
+            "TEST {}",
+            v["name"]
+        );
+        assert_eq!(verify_signature(&k.public(), &msg, &sig), Ok(()));
+    }
+}
+
+#[test]
+// oracle: A §9.8 signer table and §2.3: each message's bytes written by hand in field order
+#[spec("SR-9.8-1", "SR-9.8-2", "SR-9.8-3", "SR-9.8-4")]
+fn p3_crypto_signed_messages_have_the_layouts_of_section_9_8() {
+    let ins = insert_message(&[0xc1; 16], &[0x7a; 32]);
+    let mut want = b"SEVERDB-INSERT-V1".to_vec();
+    want.extend([0xc1; 16]);
+    want.extend([0x7a; 32]);
+    assert_eq!((ins.as_slice(), INSERT_MESSAGE_LEN), (want.as_slice(), 65));
+
+    let cp = checkpoint_message(
+        0x0102_0304_0506_0708,
+        &[0xab; 32],
+        0x1112_1314_1516_1718,
+        0x2122_2324,
+    );
+    let mut want = b"SEVERDB-STH-V1".to_vec();
+    want.extend([1, 2, 3, 4, 5, 6, 7, 8]); // u64be tree_size
+    want.extend([0xab; 32]); // root
+    want.extend([0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18]); // u64be timestamp_ms
+    want.extend([0x21, 0x22, 0x23, 0x24]); // u32be epoch
+    assert_eq!(
+        (cp.as_slice(), CHECKPOINT_MESSAGE_LEN),
+        (want.as_slice(), 66)
+    );
+
+    let co = cosign_message(&cp);
+    let mut want = b"SEVERDB-COSIGN-V1".to_vec();
+    want.extend_from_slice(&cp);
+    assert_eq!((co.as_slice(), COSIGN_MESSAGE_LEN), (want.as_slice(), 83));
+
+    let mut want = b"SEVERDB-CERT-V1".to_vec();
+    want.extend([1, 2, 3]);
+    assert_eq!(certificate_message(&[1, 2, 3]), want);
+}
+
+#[test]
+// oracle: A §9.8 (every check uses verify_strict: small-order keys and non-canonical encodings are
+// rejected) and RFC 8032 §5.1.7 (S must be below ℓ); the identity and ℓ written by hand
+#[spec("SR-9.8-7")]
+fn p3_crypto_signatures_are_checked_strictly() {
+    let k = KeyPair::generate();
+    let msg = insert_message(&[1; 16], &[2; 32]);
+    let sig = k.sign(&msg);
+    assert_eq!(verify_signature(&k.public(), &msg, &sig), Ok(()));
+    // Domain separation: the same signature does not cover any other message.
+    let other = cosign_message(&checkpoint_message(1, &[2; 32], 3, 4));
+    assert_eq!(
+        verify_signature(&k.public(), &other, &sig),
+        Err(CryptoError::BadSignature)
+    );
+    // A small-order public key (the Edwards identity, y = 1) with R = identity and S = 0 satisfies
+    // the plain equation [S]B = R + [k]A for every message; verify_strict must refuse it.
+    let mut identity = [0u8; 32];
+    identity[0] = 1;
+    let mut weak_sig = [0u8; 64];
+    weak_sig[0] = 1;
+    assert_eq!(
+        verify_signature(&identity, &msg, &weak_sig),
+        Err(CryptoError::BadSignature)
+    );
+    // S + ℓ (non-canonical S) is refused.
+    let l = unhex("edd3f55c1a631258d69cf7a2def9de1400000000000000000000000000000010");
+    let mut big = sig;
+    let mut carry = 0u16;
+    for (b, li) in big[32..].iter_mut().zip(&l) {
+        let s = u16::from(*b) + u16::from(*li) + carry;
+        *b = (s & 0xff) as u8;
+        carry = s >> 8;
+    }
+    assert_eq!(carry, 0);
+    assert_eq!(
+        verify_signature(&k.public(), &msg, &big),
+        Err(CryptoError::BadSignature)
+    );
+}
+
+#[test]
+// oracle: A §9.8 epochs ([genesis + 90·e days, genesis + 90·(e+1) days)); 90 days = 7,776,000,000 ms
+// by hand
+#[spec("SR-9.8-5")]
+fn p3_crypto_epochs_are_90_day_windows_from_genesis() {
+    let g = 1_700_000_000_000u64;
+    assert_eq!(EPOCH_MS, 7_776_000_000);
+    assert_eq!(epoch_of(g, g), Some(0));
+    assert_eq!(epoch_of(g, g + 7_776_000_000 - 1), Some(0));
+    assert_eq!(epoch_of(g, g + 7_776_000_000), Some(1));
+    assert_eq!(epoch_of(g, g + 3 * 7_776_000_000 + 5), Some(3));
+    assert_eq!(epoch_of(g, g - 1), None);
+}

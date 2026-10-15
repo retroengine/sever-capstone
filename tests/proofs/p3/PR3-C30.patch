@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/sig.rs
++++ b/crates/sever-crypto/src/sig.rs
+@@ -58,7 +58,7 @@
+ pub fn verify_signature(public: &[u8; 32], msg: &[u8], sig: &[u8; 64]) -> Result<(), CryptoError> {
+     let pk = VerifyingKey::from_bytes(public).map_err(|_| CryptoError::BadSignature)?;
+     let s = Signature::from_bytes(sig);
+-    pk.verify_strict(msg, &s)
++    ed25519_dalek::Verifier::verify(&pk, msg, &s)
+         .map_err(|_| CryptoError::BadSignature)
+ }
+ 

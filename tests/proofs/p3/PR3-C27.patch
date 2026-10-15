@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/sig.rs
++++ b/crates/sever-crypto/src/sig.rs
+@@ -82,7 +82,7 @@
+         DST_STH,
+         &tree_size.to_be_bytes(),
+         root,
+-        &timestamp_ms.to_be_bytes(),
++        &timestamp_ms.to_le_bytes(),
+         &epoch.to_be_bytes(),
+     ];
+     fill(&mut m, &parts);

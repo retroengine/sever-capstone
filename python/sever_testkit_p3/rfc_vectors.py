@@ -13,6 +13,9 @@ The RFC files are the rfc-editor.org plain texts, pinned by SHA-256 below (re-do
   proves the parse without computing a hash.
 - RFC 9496 Appendix A.1 (multiples of the generator), A.2 (encodings that MUST be rejected) and A.3
   (``from_uniform_bytes`` inputs and outputs) for ristretto255.
+- RFC 8032 §7.1, Ed25519 (secret key, public key, message, signature). The text is paginated: page
+  headers, footers and form feeds are dropped, and each message is checked against its printed
+  length.
 
 ``check`` (Fast tier) re-extracts and compares with the committed golden files.
 """
@@ -30,9 +33,11 @@ PINNED: Final = {
     "rfc9380.txt": "a2e6ab02b2117d6f52ac293020857752972b2e23ae005c33f612e40436ff4b6d",
     "rfc9496.txt": "d875c6e703827da487eae8f0656fd25e4a278f1dcb0f06041669adad27c03ff3",
     "rfc9162.txt": "a0e432ce7580c99fcc8faf0cf3f6191f9ce6b4864f949158e020d4ecb295081f",
+    "rfc8032.txt": "ed63657ff389301282b169b0abde9b5dd2c7e4d524fdfa5da6ff3094fc93c4c3",
 }
 OUT_9380: Final = Path("golden/p3_rfc9380_k3_expand_xmd_sha512.json")
 OUT_9496: Final = Path("golden/p3_rfc9496_ristretto255.json")
+OUT_8032: Final = Path("golden/p3_rfc8032_ed25519.json")
 HEX: Final = re.compile(r"^[0-9a-f]+$")
 
 
@@ -174,6 +179,61 @@ def rfc9496(root: Path) -> dict[str, Any]:
     }
 
 
+PAGE_LINE: Final = re.compile(r"^RFC 8032 |\[Page \d+\]$")
+
+
+def rfc8032_ed25519(root: Path) -> dict[str, Any]:
+    lines = [
+        ln
+        for ln in _text(root, "rfc8032.txt")
+        if "\f" not in ln and not PAGE_LINE.search(ln.strip())
+    ]
+    sec = _section(lines, "7.1.  ", "7.2.  ")
+    starts = [n for n, ln in enumerate(sec) if ln.strip().startswith("-----TEST")]
+    vectors = []
+    for a, b in zip(starts, [*starts[1:], len(sec)], strict=True):
+        block = sec[a:b]
+        name = block[0].strip().removeprefix("-----TEST ").strip()
+        fields: dict[str, str] = {}
+        length = -1
+        key = ""
+        for ln in block[1:]:
+            s = ln.strip()
+            m = re.match(r"^MESSAGE \(length (\d+) bytes?\):$", s)
+            if m:
+                key, length = "message", int(m.group(1))
+                fields[key] = ""
+            elif s.endswith(":") and s[:-1] in (
+                "ALGORITHM",
+                "SECRET KEY",
+                "PUBLIC KEY",
+                "SIGNATURE",
+            ):
+                key = s[:-1].lower().replace(" ", "_")
+                fields[key] = ""
+            elif s and key == "algorithm":
+                fields[key] += s
+            elif s and key and HEX.match(s.replace(" ", "")):
+                fields[key] += s.replace(" ", "")
+            elif s:  # anything else (the closing "-----") ends the current field
+                key = ""
+        msg = fields["message"]
+        if fields["algorithm"] != "Ed25519" or len(msg) != 2 * length or not HEX.match(msg or "0"):
+            raise ValueError(f"RFC 8032 TEST {name}: message is not {length} bytes of hex")
+        sizes = (len(fields["secret_key"]), len(fields["public_key"]), len(fields["signature"]))
+        if sizes != (64, 64, 128):
+            raise ValueError(f"RFC 8032 TEST {name}: wrong key or signature size")
+        vectors.append({"name": name, "secret_key": fields["secret_key"],
+                        "public_key": fields["public_key"], "message": msg,
+                        "signature": fields["signature"]})  # fmt: skip
+    return {
+        "source": "RFC 8032 §7.1, Ed25519",
+        "source_file": "spec/rfc/rfc8032.txt",
+        "source_sha256": PINNED["rfc8032.txt"],
+        "vectors": vectors,
+    }
+
+
 def _dump(data: dict[str, Any]) -> str:
     return json.dumps(data, indent=1, ensure_ascii=False) + "\n"
 
@@ -184,7 +244,11 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--root", type=Path, default=Path("."))
     args = ap.parse_args(argv)
     root: Path = args.root
-    want = {OUT_9380: _dump(rfc9380_k3(root)), OUT_9496: _dump(rfc9496(root))}
+    want = {
+        OUT_9380: _dump(rfc9380_k3(root)),
+        OUT_9496: _dump(rfc9496(root)),
+        OUT_8032: _dump(rfc8032_ed25519(root)),
+    }
     bad = 0
     for path, text in want.items():
         if args.command == "write":

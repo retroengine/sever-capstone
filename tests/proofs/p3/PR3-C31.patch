@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/sig.rs
++++ b/crates/sever-crypto/src/sig.rs
+@@ -15,7 +15,7 @@
+ /// Length of the witness cosignature message (§9.8).
+ pub const COSIGN_MESSAGE_LEN: usize = 83;
+ /// One key epoch: 90 days in milliseconds (§2.2, §9.8).
+-pub const EPOCH_MS: u64 = 90 * 24 * 60 * 60 * 1000;
++pub const EPOCH_MS: u64 = 30 * 24 * 60 * 60 * 1000;
+ 
+ /// An Ed25519 signing key. Generated only from the OS random source; loading a stored key is
+ /// [`KeyPair::from_secret`].

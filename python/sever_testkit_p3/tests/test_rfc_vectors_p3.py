@@ -30,6 +30,15 @@ def test_p3_rfc_vectors_counts_match_the_appendices() -> None:
     assert len(r["invalid_encodings"]) == 29
     assert len(r["from_uniform_bytes"]) == 11
     assert len({p["output"] for p in r["from_uniform_bytes"]}) == 8
+    # RFC 8032 §7.1: TESTs 1, 2, 3, 1024 (a 1023-byte message across page breaks) and SHA(abc).
+    e = rfc_vectors.rfc8032_ed25519(ROOT)
+    assert [(v["name"], len(v["message"]) // 2) for v in e["vectors"]] == [
+        ("1", 0),
+        ("2", 1),
+        ("3", 2),
+        ("1024", 1023),
+        ("SHA(abc)", 64),
+    ]
 
 
 def _copy(tmp_path: Path) -> Path:
