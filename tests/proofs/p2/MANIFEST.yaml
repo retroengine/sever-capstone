@@ -2025,3 +2025,15 @@
   package: sever-engine
   tests:
   - p2_engine_unknown_collection_and_bad_requests_are_typed
+- id: PR-ERR1
+  claim: 'erratum E-1 undone: the SDK takes the engine mutex while holding the GIL, so searches from
+    threads during delete_user deadlock'
+  kind: red
+  requirements:
+  - SR-12.5-1
+  patch: PR-ERR1.patch
+  runner: pytest
+  tests:
+  - tests/errata/test_p2_e1_sdk_threads.py::test_p2_errata_e1_sdk_searches_from_threads_during_delete_user
+  build:
+  - native

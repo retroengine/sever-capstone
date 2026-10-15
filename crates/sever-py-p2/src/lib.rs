@@ -110,11 +110,17 @@ impl PyEngine {
         py: Python<'_>,
         f: impl FnOnce(&Opened) -> Result<T, Error> + Send,
     ) -> PyResult<T> {
-        let guard = self.inner.lock().unwrap_or_else(|p| p.into_inner());
-        let opened = guard
-            .as_ref()
-            .ok_or_else(|| SeverError::new_err("the engine is closed"))?;
-        py.detach(|| f(opened)).map_err(py_err)
+        // Erratum E-1 (§12.5): the engine mutex is taken only after the GIL is released. Taking it
+        // while holding the GIL deadlocks: a thread holding the mutex waits for the GIL to return
+        // its result while the GIL holder waits for the mutex.
+        let out = py.detach(|| {
+            let guard = self.inner.lock().unwrap_or_else(|p| p.into_inner());
+            guard.as_ref().map(f)
+        });
+        match out {
+            Some(r) => r.map_err(py_err),
+            None => Err(SeverError::new_err("the engine is closed")),
+        }
     }
 }
 
@@ -273,11 +279,12 @@ impl PyEngine {
 
     /// Clean shutdown (a storage checkpoint) and release of `ENGINE.lock`.
     fn close(&self, py: Python<'_>) -> PyResult<()> {
-        let taken = self.inner.lock().unwrap_or_else(|p| p.into_inner()).take();
-        match taken {
-            Some(o) => py.detach(|| o.engine.close()).map_err(py_err),
-            None => Ok(()),
-        }
+        // Erratum E-1: the mutex is taken with the GIL released, as in `with`.
+        py.detach(|| {
+            let taken = self.inner.lock().unwrap_or_else(|p| p.into_inner()).take();
+            taken.map_or(Ok(()), |o| o.engine.close())
+        })
+        .map_err(py_err)
     }
 }
 

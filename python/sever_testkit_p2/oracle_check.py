@@ -50,6 +50,7 @@ PART2_RUST_CRATES: Final = [
 PART2_PY_PATHS: Final = [
     "python/sever_testkit_p2", "python/sever_refmodel_durable", "python/sever_db_p2",
     "tests/e2e", "tests/architecture/test_architecture_p2.py",
+    "tests/errata/test_p2_e1_sdk_threads.py",  # erratum E-1
 ]  # fmt: skip
 
 RUST_ORACLE: Final = re.compile(r"^\s*//\s*oracle:\s*(\S+)\s*(.*?)\s*$")
