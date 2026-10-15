@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-50, DB-55 … DB-75)](#6-decision-register-db-1--db-50-db-55--db-75)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-75)](#6-decision-register-db-1--db-53-db-55--db-75)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-50, DB-55 … DB-75)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-75)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -791,8 +791,9 @@ must be independently checkable, and aggregation reduces verifier computation, n
 
 DB-44 … DB-54 are reserved for the amendments proposed in the build plans (Build §3.5, Build 3-4 §3.5)
 and are recorded here once accepted. DB-44, DB-45, DB-47, DB-49 and DB-50 were accepted on 4 October
-2026, and DB-46 and DB-48 on 7 October 2026 (Part 2's design review); DB-51 … DB-54 remain proposals
-until the part that needs them.
+2026, DB-46 and DB-48 on 7 October 2026 (Part 2's design review), and DB-51, DB-52 and the EP-10
+half of DB-53 on 15 October 2026 (Part 3's design review); the EP-11 half of DB-53 and DB-54 remain
+proposals until Part 4.
 
 #### DB-44 — Build in four frozen parts; erasure after certificates (4 October 2026)
 
@@ -888,6 +889,50 @@ without editing Part 1. **Rejected.** Passing a provider through every API (it w
 signatures); a global that can be replaced later (one secret could then straddle two providers).
 **Consequence.** A second installation attempt is an error. Tests use a provider that checks every
 released buffer is all zero (Build 3-4 §2.8).
+
+#### DB-51 — A pure-Python ristretto255 in the certificate model (15 October 2026)
+
+**Decision.** The certificate reference model `sever_refmodel_certs` (C-18's Part 3 package) uses its
+own small pure-Python ristretto255 and `expand_message_xmd` (SHA-512), written from RFC 9496 and
+RFC 9380 and checked against those RFCs' test vectors, never a binding to the engine's crypto crate.
+It is slow (a 385-term commitment takes a fraction of a second), so it runs the small and medium
+streams; the large differential runs (P3-T5 on `nq-100k`, five seeds) compute the curve operations
+through the engine's Python binding, while the model's state tracking (`S`, `n`, `r_agg`, the
+transition `C_S_post + C_t = C_S_pre`) stays its own at every scale (Build 3-4 §1.6). **Why.** A
+shared misreading of the spec in the curve code would otherwise pass both sides; the RFC vectors give
+the model's primitives an oracle independent of this project. **Rejected.** A binding to
+`sever-crypto` everywhere (the model would inherit the engine's crypto bugs); libsodium through PyNaCl
+for the large runs (one more dependency for little gain: primitive errors already show on the small
+streams); pure Python at every scale (days of CPU per gate run). **Consequence.** Closes G-3: spec
+§19.1 C-18 no longer depends on C-7. In the large runs the curve arithmetic is checked only against
+the engine (oracle D for that part), so the small and medium streams carry the primitive checks.
+
+#### DB-52 — `expand_message_xmd` is implemented by the project (15 October 2026)
+
+**Decision.** `curve25519-dalek 4.1.3` provides the RFC 9496 one-way map
+(`RistrettoPoint::from_uniform_bytes`) but not RFC 9380's `expand_message_xmd` (checked in the crate
+source on 15 October 2026). `sever-crypto` implements `expand_message_xmd` with SHA-512 (RFC 9380
+§5.3.1, about 60 lines), checked against the RFC 9380 Appendix K.3 vectors; the verifier implements
+it again from the RFC with its own code (Build 3-4 §1.6). **Why.** §9.2's generators need it, and the
+construction is short, fully specified and has published test vectors. **Rejected.** A crate that
+provides it (for example `elliptic-curve`'s `hash2curve`): a large new dependency tree in both
+workspaces for 60 lines of code, and more for the §20.3 duplicate-crate check to cover.
+**Consequence.** Spec §9.1's "no primitive is implemented by this project" names this one exception;
+§9.2's startup self-check takes the `expand_message_xmd` known answers from RFC 9380 Appendix K.3
+(RFC 9496 has vectors only for the one-way map).
+
+#### DB-53 — EP-10 `Witness` (15 October 2026; the EP-11 half waits for Part 4)
+
+**Decision.** Part 3 declares extension point EP-10 `Witness`: a witness receives a new log
+checkpoint and the consistency proof from the last checkpoint it cosigned, and cosigns only if the
+proof verifies (spec §10.4). The default is `SimulatedWitness`, five instances with threshold four.
+It has a contract suite that passes for `SimulatedWitness` and fails for a witness that skips the
+consistency check (P3-T12, Build 3-4 §1.5). The proposal's other half, EP-11 `PlatformProbe`
+(Build 3-4 §2.4), is decided at Part 4's design review. **Why.** Independent witnesses (overview
+O-6, limit L-7) can then be added later without editing frozen Part 3 code. **Rejected.** Witnesses
+built into `sever-log` with no extension point (adding a real witness would need an erratum);
+accepting EP-11 now (its design belongs to Part 4 and cannot be checked yet). **Consequence.** v1's
+witnesses are simulated, so the witness guarantee stays a limit (L-7).
 
 #### DB-61 — The ULP sentence of §4.1 (6 October 2026)
 
@@ -1840,6 +1885,10 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **15 October 2026 — Part 3 design review.** DB-51 (pure-Python ristretto255 in the certificate
+  model, closes G-3), DB-52 (`expand_message_xmd` implemented by the project) and DB-53's EP-10
+  `Witness` accepted from the build plan; EP-11 waits for Part 4. Specification sections touched:
+  §9.1, §9.2, §19.1 (C-18).
 - **15 October 2026 — Erratum E-1 and blind bugs from cargo-mutants.** DB-75 (fair testing takes
   its planted bugs from the cargo-mutants gate). Erratum E-1 (`ERRATA.md`): Part 2 SDK deadlock.
 - **8 October 2026 — Fair testing within a budget.** DB-74 (confirm before spending, cost caps,

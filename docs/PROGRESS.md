@@ -77,6 +77,10 @@ INV-10, INV-15; Appendix B vectors 1, 2, 3, 4, 6, 8, 9. Out: encryption and eras
 1. Decide the proposals Part 3 needs: DB-51 (pure-Python ristretto255 in the certificate model),
    DB-52 (`expand_message_xmd` in `sever-crypto` if `curve25519-dalek` 4.1.3 lacks it: check the
    pinned crate first), DB-53 (EP-10 `Witness`).
+   **Done 15 Oct 2026** (owner's choices): 4.1.3 has `from_uniform_bytes` but no
+   `expand_message_xmd`. DB-51, DB-52 and DB-53's EP-10 half accepted (overview §6.8); EP-11 waits
+   for Part 4. Spec §9.1 (the one self-implemented primitive), §9.2 (K.3 vectors), §19.1 C-18
+   amended; G-3 closed.
 2. Requirements catalogue: `spec/requirements.yaml` has 4 Part 3 entries; add one `SR-` per MUST of
    the in-scope sections (Build §2.2), before tests.
 3. Registers: attacks AT-1…AT-17 and auditor faults AF-1…AF-5 (Build 3-4 §3), sabotage SB-16…SB-23.

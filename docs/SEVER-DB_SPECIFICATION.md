@@ -626,7 +626,10 @@ the graph keeps a structural trace after the node is gone. v1 therefore supports
 | AES-256-GCM-SIV | RFC 8452 | `aes-gcm-siv 0.11.1` | All encryption at rest |
 | CRC-32C | Castagnoli | `crc32c 0.6.8` | Integrity of disk records (not security) |
 
-No other primitive is used. No primitive is implemented by this project.
+No other primitive is used. No primitive is implemented by this project except
+`expand_message_xmd` (RFC 9380 §5.3.1), which the pinned `curve25519-dalek` does not provide: the
+engine and the verifier each implement it from the RFC and check it against the RFC 9380 Appendix
+K.3 test vectors (DB-52).
 
 ### 9.2 Generators
 
@@ -641,7 +644,7 @@ This is the standard `hash_to_group` construction.
 
 **Startup self-check (MUST, refuse to run on mismatch):** re-derive `H`, `G_0` and `G_{d−1}` and
 compare them with the frozen golden file (Appendix B); run the RFC 9496 known-answer tests for the
-one-way map and `expand_message_xmd`. The verifier (C-16) performs the same checks with its own code.
+one-way map and the RFC 9380 Appendix K.3 known-answer tests for `expand_message_xmd` (DB-52). The verifier (C-16) performs the same checks with its own code.
 
 ### 9.3 Commitments
 
@@ -1671,7 +1674,7 @@ build.
 | C-15 | Partition builder (Python) | §6.2 | The engine never fits models | Independent Ledoit–Wolf oracle agreement | numpy, scikit-learn | Oracle agreement; artefact hash stability across reruns |
 | C-16 | Verifier (separate Rust workspace) | §11.3 | Anyone can check a certificate | Shares no code with C-1…C-15; own generator derivation; same `curve25519-dalek` version | pinned crates only | Golden vectors; attack suite |
 | C-17 | Auditor (`sever-audit`) | Log consistency, deletion leaves, certificate chains | What a certificate alone cannot prove | Detects a skipped deletion leaf or a broken chain | C-16 code copied, not shared | Tests with a deliberately skipped leaf |
-| C-18 | Reference model (Python) | A slow, in-memory, obviously correct implementation of §3–§8 and §11's arithmetic, written from this document | The primary oracle for differential tests | Byte-identical canonical blobs and search results | C-7 via Python binding, C-15 | Its own unit tests; review against this document |
+| C-18 | Reference model (Python) | A slow, in-memory, obviously correct implementation of §3–§8 and §11's arithmetic, written from this document | The primary oracle for differential tests | Byte-identical canonical blobs and search results | C-15; its own pure-Python ristretto255, with C-7's Python binding only for the curve operations of large runs (DB-51) | Its own unit tests; review against this document |
 | C-19 | Experiment harness | Runs experiments, writes the run ledger | Reproducible, logged results | A run that cannot write its ledger entry does not start | C-13, C-18 | Ledger completeness checks |
 
 ### 19.2 Repository layout
