@@ -1,8 +1,8 @@
 --- a/crates/sever-log/src/checkpoint.rs
 +++ b/crates/sever-log/src/checkpoint.rs
-@@ -67,7 +67,7 @@
+@@ -74,7 +74,7 @@
      /// database is created; every witness starts from it.
-     pub fn genesis(operator: &mut EpochSigner) -> Option<Self> {
+     pub fn genesis<O: OperatorKeys + ?Sized>(operator: &mut O) -> Result<Self, Error> {
          let t = operator.genesis_ms();
 -        Self::sign(operator, 0, empty_root(), t)
 +        Self::sign(operator, 0, [0u8; 32], t)

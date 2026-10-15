@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/participant.rs
++++ b/crates/sever-cert/src/participant.rs
+@@ -353,7 +353,7 @@
+                 checkpoint: cp.checkpoint,
+                 path,
+             };
+-            let post = if *group == GroupId::Holding {
++            let post = if *group == GroupId::Holding || req < usize::MAX {
+                 None
+             } else {
+                 let t = track.get(group).ok_or(inv("§15.3 step 4 group state"))?;

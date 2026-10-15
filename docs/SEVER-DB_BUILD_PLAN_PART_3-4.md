@@ -99,8 +99,8 @@ are simulated (L-7).
 |---|---|---|
 | `sever-crypto` | Generators and their startup self-check; the integer-to-scalar map; commitments; proof of knowledge (prove and verify); hedged nonces with `StrictProofRng`; Ed25519 with domain strings and `verify_strict`; HMAC helpers; canonical decoding | §4.5, §9 |
 | `sever-commit` | `CommitmentExtension` implementing EP-1 | §5.3, §9.3–9.4 |
-| `sever-log` | The RFC 9162 tree, leaves, inclusion and consistency proofs, log checkpoints, and `LogParticipant` (EP-7); declares EP-10 `Witness` and ships `SimulatedWitness` | §10 |
-| `sever-cert` | Certificate TLV encoding and parsing; the builder, which works from the `ChangeSet`, the proof and the inclusion data; operator signing by epoch | §11.1–11.2 |
+| `sever-log` | The RFC 9162 tree, leaves, inclusion and consistency proofs, log checkpoints, and the log's durable side (`LogStore`: stores, WAL records, recovery; DB-81); declares EP-10 `Witness` and ships `SimulatedWitness` | §10 |
+| `sever-cert` | Certificate TLV encoding and parsing; the builder, which works from the `ChangeSet`, the proof and the inclusion data; operator signing by epoch; `LogParticipant` (EP-7), beside the builder it calls (DB-81) | §10, §11.1–11.2, §15 |
 | `sever-p3` | Composition root `Engine<CommitmentExtension, PlaintextSealer, (LogParticipant)>` and its CLI | — |
 | `sever-py-p3` / `sever_db_p3` | SDK, run on the application backend: `UserKey`, `prepare_insert` (quantise, draw `r_t`, compute `C_t`, sign) | §16.2 |
 | `verifier/` (separate workspace) | `sever-verify`: its own parser, generator derivation, proof check, Merkle check, signature checks and bundled trust anchors | §11.3 |
@@ -119,7 +119,7 @@ decision entry (proposed DB-52).
 |---|---|---|
 | EP-1 `GroupExtension` | `CommitmentExtension` | Group public state `C_S`; group secret state `r_agg`; record secret `insert_leaf_index ‖ has_rt ‖ r_t` (41 bytes). Admission checks `C_t` against the quantised vector and `r_t`, and the user signature. Removal checks integrity: the stored `x̃` and `r_t` must reproduce the `C_t` in the record's insert leaf, which it reads through a handle to the leaf store; otherwise `IntegrityViolation`. A flush folds each founder's `r_t` into `r_agg` and leaves `has_rt = 1`. Blob magic `SEVERG`, with blob fields `C_S ‖ r_agg` |
 | EP-3 `ChangeSet` | Read by `LogParticipant` | The pre-state and post-state of the touched group give `C_S_pre`, `C_S_post` and the secrets for the proof |
-| EP-7 `TxnParticipant` | `LogParticipant` | `pre_transaction`: create an on-demand log checkpoint if the insert leaf is not yet covered by a witnessed one. `prepare`: build the insert or delete leaf, the proof and the certificate. `wal_records`: `LOG_LEAF`, `CERT_REF`, `LOG_CHECKPOINT`. `replay` rebuilds the tree. `check_invariants`: INV-15 |
+| EP-7 `TxnParticipant` | `LogParticipant` | `pre_transaction` (called by the engine since erratum E-2): commit the due log checkpoints, each over committed leaves only (DB-82): at each multiple of 10,000, and before a deletion if a witnessed one does not cover every leaf (DB-80). `prepare`: build the insert or delete leaf, the proof and the certificate. `wal_records`: `LOG_LEAF`, `CERT_REF`, `LOG_CHECKPOINT`. `replay` rebuilds the tree. `check_invariants`: INV-15 |
 | EP-8 `AppendStore` | Leaf, hash, log-checkpoint and certificate stores | Written and `fsync`ed before the `COMMIT` that references them |
 | EP-9 `Clock` | Log checkpoint timestamps; 90-day epochs | `SimClock` in tests crosses epoch boundaries deterministically |
 

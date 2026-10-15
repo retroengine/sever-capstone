@@ -5,7 +5,10 @@
 //!   a strict parser;
 //! - [`build`]: the builder, which works from the deletion's values (the group's pre-state
 //!   commitment and post-state, from the `ChangeSet`), the proof and the inclusion data, and signs
-//!   with the operator's key for the epoch of issue (§9.8).
+//!   with the operator's key for the epoch of issue (§9.8);
+//! - [`participant`]: `LogParticipant`, the log as an EP-7 transaction participant (§10, §15.1
+//!   step 6, §15.3 steps 3–6; DB-80 … DB-82). It lives here, beside the builder it calls, so the
+//!   crates form no cycle (DB-81).
 //!
 //! The verifier (§11.3) is not here: it lives in its own workspace and shares no code with this
 //! crate (Build 3-4 §1.6).
@@ -14,6 +17,7 @@
 
 mod builder;
 mod encoding;
+pub mod participant;
 
 pub use builder::{CertError, Deletion, Removal, build};
 pub use encoding::{

@@ -6,6 +6,8 @@
 //! - [`keys`]: keys by 90-day epoch, old public keys kept forever (§9.8);
 //! - [`checkpoint`]: log checkpoints, cadence, cosignatures, the 4-of-5 threshold, genesis
 //!   (§10.3–10.4, DB-79);
+//! - [`store`]: the log's append stores and WAL records, what is committed, and recovery
+//!   (§10.5, §14.6, §14.8; DB-81);
 //! - [`witness`]: EP-10 `Witness`, `SimulatedWitness` and the EP-10 contract (§10.4, DB-53).
 
 #![forbid(unsafe_code)]
@@ -14,7 +16,10 @@ pub mod checkpoint;
 pub mod keys;
 pub mod leaf;
 pub mod merkle;
+pub mod store;
 pub mod witness;
 
+#[cfg(test)]
+mod store_tests;
 #[cfg(test)]
 mod tests;

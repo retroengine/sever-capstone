@@ -148,7 +148,7 @@ pub fn ep10_contract<W: Witness>(
     use crate::merkle::MerkleTree;
     let t0 = 1_700_000_000_000u64;
     let mut op = EpochSigner::new(t0);
-    let Some(genesis) = LogCheckpoint::genesis(&mut op) else {
+    let Ok(genesis) = LogCheckpoint::genesis(&mut op) else {
         return Err(Ep10Violation::RefusedHonest);
     };
     let mut honest = MerkleTree::new();
@@ -159,7 +159,7 @@ pub fn ep10_contract<W: Witness>(
     }
     let cp = |op: &mut EpochSigner, t: &MerkleTree, n: u64, at: u64| {
         t.root(n)
-            .and_then(|r| LogCheckpoint::sign(op, n, r, t0 + at))
+            .and_then(|r| LogCheckpoint::sign(op, n, r, t0 + at).ok())
     };
     let (Some(c3), Some(c7), Some(f8), Some(c2)) = (
         cp(&mut op, &honest, 3, 1),

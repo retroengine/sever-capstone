@@ -1,11 +1,11 @@
 //! The certificate builder (Build 3-4 §1.4; spec §11, §15.3 step 4).
 
 use sever_crypto::{
-    CryptoError, DeletionContext, Generators, Scalar, StrictProofRng, commit_group, decode_point,
-    decode_record_commitment, encode_point, prove, transition_holds,
+    CryptoError, DeletionContext, Generators, Scalar, StrictProofRng, certificate_message,
+    commit_group, decode_point, decode_record_commitment, encode_point, prove, transition_holds,
 };
 use sever_log::checkpoint::{Cosignature, is_witnessed};
-use sever_log::keys::{EpochSigner, Keyring};
+use sever_log::keys::{Keyring, OperatorKeys};
 use sever_log::merkle::{leaf_hash, verify_inclusion};
 
 use crate::encoding::{Certificate, GroupFields, InsertInclusion};
@@ -30,6 +30,8 @@ pub enum CertError {
     TransitionBroken,
     /// A primitive refused its input (a non-canonical `C_t` or `C_S_pre`, a wrong dimension).
     Crypto(CryptoError),
+    /// The operator's key store could not sign (it could not keep a new epoch's key).
+    Signing,
 }
 
 impl From<CryptoError> for CertError {
@@ -78,7 +80,7 @@ pub struct Deletion<'a> {
 pub fn build(
     gens: &Generators,
     deletion: Deletion<'_>,
-    operator: &mut EpochSigner,
+    operator: &mut dyn OperatorKeys,
     witnesses: &[Keyring],
     now_ms: u64,
     rng: &mut StrictProofRng,
@@ -159,6 +161,8 @@ pub fn build(
         database_lsn,
         operator_signature: [0; 64],
     };
-    cert.sign(operator.key(key_period));
+    cert.operator_signature = operator
+        .sign(key_period, &certificate_message(&cert.body()))
+        .map_err(|_| CertError::Signing)?;
     Ok(cert)
 }

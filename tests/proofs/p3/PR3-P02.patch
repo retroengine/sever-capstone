@@ -1,0 +1,12 @@
+--- a/crates/sever-cert/src/participant.rs
++++ b/crates/sever-cert/src/participant.rs
+@@ -271,8 +271,7 @@
+             user_public_key: staged.user_public_key,
+             user_signature: staged.signature,
+         };
+-        let (_, rec) = log.stage_insert(&leaf)?;
+-        draft.participant_records.push(rec.encode());
++        let _ = (leaf, log);
+         Ok(())
+     }
+ 

@@ -789,9 +789,15 @@ the keys (overview L-27).
 A **log checkpoint** is `(tree_size, root, timestamp_ms, epoch, operator_signature)`, signed over the
 message in §9.8. The engine issues one:
 
-- whenever `tree_size` reaches a multiple of 10,000 (both leaf types count), and
-- **on demand** before a deletion, if the record's insert leaf is not yet covered by any log checkpoint,
-  because the certificate must prove inclusion against a signed, cosigned log checkpoint (§11.2).
+- for every multiple of 10,000 that `tree_size` has reached (both leaf types count), at exactly that
+  size, and
+- **on demand** before a deletion, at the current size, if a witnessed log checkpoint does not cover
+  every leaf (so the record's insert leaf is always covered; DB-80), because the certificate must
+  prove inclusion against a signed, cosigned log checkpoint (§11.2).
+
+Every log checkpoint covers committed leaves only and is committed as its own transaction before
+the next operation (DB-82): a witness then never cosigns a tree that a crash could roll back. A
+cadence checkpoint can therefore come one operation after its multiple was reached.
 
 The **genesis log checkpoint** is `(tree_size 0, root SHA-256(""), timestamp_ms = database creation
 time, epoch 0)`, signed by the operator when the database is created (DB-79). It is the first
@@ -808,7 +814,11 @@ independent witnesses (limit L-7 in the overview).
 
 ### 10.5 Storage
 
-Leaf bytes of insert leaves and all leaf hashes are kept in append-only stores (§14.8). The engine
+Leaf bytes of insert leaves and all leaf hashes are kept in append-only stores (§14.8). Insert leaves
+and certificates are written and `fsync`ed before the `COMMIT` that covers them; leaf hashes (each
+with its leaf's type byte) and log checkpoints are written only after it, so their stores hold
+committed entries only, and recovery restores from the WAL what a crash cut off. For a leaf index,
+the committed insert leaf or certificate is the last store entry with that key (DB-81). The engine
 keeps every level of the tree's complete subtrees in memory so that any inclusion proof takes
 `O(log n)` time; at 1.9 million leaves this costs about 122 MB (Appendix A).
 
@@ -1151,10 +1161,10 @@ own §6.3 format, verbatim. The byte layouts of every file are in §14.9.
     locator.bin                    scrambled_id → (group, slot index)
     payloads.bin                   scrambled_id → passage text location in payloads/ (DB-67)
   wal/<seq>.wal                    WAL segments (§14.6)
-  log/leaves.store                 insert-leaf bytes (§14.8)
-  log/hashes.store                 every leaf hash, in order
-  log/checkpoints.store            every log checkpoint with its cosignatures
-  certs/<seq>.store                certificates (§14.8)
+  log/leaves/<seq>.store           insert-leaf bytes, keyed by leaf index (§14.8)
+  log/hashes/<seq>.store           every leaf's type and hash, in order (DB-81)
+  log/checkpoints/<seq>.store      every log checkpoint with its cosignatures, keyed by tree size
+  certs/<seq>.store                certificates, keyed by database_lsn (§14.8)
   payloads/<seq>.store             encrypted passage text (§14.8)
 <key_dir>/                         MAY be a different filesystem (§12.9)
   KEYS                             the key file (§14.7)
@@ -1240,8 +1250,8 @@ and are carried verbatim by the storage engine.
 | `SLOT_PUT` | `group_id ‖ slot index ‖ slot (1,992)` |
 | `SLOT_TRUNCATE` | `group_id ‖ new slot count` |
 | `LOCATOR_PUT` / `LOCATOR_DEL` | `scrambled_id ‖ (group_id ‖ slot index)` / `scrambled_id` (also drops the record's `PAYLOAD_REF`) |
-| `LOG_LEAF` | Leaf hash; for insert leaves also the 209-byte leaf |
-| `LOG_CHECKPOINT` | Log checkpoint with cosignatures |
+| `LOG_LEAF` | `u64be leaf_index ‖` leaf hash; for insert leaves also the 209-byte leaf (DB-81) |
+| `LOG_CHECKPOINT` | Log checkpoint (116, §11.2) `‖ u8 count ‖` cosignatures (69 each, §11.1 tag 7) |
 | `CERT_REF` | `database_lsn ‖ store segment ‖ offset ‖ length ‖ SHA-256` of the certificate |
 | `PAYLOAD_REF` | `scrambled_id ‖ u64be store segment ‖ u64be offset ‖ u32be length` |
 | `COUNTERS` | `N`, `k` of the collection (the next `database_lsn` is the log participant's, carried in its own records; DB-66) |
@@ -1308,8 +1318,8 @@ a wrong magic, version, `sealer_id`, CRC, count, order, padding or any trailing 
    wrap `RK_t` under the destination bucket key.
 5. For a group destination: decrypt `S ‖ r_agg`, add `x̃` and `r_t`, re-encrypt (fresh nonce, same
    key); `n += 1`; `C_S += C_t`; `N += 1`.
-6. Build the insert leaf; if the tree reaches a multiple of 10,000, build a log checkpoint and collect
-   cosignatures.
+6. Build the insert leaf. (When the tree reaches a multiple of 10,000, the log checkpoint at that
+   size is issued as its own transaction before the next operation, §10.3, DB-82.)
 7. If the holding area now has 200 records, perform the flush (§15.2) **in the same transaction**.
 8. Write append-store bytes and `fsync`; write the WAL transaction; `COMMIT`; `fsync`.
 9. Apply to memory; update the mirror; zero `r_t` and temporaries; return
@@ -1336,8 +1346,8 @@ and the retry is a normal insert. A crash after it leaves the insert done; a ret
 2. Decrypt the record key and slot. Recompute `C_t` from the stored `x̃` and the stored `r_t`; it MUST
    equal the `C_t` in the record's insert leaf. Otherwise the stored state is corrupt: raise
    `IntegrityViolation` and touch nothing. This is an integrity check, not an authorisation check.
-3. If the record's insert leaf is not covered by a witnessed log checkpoint, create one first
-   (§10.3), as its own committed transaction.
+3. If a witnessed log checkpoint does not cover every leaf (so possibly not the record's insert leaf),
+   create one first (§10.3, DB-80), as its own committed transaction.
 4. Compute the post-state (§5.3). For a group deletion, compute `ctx` and the proof (§9.5). Build the
    certificate with `database_lsn` = the next leaf index, and sign it.
 5. **Phase A.** Write the domain's new group key into its inactive key-file slot; `fsync`.
@@ -1497,7 +1507,7 @@ passage text.** Group sizes MAY appear (they are already visible).
 | `UnknownCollection` | No such collection |
 | `SeededNonceForbidden` | Any attempt to supply randomness to proof generation |
 | `PlatformUnsafe` | A §12.8 or §12.9 check fails |
-| `IntegrityViolation` | Any invariant (§21) fails, or the delete-time `C_t` check (§15.3 step 2) fails; the engine stops serving |
+| `IntegrityViolation` | Any invariant (§21) fails, or the delete-time `C_t` check (§15.3 step 2) fails, or four witnesses refuse a deletion's log checkpoint (DB-82); the engine stops serving |
 | `DurabilityFailure` | `fsync` failed; the process aborts |
 
 ---

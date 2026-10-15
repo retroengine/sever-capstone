@@ -529,10 +529,19 @@ dependencies = [
 name = "sever-cert"
 version = "0.1.0"
 dependencies = [
+ "rand_core",
  "serde_json",
+ "sever-commit",
  "sever-crypto",
+ "sever-engine",
+ "sever-format",
+ "sever-index",
  "sever-log",
+ "sever-quant",
  "sever-spec",
+ "sever-txn",
+ "sever-types",
+ "sever-vfs",
 ]
 
 [[package]]
@@ -645,8 +654,15 @@ name = "sever-log"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+ "sever-appendstore",
  "sever-crypto",
+ "sever-format",
+ "sever-index",
  "sever-spec",
+ "sever-txn",
+ "sever-types",
+ "sever-vfs",
+ "sever-wal",
  "sha2",
 ]
 

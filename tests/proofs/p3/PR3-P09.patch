@@ -1,0 +1,11 @@
+--- a/crates/sever-log/src/store.rs
++++ b/crates/sever-log/src/store.rs
+@@ -393,7 +393,7 @@
+                 }
+             }
+         }
+-        for (key, at, _) in scan(v.as_ref(), CERTS_DIR, false)? {
++        for (key, at, _) in scan(v.as_ref(), CERTS_DIR, false)?.into_iter().take(0) {
+             if types.get(usize::try_from(key).unwrap_or(usize::MAX)) == Some(&LEAF_DELETE) {
+                 self.certs.insert(key, at);
+             }

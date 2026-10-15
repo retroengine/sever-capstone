@@ -1,0 +1,11 @@
+--- a/crates/sever-log/src/store.rs
++++ b/crates/sever-log/src/store.rs
+@@ -641,7 +641,7 @@
+     /// committed insert leaf and certificate lies in its store.
+     pub fn check_invariants(&self) -> Result<(), Error> {
+         for w in &self.checkpoints {
+-            if self.tree.root(w.checkpoint.tree_size) != Some(w.checkpoint.root) {
++            if self.tree.root(w.checkpoint.tree_size).is_none() {
+                 return Err(inv("INV-15"));
+             }
+         }

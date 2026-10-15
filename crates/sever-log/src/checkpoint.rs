@@ -3,7 +3,9 @@
 
 use sever_crypto::{CHECKPOINT_MESSAGE_LEN, checkpoint_message, cosign_message, verify_signature};
 
-use crate::keys::{EpochSigner, Keyring};
+use sever_types::Error;
+
+use crate::keys::{Keyring, OperatorKeys};
 use crate::merkle::{Hash, empty_root};
 
 /// Checkpoint cadence (§2.2, §10.3): one whenever `tree_size` reaches a multiple of this.
@@ -44,17 +46,22 @@ impl LogCheckpoint {
         checkpoint_message(self.tree_size, &self.root, self.timestamp_ms, self.epoch)
     }
 
-    /// Signs a checkpoint with the operator's key for the epoch of `timestamp_ms`.
-    pub fn sign(
-        operator: &mut EpochSigner,
+    /// Signs a checkpoint with the operator's key for the epoch of `timestamp_ms` (an
+    /// `IntegrityViolation` before genesis, which has no epoch).
+    pub fn sign<O: OperatorKeys + ?Sized>(
+        operator: &mut O,
         tree_size: u64,
         root: Hash,
         timestamp_ms: u64,
-    ) -> Option<Self> {
-        let epoch = operator.epoch_at(timestamp_ms)?;
+    ) -> Result<Self, Error> {
+        let epoch = operator
+            .epoch_at(timestamp_ms)
+            .ok_or(Error::IntegrityViolation {
+                invariant: "§9.8 epoch",
+            })?;
         let message = checkpoint_message(tree_size, &root, timestamp_ms, epoch);
-        let operator_signature = operator.key(epoch).sign(&message);
-        Some(Self {
+        let operator_signature = operator.sign(epoch, &message)?;
+        Ok(Self {
             tree_size,
             root,
             timestamp_ms,
@@ -65,7 +72,7 @@ impl LogCheckpoint {
 
     /// DB-79: the genesis checkpoint, `(0, SHA-256(""), creation time, epoch 0)`, signed when the
     /// database is created; every witness starts from it.
-    pub fn genesis(operator: &mut EpochSigner) -> Option<Self> {
+    pub fn genesis<O: OperatorKeys + ?Sized>(operator: &mut O) -> Result<Self, Error> {
         let t = operator.genesis_ms();
         Self::sign(operator, 0, empty_root(), t)
     }

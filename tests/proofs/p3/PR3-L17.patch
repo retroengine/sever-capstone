@@ -1,0 +1,13 @@
+--- a/crates/sever-log/src/store.rs
++++ b/crates/sever-log/src/store.rs
+@@ -576,8 +576,8 @@
+                         Err(inv("§12.3 replayed leaf differs"))
+                     };
+                 }
+-                if index != self.tree.size() {
+-                    return Err(inv("§12.3 replayed leaf out of order"));
++                if index >= self.tree.size() {
++                    return Ok(());
+                 }
+                 let at = match insert {
+                     None => None,

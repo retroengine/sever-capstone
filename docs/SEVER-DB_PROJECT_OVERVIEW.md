@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-79)](#6-decision-register-db-1--db-53-db-55--db-79)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-82)](#6-decision-register-db-1--db-53-db-55--db-82)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-79)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-82)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1017,6 +1017,56 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-82 — Log checkpoints cover committed leaves only, each in its own transaction (15 October 2026)
+
+**Decision.** Every log checkpoint, the cadence one at each multiple of 10,000 leaves and the
+on-demand one before a deletion, is signed over leaves that are already committed and is committed
+as its own WAL transaction before the next operation (EP-7 `pre_transaction`, after erratum E-2), at
+the exact size it names. If four witnesses do not cosign a deletion's checkpoint, the deletion fails
+with `IntegrityViolation` and nothing changes. **Why.** §15.1 step 6 collected cosignatures inside
+the insert's own transaction: a crash before its `COMMIT` would leave witnesses remembering a tree
+that never existed, and after the retry they would see a fork at that size and refuse every later
+checkpoint (G-22). A checkpoint of committed leaves can never be contradicted. In v1 the witnesses
+are simulated and honest, so a refusal of an honest checkpoint means the log forked: an invariant
+failure, and §17 has no other error for it. **Rejected.** Cosigning after the `COMMIT` in phase C
+(the cosignatures would need another durable write the protocol does not offer); a new error kind
+(the error enum is frozen in Part 1). **Consequence.** Closes G-22; spec §10.3, §15.1 step 6 and
+§17 amended; a cadence checkpoint can come one operation after its multiple is reached, with a
+later timestamp.
+
+#### DB-81 — The log's durable layout and where `LogParticipant` lives (15 October 2026)
+
+**Decision.** `LogParticipant` lives in `sever-cert` beside the certificate builder (Build 3-4 §1.4
+placed it in `sever-log`, which `sever-cert` depends on); `sever-log` holds its durable side
+(`LogStore`). Insert leaves and certificates are appended and `fsync`ed before the `COMMIT` that
+covers them (§14.8); leaf hashes, each with its leaf's type byte, and log checkpoints are appended
+only after the `COMMIT` (phase C), so their stores hold committed entries only and the WAL tail
+restores what a crash cut off. For a leaf index the committed insert leaf or certificate is the last
+store entry with that key. `LOG_LEAF` starts with `u64be leaf_index`. The stores are
+`log/leaves/`, `log/hashes/`, `log/checkpoints/` and `certs/`, each with `<seq>.store` segments, and
+are created at the participant's first recovery, after the engine has created the database (the
+frozen engine refuses unknown files in a new data directory). Operator keys reach the log through
+an `OperatorKeys` trait, so the composition root can store each new epoch's secret before its first
+signature. **Why.** A storage checkpoint truncates the WAL but snapshots only the core image, so the
+log must know which store entries are committed without the WAL; writing the committed-only stores
+in phase C, which always ends before a storage checkpoint can run, gives that without an extra
+marker file. Placing the participant beside the builder avoids a crate cycle. **Rejected.** A
+separate "committed size" marker file (one more file and `fsync`); a `CertificateIssuer` trait in
+`sever-log` (an indirection with no second implementation). **Consequence.** Spec §10.5, §14.1 and
+§14.6 amended; Build 3-4 §1.4 table updated.
+
+#### DB-80 — When a deletion needs an on-demand log checkpoint (15 October 2026)
+
+**Decision.** Before a deletion the log issues an on-demand checkpoint whenever the latest
+witnessed checkpoint does not cover every committed leaf. **Why.** EP-7's frozen
+`pre_transaction(kind, collection)` does not name the records a deletion removes, so the log cannot
+test §10.3's "the record's insert leaf is not yet covered" (G-21); "every leaf is covered" implies
+it for every record. **Rejected.** Changing the frozen hook's signature (a larger erratum for a
+condition that only saves some checkpoints); learning the records through the planner's side
+effects before `prepare` (fragile across failed plans). **Consequence.** Closes G-21; spec §10.3
+and §15.3 step 3 amended. A deletion right after inserts costs one checkpoint even if the deleted
+record was already covered.
 
 #### DB-79 — The genesis log checkpoint (15 October 2026)
 
@@ -1944,6 +1994,11 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **15 October 2026 — The log as a transaction participant.** Erratum E-2 (Part 2 engine calls EP-7
+  `pre_transaction`); DB-80 (on-demand checkpoint whenever a leaf is uncovered; closes G-21), DB-81
+  (the log's durable layout; `LogParticipant` in `sever-cert`), DB-82 (checkpoints of committed
+  leaves only, each its own transaction; closes G-22). Specification sections touched: §10.3,
+  §10.5, §14.1, §14.6, §15.1, §15.3, §17.
 - **15 October 2026 — Genesis log checkpoint.** DB-79 (defined; witnesses start from it; dropped
   from the verifier anchors; closes G-4). Specification sections touched: §10.3, §10.4, §11.3.
 - **15 October 2026 — Insert credential errors.** DB-78 (a malformed `C_t` or `r_t` is

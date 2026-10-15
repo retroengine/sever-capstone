@@ -1,0 +1,12 @@
+--- a/crates/sever-log/src/store.rs
++++ b/crates/sever-log/src/store.rs
+@@ -516,8 +516,7 @@
+ 
+     /// Protocol step 3: the staged insert leaves and certificates become durable before `COMMIT`.
+     pub fn sync(&mut self) -> Result<(), Error> {
+-        self.stores.leaves.sync()?;
+-        self.stores.certs.sync()
++        self.stores.leaves.sync()
+     }
+ 
+     /// Phase C: the transaction committed; its leaves, certificates and checkpoints join the

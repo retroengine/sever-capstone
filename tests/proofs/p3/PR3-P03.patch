@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/participant.rs
++++ b/crates/sever-cert/src/participant.rs
+@@ -346,7 +346,7 @@
+                 .tree()
+                 .inclusion_proof(rem.insert_leaf_index, cp.checkpoint.tree_size)
+                 .ok_or(inv("§11.2 inclusion path"))?;
+-            let lsn = log.next_index();
++            let lsn = log.next_index() + 1;
+             let inclusion = InsertInclusion {
+                 leaf,
+                 leaf_index: rem.insert_leaf_index,

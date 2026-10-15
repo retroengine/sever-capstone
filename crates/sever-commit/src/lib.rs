@@ -12,6 +12,9 @@
 //! - `check_removal` re-derives `C_t` from the stored `x̃` and `r_t` and compares it with the
 //!   `C_t` of the record's insert leaf, read through a [`LeafLog`] handle; any difference, or
 //!   `has_rt ≠ 1`, is an `IntegrityViolation` (§15.3 step 2, §14.4).
+//! - Both hand the log what the `ChangeSet` does not carry ([`LeafLog::stage_insert`],
+//!   [`LeafLog::stage_removal`]): the admitted insert's user key and signature for its leaf, and a
+//!   removed record's `x̃` and `r_t` for its certificate.
 //! - The blob's extension region is `C_S ‖ r_agg` with magic `SEVERG` (§5.5, DB-47); `check_group`
 //!   is INV-3.
 
@@ -38,6 +41,52 @@ pub trait LeafLog: Send + Sync {
     /// The `C_t` field of the insert leaf at `index` (§10.2), or `None` if there is no insert leaf
     /// there.
     fn insert_leaf_c_t(&self, index: u64) -> Option<[u8; 32]>;
+    /// `admit` accepted an insert: the fields of its insert leaf that the `ChangeSet` does not
+    /// carry (§10.2, §15.1 step 6). The log participant builds the leaf from them.
+    fn stage_insert(&self, _insert: StagedInsert) {}
+    /// `check_removal` passed for a record about to be deleted: its leaf index, `x̃` and `r_t`, so
+    /// the log participant can build each deletion's certificate on the state the previous one
+    /// left (§15.3 step 4). Called once per deleted record, in request order.
+    fn stage_removal(&self, _removal: StagedRemoval) {}
+}
+
+/// An admitted insert's public leaf fields (§10.2).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StagedInsert {
+    /// The leaf index the insert's leaf will take.
+    pub insert_leaf_index: u64,
+    /// The collection.
+    pub collection_id: [u8; 16],
+    /// The record commitment (recomputed and checked by `admit`).
+    pub c_t: [u8; 32],
+    /// The account's public key.
+    pub user_public_key: [u8; 32],
+    /// The verified insert signature.
+    pub signature: [u8; 64],
+}
+
+/// A record about to be removed: what its certificate's proof needs (§9.5); zeroed when dropped.
+#[derive(Clone, PartialEq, Eq)]
+pub struct StagedRemoval {
+    /// The leaf index of its insert leaf.
+    pub insert_leaf_index: u64,
+    /// Its quantised vector `x̃`.
+    pub x: Vec<i32>,
+    /// Its blinding scalar.
+    pub r_t: Scalar,
+}
+
+impl Drop for StagedRemoval {
+    fn drop(&mut self) {
+        self.x.zeroize();
+        self.r_t.zeroize();
+    }
+}
+
+impl core::fmt::Debug for StagedRemoval {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "StagedRemoval(leaf {})", self.insert_leaf_index) // §17: no x̃, no r_t
+    }
 }
 
 /// `C_S`, the group's public state. The default is the identity (an empty group, §5.4).
@@ -162,8 +211,16 @@ impl GroupExtension for CommitmentExtension {
         let msg = insert_message(&credential.collection_id, &credential.c_t);
         verify_signature(&credential.user_public_key, &msg, &credential.signature)
             .map_err(|_| Error::BadUserSignature)?;
+        let insert_leaf_index = self.log.next_leaf_index();
+        self.log.stage_insert(StagedInsert {
+            insert_leaf_index,
+            collection_id: credential.collection_id,
+            c_t: credential.c_t,
+            user_public_key: credential.user_public_key,
+            signature: credential.signature,
+        });
         Ok(RecordBlind {
-            insert_leaf_index: self.log.next_leaf_index(),
+            insert_leaf_index,
             has_rt: 1,
             r_t,
         })
@@ -210,6 +267,11 @@ impl GroupExtension for CommitmentExtension {
         if encode_point(&c_t) != logged {
             return Err(integrity("§15.3 C_t"));
         }
+        self.log.stage_removal(StagedRemoval {
+            insert_leaf_index: record.insert_leaf_index,
+            x: x.as_slice().to_vec(),
+            r_t: record.r_t,
+        });
         Ok(())
     }
 

@@ -1,0 +1,11 @@
+--- a/crates/sever-log/src/checkpoint.rs
++++ b/crates/sever-log/src/checkpoint.rs
+@@ -14,7 +14,7 @@
+ pub const WITNESSES: u8 = 5;
+ /// Cosignatures from distinct witnesses that make a checkpoint witnessed (§2.2, §10.4).
+ #[cfg(not(feature = "sabotage-SB-20"))]
+-pub const THRESHOLD: usize = 4;
++pub const THRESHOLD: usize = 3;
+ /// SB-20 (Build §2.6): three of five accepted.
+ #[cfg(feature = "sabotage-SB-20")]
+ pub const THRESHOLD: usize = 3;

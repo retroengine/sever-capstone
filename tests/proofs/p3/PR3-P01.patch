@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/participant.rs
++++ b/crates/sever-cert/src/participant.rs
+@@ -265,7 +265,7 @@
+             return Err(inv("§15.1 step 6 staged insert"));
+         }
+         let leaf = InsertLeaf {
+-            collection_id: staged.collection_id,
++            collection_id: [0; 16],
+             scrambled_id: *slot.scrambled_id.as_bytes(),
+             c_t,
+             user_public_key: staged.user_public_key,

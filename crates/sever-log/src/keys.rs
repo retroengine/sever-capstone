@@ -4,6 +4,7 @@
 use std::collections::BTreeMap;
 
 use sever_crypto::{KeyPair, epoch_of};
+use sever_types::Error;
 
 /// Public keys by epoch: what a verifier or a witness trusts (an anchor set, §11.3).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -89,5 +90,38 @@ impl EpochSigner {
     /// The genesis time.
     pub fn genesis_ms(&self) -> u64 {
         self.genesis_ms
+    }
+}
+
+/// The operator's signing keys as the log and the certificate builder use them (§9.8). The
+/// composition root implements it over a durable key store that saves each new epoch's secret
+/// before its first signature (and tells the simulated witnesses its public key); [`EpochSigner`]
+/// implements it in memory.
+pub trait OperatorKeys: Send {
+    /// The database creation time, from which epochs count.
+    fn genesis_ms(&self) -> u64;
+    /// The epoch of time `t_ms`, or `None` before genesis.
+    fn epoch_at(&self, t_ms: u64) -> Option<u32>;
+    /// Signs `msg` with the key of `epoch`, creating and keeping that key first if it is new.
+    fn sign(&mut self, epoch: u32, msg: &[u8]) -> Result<[u8; 64], Error>;
+    /// Every public key so far, by epoch.
+    fn keyring(&self) -> &Keyring;
+}
+
+impl OperatorKeys for EpochSigner {
+    fn genesis_ms(&self) -> u64 {
+        self.genesis_ms
+    }
+
+    fn epoch_at(&self, t_ms: u64) -> Option<u32> {
+        epoch_of(self.genesis_ms, t_ms)
+    }
+
+    fn sign(&mut self, epoch: u32, msg: &[u8]) -> Result<[u8; 64], Error> {
+        Ok(self.key(epoch).sign(msg))
+    }
+
+    fn keyring(&self) -> &Keyring {
+        &self.ring
     }
 }

@@ -1,0 +1,11 @@
+--- a/crates/sever-log/src/store.rs
++++ b/crates/sever-log/src/store.rs
+@@ -384,7 +384,7 @@
+                         .inserts
+                         .get_mut(usize::try_from(key).unwrap_or(usize::MAX))
+                     {
+-                        *slot = Some(at); // the last entry with this key wins
++                        let _ = at; // insert leaves are not found again after a restart
+                     }
+                 }
+                 Some(_) => {}

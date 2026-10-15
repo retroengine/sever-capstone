@@ -1,6 +1,6 @@
 --- a/crates/sever-commit/src/lib.rs
 +++ b/crates/sever-commit/src/lib.rs
-@@ -207,9 +207,7 @@
+@@ -264,9 +264,7 @@
              .insert_leaf_c_t(record.insert_leaf_index)
              .ok_or(integrity("§15.3 insert leaf"))?;
          let c_t = self.record_commitment(x, &record.r_t)?;
@@ -8,6 +8,6 @@
 -            return Err(integrity("§15.3 C_t"));
 -        }
 +        let _ = (c_t, logged);
-         Ok(())
-     }
- 
+         self.log.stage_removal(StagedRemoval {
+             insert_leaf_index: record.insert_leaf_index,
+             x: x.as_slice().to_vec(),
