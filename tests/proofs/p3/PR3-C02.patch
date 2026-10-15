@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/xmd.rs
++++ b/crates/sever-crypto/src/xmd.rs
+@@ -33,7 +33,7 @@
+     };
+     // Steps 4-7: b_0 = H(Z_pad ‖ msg ‖ I2OSP(len_in_bytes, 2) ‖ I2OSP(0, 1) ‖ DST_prime).
+     let mut h = Sha512::new();
+-    h.update([0u8; S_IN_BYTES]);
++    h.update([0u8; B_IN_BYTES]);
+     h.update(msg);
+     h.update(len16.to_be_bytes());
+     h.update([0u8]);

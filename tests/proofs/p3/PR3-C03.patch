@@ -1,0 +1,14 @@
+--- a/crates/sever-crypto/src/group.rs
++++ b/crates/sever-crypto/src/group.rs
+@@ -8,7 +8,10 @@
+ 
+ /// RFC 9496 §4.3.4 one-way map from 64 uniform bytes to a point.
+ pub fn map_to_group(uniform: &[u8; 64]) -> RistrettoPoint {
+-    RistrettoPoint::from_uniform_bytes(uniform)
++    let mut u = *uniform;
++    u[..32].reverse();
++    u[32..].reverse();
++    RistrettoPoint::from_uniform_bytes(&u)
+ }
+ 
+ /// `hash_to_group(msg, dst)`: the one-way map of `expand_message_xmd_sha512(msg, dst, 64)` (§9.2).

@@ -108,7 +108,7 @@ INV-10, INV-15; Appendix B vectors 1, 2, 3, 4, 6, 8, 9. Out: encryption and eras
 
 | # | Module | Spec | Status |
 |---|---|---|---|
-| 1 | `sever-crypto` (generators + self-check, scalar map, commitments, PoK, hedged nonces, Ed25519, HMAC) | §4.5, §9 | not started |
+| 1 | `sever-crypto` (generators + self-check, scalar map, commitments, PoK, hedged nonces, Ed25519, HMAC) | §4.5, §9 | in progress: RFC vectors extracted; primitives layer done (domain strings, `expand_message_xmd`, one-way map, canonical decoding, `scalar(v)`: 9 tests, 6 red proofs, SB-19). Next: generators + gdigest (golden values from `sever_refmodel_certs`) |
 | 2 | `sever_refmodel_certs` (Python, from the spec only: the independent oracle) | §5.3, §9.3, §11.3 | not started |
 | 3 | `sever-commit` (EP-1 `CommitmentExtension`) | §5.3, §9.3–9.4 | not started |
 | 4 | `sever-log` (RFC 9162 tree, proofs, checkpoints, EP-7 participant, EP-10 + `SimulatedWitness`) | §10 | not started |

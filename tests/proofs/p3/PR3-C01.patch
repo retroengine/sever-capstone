@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/dst.rs
++++ b/crates/sever-crypto/src/dst.rs
+@@ -3,7 +3,7 @@
+ /// Generator derivation (§9.2). Kept from the earlier SEVER prototype (DB-14).
+ pub const DST_GEN: &[u8] = b"PROJECT_SEVER_V1_RISTRETTO255_SHA512_NUMS";
+ /// Proof challenge (§9.5).
+-pub const DST_POSK: &[u8] = b"SEVERDB_POSK_V1";
++pub const DST_POSK: &[u8] = b"SEVERDB_POSK_V2";
+ /// Merlin transcript label for the hedged nonces (§9.6).
+ pub const DST_NONCE: &[u8] = b"SEVERDB_POSK_NONCE_V1";
+ /// User insert signature (§9.8).

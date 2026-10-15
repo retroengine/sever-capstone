@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/group.rs
++++ b/crates/sever-crypto/src/group.rs
+@@ -43,7 +43,7 @@
+     #[cfg(feature = "sabotage-SB-19")]
+     let decoded = Some(Scalar::from_bytes_mod_order(b)); // SB-19 (Build §2.6): reduce, never reject
+     #[cfg(not(feature = "sabotage-SB-19"))]
+-    let decoded = Option::from(Scalar::from_canonical_bytes(b));
++    let decoded = Some(Scalar::from_bytes_mod_order(b));
+     decoded.ok_or(CryptoError::NonCanonicalScalar)
+ }
+ 

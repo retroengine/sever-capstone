@@ -1,0 +1,11 @@
+--- a/crates/sever-crypto/src/group.rs
++++ b/crates/sever-crypto/src/group.rs
+@@ -29,7 +29,7 @@
+ /// elements and non-square cases.
+ pub fn decode_point(bytes: &[u8]) -> Result<RistrettoPoint, CryptoError> {
+     let c = CompressedRistretto::from_slice(bytes).map_err(|_| CryptoError::WrongLength)?;
+-    c.decompress().ok_or(CryptoError::NonCanonicalPoint)
++    Ok(c.decompress().unwrap_or_default())
+ }
+ 
+ /// The 32-byte little-endian encoding of a scalar mod ℓ (§0.2).

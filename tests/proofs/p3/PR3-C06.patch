@@ -1,0 +1,9 @@
+--- a/crates/sever-crypto/src/group.rs
++++ b/crates/sever-crypto/src/group.rs
+@@ -51,5 +51,5 @@
+ /// `|v| ≤ 2^63 < ℓ`, `|v| mod ℓ = |v|` and the negative case is the group negation of `|v|`.
+ pub fn scalar_from_i64(v: i64) -> Scalar {
+     let m = Scalar::from(v.unsigned_abs());
+-    if v < 0 { -m } else { m }
++    if v < 0 { -m - Scalar::ONE } else { m }
+ }

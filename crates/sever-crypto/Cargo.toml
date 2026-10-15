@@ -1,0 +1,22 @@
+[package]
+name = "sever-crypto"
+version = "0.1.0"
+description = "Part 3 cryptography: generators, scalar map, commitments, proof of knowledge, nonces, signatures (spec §4.5, §9)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[features]
+# Build §2.6: each builds the crate with exactly one deliberate bug. A test must go red.
+sabotage-SB-19 = [] # accept a non-canonical point or scalar
+
+[dependencies]
+curve25519-dalek = "=4.1.3" # spec §20.1
+sha2 = "=0.10.9" # spec §20.1
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+serde_json = "1"
+
+[lints]
+workspace = true

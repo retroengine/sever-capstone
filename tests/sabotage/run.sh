@@ -52,4 +52,6 @@ rust SB-12 sever-vfs
 rust SB-13 sever-wal
 rust SB-14 sever-vfs
 rust SB-15 sever-txn
+# Part 3 (Build §2.6; spec/registers_p3.yaml): each item joins when its crate is built
+rust SB-19 sever-crypto
 exit $fail
