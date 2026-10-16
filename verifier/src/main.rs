@@ -1,5 +1,7 @@
 //! `sever-verify <certificate> --anchors FILE [--hex] [--explain]` (spec §16.3, §11.3): verifies
-//! one certificate offline. It first runs the §9.2 self-check with its own code and refuses to run
+//! one certificate offline. `sever-verify --batch FILE` verifies many: the file's first line is
+//! the anchors JSON, each further line `{"cert": hex, …}`; each gets one output line with the
+//! input's other fields and the verdict (the attack gate, P3-T2). It first runs the §9.2 self-check with its own code and refuses to run
 //! on a mismatch. Prints one JSON line, or with `--explain` each §11.3 step and ACCEPT or REJECT;
 //! exit 0 accepted, 1 rejected (naming the failed step), 2 usage, 3 self-check or anchors refused.
 
@@ -11,6 +13,7 @@ use sever_verify::{Anchors, GOLDEN_GENERATORS, Generators, hex, self_check, veri
 fn usage(msg: &str) -> ExitCode {
     eprintln!("sever-verify: {msg}");
     eprintln!("usage: sever-verify <certificate> --anchors FILE [--hex] [--explain]");
+    eprintln!("       sever-verify --batch FILE");
     ExitCode::from(2)
 }
 
@@ -51,8 +54,65 @@ fn explain(kind: Option<u8>, failed: Option<(u8, &str)>) {
     }
 }
 
+/// `--batch`: one verdict line per certificate line.
+fn batch(path: &str) -> ExitCode {
+    use std::io::{BufRead, BufReader, Write};
+    let Ok(f) = std::fs::File::open(path) else {
+        return usage("cannot read the batch file");
+    };
+    let mut lines = BufReader::new(f).lines();
+    let Some(Ok(first)) = lines.next() else {
+        return usage("the batch file is empty");
+    };
+    let anchors = match Anchors::from_json(&first) {
+        Ok(a) => a,
+        Err(e) => return refuse(e.0),
+    };
+    let Some(gens) = Generators::derive(anchors.d) else {
+        return refuse("cannot derive the generators");
+    };
+    if let Err(e) = self_check(&gens, GOLDEN_GENERATORS) {
+        return refuse(e.0);
+    }
+    if anchors.gdigest.is_some_and(|g| g != gens.gdigest) {
+        return refuse("the anchors' gdigest is not this verifier's (§9.6)");
+    }
+    let mut out = std::io::BufWriter::new(std::io::stdout().lock());
+    for line in lines {
+        let Ok(line) = line else {
+            return usage("unreadable line");
+        };
+        let Ok(serde_json::Value::Object(mut v)) = serde_json::from_str(&line) else {
+            return usage("a line is not a JSON object");
+        };
+        let Some(bytes) = v.get("cert").and_then(|c| c.as_str()).and_then(hex::decode) else {
+            return usage("a line has no hex cert");
+        };
+        v.remove("cert");
+        match verify(&bytes, &anchors, &gens) {
+            Ok(_) => {
+                v.insert("accepted".into(), json!(true));
+            }
+            Err(r) => {
+                v.insert("accepted".into(), json!(false));
+                v.insert("step".into(), json!(r.step));
+                v.insert("reason".into(), json!(r.reason));
+            }
+        }
+        if writeln!(out, "{}", serde_json::Value::Object(v)).is_err() {
+            return ExitCode::from(2);
+        }
+    }
+    ExitCode::SUCCESS
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    if let [flag, file] = args.as_slice() {
+        if flag == "--batch" {
+            return batch(file);
+        }
+    }
     let mut cert_path = None;
     let mut anchors_path = None;
     let mut hex_input = false;

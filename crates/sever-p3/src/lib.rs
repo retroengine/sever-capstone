@@ -50,6 +50,9 @@ pub struct Settings {
     pub log_segment_bytes: u64,
     /// Called after every rewrite of `SECRETS`.
     pub after_secrets_write: Option<keys::AfterWrite>,
+    /// Generators already derived for `d` (test harnesses that reopen thousands of times); the
+    /// self-check still runs on them at every open (§9.2).
+    pub generators: Option<Arc<Generators>>,
 }
 
 impl Settings {
@@ -61,6 +64,7 @@ impl Settings {
             engine: EngineConfig::default(),
             log_segment_bytes: 64 * 1024 * 1024,
             after_secrets_write: None,
+            generators: None,
         }
     }
 }
@@ -190,7 +194,10 @@ impl TxnParticipant<CommitmentExtension> for Guarded {
 /// directory `keys`: the generators of `d` are derived and self-checked (§9.2), the operator's
 /// keys and the witnesses' memory are loaded, then the engine recovers with the log participant.
 pub fn open_on(data: Arc<dyn Vfs>, keys: Arc<dyn Vfs>, s: Settings) -> Result<Db, Error> {
-    let gens = Arc::new(Generators::derive(s.d).map_err(|_| Error::WrongDimension)?);
+    let gens = match s.generators {
+        Some(g) if g.d() == s.d => g,
+        _ => Arc::new(Generators::derive(s.d).map_err(|_| Error::WrongDimension)?),
+    };
     self_check(&gens).map_err(|_| Error::IntegrityViolation {
         invariant: "INV-10",
     })?;

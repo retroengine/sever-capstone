@@ -6,6 +6,12 @@ edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
+[features]
+# Test tooling only (the Part 3 gate kit, which reopens a database hundreds of thousands of times):
+# INV-3 results of group states already checked in this process are remembered. Never in a
+# measured or shipped build.
+memo-checks = ["dep:sha2"]
+
 [dependencies]
 sever-types = { path = "../sever-types" }
 sever-quant = { path = "../sever-quant" }
@@ -13,6 +19,7 @@ sever-index = { path = "../sever-index" }
 sever-txn = { path = "../sever-txn" }
 sever-crypto = { path = "../sever-crypto" }
 zeroize = "=1.9.0" # spec §20.1
+sha2 = { version = "=0.10.9", optional = true } # spec §20.1
 
 [dev-dependencies]
 sever-spec = { path = "../sever-spec" }

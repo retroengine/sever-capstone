@@ -1,0 +1,23 @@
+[package]
+name = "sever-audit-fuzz"
+version = "0.0.0"
+description = "L11 fuzz target of the auditor's export reader and checks (Build 3-4 §1.8, gate P3-T10)"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+sever-audit = { path = ".." }
+serde_json = "1"
+
+[workspace]
+
+[[bin]]
+name = "export"
+path = "fuzz_targets/export.rs"
+test = false
+doc = false
+bench = false

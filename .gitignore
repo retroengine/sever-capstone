@@ -47,3 +47,12 @@ Thumbs.db
 /jobs/
 /verifier/target/
 /audit/target/
+/fuzz-p3/corpus/
+/fuzz-p3/artifacts/
+/fuzz-p3/target/
+/verifier/fuzz/corpus/
+/verifier/fuzz/artifacts/
+/verifier/fuzz/target/
+/audit/fuzz/corpus/
+/audit/fuzz/artifacts/
+/audit/fuzz/target/

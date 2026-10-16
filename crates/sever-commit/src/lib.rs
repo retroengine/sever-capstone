@@ -288,8 +288,16 @@ impl GroupExtension for CommitmentExtension {
         secret: &BlindingTotal,
     ) -> Result<(), Error> {
         // INV-3: C_S = r_agg·H + Σ scalar(S_i)·G_i.
+        #[cfg(feature = "memo-checks")]
+        let key = memo::key(s, public, secret);
+        #[cfg(feature = "memo-checks")]
+        if memo::seen(&key) {
+            return Ok(());
+        }
         let want = commit_group(&self.gens, s, &secret.0).map_err(|_| integrity("INV-3"))?;
         if want == public.0 {
+            #[cfg(feature = "memo-checks")]
+            memo::remember(key);
             Ok(())
         } else {
             Err(integrity("INV-3"))
@@ -363,3 +371,45 @@ impl StoredExtension for CommitmentExtension {
 
 #[cfg(test)]
 mod tests;
+
+/// Test tooling (`memo-checks`): group states that passed INV-3 in this process, by SHA-256 of
+/// `C_S ‖ r_agg ‖ S`; the same state passes again without recomputing `C_S`.
+#[cfg(feature = "memo-checks")]
+mod memo {
+    use std::collections::HashSet;
+    use std::sync::{Mutex, OnceLock};
+
+    use sever_crypto::{encode_point, encode_scalar};
+    use sha2::{Digest, Sha256};
+
+    use super::{BlindingTotal, GroupCommitment};
+
+    fn set() -> &'static Mutex<HashSet<[u8; 32]>> {
+        static SET: OnceLock<Mutex<HashSet<[u8; 32]>>> = OnceLock::new();
+        SET.get_or_init(|| Mutex::new(HashSet::new()))
+    }
+
+    pub(super) fn key(s: &[i64], public: &GroupCommitment, secret: &BlindingTotal) -> [u8; 32] {
+        let mut h = Sha256::new();
+        h.update(b"SEVERDB-INV3-MEMO");
+        h.update(encode_point(&public.0));
+        h.update(encode_scalar(&secret.0));
+        for v in s {
+            h.update(v.to_be_bytes());
+        }
+        h.finalize().into()
+    }
+
+    pub(super) fn seen(k: &[u8; 32]) -> bool {
+        set().lock().is_ok_and(|m| m.contains(k))
+    }
+
+    pub(super) fn remember(k: [u8; 32]) {
+        if let Ok(mut m) = set().lock() {
+            if m.len() >= 1 << 20 {
+                m.clear();
+            }
+            m.insert(k);
+        }
+    }
+}

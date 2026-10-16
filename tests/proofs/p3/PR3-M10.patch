@@ -1,10 +1,12 @@
 --- a/crates/sever-commit/src/lib.rs
 +++ b/crates/sever-commit/src/lib.rs
-@@ -227,11 +227,8 @@
-     ) -> Result<(), Error> {
-         // INV-3: C_S = r_agg·H + Σ scalar(S_i)·G_i.
+@@ -295,13 +295,8 @@
+             return Ok(());
+         }
          let want = commit_group(&self.gens, s, &secret.0).map_err(|_| integrity("INV-3"))?;
 -        if want == public.0 {
+-            #[cfg(feature = "memo-checks")]
+-            memo::remember(key);
 -            Ok(())
 -        } else {
 -            Err(integrity("INV-3"))

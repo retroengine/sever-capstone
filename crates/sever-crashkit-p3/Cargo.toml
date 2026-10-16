@@ -1,0 +1,37 @@
+[package]
+name = "sever-crashkit-p3"
+version = "0.1.0"
+description = "Part 3 gate kit: the crash campaign with certificates (P3-T4), Part 1 traces through the Part 3 engine with the five-field and certificate checks (P3-T5), honest and attacked certificates for the verifier (P3-T1, P3-T2), measures (P3-T13)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "sever-crashkit-p3"
+path = "src/main.rs"
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-index = { path = "../sever-index" }
+sever-vfs = { path = "../sever-vfs" }
+sever-txn = { path = "../sever-txn" }
+sever-engine = { path = "../sever-engine", features = ["test-hooks"] }
+sever-tracekit = { path = "../sever-tracekit" }
+sever-crashkit = { path = "../sever-crashkit" }
+sever-quant = { path = "../sever-quant" }
+sever-crypto = { path = "../sever-crypto" }
+sever-commit = { path = "../sever-commit", features = ["memo-checks"] }
+sever-log = { path = "../sever-log" }
+sever-cert = { path = "../sever-cert" }
+sever-p3 = { path = "../sever-p3" }
+sever-partition = { path = "../sever-partition" }
+sever-format = { path = "../sever-format" }
+rand_core = { version = "=0.6.4", features = ["getrandom"] } # spec §20.1: r_t and keys from the OS
+sha2 = "=0.10.9" # spec §20.1
+serde_json = "1"
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+
+[lints]
+workspace = true

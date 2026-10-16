@@ -46,11 +46,12 @@ PART = {
     "sever-cert": 3,
     "sever-p3": 3,
     "sever-py-p3": 3,
+    "sever-crashkit-p3": 3,
 }
 #: Composition roots and tooling: nothing in the core may depend on them.
 OUTER = (
     "sever-p1", "sever-tracekit", "sever-crashkit", "sever-p2", "sever-py-p2", "sever-p3",
-    "sever-py-p3",
+    "sever-py-p3", "sever-crashkit-p3",
 )  # fmt: skip
 #: Build §1.2: `unsafe` only in the SIMD kernel (later parts add mlock).
 UNSAFE_ALLOWED = {"crates/sever-search/src/kernel.rs"}

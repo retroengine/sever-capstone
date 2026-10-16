@@ -1,0 +1,28 @@
+# THROWAWAY proof spike (Build 3-4 §1.11): deleted after its gate; its only output is the ledger entry.
+[package]
+name = "sever-spike-p3-proof"
+version = "0.0.0"
+description = "Proof spike before Part 3 freezes: an AEAD sealer seals r_t and r_agg, and a key-rotation participant sits beside LogParticipant"
+edition = "2024"
+publish = false
+
+[dependencies]
+sever-txn = { path = "../../crates/sever-txn" }
+sever-types = { path = "../../crates/sever-types" }
+sever-commit = { path = "../../crates/sever-commit" }
+zeroize = "=1.9.0" # spec §20.1
+aes-gcm-siv = "=0.11.1" # spec §20.1
+rand_core = { version = "=0.6.4", features = ["getrandom"] } # spec §20.1
+
+[dev-dependencies]
+sever-engine = { path = "../../crates/sever-engine" }
+sever-index = { path = "../../crates/sever-index" }
+sever-vfs = { path = "../../crates/sever-vfs" }
+sever-crypto = { path = "../../crates/sever-crypto" }
+sever-log = { path = "../../crates/sever-log" }
+sever-cert = { path = "../../crates/sever-cert" }
+sever-quant = { path = "../../crates/sever-quant" }
+serde_json = "1"
+
+# Outside the engine workspace: the spike never becomes part of a frozen part.
+[workspace]

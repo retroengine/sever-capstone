@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-86)](#6-decision-register-db-1--db-53-db-55--db-86)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-87)](#6-decision-register-db-1--db-53-db-55--db-87)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-86)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-87)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1017,6 +1017,24 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-87 — Part 3's gate tooling and demo (16 October 2026)
+
+**Decision.** (1) The Part 3 gates run through a test-only crate, `sever-crashkit-p3`: the crash
+campaign with certificates (P3-T4) reuses Part 2's oracle streams and compares recovered states in
+the core blob form (the full form minus `C_S ‖ r_agg`, which no Part 2 oracle knows), and adds the
+log checks; the trace replay (P3-T5) checks every certificate and every group against a model in
+which `C_S` is the sum of the members' `C_t`; the attack generator (P3-T1/T2) re-signs attacks with
+the operator key it reads from `SECRETS`, as a dishonest operator would. (2) A feature `memo-checks`
+of `sever-commit`, enabled only by that crate, remembers group states that already passed INV-3 in
+the process: a crash campaign reopens the database hundreds of thousands of times and each open
+recomputes `C_S` of every group (5 ms each at d = 384); the check is the same, and a changed state
+is always recomputed. (3) `sever-verify` gains `--explain` (each §11.3 step, for the demo) and
+`--batch` (one process for a gate's hundreds of thousands of certificates). (4) The demo is a Python
+program (`sever_demo_p3`) because §16.2's backend is the SDK. **Why.** Without (2) one crash point
+takes 4.5 s and the campaign months; without (3) one process per certificate. **Rejected.** A smaller
+dimension for the campaign (T-1 asks for the same data as Part 2's); variable-time INV-3 (the group
+sums are secret). **Consequence.** Spec §16.3 amended; nothing in a measured or shipped build changes.
 
 #### DB-86 — Leaf placements and the log export, for the auditor (16 October 2026)
 
@@ -2075,6 +2093,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **16 October 2026 — Part 3 gate tooling.** DB-87 (`sever-crashkit-p3`, INV-3 memo in test
+  builds, `sever-verify --explain` and `--batch`, the Python demo). Specification sections
+  touched: §16.3.
 - **16 October 2026 — Part 3 auditor.** DB-86 (leaf placements beside the hashes and in
   `LOG_LEAF`; the log export; `sever-audit`; closes G-25). Specification sections touched: §10.5,
   §11.3, §14.6, §16.3, §19.2.

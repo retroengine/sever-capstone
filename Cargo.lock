@@ -565,6 +565,7 @@ dependencies = [
  "sever-spec",
  "sever-txn",
  "sever-types",
+ "sha2",
  "zeroize",
 ]
 
@@ -582,6 +583,31 @@ dependencies = [
  "sever-types",
  "sever-vfs",
  "sever-wal",
+ "sha2",
+]
+
+[[package]]
+name = "sever-crashkit-p3"
+version = "0.1.0"
+dependencies = [
+ "rand_core",
+ "serde_json",
+ "sever-cert",
+ "sever-commit",
+ "sever-crashkit",
+ "sever-crypto",
+ "sever-engine",
+ "sever-format",
+ "sever-index",
+ "sever-log",
+ "sever-p3",
+ "sever-partition",
+ "sever-quant",
+ "sever-spec",
+ "sever-tracekit",
+ "sever-txn",
+ "sever-types",
+ "sever-vfs",
  "sha2",
 ]
 

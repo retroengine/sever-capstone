@@ -1,0 +1,23 @@
+[package]
+name = "sever-verify-fuzz"
+version = "0.0.0"
+description = "L11 fuzz target of the verifier's parser and checks (Build 3-4 §1.8, gate P3-T10)"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+sever-verify = { path = ".." }
+serde_json = "1"
+
+[workspace]
+
+[[bin]]
+name = "verify"
+path = "fuzz_targets/verify.rs"
+test = false
+doc = false
+bench = false

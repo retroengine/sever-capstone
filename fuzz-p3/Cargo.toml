@@ -1,0 +1,46 @@
+[package]
+name = "sever-fuzz-p3"
+version = "0.0.0"
+description = "L11 fuzz targets for Part 3's engine parsers (Build 3-4 §1.8, gate P3-T10); the verifier and the auditor have their own"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+sever-cert = { path = "../crates/sever-cert" }
+sever-log = { path = "../crates/sever-log" }
+sever-format = { path = "../crates/sever-format" }
+
+# Not a member of the engine workspace: it needs nightly and libFuzzer.
+[workspace]
+
+[[bin]]
+name = "certificate"
+path = "fuzz_targets/certificate.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "log_record"
+path = "fuzz_targets/log_record.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "witnessed"
+path = "fuzz_targets/witnessed.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "placement"
+path = "fuzz_targets/placement.rs"
+test = false
+doc = false
+bench = false

@@ -1506,7 +1506,7 @@ acknowledgement was lost is retried with the same request (§15.1); a new reques
 | Tool | Component | Purpose |
 |---|---|---|
 | `sever-partition build` | C-15 | Build a partition artefact (§6) |
-| `sever-verify <certificate> --anchors FILE [--hex]` | C-16 | Verify a certificate with bundled anchors (§11.3); prints `accepted`, or the failed step and why; exit 0 accepted, 1 rejected, 2 usage, 3 self-check or anchors refused (DB-85) |
+| `sever-verify <certificate> --anchors FILE [--hex] [--explain]`, `sever-verify --batch FILE` | C-16 | Verify a certificate with bundled anchors (§11.3); prints `accepted`, or the failed step and why (`--explain`: every step, then ACCEPT or REJECT); `--batch`: the anchors on the first line, one certificate per further line, one verdict per line; exit 0 accepted, 1 rejected, 2 usage, 3 self-check or anchors refused (DB-85, DB-87) |
 | `sever-audit <log export> --anchors FILE [--certificate FILE]…` | C-17 | Check deletion leaves, certificate chains and log consistency (DB-86); prints the findings; exit 0 none, 1 findings, 2 usage, 3 refused |
 | `sever-scan <disk image>` | test tool | Forensic scan used by EX-2 |
 
