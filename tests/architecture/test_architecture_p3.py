@@ -47,3 +47,32 @@ def test_p3_arch_crypto_uses_only_the_pinned_primitives() -> None:
     )
     own = set(re.findall(r"\bimpl\s+(?:\w+::)*(Digest|Mac|BlockCipher|Aead)\s+for\b", src))
     assert own == set(), f"a primitive trait is implemented in sever-crypto: {own}"
+
+
+#: Build 3-4 §1.4: the verifier's own primitives (spec §9.1, §20.1) and the JSON reader of its
+#: anchors and bundled golden files; nothing else, and nothing of the engine.
+VERIFIER_DEPS = {k: PRIMITIVES[k] for k in ("curve25519-dalek", "ed25519-dalek", "sha2")}
+
+
+@pytest.mark.spec("SR-9.2-4")
+@pytest.mark.oracle(
+    "A",
+    "§9.2 'The verifier (C-16) performs the same checks with its own code'; Build 3-4 §1.4 "
+    "'verifier/ (separate workspace) … its own parser, generator derivation, proof check'",
+)
+def test_p3_arch_verifier_shares_no_code_with_the_engine() -> None:
+    manifest = tomllib.loads((ROOT / "verifier/Cargo.toml").read_text(encoding="utf-8"))
+    assert "workspace" in manifest, "verifier/ is its own workspace"
+    deps = manifest["dependencies"]
+    assert set(deps) == {*VERIFIER_DEPS, "serde_json"}, set(deps)
+    for name, pin in VERIFIER_DEPS.items():
+        assert deps[name] == f"={pin}", f"{name}: §20.1 pins ={pin}"
+    # Test labels only: the #[spec] attribute (Build §2.2) holds no verification code (DB-85).
+    assert set(manifest.get("dev-dependencies", {})) <= {"sever-spec"}
+    lock = tomllib.loads((ROOT / "verifier/Cargo.lock").read_text(encoding="utf-8"))
+    names = {p["name"] for p in lock["package"]}
+    engine = {p.name for p in (ROOT / "crates").iterdir()} - {"sever-spec"}
+    assert not names & engine, f"the verifier links engine crates: {names & engine}"
+    for p in (ROOT / "verifier/src").rglob("*.rs"):
+        used = set(re.findall(r"\b(sever_\w+)::", p.read_text(encoding="utf-8")))
+        assert used <= {"sever_verify", "sever_spec"}, f"{p.name}: {used}"

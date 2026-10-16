@@ -11,7 +11,9 @@ vector 8, full form), ``p3_group_stream.json`` (a scripted insert/delete stream 
 §5.3–5.5), ``p3_merkle_7.json`` (Appendix B vector 9, RFC 9162 proofs of a 7-leaf tree) and
 ``p3_posk.json`` (Appendix B vector 3: a fixed challenge, §9.5; and one complete proof at d = 16
 with fixed nonces) and ``p3_certificates.json`` (Appendix B vector 6: an honest group-deletion
-certificate and a holding-area certificate at d = 384 with every intermediate value, §10–§11).
+certificate and a holding-area certificate at d = 384 with every intermediate value, §10–§11) and
+``p3_attacks.json`` (the attack suite AT-1 … AT-20 at d = 16 with the §11.3 step at which this model
+rejects each variant, for the verifier, C-16).
 Once committed, a golden file changes only with a recorded reason (CLAUDE.md §6.2).
 
 The blinding values, nonces and signing keys in these files are fixed test data (SHA-512 of a
@@ -38,6 +40,7 @@ OUT_FULL_BLOB: Final = Path("golden/p3_full_blob.json")
 OUT_STREAM: Final = Path("golden/p3_group_stream.json")
 OUT_MERKLE: Final = Path("golden/p3_merkle_7.json")
 OUT_CERTS: Final = Path("golden/p3_certificates.json")
+OUT_ATTACKS: Final = Path("golden/p3_attacks.json")
 
 
 def generators_vector() -> dict[str, Any]:
@@ -403,6 +406,8 @@ def main(argv: list[str]) -> int:
     ap.add_argument("command", choices=["write", "check"])
     ap.add_argument("--root", type=Path, default=Path("."))
     args = ap.parse_args(argv)
+    from sever_refmodel_certs.attacks import attacks_vector  # it builds on this module
+
     bad = 0
     for rel, data in (
         (OUT_GENERATORS, generators_vector()),
@@ -413,6 +418,7 @@ def main(argv: list[str]) -> int:
         (OUT_STREAM, stream_vector()),
         (OUT_MERKLE, merkle_vector()),
         (OUT_CERTS, certificate_vector()),
+        (OUT_ATTACKS, attacks_vector()),
     ):
         path, text = args.root / rel, _dump(data)
         if args.command == "write":

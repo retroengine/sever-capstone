@@ -885,7 +885,11 @@ commitment was inserted under a user key published in a signed, witnessed log ch
 ### 11.3 Verification algorithm (verifier, C-16)
 
 Inputs: the certificate, and trust anchors bundled with the verifier release (operator public keys by
-epoch, witness public keys by epoch, and the generator golden file; DB-79).
+epoch, witness public keys by epoch, and the generator golden file; DB-79). The engine publishes the
+keys as a JSON anchors file, `{"d": N, "gdigest": hex, "operator": {"<epoch>": hex key},
+"witnesses": [{"<epoch>": hex key}, …]}` with the witnesses listed by index; the generator golden
+file is compiled into the verifier, which refuses anchors whose `gdigest` differs from its own
+derivation (DB-85).
 
 1. **Parse** strictly (§11.1). Decode every point and scalar canonically. Reject if `C_t` is the
    identity.
@@ -1493,7 +1497,7 @@ acknowledgement was lost is retried with the same request (§15.1); a new reques
 | Tool | Component | Purpose |
 |---|---|---|
 | `sever-partition build` | C-15 | Build a partition artefact (§6) |
-| `sever-verify <certificate>` | C-16 | Verify a certificate with bundled anchors (§11.3) |
+| `sever-verify <certificate> --anchors FILE [--hex]` | C-16 | Verify a certificate with bundled anchors (§11.3); prints `accepted`, or the failed step and why; exit 0 accepted, 1 rejected, 2 usage, 3 self-check or anchors refused (DB-85) |
 | `sever-audit <data_dir or log export>` | C-17 | Check deletion leaves, certificate chains and log consistency |
 | `sever-scan <disk image>` | test tool | Forensic scan used by EX-2 |
 

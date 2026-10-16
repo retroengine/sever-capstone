@@ -1,0 +1,11 @@
+--- a/verifier/src/verify.rs
++++ b/verifier/src/verify.rs
+@@ -185,7 +185,7 @@
+         return Err(reject(4, "fewer than four distinct valid cosignatures"));
+     }
+     // 5. Ordering: database_lsn > leaf_index.
+-    if c.database_lsn <= inc.leaf_index {
++    if c.database_lsn < inc.leaf_index {
+         return Err(reject(5, "database_lsn is not after the insert leaf"));
+     }
+     match c.deletion_kind {

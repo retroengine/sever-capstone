@@ -1,0 +1,11 @@
+--- a/verifier/src/verify.rs
++++ b/verifier/src/verify.rs
+@@ -138,7 +138,7 @@
+         .ok_or(reject(3, "the leaf is truncated"))?;
+     if !signed(
+         &upk,
+-        &concat(&[DST_INSERT, &c.collection_id, &c.c_t]),
++        &concat(&[&c.collection_id, &c.c_t]),
+         &c.user_signature,
+     ) {
+         return Err(reject(3, "the user signature does not verify"));

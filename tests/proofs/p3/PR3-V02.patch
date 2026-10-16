@@ -1,0 +1,11 @@
+--- a/verifier/src/cert.rs
++++ b/verifier/src/cert.rs
+@@ -144,7 +144,7 @@
+         return Err(ParseError("tag 6 version is not 1"));
+     }
+     let leaf = r.array::<INSERT_LEAF_LEN>("tag 6 truncated")?;
+-    let leaf_index = r.u64("tag 6 truncated")?;
++    let leaf_index = u64::from(r.u32("tag 6 truncated")?);
+     let checkpoint = Checkpoint {
+         tree_size: r.u64("tag 6 truncated")?,
+         root: r.array("tag 6 truncated")?,

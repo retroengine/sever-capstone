@@ -1,0 +1,11 @@
+--- a/verifier/src/dst.rs
++++ b/verifier/src/dst.rs
+@@ -1,7 +1,7 @@
+ //! Domain strings (spec §2.3, all ASCII, exact bytes).
+ 
+ /// Generator derivation (§9.2), 41 bytes.
+-pub const DST_GEN: &[u8] = b"PROJECT_SEVER_V1_RISTRETTO255_SHA512_NUMS";
++pub const DST_GEN: &[u8] = b"PROJECT_SEVER_V1_RISTRETTO255_SHA512_NUMZ";
+ /// Proof challenge (§9.5), 15 bytes.
+ pub const DST_POSK: &[u8] = b"SEVERDB_POSK_V1";
+ /// User insert signature (§9.8), 17 bytes.

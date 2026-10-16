@@ -1,0 +1,10 @@
+--- a/verifier/Cargo.toml
++++ b/verifier/Cargo.toml
+@@ -25,6 +25,7 @@
+ sha2 = "=0.10.9" # spec §20.1
+ ed25519-dalek = "=2.2.0" # spec §20.1 (verify_strict, §9.8)
+ serde_json = "1" # the anchors file and the bundled golden files
++sever-crypto = { path = "../crates/sever-crypto" }
+ 
+ [dev-dependencies]
+ # Test labels only (#[spec("SR-…")], Build §2.2): a no-op attribute, no verification code (DB-85).

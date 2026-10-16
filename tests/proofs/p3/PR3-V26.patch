@@ -1,0 +1,11 @@
+--- a/verifier/src/merkle.rs
++++ b/verifier/src/merkle.rs
+@@ -5,7 +5,7 @@
+ /// `SHA-256(0x00 ‖ leaf)`.
+ pub fn leaf_hash(leaf: &[u8]) -> [u8; 32] {
+     let mut h = Sha256::new();
+-    h.update([0u8]);
++    h.update([1u8]);
+     h.update(leaf);
+     h.finalize().into()
+ }

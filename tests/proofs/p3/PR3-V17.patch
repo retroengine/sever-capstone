@@ -1,0 +1,11 @@
+--- a/verifier/src/verify.rs
++++ b/verifier/src/verify.rs
+@@ -209,7 +209,7 @@
+             if !posk::verify(gens, post_b, &post, &ctx, proof) {
+                 return Err(reject(6, "the proof of knowledge does not verify"));
+             }
+-            if (c.group_emptied == 1) != (post == RistrettoPoint::identity()) {
++            if (c.group_emptied == 1) != (post == RistrettoPoint::identity()) && false {
+                 return Err(reject(6, "group_emptied disagrees with C_S_post"));
+             }
+         }

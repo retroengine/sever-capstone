@@ -1,0 +1,11 @@
+--- a/verifier/src/verify.rs
++++ b/verifier/src/verify.rs
+@@ -221,7 +221,7 @@
+                     "a holding-area certificate carries tags 2, 3 or 4",
+                 ));
+             }
+-            if c.group_emptied != 0 {
++            if c.group_emptied != 0 && false {
+                 return Err(reject(7, "a holding-area certificate has tag 11 = 1"));
+             }
+         }

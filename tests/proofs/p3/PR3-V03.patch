@@ -1,0 +1,12 @@
+--- a/verifier/src/posk.rs
++++ b/verifier/src/posk.rs
+@@ -18,8 +18,8 @@
+ ) -> [u8; 152] {
+     let mut out = [0u8; 152];
+     let parts: [&[u8]; 5] = [
++        c_t,
+         c_s_pre,
+-        c_t,
+         scrambled_id,
+         &database_lsn.to_be_bytes(),
+         collection_id,

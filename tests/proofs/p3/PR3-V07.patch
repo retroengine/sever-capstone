@@ -1,0 +1,11 @@
+--- a/verifier/src/verify.rs
++++ b/verifier/src/verify.rs
+@@ -63,7 +63,7 @@
+     let mut m = DST_STH.to_vec();
+     m.extend_from_slice(&c.tree_size.to_be_bytes());
+     m.extend_from_slice(&c.root);
+-    m.extend_from_slice(&c.timestamp_ms.to_be_bytes());
++    m.extend_from_slice(&c.timestamp_ms.to_le_bytes());
+     m.extend_from_slice(&c.epoch.to_be_bytes());
+     m
+ }

@@ -1,0 +1,12 @@
+--- a/verifier/src/verify.rs
++++ b/verifier/src/verify.rs
+@@ -179,7 +179,8 @@
+                 .get(&(s.witness_index, s.witness_epoch))
+                 .is_some_and(|k| signed(k, &cosign_msg, &s.signature))
+         })
+-        .map(|s| s.witness_index)
++        .enumerate()
++        .map(|(i, _)| i as u8)
+         .collect();
+     if good.len() < THRESHOLD {
+         return Err(reject(4, "fewer than four distinct valid cosignatures"));

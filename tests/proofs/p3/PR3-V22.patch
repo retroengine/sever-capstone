@@ -1,0 +1,11 @@
+--- a/verifier/src/verify.rs
++++ b/verifier/src/verify.rs
+@@ -14,7 +14,7 @@
+ use crate::posk;
+ 
+ /// §10.4: a log checkpoint is witnessed with four of five cosignatures.
+-pub const THRESHOLD: usize = 4;
++pub const THRESHOLD: usize = 3;
+ 
+ /// A rejection: the §11.3 step that failed and why (no input bytes).
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -1,0 +1,11 @@
+--- a/verifier/src/verify.rs
++++ b/verifier/src/verify.rs
+@@ -196,7 +196,7 @@
+             else {
+                 return Err(reject(6, "a group deletion needs tags 2, 3 and 4"));
+             };
+-            if post + c_t != pre {
++            if post - c_t != pre {
+                 return Err(reject(6, "C_S_post + C_t differs from C_S_pre"));
+             }
+             let ctx = posk::ctx(

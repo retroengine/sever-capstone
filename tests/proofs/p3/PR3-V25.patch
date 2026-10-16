@@ -1,0 +1,11 @@
+--- a/verifier/src/xmd.rs
++++ b/verifier/src/xmd.rs
+@@ -27,7 +27,7 @@
+     let mut h = Sha512::new();
+     h.update([0u8; S_IN_BYTES]);
+     h.update(msg);
+-    h.update(len.to_be_bytes());
++    h.update(len.to_le_bytes());
+     h.update([0u8]);
+     h.update(&dst_prime);
+     // 8. b_0 = H(msg_prime)

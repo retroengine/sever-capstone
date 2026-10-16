@@ -1,0 +1,11 @@
+--- a/verifier/src/verify.rs
++++ b/verifier/src/verify.rs
+@@ -169,7 +169,7 @@
+     }
+     // 4. Witnesses (tag 7): at least four cosignatures from distinct witnesses, each valid for its
+     //    epoch, over that log checkpoint.
+-    let cosign_msg = concat(&[DST_COSIGN, &cp_msg]);
++    let cosign_msg = cp_msg.clone();
+     let good: BTreeSet<u8> = c
+         .cosignatures
+         .iter()

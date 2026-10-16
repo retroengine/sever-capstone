@@ -1,0 +1,11 @@
+--- a/verifier/src/posk.rs
++++ b/verifier/src/posk.rs
+@@ -66,7 +66,7 @@
+     let z = chunks
+         .map(|c| {
+             let b: [u8; 32] = c.try_into().ok()?;
+-            Option::<Scalar>::from(Scalar::from_canonical_bytes(b))
++            Some(Scalar::from_bytes_mod_order(b))
+         })
+         .collect::<Option<Vec<_>>>()?;
+     Some(DecodedProof { a_bytes, a, z })

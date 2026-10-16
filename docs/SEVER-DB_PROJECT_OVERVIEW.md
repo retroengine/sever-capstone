@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-84)](#6-decision-register-db-1--db-53-db-55--db-84)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-85)](#6-decision-register-db-1--db-53-db-55--db-85)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-84)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-85)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1017,6 +1017,24 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-85 — The verifier's anchors file and command line (16 October 2026)
+
+**Decision.** (1) The trust anchors are a JSON file the engine publishes (`sever-db-p3 anchors`,
+`Database.anchors()`): `{"d": N, "gdigest": hex, "operator": {"<epoch>": hex key}, "witnesses":
+[{"<epoch>": hex key}, …]}`, the witnesses listed by index. The generator golden file is compiled
+into the verifier. The verifier refuses anchors whose `gdigest` is not the one it derives itself.
+(2) `sever-verify <certificate> --anchors FILE [--hex]` runs the §9.2 self-check with its own code,
+then the eight steps of §11.3, and prints one JSON line: `{"accepted": true, "deletion_kind",
+"database_lsn", "leaf_index", "group_emptied", "collection_id"}`, or `{"accepted": false, "step":
+1–7, "reason"}`; exit 0 accepted, 1 rejected, 2 usage, 3 self-check or anchors refused. (3) The
+verifier's tests take the `#[spec]` attribute crate as a dev-dependency (a no-op test label, no
+verification code); its build links nothing of the engine. **Why.** In v1 every database has its own
+operator key and simulated witnesses, so "bundled with the release" means the anchors of the
+database the release serves; a file names them explicitly. Naming the step is E2E-3.2's
+requirement. **Rejected.** Anchors compiled into the binary (one build per database); a binary
+format (the anchors are public and small). **Consequence.** Closes G-24; spec §11.3 and §16.3
+amended; `verifier/` implements it.
 
 #### DB-84 — The Part 3 SDK: where randomness, `r_t` and the dimension live (16 October 2026)
 
@@ -2033,6 +2051,8 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **16 October 2026 — Part 3 verifier.** DB-85 (the anchors file, `sever-verify --anchors`, its
+  output naming the failed step; closes G-24). Specification sections touched: §11.3, §16.3.
 - **16 October 2026 — Part 3 SDK.** DB-84 (the request carries `r_t` unreadably and is reused
   for a retry; the dimension is the vector's; any extra argument is `SeededNonceForbidden`; the
   signature binds the collection inserted into). Specification sections touched: §16.2.

@@ -1,0 +1,11 @@
+--- a/verifier/src/main.rs
++++ b/verifier/src/main.rs
+@@ -69,7 +69,7 @@
+             println!(
+                 "{}",
+                 json!({
+-                    "accepted": true,
++                    "accepted": "yes",
+                     "deletion_kind": a.deletion_kind,
+                     "database_lsn": a.database_lsn,
+                     "leaf_index": a.leaf_index,

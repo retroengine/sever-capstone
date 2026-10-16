@@ -1,0 +1,11 @@
+--- a/verifier/src/cert.rs
++++ b/verifier/src/cert.rs
+@@ -132,7 +132,7 @@
+ 
+ fn bit(v: &[u8], why: &'static str) -> Result<u8, ParseError> {
+     match fixed::<1>(v, why)? {
+-        [b @ (0 | 1)] => Ok(b),
++        [b] => Ok(b),
+         _ => Err(ParseError(why)),
+     }
+ }

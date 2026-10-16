@@ -1,0 +1,10 @@
+--- a/verifier/src/verify.rs
++++ b/verifier/src/verify.rs
+@@ -106,6 +106,7 @@
+     let op = anchors
+         .operator
+         .get(&c.key_period)
++        .or_else(|| anchors.operator.values().next_back())
+         .ok_or(reject(2, "unknown operator epoch"))?;
+     if !signed(op, &concat(&[DST_CERT, &c.body]), &c.signature) {
+         return Err(reject(2, "the operator signature does not verify"));

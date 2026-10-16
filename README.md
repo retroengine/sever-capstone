@@ -189,6 +189,16 @@ with Database.open("/path/db", "/path/keys", d=384) as db:
 Nothing in the SDK accepts a random generator, seed or nonce: any extra argument raises
 `SeededNonceForbidden` (§16.2, DB-84). `r_t` cannot be read from a request.
 
+Anyone can then check a certificate offline with the verifier, a separate workspace that shares no
+code with the engine (§11.3, DB-85):
+
+```bash
+(cd verifier && cargo build --release)
+verifier/target/release/sever-verify deletion.cert --anchors anchors.json
+# {"accepted": true, "deletion_kind": 0, "database_lsn": 7, ...}  or
+# {"accepted": false, "step": 6, "reason": "the proof of knowledge does not verify"}
+```
+
 ### Part 3 results
 
 Not yet measured: Part 3 is being built.

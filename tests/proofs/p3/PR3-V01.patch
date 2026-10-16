@@ -1,0 +1,11 @@
+--- a/verifier/src/cert.rs
++++ b/verifier/src/cert.rs
+@@ -202,7 +202,7 @@
+     if r.u8("the trailer is missing")? != TRAILER {
+         return Err(ParseError("the trailer is missing or a tag is repeated"));
+     }
+-    if r.u32("the trailer is truncated")? != 64 {
++    if r.u32("the trailer is truncated")? != 65 {
+         return Err(ParseError("the trailer's length is not 64"));
+     }
+     let signature = r.array("the trailer is truncated")?;

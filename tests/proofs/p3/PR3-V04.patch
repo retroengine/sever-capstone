@@ -1,0 +1,12 @@
+--- a/verifier/src/posk.rs
++++ b/verifier/src/posk.rs
+@@ -38,8 +38,8 @@
+ pub fn challenge(c_s_post: &[u8; 32], a: &[u8; 32], ctx: &[u8; 152]) -> Scalar {
+     let mut h = Sha512::new();
+     h.update(DST_POSK);
++    h.update(a);
+     h.update(c_s_post);
+-    h.update(a);
+     h.update(ctx);
+     Scalar::from_bytes_mod_order_wide(&h.finalize().into())
+ }

@@ -1,0 +1,9 @@
+--- a/verifier/src/posk.rs
++++ b/verifier/src/posk.rs
+@@ -86,5 +86,5 @@
+     let c = challenge(c_s_post_bytes, &p.a_bytes, ctx);
+     let points = std::iter::once(&gens.h).chain(gens.g.iter());
+     let lhs = RistrettoPoint::vartime_multiscalar_mul(p.z.iter(), points);
+-    lhs == p.a + c * c_s_post
++    lhs == p.a - c * c_s_post
+ }

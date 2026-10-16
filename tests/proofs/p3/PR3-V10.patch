@@ -1,0 +1,11 @@
+--- a/verifier/src/merkle.rs
++++ b/verifier/src/merkle.rs
+@@ -54,7 +54,7 @@
+             }
+         } else {
+             // Otherwise: i. Set r to HASH(0x01 || r || p).
+-            r = node_hash(&r, p);
++            r = node_hash(p, &r);
+         }
+         // c. Finally, right-shift both fn and sn one time.
+         f >>= 1;
