@@ -317,12 +317,14 @@ impl Run<'_> {
 }
 
 /// Runs the campaign on dimension `d`; one JSON line per crash point, then the summary line.
+/// Operations before `crash_from` run on the main line only (smoke runs; the gate uses 0).
 pub fn run(
     oracle: &Oracle,
     rows: &dyn Rows,
     artefact: &[u8],
     d: usize,
     s: &Settings,
+    crash_from: usize,
     out: &mut dyn Write,
 ) -> Result<Summary, String> {
     let t0 = Instant::now();
@@ -391,6 +393,9 @@ pub fn run(
         run.leaves.push(Run::size(&db).ok_or("log")?);
         if Run::digest(&db, cid, d).as_ref() != oracle.digests.get(i + 1) {
             run.sum.main_mismatches += 1;
+        }
+        if i < crash_from {
+            continue;
         }
         if i % s.step_every.max(1) == 0 {
             for k in 1..=m {

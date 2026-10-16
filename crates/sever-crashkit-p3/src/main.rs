@@ -108,7 +108,8 @@ fn real_main() -> Result<bool, String> {
                 step_every: num(&a, "step-every", 1)? as usize,
                 limit_ops: a.get("limit-ops").and_then(|x| x.parse().ok()),
             };
-            let sum = campaign::run(&oracle, rows.as_ref(), &art, d, &s, &mut out)?;
+            let from = num(&a, "crash-from", 0)? as usize;
+            let sum = campaign::run(&oracle, rows.as_ref(), &art, d, &s, from, &mut out)?;
             sum.failures() == 0 && sum.skipped == 0
         }
         "attacks" | "measure" => {
