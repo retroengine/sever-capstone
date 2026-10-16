@@ -1,0 +1,9 @@
+--- a/crates/sever-crypto/src/posk.rs
++++ b/crates/sever-crypto/src/posk.rs
+@@ -191,5 +191,5 @@
+         std::iter::once(z_r).chain(z.iter()),
+         std::iter::once(gens.h()).chain(gens.g().iter()),
+     );
+-    lhs == a + c * c_s_post
++    lhs == a - c * c_s_post
+ }

@@ -103,3 +103,12 @@ def test_p3_arch_auditor_copies_the_verifier_and_depends_on_neither() -> None:
     for p in (ROOT / "audit/src").rglob("*.rs"):
         used = set(re.findall(r"\b(sever_\w+)::", p.read_text(encoding="utf-8")))
         assert used <= {"sever_audit", "sever_spec"}, f"{p.name}: {used}"
+
+
+def test_p3_arch_soundness_cites_tests_that_exist() -> None:
+    # P3-T11: docs/SOUNDNESS.md backs each claim with a test; every one it names must exist.
+    text = (ROOT / "docs/SOUNDNESS.md").read_text(encoding="utf-8")
+    cited = re.findall(r"`(crates/[\w/.-]+\.rs)::(\w+)`", text)
+    assert len(cited) >= 3
+    for path, name in cited:
+        assert f"fn {name}(" in (ROOT / path).read_text(encoding="utf-8"), f"{path}::{name}"

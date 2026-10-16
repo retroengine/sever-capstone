@@ -963,3 +963,113 @@ fn p3_crypto_scalar_map_matches_golden_vector_4() {
         );
     }
 }
+
+// --- docs/SOUNDNESS.md, executable (Build 3-4 P3-G9, gate P3-T11) -------------------------
+
+fn random_scalar() -> Scalar {
+    let mut w = [0u8; 64];
+    rand_core::RngCore::fill_bytes(&mut rand_core::OsRng, &mut w);
+    Scalar::from_bytes_mod_order_wide(&w)
+}
+
+fn random_state(d: usize) -> (Vec<i64>, Scalar) {
+    let s = (0..d)
+        .map(|_| {
+            let mut b = [0u8; 8];
+            rand_core::RngCore::fill_bytes(&mut rand_core::OsRng, &mut b);
+            i64::from_le_bytes(b) >> 20 // a sum of up to 2^19 Q24 components fits
+        })
+        .collect();
+    (s, random_scalar())
+}
+
+/// `(A, z_r, z)` of an encoded proof.
+fn split_proof(bytes: &[u8]) -> (RistrettoPoint, Scalar, Vec<Scalar>) {
+    let a = decode_point(&<[u8; 32]>::try_from(&bytes[..32]).unwrap()).unwrap();
+    let z: Vec<Scalar> = bytes[32..]
+        .chunks(32)
+        .map(|c| decode_scalar(&<[u8; 32]>::try_from(c).unwrap()).unwrap())
+        .collect();
+    (a, z[0], z[1..].to_vec())
+}
+
+#[test]
+// oracle: A §9.5 algebra (docs/SOUNDNESS.md §2): z_r·H + Σ z_i·G_i = (k_r + c·r)·H + Σ (k_i + c·s_i)·G_i = A + c·C_S_post for every opening, the empty group included (§5.4)
+#[spec("SR-9.5-4", "SR-9.5-6")]
+fn p3_crypto_soundness_completeness_for_random_states() {
+    let g = Generators::derive(16).unwrap();
+    let mut states: Vec<(Vec<i64>, Scalar)> = (0..6).map(|_| random_state(16)).collect();
+    states.push((vec![0; 16], Scalar::ZERO)); // the empty group: C_S_post is the identity
+    for (s, r) in states {
+        let c_s_post = encode_point(&commit_group(&g, &s, &r).unwrap());
+        let proof = prove(&g, &s, &r, &golden_ctx(), &mut StrictProofRng::new()).unwrap();
+        assert_eq!(
+            verify(&g, &c_s_post, &golden_ctx(), &proof.to_bytes()),
+            Ok(())
+        );
+    }
+}
+
+#[test]
+// oracle: A §9.5 "Soundness note. Two accepting transcripts with the same A and different challenges reveal every secret (x = (z_1 − z_2)/(c_1 − c_2) per component)" (docs/SOUNDNESS.md §3)
+#[spec("SR-9.5-4")]
+fn p3_crypto_soundness_extractor_recovers_the_opening() {
+    let g = Generators::derive(16).unwrap();
+    let (s, r) = random_state(16);
+    let c_s_post = encode_point(&commit_group(&g, &s, &r).unwrap());
+    // One nonce vector (what §9.6 exists to prevent), two contexts, so two challenges.
+    let k_r = random_scalar();
+    let k: Vec<Scalar> = (0..16).map(|_| random_scalar()).collect();
+    let ctx1 = golden_ctx();
+    let mut ctx2 = golden_ctx();
+    ctx2.database_lsn += 1;
+    let p1 = posk::prove_with_nonces(&g, &s, &r, &ctx1, &k_r, &k)
+        .unwrap()
+        .to_bytes();
+    let p2 = posk::prove_with_nonces(&g, &s, &r, &ctx2, &k_r, &k)
+        .unwrap()
+        .to_bytes();
+    assert_eq!(verify(&g, &c_s_post, &ctx1, &p1), Ok(()));
+    assert_eq!(verify(&g, &c_s_post, &ctx2, &p2), Ok(()));
+    let (a1, zr1, z1) = split_proof(&p1);
+    let (a2, zr2, z2) = split_proof(&p2);
+    assert_eq!(a1, a2, "one A");
+    let c1 = challenge(&c_s_post, &encode_point(&a1), &ctx1.to_bytes());
+    let c2 = challenge(&c_s_post, &encode_point(&a2), &ctx2.to_bytes());
+    assert_ne!(c1, c2, "two challenges");
+    // The extractor: r = (z_r − z'_r)/(c − c'), s_i = (z_i − z'_i)/(c − c').
+    let inv = (c1 - c2).invert();
+    assert_eq!((zr1 - zr2) * inv, r);
+    for (i, si) in s.iter().enumerate() {
+        assert_eq!((z1[i] - z2[i]) * inv, scalar_from_i64(*si), "s_{i}");
+    }
+}
+
+#[test]
+// oracle: A §9.5 verifier equation; docs/SOUNDNESS.md §4: c, z uniform and A = z_r·H + Σ z_i·G_i − c·C_S_post, made with no opening, satisfy it
+#[spec("SR-9.5-6")]
+fn p3_crypto_soundness_simulator_transcripts_verify() {
+    let g = Generators::derive(16).unwrap();
+    let (s, r) = random_state(16);
+    let c_s_post = commit_group(&g, &s, &r).unwrap(); // the simulator never sees (s, r)
+    for _ in 0..8 {
+        let c = random_scalar();
+        let z_r = random_scalar();
+        let z: Vec<Scalar> = (0..16).map(|_| random_scalar()).collect();
+        let mut a = g.h() * z_r - c * c_s_post;
+        for (zi, gi) in z.iter().zip(g.g()) {
+            a += gi * zi;
+        }
+        assert_ne!(a, RistrettoPoint::default(), "A is not the identity");
+        assert!(posk::equation_holds(&g, &c_s_post, &a, &c, &z_r, &z));
+        // The equation binds the challenge: another c fails.
+        assert!(!posk::equation_holds(
+            &g,
+            &c_s_post,
+            &a,
+            &(c + Scalar::ONE),
+            &z_r,
+            &z
+        ));
+    }
+}

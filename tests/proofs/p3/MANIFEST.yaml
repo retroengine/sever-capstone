@@ -1593,3 +1593,34 @@
   runner: pytest
   tests:
   - tests/e2e_p3/test_p3_e2e.py::test_p3_e2e_3_6_a_missing_deletion_leaf_is_reported
+- id: PR3-C33
+  claim: "the prover answers z_i = k_i + c·s_i + 1, so honest proofs fail (§9.5; SOUNDNESS completeness)"
+  kind: red
+  requirements:
+  - SR-9.5-4
+  - SR-9.5-6
+  patch: PR3-C33.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_soundness_completeness_for_random_states
+- id: PR3-C34
+  claim: "the prover's responses are not k_i + c·s_i, so the extractor's transcripts do not verify (§9.5; SOUNDNESS special soundness)"
+  kind: red
+  requirements:
+  - SR-9.5-4
+  patch: PR3-C34.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_soundness_extractor_recovers_the_opening
+- id: PR3-C35
+  claim: "the verification equation subtracts c·C_S_post (§9.5: A + c·C_S_post; SOUNDNESS simulator)"
+  kind: red
+  requirements:
+  - SR-9.5-6
+  patch: PR3-C35.patch
+  runner: cargo
+  package: sever-crypto
+  tests:
+  - crates/sever-crypto/src/tests.rs::p3_crypto_soundness_simulator_transcripts_verify

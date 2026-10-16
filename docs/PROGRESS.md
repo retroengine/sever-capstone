@@ -102,7 +102,7 @@ since `p3-sever-crypto`@60a8bf5, by the owner's rule "commit only, no push"). Do
 1 (closed locally; fair run deferred until SDK/CLI exist), 2 (complete, with the §11.3 certificate
 model and golden B 6), 3, 4 (4c on `p3-log-participant`, after erratum E-2 on `p2-erratum-e2`), 5
 (`sever-cert`, with `LogParticipant`, DB-81), 6 (`sever-p3`, branch `p3-sever-p3`, DB-83), 7 (SDK,
-branch `p3-sdk`, DB-84), 8 (`verifier/`, branch `p3-verifier`, DB-85), 9 (`audit/`, branch `p3-audit`, DB-86). Next, in order: 10 `SOUNDNESS.md`, 11
+branch `p3-sdk`, DB-84), 8 (`verifier/`, branch `p3-verifier`, DB-85), 9 (`audit/`, branch `p3-audit`, DB-86), 10 (`SOUNDNESS.md`, branch `p3-soundness`). Next: 11
 demo + gates P3-T1…T12 (crash campaign with certificates, fuzz 10^8, p3-mutants, coverage, fair
 run part 3) + measure P3-T13 + proof spike, then the freeze manifest (tag left to the owner).
 Tools for proofs: write patches with a scratch script (diff -u of one replaced string), add
@@ -115,12 +115,7 @@ manifest entry with the claim JSON-quoted) and `verify2.sh ID…` (applies each 
 test with `cargo test -p PKG --lib -- --exact <module>::<name>` for `src/` tests or `--test <stem> --
 --exact <name>` for `tests/` files, prints the result, reverts). A refactor can stop older patches
 applying: `proofs check` names them; regenerate them with the same intent.
-**Module 10 starting point (`docs/SOUNDNESS.md`, §9):** write the soundness argument of the §9.5
-proof (special soundness: two accepting transcripts with one `A` and different challenges give the
-opening; honest-verifier zero knowledge: a simulator), each claim backed by a test in
-`sever_refmodel_certs` (an extractor that recovers `(r_post, s)` from two model transcripts; a
-simulator whose transcripts verify), plus what the certificate does and does not prove (§11.3).
-Still open for module 11: SR-3.3-1 (encoder obligation; demo/E2E), SR-5.5-6/7 (P3-T5 five-field
+**Module 11 starting point:** Still open for module 11: SR-3.3-1 (encoder obligation; demo/E2E), SR-5.5-6/7 (P3-T5 five-field
 equivalence at scale), SR-9.8-8, SR-10.5-1, SR-15.2-2, E2E-3.5 (`test-hooks` build), fuzzing the
 two certificate parsers.
 
@@ -175,7 +170,7 @@ only, no push). Each is recorded as a DB entry; review them when convenient:
 | 7 | `sever-py-p3` / `sever_db_p3` (SDK: `UserKey`, `prepare_insert`, no injectable randomness) | §16.2 | **built** (branch `p3-sdk`): native `sever_db_p3_native` (PyO3, abi3; E-1 mutex rule; every §17 error a Python exception, `CommitmentMismatch`, `BadUserSignature`, `SeededNonceForbidden` added), `UserKey` (OS key, 32-byte secret for the backend's store), `prepare_insert` (the engine's quantiser, `r_t` from the OS, `C_t`, signature; `r_t` unreadable, request reused for a retry), `Database` (alias `Engine`): `insert` → `Receipt(database_lsn)`, `delete`/`delete_user` → `Deletion(certificate)`, `certificate`, `latest_log_checkpoint`, proofs, `anchors`. 11 SDK tests (signatures and certificates checked with the model) + 1 root test; PR3-R08, PR3-S01…S09. Found on the way: `Db::insert` checked the signature over the collection the request named, and a mismatch tripped `IntegrityViolation` (engine stops): now bound to the collection inserted into. DB-84 |
 | 8 | `verifier/` (separate workspace, `sever-verify`, shares no code) | §11.3 | **built** (branch `p3-verifier`): its own `expand_message_xmd`, generators and §9.2 self-check (RFC 9380 K.3, RFC 9496 vectors, golden B 1–2), §11.1/§11.2 strict parser, RFC 9162 inclusion check, §9.5 proof check, `verify_strict`, the eight §11.3 steps naming the failed step; anchors JSON (DB-85, G-24); CLI `sever-verify <cert> --anchors FILE`. 7 tests: the model's honest certificates (d = 384 golden B 6, d = 16) accepted; all 56 attack variants AT-1…AT-20 (`golden/p3_attacks.json`, written by the model with the step it rejects each at) rejected at the model's step; every single-byte change rejected; E2E-3.7. E2E-3.1…3.3 in `tests/e2e_p3/test_p3_e2e.py`: engine certificates made through the SDK verify in a separate process with the database moved away. Architecture test: no engine code. PR3-V01…V28, PR3-E01…E04, PR3-A02 |
 | 9 | `audit/` (`sever-audit`, copies verifier code) | §11.3 | **built** (branch `p3-audit`): DB-86 (closes G-25): each leaf's placement (group joined or left, a flush's new group) beside its hash and in `LOG_LEAF`, recovered like the hashes; `export-log` / `Database.export_log()`; `audit/` (own workspace, nine verifier files copied byte for byte, checked by an architecture test) reports AF-1…AF-5 by replaying placements (each group's `C_S` = Σ members' `C_t`), RFC 9162 consistency, roots, signatures and held certificates. Oracle: the model auditor `sever_refmodel_certs.audit` and `golden/p3_audit.json` (honest log + one export per fault, the kinds the model reports). E2E-3.4 (a cohort `delete_user` audits clean) and E2E-3.6 (a removed deletion leaf is reported) through the SDK and both binaries. Found on the way: a flushed insert's placement must be the new group. PR3-L20, L21, P14, R09, U01…U06, A03, E05, E06; six older patches regenerated after the format change |
-| 10 | `docs/SOUNDNESS.md` (extractor and simulator as tests) | §9 | not started |
+| 10 | `docs/SOUNDNESS.md` (extractor and simulator as tests) | §9 | **built** (branch `p3-soundness`): completeness, special soundness (extractor), honest-verifier zero knowledge (simulator), what the hedged nonces add, limits; each claim backed by a test against the engine's own prover and verifier (`p3_crypto_soundness_*`; the Σ-equation factored out as `posk::equation_holds`); an architecture test checks every cited test exists. PR3-C33…C35; PR3-C21 regenerated |
 | 11 | demo `sever-demo-p3 receipt` (DB-69 pattern), gates P3-T1…T12, measure P3-T13, proof spike | Build 3-4 §1.9–1.11 | not started |
 
 **Testing for Part 3:** CLAUDE.md §6.3 (oracles, proofs) and §6.4 (fair testing). Fair testing per

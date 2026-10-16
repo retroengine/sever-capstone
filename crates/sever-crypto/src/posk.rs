@@ -167,13 +167,29 @@ pub fn verify(
     let c_pt = decode_point(c_s_post)?;
     let a_bytes = encode_point(&p.a);
     let c = challenge(c_s_post, &a_bytes, &ctx.to_bytes());
-    let lhs = RistrettoPoint::vartime_multiscalar_mul(
-        std::iter::once(&p.z_r).chain(p.z.iter()),
-        std::iter::once(gens.h()).chain(gens.g().iter()),
-    );
-    if lhs == p.a + c * c_pt {
+    if equation_holds(gens, &c_pt, &p.a, &c, &p.z_r, &p.z) {
         Ok(())
     } else {
         Err(CryptoError::ProofInvalid)
     }
+}
+
+/// The Σ-protocol's verification equation (§9.5): `z_r·H + Σ_i z_i·G_i = A + c·C_S_post`, for a
+/// given challenge (docs/SOUNDNESS.md: the simulator's transcripts satisfy it with no opening).
+pub(crate) fn equation_holds(
+    gens: &Generators,
+    c_s_post: &RistrettoPoint,
+    a: &RistrettoPoint,
+    c: &Scalar,
+    z_r: &Scalar,
+    z: &[Scalar],
+) -> bool {
+    if z.len() != gens.d() {
+        return false;
+    }
+    let lhs = RistrettoPoint::vartime_multiscalar_mul(
+        std::iter::once(z_r).chain(z.iter()),
+        std::iter::once(gens.h()).chain(gens.g().iter()),
+    );
+    lhs == a + c * c_s_post
 }
