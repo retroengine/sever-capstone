@@ -1,0 +1,10 @@
+--- a/crates/sever-py-p3/src/lib.rs
++++ b/crates/sever-py-p3/src/lib.rs
+@@ -292,7 +292,6 @@
+         let d = vector.len();
+         let x = sever_quant::quantise(&vector, d)?;
+         let mut wide = Zeroizing::new([0u8; 64]);
+-        OsRng.fill_bytes(wide.as_mut());
+         let r_t = Scalar::from_bytes_mod_order_wide(&wide);
+         let c_t = encode_point(
+             &commit_record(generators(d)?.as_ref(), x.as_slice(), &r_t)

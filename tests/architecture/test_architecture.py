@@ -45,9 +45,13 @@ PART = {
     "sever-log": 3,
     "sever-cert": 3,
     "sever-p3": 3,
+    "sever-py-p3": 3,
 }
 #: Composition roots and tooling: nothing in the core may depend on them.
-OUTER = ("sever-p1", "sever-tracekit", "sever-crashkit", "sever-p2", "sever-py-p2")
+OUTER = (
+    "sever-p1", "sever-tracekit", "sever-crashkit", "sever-p2", "sever-py-p2", "sever-p3",
+    "sever-py-p3",
+)  # fmt: skip
 #: Build §1.2: `unsafe` only in the SIMD kernel (later parts add mlock).
 UNSAFE_ALLOWED = {"crates/sever-search/src/kernel.rs"}
 #: Crates that would bring I/O, time, networking, randomness or model fitting into the core.
@@ -177,6 +181,8 @@ LAYERS: dict[str, set[str]] = {
     "sever_refmodel_durable": {"sever_partition", "sever_refmodel_core", "sever_testkit"},
     "sever_testkit_p2": {"sever_testkit", "sever_refmodel_durable"},
     "sever_db_p2": {"sever_db_p2_native"},
+    # Part 3
+    "sever_db_p3": {"sever_db_p3_native"},
 }
 
 

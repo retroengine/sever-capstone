@@ -379,6 +379,28 @@ fn p3_root_a_crash_anywhere_in_a_deletion_leaves_no_certificate_alone() {
 }
 
 #[test]
+// oracle: A §15.1 steps 1–2: the signature is verified over DST_INSERT ‖ collection_id ‖ C_t of the collection inserted into; one signed for another collection fails (BadUserSignature, §17)
+#[spec("SR-15.1-3")]
+fn p3_root_a_credential_signed_for_another_collection_is_refused() {
+    let disks = Disks::new();
+    let user = KeyPair::generate();
+    let db = disks.open().unwrap();
+    let a = db.create_collection(ARTEFACT, OPTS).unwrap();
+    let b = db.create_collection(ARTEFACT, OPTS).unwrap();
+    let v = &rows()[0];
+    let req = InsertRequest {
+        record_id: "r".into(),
+        vector: v.clone(),
+        credential: credential(&db, &user, a, v),
+        passage: None,
+    };
+    assert_eq!(db.insert(b, req).map(|_| ()), Err(Error::BadUserSignature));
+    assert_eq!(db.engine.stats(b).unwrap().big_n, 0, "nothing inserted");
+    // The same credential is accepted by the collection it was signed for.
+    insert(&db, &user, a, "r", v);
+}
+
+#[test]
 fn p3_root_refuses_an_artefact_of_another_dimension() {
     let disks = Disks::new();
     let mut s = Settings::new(384);

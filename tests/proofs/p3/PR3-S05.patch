@@ -1,0 +1,11 @@
+--- a/python/sever_db_p3/__init__.py
++++ b/python/sever_db_p3/__init__.py
+@@ -221,7 +221,7 @@
+         try:
+             lsn, placement = self._e.insert(collection, request, passage)
+         except DuplicateRecord as e:
+-            if e.args and e.args[0] is True:
++            if e.args and e.args[0] is False:
+                 return Receipt(None, None, retried=True)
+             raise
+         return Receipt(lsn, placement)

@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-83)](#6-decision-register-db-1--db-53-db-55--db-83)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-84)](#6-decision-register-db-1--db-53-db-55--db-84)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-83)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-84)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1017,6 +1017,26 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-84 — The Part 3 SDK: where randomness, `r_t` and the dimension live (16 October 2026)
+
+**Decision.** (1) `prepare_insert(collection_id, record_id, vector, user)` takes the dimension from
+the vector's length (§16.2 gives it no engine handle); the engine refuses another one with
+`WrongDimension` (§4.1 step 0). It calls the engine's own quantiser through the binding (§4.2).
+(2) The request is an opaque native object: `C_t`, the public key and the signature are readable,
+`r_t` is not, and it cannot be pickled; a lost acknowledgement is retried with **the same request**
+(a fresh one would carry another `r_t`, hence another `C_t`, and fail as `DuplicateRecord { false }`).
+(3) Every SDK function that draws randomness or leads to a proof (`UserKey.generate`,
+`prepare_insert`, `Database.open`, `insert`, `delete`, `delete_user`) raises `SeededNonceForbidden`
+for any argument beyond its documented ones, positional or keyword. (4) A user key is stored by the
+backend as its 32-byte Ed25519 secret (`secret_bytes`, `from_secret_bytes`). (5) The engine checks
+the insert signature over the collection inserted into, whatever collection the request names.
+**Why.** §16.2 asks that no RNG, seed or nonce can be passed; a closed signature makes "any attempt"
+observable instead of a generic `TypeError`. `r_t` is a secret the backend never needs again
+(§3.3: "The caller has nothing to keep"). **Rejected.** A `d` argument to `prepare_insert` (not in
+§16.2's signature); exposing `r_t` for retries (it would invite logging it, §17).
+**Consequence.** Spec §16.2 amended; `sever-py-p3` and `sever_db_p3` implement it; `Engine` is an
+alias of `Database` so §16.2's example runs with the package name changed.
 
 #### DB-83 — Part 3's composition root: operator keys, simulated witnesses, dimension, INV-15 (16 October 2026)
 
@@ -2013,6 +2033,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **16 October 2026 — Part 3 SDK.** DB-84 (the request carries `r_t` unreadably and is reused
+  for a retry; the dimension is the vector's; any extra argument is `SeededNonceForbidden`; the
+  signature binds the collection inserted into). Specification sections touched: §16.2.
 - **16 October 2026 — Part 3 composition root.** DB-83 (operator keys in `SECRETS`, simulated
   witnesses' memory in `WITNESSES`, one dimension per database; INV-15's second half at deletion,
   closes G-23). Specification sections touched: §14.1, §14.9, §21.

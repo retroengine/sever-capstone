@@ -265,8 +265,11 @@ impl Db {
     pub fn insert(
         &self,
         cid: CollectionId,
-        req: InsertRequest<InsertCredential>,
+        mut req: InsertRequest<InsertCredential>,
     ) -> Result<(u64, Placement), Error> {
+        // §15.1 step 2: the signature is checked over the collection inserted into, so one signed
+        // for another collection fails as BadUserSignature (EP-1's admit does not see `cid`).
+        req.credential.collection_id = *cid.as_bytes();
         let r = self.engine.insert(cid, req)?;
         let lsn = log_output(&r.outputs)
             .and_then(|b| <[u8; 8]>::try_from(b).ok())

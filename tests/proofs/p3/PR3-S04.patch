@@ -1,0 +1,11 @@
+--- a/crates/sever-py-p3/src/lib.rs
++++ b/crates/sever-py-p3/src/lib.rs
+@@ -290,7 +290,7 @@
+     let public = user.public;
+     py.detach(move || {
+         let d = vector.len();
+-        let x = sever_quant::quantise(&vector, d)?;
++        let x: Vec<i32> = sever_quant::quantise(&vector, d)?.as_slice().iter().map(|v| v & !1).collect();
+         let mut wide = Zeroizing::new([0u8; 64]);
+         OsRng.fill_bytes(wide.as_mut());
+         let r_t = Scalar::from_bytes_mod_order_wide(&wide);

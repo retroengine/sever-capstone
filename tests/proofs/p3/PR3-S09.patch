@@ -1,0 +1,11 @@
+--- a/python/sever_db_p3/__init__.py
++++ b/python/sever_db_p3/__init__.py
+@@ -227,7 +227,7 @@
+         return Receipt(lsn, placement)
+ 
+     def delete(
+-        self, collection: str, record_id: str, *randomness: object, **more: object
++        self, collection: str, record_id: str, user: UserKey, *randomness: object, **more: object
+     ) -> Deletion:
+         """Deletes one record (§15.3); no ``r_t`` argument, and no way to pass randomness into its
+         proof (§9.6)."""

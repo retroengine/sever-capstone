@@ -147,6 +147,54 @@ DB-72), and added tests for one writer at a time (§12.5) and for the SDK forwar
 
 ---
 
+## Part 3: The Receipt
+
+Part 3 adds the claim that every deletion yields a certificate anyone can verify offline (Build 3-4
+§1; spec §9, §10, §11, §16.2). Each group keeps a Pedersen commitment `C_S`; every insert and every
+deletion is a leaf of an RFC 9162 transparency log whose checkpoints are signed by the operator and
+cosigned by four of five witnesses (simulated in v1); a deletion returns a signed certificate with a
+proof that the group's new commitment is the old one minus the record's. Still plaintext (DB-48).
+
+### Using it
+
+The command-line tool prints one JSON line per command (§17 errors carry no record ID, vector value,
+key or `r_t`). It plays the application backend for `insert` (§3.3):
+
+```bash
+cargo build --release -p sever-p3
+B=target/release/sever-db-p3; D="--data /path/db --keys /path/keys --d 16"
+$B user-key --out /path/user.key                                         # an account key (0600)
+$B create $D --artefact golden/p1_partition_small.svp --spawn-target 8   # -> {"cid": "..."}
+$B insert $D --cid <cid> --id doc-1 --vector '[...]' --user-key /path/user.key   # -> database_lsn
+$B delete $D --cid <cid> --id doc-1        # -> {"outcome": "deleted", "database_lsn", "certificate"}
+$B certificate $D --lsn <database_lsn>     # the same certificate, later
+$B anchors $D --out anchors.json           # the verifier's trust anchors (§11.3)
+```
+
+The Python SDK runs on the application backend (§16.2; build it once after every `uv sync` with
+`uv run --no-sync maturin develop --release --uv -m crates/sever-py-p3/Cargo.toml`):
+
+```python
+from sever_db_p3 import Database, UserKey, prepare_insert
+
+user = UserKey.generate()  # once per account; keep user.secret_bytes() in the backend's key store
+with Database.open("/path/db", "/path/keys", d=384) as db:
+    cid = db.create_collection("artefacts/partition-seed42.svp")
+    req = prepare_insert(cid, "doc-1", vector, user)  # quantise, draw r_t, compute C_t, sign
+    receipt = db.insert(cid, req)  # receipt.database_lsn; retry with the same req
+    deletion = db.delete(cid, "doc-1")  # no r_t argument; deletion.certificate (bytes)
+    anchors = db.anchors()  # JSON for the verifier
+```
+
+Nothing in the SDK accepts a random generator, seed or nonce: any extra argument raises
+`SeededNonceForbidden` (§16.2, DB-84). `r_t` cannot be read from a request.
+
+### Part 3 results
+
+Not yet measured: Part 3 is being built.
+
+---
+
 ## Part 1 results
 
 Every number below comes from the run ledger, [`docs/RUN_LEDGER.jsonl`](docs/RUN_LEDGER.jsonl)

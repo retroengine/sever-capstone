@@ -1,0 +1,11 @@
+--- a/python/sever_db_p3/__init__.py
++++ b/python/sever_db_p3/__init__.py
+@@ -80,7 +80,7 @@
+ def _no_randomness(extra: Sequence[object], named: Mapping[str, object]) -> None:
+     """§16.2: no way to pass a random generator, seed or nonce. Any extra argument is one."""
+     if extra or named:
+-        raise SeededNonceForbidden("randomness cannot be supplied (§9.6, §16.2)")
++        return
+ 
+ 
+ class UserKey:

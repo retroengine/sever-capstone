@@ -993,3 +993,106 @@
   package: sever-p3
   tests:
   - crates/sever-p3/src/tests.rs::p3_root_on_real_files_keeps_secrets_private
+- id: PR3-R08
+  claim: "the insert signature is checked over the collection the credential names, not the one inserted into (§15.1 step 2)"
+  kind: red
+  requirements:
+  - SR-15.1-3
+  patch: PR3-R08.patch
+  runner: cargo
+  package: sever-p3
+  tests:
+  - crates/sever-p3/src/tests.rs::p3_root_a_credential_signed_for_another_collection_is_refused
+- id: PR3-S01
+  claim: "the SDK silently ignores an RNG, seed or nonce passed to it (§16.2, E2E-3.8)"
+  kind: red
+  requirements:
+  - SR-9.6-4
+  - SR-17-5
+  patch: PR3-S01.patch
+  runner: pytest
+  tests:
+  - python/sever_db_p3/tests/test_sdk_p3.py::test_p3_sdk_refuses_every_attempt_to_pass_randomness
+- id: PR3-S02
+  claim: "prepare_insert signs a message without the collection ID (§9.8 DST_INSERT ‖ collection_id ‖ C_t)"
+  kind: red
+  requirements:
+  - SR-16.2-1
+  - SR-9.8-1
+  patch: PR3-S02.patch
+  runner: pytest
+  tests:
+  - python/sever_db_p3/tests/test_sdk_p3.py::test_p3_sdk_prepare_insert_signs_the_collection_and_commitment
+  build:
+  - native
+- id: PR3-S03
+  claim: "prepare_insert uses the same r_t (zero) for every record (§9.4 fresh for every record)"
+  kind: red
+  requirements:
+  - SR-9.4-1
+  patch: PR3-S03.patch
+  runner: pytest
+  tests:
+  - python/sever_db_p3/tests/test_sdk_p3.py::test_p3_sdk_draws_a_fresh_r_t_for_every_request
+  build:
+  - native
+- id: PR3-S04
+  claim: "the SDK quantises with its own quantiser (the last bit dropped), not the engine's (§4.2)"
+  kind: red
+  requirements:
+  - SR-4.2-3
+  patch: PR3-S04.patch
+  runner: pytest
+  tests:
+  - python/sever_db_p3/tests/test_sdk_p3.py::test_p3_sdk_and_engine_quantise_alike
+  build:
+  - native
+- id: PR3-S05
+  claim: "the SDK treats DuplicateRecord with same_commitment false as a successful retry, and true as a failure (§15.1)"
+  kind: red
+  requirements:
+  - SR-15.1-6
+  patch: PR3-S05.patch
+  runner: pytest
+  tests:
+  - python/sever_db_p3/tests/test_sdk_p3.py::test_p3_sdk_retry_with_the_same_request_is_success
+- id: PR3-S06
+  claim: "the SDK's delete returns a certificate that is not the engine's (its last byte dropped; §16.2, §11.1)"
+  kind: red
+  requirements:
+  - SR-16.2-1
+  patch: PR3-S06.patch
+  runner: pytest
+  tests:
+  - python/sever_db_p3/tests/test_sdk_p3.py::test_p3_sdk_delete_returns_a_certificate_that_verifies
+- id: PR3-S07
+  claim: "through the SDK: the insert signature is checked over the collection the request names, not the one inserted into (§15.1 step 2)"
+  kind: red
+  requirements:
+  - SR-15.1-3
+  patch: PR3-S07.patch
+  runner: pytest
+  tests:
+  - python/sever_db_p3/tests/test_sdk_p3.py::test_p3_sdk_a_request_is_bound_to_its_collection
+  build:
+  - native
+- id: PR3-S08
+  claim: "the insert leaf does not publish the account's public key (§3.3, §10.2)"
+  kind: red
+  requirements:
+  - SR-3.3-2
+  patch: PR3-S08.patch
+  runner: pytest
+  tests:
+  - python/sever_db_p3/tests/test_sdk_p3.py::test_p3_sdk_the_user_key_is_published_with_every_insert
+  build:
+  - native
+- id: PR3-S09
+  claim: "deletion asks for the account's key, an authorisation of the engine's own (§3.3, §16.2)"
+  kind: red
+  requirements:
+  - SR-3.3-3
+  patch: PR3-S09.patch
+  runner: pytest
+  tests:
+  - python/sever_db_p3/tests/test_sdk_p3.py::test_p3_sdk_delete_takes_no_key_signature_or_r_t

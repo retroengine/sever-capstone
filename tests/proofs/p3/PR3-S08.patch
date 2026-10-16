@@ -1,0 +1,11 @@
+--- a/crates/sever-commit/src/lib.rs
++++ b/crates/sever-commit/src/lib.rs
+@@ -216,7 +216,7 @@
+             insert_leaf_index,
+             collection_id: credential.collection_id,
+             c_t: credential.c_t,
+-            user_public_key: credential.user_public_key,
++            user_public_key: [0; 32],
+             signature: credential.signature,
+         });
+         Ok(RecordBlind {

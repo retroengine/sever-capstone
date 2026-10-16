@@ -1,0 +1,11 @@
+--- a/python/sever_db_p3/__init__.py
++++ b/python/sever_db_p3/__init__.py
+@@ -169,7 +169,7 @@
+ 
+ 
+ def _deletion(o: tuple[str, int | None, bytes | None]) -> Deletion:
+-    return Deletion("deleted", o[1], o[2]) if o[0] == "deleted" else Deletion("absent")
++    return Deletion("deleted", o[1], o[2][:-1] if o[2] else None) if o[0] == "deleted" else Deletion("absent")
+ 
+ 
+ class Database:

@@ -1,0 +1,11 @@
+--- a/crates/sever-py-p3/src/lib.rs
++++ b/crates/sever-py-p3/src/lib.rs
+@@ -298,7 +298,7 @@
+             &commit_record(generators(d)?.as_ref(), x.as_slice(), &r_t)
+                 .map_err(|_| Error::WrongDimension)?,
+         );
+-        let signature = KeyPair::from_secret(&secret).sign(&insert_message(c.as_bytes(), &c_t));
++        let signature = KeyPair::from_secret(&secret).sign(&insert_message(&[0u8; 16], &c_t));
+         Ok(PyInsertRequest {
+             collection_id: *c.as_bytes(),
+             record_id,

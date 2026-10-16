@@ -744,6 +744,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-py-p3"
+version = "0.1.0"
+dependencies = [
+ "pyo3",
+ "rand_core",
+ "sever-commit",
+ "sever-crypto",
+ "sever-engine",
+ "sever-log",
+ "sever-p3",
+ "sever-quant",
+ "sever-types",
+ "zeroize",
+]
+
+[[package]]
 name = "sever-quant"
 version = "0.1.0"
 dependencies = [

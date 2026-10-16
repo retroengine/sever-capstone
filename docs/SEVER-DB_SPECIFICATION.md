@@ -1479,7 +1479,14 @@ hits    = engine.search(collection_id, encoder.encode(query_text), k=10)
 `encoder` stands for the backend's embedding model; it is not part of the SDK.
 
 The SDK exposes no way to pass a random generator, seed or nonce into proof generation
-(`SeededNonceForbidden`).
+(`SeededNonceForbidden`): every SDK function that draws randomness or leads to a proof raises it for
+any argument beyond its documented ones (DB-84).
+
+`prepare_insert` takes the dimension from the vector's length; the engine refuses another
+(`WrongDimension`, §4.1 step 0). `r_t` cannot be read from the request. An insert whose
+acknowledgement was lost is retried with the same request (§15.1); a new request would carry a new
+`r_t`, hence a new `C_t`. The engine verifies the signature over the collection inserted into
+(§15.1 step 2), whatever collection the request names (DB-84).
 
 ### 16.3 Command-line tools
 
