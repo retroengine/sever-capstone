@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/participant.rs
++++ b/crates/sever-cert/src/participant.rs
+@@ -403,7 +403,7 @@
+             for r in self.log()?.stage_delete(lsn, &bytes)? {
+                 draft.participant_records.push(r.encode());
+             }
+-            draft.outputs.push((LOG_PARTICIPANT_ID, req, bytes));
++            let _ = (req, bytes);
+         }
+         // The chain ends where the change set says the groups end (§5.3).
+         for gc in &cs.groups {

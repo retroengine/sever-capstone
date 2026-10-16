@@ -94,13 +94,15 @@ INV-10, INV-15; Appendix B vectors 1, 2, 3, 4, 6, 8, 9. Out: encryption and eras
    `verifier/` once it exists. Each Part 3 crate pins these exactly in its own `Cargo.toml`
    (`"=x.y.z" # spec §20.1`), as Parts 1–2 do. Step 0 is complete; next: module 1, `sever-crypto`.
 
-**RESUME HERE (15 Oct 2026, grind mode).** Branch `p3-log-participant` (built on `p2-erratum-e2` ←
+**RESUME HERE (16 Oct 2026, grind mode).** Branch `p3-sever-p3` (built on `p3-log-participant` ←
+`p2-erratum-e2` ←
 `p3-sever-cert` ← `p3-sever-log` ←
 `p3-sever-commit` ← `p3-refmodel-certs` ← `p3-sever-crypto`; nothing merged to `main`, nothing pushed
 since `p3-sever-crypto`@60a8bf5, by the owner's rule "commit only, no push"). Done: step 0; modules
 1 (closed locally; fair run deferred until SDK/CLI exist), 2 (complete, with the §11.3 certificate
 model and golden B 6), 3, 4 (4c on `p3-log-participant`, after erratum E-2 on `p2-erratum-e2`), 5
-(`sever-cert`, with `LogParticipant`, DB-81). Next, in order: 6
+(`sever-cert`, with `LogParticipant`, DB-81), 6 (`sever-p3`, branch `p3-sever-p3`, DB-83). Next, in
+order: 7
 `sever-p3` (composition root, key store, five `SimulatedWitness`es, CLI `sever-db-p3`; SB-21), 7 SDK
 `sever-py-p3`/`sever_db_p3` (`UserKey`, `prepare_insert`, `SeededNonceForbidden`), 8 `verifier/`
 (separate workspace; DB-77 self-check; AT-1…AT-20), 9 `audit/` (AF-1…AF-5), 10 `SOUNDNESS.md`, 11
@@ -122,6 +124,9 @@ files). **Owner: tag `part-2-frozen-e2`** on a244264 when convenient.
 **Decisions taken in grind mode** (owner, 15 Oct 2026: "at each decision don't ask me"; commit
 only, no push). Each is recorded as a DB entry; review them when convenient:
 
+- DB-83 (closes G-23): operator keys in `SECRETS` (kinds 2–3, written before first use); the
+  simulated witnesses' keys and memory in `WITNESSES`; one `d` per database; INV-15's second half
+  checked at each deletion.
 - DB-80 (closes G-21): before a deletion, an on-demand checkpoint whenever a witnessed one does not
   cover every leaf (the frozen hook does not name the records).
 - DB-81: the log's durable layout (committed-only hash and checkpoint stores written after the
@@ -148,7 +153,7 @@ only, no push). Each is recorded as a DB entry; review them when convenient:
 | 3 | `sever-commit` (EP-1 `CommitmentExtension`) | §5.3, §9.3–9.4 | built (branch `p3-sever-commit`): EP-1 + `StoredExtension` (C_S 32, r_agg 32, record secret 41), admit (recompute C_t, `verify_strict` signature), removal check against the logged C_t, INV-3, full-form blob; 9 tests (frozen EP-1 contract passes; model stream and Appendix B 8 match byte for byte); 11 red proofs (PR3-M01…M11) |
 | 4 | `sever-log` (RFC 9162 tree, proofs, checkpoints, EP-7 participant, EP-10 + `SimulatedWitness`) | §10 | **built**: 4a Merkle tree (PR3-L01…L05); 4b leaves, checkpoints, keys by epoch, cosignatures, 4-of-5 (SB-20), EP-10 (PR3-L06…L13); 4c (branch `p3-log-participant`, after erratum E-2): `LogStore` (stores `log/leaves`, `log/hashes`, `log/checkpoints`, `certs`; WAL records `LOG_LEAF`/`LOG_CHECKPOINT`/`CERT_REF`; committed-only hash and checkpoint stores written in phase C; replay; INV-15 first half) passing Part 2's frozen EP-7 contract, and `LogParticipant` in `sever-cert` (DB-81): checkpoints as pre-transactions over committed leaves (DB-80, DB-82), insert leaves, certificates chained across a `delete_user`, outputs; `OperatorKeys` trait. 7 store tests + 7 engine-level tests (a crash at every VFS operation of a deletion, three policies); PR3-L14…L19, PR3-P01…P12. Open: INV-15's second half (every live record's insert leaf exists) needs a per-record startup check (module 6); witness keys and memory persist only in module 6 |
 | 5 | `sever-cert` (TLV, builder, epoch signing) | §11.1–11.2 | **built** (branch `p3-sever-cert`): `Certificate` (§11.1 encoding, strict parser: tags in order once each, fixed lengths, tags 11/12 in {0, 1}, tag 6 version 1 and an insert leaf, kind consistent with tags 2–4 and 11, no trailing bytes), `build` (tags 1/5/9/13 from the insert leaf; refuses an unproven inclusion, a bad checkpoint signature, fewer than 4 distinct witnesses, `database_lsn` not after the insert, a broken transition; proof under the certificate's own context; signs with the epoch of issue). 13 tests: the golden certificates encode and sign byte for byte as the pure-Python model (its own RFC 8032), every intermediate value matches, the §11.1 layout written by hand, Appendix A 14,093 bytes; 14 red proofs (PR3-T01…T14); SB-22 turns the emptiness test red |
-| 6 | `sever-p3` (composition root, CLI `sever-db-p3`) | — | not started |
+| 6 | `sever-p3` (composition root, CLI `sever-db-p3`) | — | **built** (branch `p3-sever-p3`): `open_on`/`open` (generator self-check, INV-10; operator keys in `SECRETS` kinds 2–3, written before first use; five simulated witnesses with durable keys and memory in `WITNESSES`; log participant behind a wrapper where SB-21 lives), the §16.1 API (`insert` → `database_lsn`, `delete` → certificate, `certificate`, `latest_log_checkpoint`, inclusion and consistency proofs) and the verifier's anchors (JSON); CLI `sever-db-p3` (`user-key`, `create`, `insert`, `delete`, `delete-user`, `certificate`, `anchors`, …). 6 tests + 1 CLI test (a crash at every VFS operation of a deletion, three policies); PR3-R01…R07, PR3-P13; SB-21 turns the crash test red. DB-83, G-23 |
 | 7 | `sever-py-p3` / `sever_db_p3` (SDK: `UserKey`, `prepare_insert`, no injectable randomness) | §16.2 | not started |
 | 8 | `verifier/` (separate workspace, `sever-verify`, shares no code) | §11.3 | not started |
 | 9 | `audit/` (`sever-audit`, copies verifier code) | §11.3 | not started |

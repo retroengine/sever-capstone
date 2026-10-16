@@ -1,0 +1,11 @@
+--- a/crates/sever-p3/src/keys.rs
++++ b/crates/sever-p3/src/keys.rs
+@@ -100,7 +100,7 @@
+         if genesis_ms.is_none() && !secrets.is_empty() {
+             return Err(bad("DB-83 genesis"));
+         }
+-        let genesis_ms = genesis_ms.unwrap_or(now_ms);
++        let genesis_ms = now_ms.max(genesis_ms.unwrap_or(0));
+         let signer = EpochSigner::from_secrets(genesis_ms, secrets.iter().map(|(e, k)| (*e, **k)));
+         let published = Arc::new(Mutex::new(signer.keyring().clone()));
+         Ok(Self {

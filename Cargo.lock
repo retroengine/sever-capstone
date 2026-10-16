@@ -700,6 +700,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-p3"
+version = "0.1.0"
+dependencies = [
+ "rand_core",
+ "serde_json",
+ "sever-cert",
+ "sever-commit",
+ "sever-crypto",
+ "sever-engine",
+ "sever-format",
+ "sever-index",
+ "sever-log",
+ "sever-p2",
+ "sever-partition",
+ "sever-quant",
+ "sever-spec",
+ "sever-txn",
+ "sever-types",
+ "sever-vfs",
+ "sha2",
+ "zeroize",
+]
+
+[[package]]
 name = "sever-partition"
 version = "0.1.0"
 dependencies = [

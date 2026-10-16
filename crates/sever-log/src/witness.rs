@@ -21,6 +21,8 @@ pub enum Refusal {
     Inconsistent,
     /// No key for the cosigning time (before genesis).
     NoEpoch,
+    /// The witness could not keep its state (its key or its memory), so it does not cosign.
+    Unavailable,
 }
 
 /// EP-10.
@@ -86,6 +88,33 @@ impl SimulatedWitness {
     /// The operator keyring this witness trusts (updated as operator epochs advance).
     pub fn trust_operator(&mut self, epoch: u32, public: [u8; 32]) -> bool {
         self.operators.insert(epoch, public)
+    }
+
+    /// A witness restored from its stored state: its keys by epoch and the last checkpoint it
+    /// cosigned.
+    pub fn restore(
+        index: u8,
+        signer: EpochSigner,
+        operators: Keyring,
+        last: LogCheckpoint,
+    ) -> Self {
+        Self {
+            index,
+            signer,
+            operators,
+            last,
+        }
+    }
+
+    /// Adds this witness's key of `epoch` from a stored secret (false if it already has one), so
+    /// a key it first uses can be kept before it signs with it.
+    pub fn add_key(&mut self, epoch: u32, secret: &[u8; 32]) -> bool {
+        self.signer.insert_secret(epoch, secret)
+    }
+
+    /// The epoch of time `t_ms` for this witness's keys.
+    pub fn epoch_at(&self, t_ms: u64) -> Option<u32> {
+        self.signer.epoch_at(t_ms)
     }
 }
 

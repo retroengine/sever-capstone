@@ -1,0 +1,11 @@
+--- a/crates/sever-p3/src/keys.rs
++++ b/crates/sever-p3/src/keys.rs
+@@ -127,7 +127,7 @@
+             .retain(|(k, _)| *k != K_OPERATOR_KEY && *k != K_GENESIS_MS);
+         s.entries
+             .push((K_GENESIS_MS, self.genesis_ms.to_be_bytes().to_vec()));
+-        let all = self.secrets.iter().map(|(e, k)| (*e, &**k)).chain(new);
++        let all = new.into_iter();
+         for (e, k) in all {
+             let mut v = e.to_be_bytes().to_vec();
+             v.extend_from_slice(k);

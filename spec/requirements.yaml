@@ -399,7 +399,7 @@
 - {id: SR-17-5, section: "17", kind: table-row, part: 3, text: "SeededNonceForbidden on any attempt to supply randomness to proof generation."}
 - {id: SR-21-3, section: "21", kind: table-row, part: 3, text: "INV-3: C_S = r_agg·H + Σ scalar(S_i)·G_i for every group; checked at startup and in debug builds."}
 - {id: SR-21-10, section: "21", kind: table-row, part: 3, text: "INV-10: the generators equal the golden file; checked at startup."}
-- {id: SR-21-15, section: "21", kind: table-row, part: 3, text: "INV-15: the log root at every log-checkpoint size equals that checkpoint's root, and every live record's insert leaf exists; checked at startup."}
+- {id: SR-21-15, section: "21", kind: table-row, part: 3, text: "INV-15: the log root at every log-checkpoint size equals that checkpoint's root (checked at startup), and every live record's insert leaf exists (checked at each deletion, §15.3 step 2; DB-83)."}
 - {id: SR-A-1, section: "A", kind: table-row, part: 3, text: "Sizes at d = 384: proof challenge preimage 231 bytes; proof 12,352 bytes; hedged nonce output 385 × 64 = 24,640 bytes; user insert-signature message 65 bytes; insert leaf 209 bytes; witness threshold 4."}
 - {id: SR-A-2, section: "A", kind: table-row, part: 3, text: "A group-deletion certificate with a 21-hash inclusion path is ≈ 14,093 bytes (13 TLV fields and the signature).", related: [P3-T13]}
 - {id: SR-B-1, section: "B", kind: must, part: 3, text: "Golden vector 1: the encodings of H, G_0 and G_383, checked by the engine and the verifier with independent code."}

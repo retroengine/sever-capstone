@@ -1,0 +1,11 @@
+--- a/crates/sever-p3/src/lib.rs
++++ b/crates/sever-p3/src/lib.rs
+@@ -153,7 +153,7 @@
+     fn prepare(&mut self, d: &mut TxnDraft<'_, CommitmentExtension>) -> Result<(), Error> {
+         self.0.prepare(d)?;
+         // SB-21: the deletion's leaf and certificate join the log before its COMMIT.
+-        #[cfg(feature = "sabotage-SB-21")]
++        #[cfg(not(feature = "sabotage-SB-21"))]
+         if d.kind == TxnKind::Delete {
+             self.0.sync_stores()?;
+             self.0.after_commit()?;

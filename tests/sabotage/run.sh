@@ -56,4 +56,5 @@ rust SB-15 sever-txn
 for sb in SB-16 SB-17 SB-18 SB-19 SB-23; do rust "$sb" sever-crypto; done
 rust SB-20 sever-log
 rust SB-22 sever-cert
+rust SB-21 sever-p3
 exit $fail

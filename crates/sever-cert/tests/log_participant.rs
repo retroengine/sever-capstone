@@ -132,7 +132,6 @@ impl World {
                 clock: self.clock.clone(),
                 operator: Box::new(op),
                 witnesses,
-                genesis,
                 store: LogStoreConfig {
                     sealer_id: 0,
                     segment_bytes: 1 << 20,
@@ -297,13 +296,29 @@ fn in_group(placed: &[(String, Placement)]) -> Vec<String> {
 }
 
 #[test]
-// oracle: A §10.2 insert leaf layout; §15.1 step 6 every insert appends its leaf; §10.2 database_lsn is the leaf index
-#[spec("SR-10.2-1", "SR-15.1-4")]
+// oracle: A §10.2 insert leaf layout; §15.1 step 6 every insert appends its leaf; step 9 returns database_lsn, the leaf's index (§10.2)
+#[spec("SR-10.2-1", "SR-15.1-4", "SR-15.1-5")]
 fn p3_log_txn_every_insert_appends_its_insert_leaf() {
     let w = World::new();
     let (o, cid, placed) = base(&w, 6);
     let size = o.log.with(|l| l.tree().size()).unwrap();
     assert_eq!(size, 6, "one leaf per insert, in order");
+    let v = &rows("ref")[50];
+    let receipt =
+        o.db.insert(
+            cid,
+            InsertRequest {
+                record_id: "seventh".into(),
+                vector: v.clone(),
+                credential: w.credential(cid, v),
+                passage: None,
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        receipt.outputs,
+        vec![(LOG_PARTICIPANT_ID, 6u64.to_be_bytes().to_vec())]
+    );
     for (i, _) in placed.iter().enumerate() {
         let leaf: InsertLeaf = o
             .log

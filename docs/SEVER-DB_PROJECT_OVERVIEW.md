@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-82)](#6-decision-register-db-1--db-53-db-55--db-82)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-83)](#6-decision-register-db-1--db-53-db-55--db-83)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-82)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-83)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1017,6 +1017,25 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-83 — Part 3's composition root: operator keys, simulated witnesses, dimension, INV-15 (16 October 2026)
+
+**Decision.** (1) The operator's signing keys live in `SECRETS` as entry kind 2 (`u32be epoch ‖
+secret`), with the database creation time as kind 3; each new epoch's secret comes from the OS and
+is written (atomically, mode 0600) before its first signature. The genesis checkpoint is signed when
+the log is created, after the engine has created the database and `SECRETS`. (2) The five simulated
+witnesses keep their keys by epoch and their last cosigned checkpoint in `WITNESSES` in the key
+directory, written before a new key signs and after every cosignature; a witness with no memory
+yet starts from the empty tree (it accepts any first checkpoint, as from the genesis one, DB-79) and
+trusts the operator keys the key store publishes. (3) A database has one dimension `d`, given when
+it is opened (384 by default, §2.2); a partition artefact of another `d` is refused with
+`WrongDimension`. (4) INV-15's second half is checked at each deletion, not at startup (G-23).
+**Why.** A key regenerated after a crash would give one epoch two keys and break every older
+signature; a witness that forgot what it cosigned would accept any later tree, which is the whole
+point of a witness (§10.4). The frozen engine already writes `SECRETS` and §14.9 lets later parts add
+kinds. **Rejected.** A separate operator key file (§14.1 names `SECRETS`); witnesses rebuilt from the
+log's own checkpoints at each start (a witness must not take the operator's word for its memory).
+**Consequence.** Closes G-23; spec §14.1, §14.9 and §21 amended; `sever-p3` implements it.
 
 #### DB-82 — Log checkpoints cover committed leaves only, each in its own transaction (15 October 2026)
 
@@ -1994,6 +2013,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **16 October 2026 — Part 3 composition root.** DB-83 (operator keys in `SECRETS`, simulated
+  witnesses' memory in `WITNESSES`, one dimension per database; INV-15's second half at deletion,
+  closes G-23). Specification sections touched: §14.1, §14.9, §21.
 - **15 October 2026 — The log as a transaction participant.** Erratum E-2 (Part 2 engine calls EP-7
   `pre_transaction`); DB-80 (on-demand checkpoint whenever a leaf is uncovered; closes G-21), DB-81
   (the log's durable layout; `LogParticipant` in `sever-cert`), DB-82 (checkpoints of committed

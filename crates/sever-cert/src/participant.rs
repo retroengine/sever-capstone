@@ -7,7 +7,8 @@
 //!   (§10.3), and before a deletion one at the current size if a witnessed checkpoint does not
 //!   cover every leaf (§15.3 step 3; DB-80: the hook does not say which record, so "every leaf"
 //!   stands for "the record's insert leaf").
-//! - `prepare`: an insert's leaf (§15.1 step 6); a deletion's certificate, built on the state the
+//! - `prepare`: an insert's leaf (§15.1 step 6) and its `database_lsn` as the output (step 9); a
+//!   deletion's certificate, built on the state the
 //!   previous deletion of the same transaction left (§15.3 step 4, `delete_user` chains), its
 //!   delete leaf and the certificate reference; the certificates are the operation's outputs.
 //! - `sync_stores`, `after_commit`, `abort`, `replay`, `recover`, `check_invariants`: the
@@ -60,8 +61,6 @@ pub struct LogParts {
     pub operator: Box<dyn OperatorKeys>,
     /// The witnesses (EP-10), one per index `0 … 4`.
     pub witnesses: Vec<Box<dyn Witness>>,
-    /// The genesis checkpoint, written when the log is created (DB-79).
-    pub genesis: LogCheckpoint,
     /// The stores' settings.
     pub store: LogStoreConfig,
 }
@@ -271,8 +270,12 @@ impl Inner {
             user_public_key: staged.user_public_key,
             user_signature: staged.signature,
         };
-        let (_, rec) = log.stage_insert(&leaf)?;
+        let (index, rec) = log.stage_insert(&leaf)?;
         draft.participant_records.push(rec.encode());
+        // §15.1 step 9: the insert returns its database_lsn, the index of its leaf.
+        draft
+            .outputs
+            .push((LOG_PARTICIPANT_ID, 0, index.to_be_bytes().to_vec()));
         Ok(())
     }
 
@@ -477,8 +480,11 @@ impl TxnParticipant<CommitmentExtension> for LogParticipant {
     fn recover(&mut self) -> Result<(), Error> {
         let mut g = lock(&self.0);
         if g.log.is_none() {
+            // DB-79: the genesis checkpoint, signed at the creation time with epoch 0's key
+            // (deterministic, so the same checkpoint at every open; written only when the log is
+            // created, after the engine has created the database and its SECRETS).
             let genesis = Witnessed {
-                checkpoint: g.parts.genesis,
+                checkpoint: LogCheckpoint::genesis(&mut *g.parts.operator)?,
                 cosignatures: Vec::new(),
             };
             g.log = Some(LogStore::open(Arc::clone(&g.vfs), g.parts.store, &genesis)?);

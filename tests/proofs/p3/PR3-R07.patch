@@ -1,0 +1,11 @@
+--- a/crates/sever-p3/src/lib.rs
++++ b/crates/sever-p3/src/lib.rs
+@@ -418,7 +418,7 @@
+     use std::os::unix::fs::PermissionsExt;
+     std::fs::set_permissions(
+         key_dir.join(keys::SECRETS),
+-        std::fs::Permissions::from_mode(0o600),
++        std::fs::Permissions::from_mode(0o644),
+     )
+     .map_err(io_err("§14.1 SECRETS permissions"))
+ }

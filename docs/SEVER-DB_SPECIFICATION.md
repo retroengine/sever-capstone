@@ -1169,6 +1169,7 @@ own §6.3 format, verbatim. The byte layouts of every file are in §14.9.
 <key_dir>/                         MAY be a different filesystem (§12.9)
   KEYS                             the key file (§14.7)
   SECRETS                          k_scramble and operator signing keys by epoch (mode 0600)
+  WITNESSES                        the simulated witnesses' keys and memory (v1 only, §10.4; mode 0600; DB-83)
 ```
 
 `SECRETS` is never erased; nothing in it protects deleted data.
@@ -1291,7 +1292,7 @@ structure.
 | File header (append stores) | `magic ‖ u16be format_version ‖ u16be sealer_id ‖ u32be crc32c` (16 bytes) |
 | `MANIFEST` (`SVDBMANI`) | `magic ‖ u16be version ‖ u16be sealer_id ‖ u64be checkpoint_id ‖ u64be first_wal_seq ‖ u32be crc32c` (32 bytes) |
 | WAL segment header (`SVDBWALS`) | `magic ‖ u16be version ‖ u16be sealer_id ‖ u64be segment_seq ‖ u64be first_wal_seq ‖ u32be crc32c` (32 bytes), then records (§14.6); named `wal/<segment_seq, 20 digits>.wal` |
-| `SECRETS` (`SVDBSECR`) | `magic ‖ u16be version ‖ u16be sealer_id ‖ u32be count ‖ (u16be kind ‖ u32be len ‖ bytes)* ‖ u32be crc32c`; kind 1 is `k_scramble` (exactly one, 64 bytes); later parts add kinds |
+| `SECRETS` (`SVDBSECR`) | `magic ‖ u16be version ‖ u16be sealer_id ‖ u32be count ‖ (u16be kind ‖ u32be len ‖ bytes)* ‖ u32be crc32c`; kind 1 is `k_scramble` (exactly one, 64 bytes); later parts add kinds: Part 3 adds kind 2, an operator signing key (`u32be epoch ‖ secret (32)`, one per epoch, written before its first signature), and kind 3, the database creation time (`u64be` ms) from which epochs count (DB-83) |
 | Collection metadata | `collection_id ‖ u16be d ‖ u32be spawn_target ‖ u8 spawning_enabled ‖ u8 store_passages ‖ sha256_artefact (32)` |
 | Storage checkpoint files | Paged (§14.2): page 0 (type 1) holds `magic ‖ u16be version ‖ u16be sealer_id ‖ u64be stream_len` then zeros; pages 1… (type 2) carry the stream, the last zero-padded; every page carries the covered `wal_seq` |
 | `meta.bin` stream (`SVDBMETA`) | `u64be checkpoint_id ‖ u64be next_wal_seq ‖ u64be next_txn_id ‖ config SHA-256 (32) ‖ u32be count ‖ collection IDs ascending` |
@@ -1825,7 +1826,7 @@ means checked after every operation in debug and test builds.
 | INV-12 | Rotation invariant (§13.3) | Tests, forensic scans |
 | INV-13 | Key-erasure rule (§13.4) | Protocol order; crash tests |
 | INV-14 | Key-file slot versions match active versions | Startup |
-| INV-15 | The log root at every log-checkpoint size equals that checkpoint's root; every live record's insert leaf exists | Startup |
+| INV-15 | The log root at every log-checkpoint size equals that checkpoint's root; every live record's insert leaf exists | Startup (the first half); at each deletion, §15.3 step 2 (the second half, DB-83) |
 | INV-16 | Routing is a pure function of `(x̃, state)` | Tests (§7.7) |
 
 ---

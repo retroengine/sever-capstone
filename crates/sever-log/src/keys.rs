@@ -67,6 +67,17 @@ impl EpochSigner {
         s
     }
 
+    /// Adds the key of `epoch` from its stored secret; false if `epoch` already has a key.
+    pub fn insert_secret(&mut self, epoch: u32, secret: &[u8; 32]) -> bool {
+        if self.keys.contains_key(&epoch) {
+            return false;
+        }
+        let k = KeyPair::from_secret(secret);
+        self.ring.insert(epoch, k.public());
+        self.keys.insert(epoch, k);
+        true
+    }
+
     /// The epoch of time `t_ms`, or `None` before genesis.
     pub fn epoch_at(&self, t_ms: u64) -> Option<u32> {
         epoch_of(self.genesis_ms, t_ms)
