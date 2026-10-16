@@ -1455,3 +1455,141 @@
   runner: pytest
   tests:
   - tests/architecture/test_architecture_p3.py::test_p3_arch_verifier_shares_no_code_with_the_engine
+- id: PR3-L20
+  claim: "a placement writes the flush's group before the record's (DB-86 layout: group ‖ flush)"
+  kind: red
+  requirements:
+  - SR-10.5-3
+  - SR-14.6-4
+  patch: PR3-L20.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/store_tests.rs::p3_log_store_placement_layout_and_strict_parse
+- id: PR3-L21
+  claim: "recovery drops the flush of a placement it replays from the WAL (DB-86: placements are committed with their leaves)"
+  kind: red
+  requirements:
+  - SR-10.5-3
+  patch: PR3-L21.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/store_tests.rs::p3_log_store_export_holds_every_leaf_with_its_placement
+- id: PR3-P14
+  claim: "a flushed insert is placed in the holding area, not in the group the flush created (§15.2, DB-86)"
+  kind: red
+  requirements:
+  - SR-10.5-3
+  patch: PR3-P14.patch
+  runner: cargo
+  package: sever-cert
+  tests:
+  - crates/sever-cert/tests/log_participant.rs::p3_log_txn_every_leaf_records_its_placement
+- id: PR3-R09
+  claim: "the export names the record's own group as a flush (DB-86 export: flush is null unless a flush created a group)"
+  kind: red
+  requirements:
+  - SR-10.5-3
+  patch: PR3-R09.patch
+  runner: cargo
+  package: sever-p3
+  tests:
+  - crates/sever-p3/src/tests.rs::p3_root_the_log_export_for_an_auditor
+- id: PR3-U01
+  claim: "the auditor's flush leaves out the inserting record, so an honest group looks broken (§15.2, DB-86)"
+  kind: red
+  requirements:
+  - SR-11.3-10
+  patch: PR3-U01.patch
+  runner: cargo
+  package: sever-audit
+  workspace: audit
+  tests:
+  - audit/src/tests.rs::p3_audit_an_honest_log_has_no_findings
+- id: PR3-U02
+  claim: "the auditor does not check that a certificate's database_lsn is its own leaf's index (AF-1)"
+  kind: red
+  requirements:
+  - SR-11.3-10
+  - SR-10.2-2
+  patch: PR3-U02.patch
+  runner: cargo
+  package: sever-audit
+  workspace: audit
+  tests:
+  - audit/src/tests.rs::p3_audit_reports_every_injected_fault
+- id: PR3-U03
+  claim: "the auditor does not check C_S_pre against the group's commitment (AF-2)"
+  kind: red
+  requirements:
+  - SR-11.3-10
+  patch: PR3-U03.patch
+  runner: cargo
+  package: sever-audit
+  workspace: audit
+  tests:
+  - audit/src/tests.rs::p3_audit_reports_every_injected_fault
+- id: PR3-U04
+  claim: "the auditor does not check consecutive checkpoints for RFC 9162 consistency (AF-3)"
+  kind: red
+  requirements:
+  - SR-10.1-2
+  patch: PR3-U04.patch
+  runner: cargo
+  package: sever-audit
+  workspace: audit
+  tests:
+  - audit/src/tests.rs::p3_audit_reports_every_injected_fault
+- id: PR3-U05
+  claim: "the auditor does not compare a checkpoint's root with the tree at its size (AF-5, INV-15)"
+  kind: red
+  requirements:
+  - SR-21-15
+  patch: PR3-U05.patch
+  runner: cargo
+  package: sever-audit
+  workspace: audit
+  tests:
+  - audit/src/tests.rs::p3_audit_reports_every_injected_fault
+- id: PR3-U06
+  claim: "the auditor does not check that the leaf at a held certificate's database_lsn is that certificate (AF-4)"
+  kind: red
+  requirements:
+  - SR-11.3-10
+  - SR-10.2-2
+  patch: PR3-U06.patch
+  runner: cargo
+  package: sever-audit
+  workspace: audit
+  tests:
+  - audit/src/tests.rs::p3_audit_reports_every_injected_fault
+- id: PR3-A03
+  claim: "the auditor's copy of a verifier file drifts from the verifier (Build 3-4 §1.4: copied, kept identical)"
+  kind: red
+  requirements:
+  - SR-11.3-10
+  patch: PR3-A03.patch
+  runner: pytest
+  tests:
+  - tests/architecture/test_architecture_p3.py::test_p3_arch_auditor_copies_the_verifier_and_depends_on_neither
+- id: PR3-E05
+  claim: "sever-audit reports findings on an honest log's exit status (§16.3; exit 0 when nothing is found)"
+  kind: red
+  requirements:
+  - SR-16.3-2
+  - SR-11.3-10
+  patch: PR3-E05.patch
+  runner: pytest
+  tests:
+  - tests/e2e_p3/test_p3_e2e.py::test_p3_e2e_3_4_a_cohort_deletion_chains_and_the_auditor_confirms
+- id: PR3-E06
+  claim: "sever-audit does not report a deletion leaf missing from an export (E2E-3.6, AF-1)"
+  kind: red
+  requirements:
+  - SR-16.3-2
+  - SR-11.3-10
+  patch: PR3-E06.patch
+  runner: pytest
+  tests:
+  - tests/e2e_p3/test_p3_e2e.py::test_p3_e2e_3_6_a_missing_deletion_leaf_is_reported

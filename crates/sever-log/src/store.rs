@@ -20,7 +20,9 @@ use sever_vfs::{OpenMode, Vfs, VfsError, durable, read_exact_at};
 use sha2::{Digest, Sha256};
 
 use crate::checkpoint::{CHECKPOINT_LEN, COSIGNATURE_LEN, Cosignature, LogCheckpoint};
-use crate::leaf::{INSERT_LEAF_LEN, InsertLeaf, LEAF_DELETE, LEAF_INSERT, delete_leaf};
+use crate::leaf::{
+    INSERT_LEAF_LEN, InsertLeaf, LEAF_DELETE, LEAF_INSERT, PLACEMENT_LEN, Placement, delete_leaf,
+};
 use crate::merkle::{Hash, MerkleTree, leaf_hash};
 
 /// The log's directory (§14.1).
@@ -82,12 +84,15 @@ impl Witnessed {
 /// One of the log's WAL records (§14.6; DB-81 puts the leaf index first in `LOG_LEAF`).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LogRecord {
-    /// `LOG_LEAF`: `u64be leaf_index ‖ leaf hash ‖` the 209-byte insert leaf (insert leaves only).
+    /// `LOG_LEAF`: `u64be leaf_index ‖ leaf hash ‖ placement (64, DB-86) ‖` the 209-byte insert leaf
+    /// (insert leaves only).
     Leaf {
         /// Its index.
         index: u64,
         /// Its RFC 9162 leaf hash.
         hash: Hash,
+        /// Where its record went (DB-86).
+        placement: Placement,
         /// The insert leaf's bytes, or `None` for a delete leaf.
         insert: Option<[u8; INSERT_LEAF_LEN]>,
     },
@@ -111,10 +116,12 @@ impl LogRecord {
             Self::Leaf {
                 index,
                 hash,
+                placement,
                 insert,
             } => {
                 let mut p = index.to_be_bytes().to_vec();
                 p.extend_from_slice(hash);
+                p.extend_from_slice(&placement.to_bytes());
                 if let Some(leaf) = insert {
                     p.extend_from_slice(leaf);
                 }
@@ -141,6 +148,10 @@ impl LogRecord {
                 let (hash, rest) = rest
                     .split_first_chunk::<32>()
                     .ok_or(inv("§14.6 LOG_LEAF"))?;
+                let (placement, rest) = rest
+                    .split_first_chunk::<PLACEMENT_LEN>()
+                    .ok_or(inv("§14.6 LOG_LEAF"))?;
+                let placement = Placement::parse(placement).map_err(|_| inv("§14.6 LOG_LEAF"))?;
                 let insert = match rest.len() {
                     0 => None,
                     INSERT_LEAF_LEN => Some(
@@ -152,6 +163,7 @@ impl LogRecord {
                 Ok(Self::Leaf {
                     index: u64::from_be_bytes(*index),
                     hash: *hash,
+                    placement,
                     insert,
                 })
             }
@@ -198,7 +210,7 @@ struct Stores {
 /// What one transaction staged, applied in memory only after its `COMMIT`.
 #[derive(Debug, Default)]
 struct Pending {
-    leaves: Vec<(Hash, Option<StoreRef>)>,
+    leaves: Vec<(Hash, Option<StoreRef>, Placement)>,
     certs: Vec<(u64, StoreRef)>,
     checkpoints: Vec<Witnessed>,
 }
@@ -311,6 +323,35 @@ fn scan(vfs: &dyn Vfs, dir: &str, values: bool) -> Result<Vec<Scanned>, Error> {
     Ok(out)
 }
 
+/// A hash-store entry (§10.5, DB-81, DB-86): `leaf type ‖ leaf hash ‖ placement`.
+fn hash_entry_bytes(ty: u8, hash: &Hash, placement: &Placement) -> Vec<u8> {
+    let mut v = vec![ty];
+    v.extend_from_slice(hash);
+    v.extend_from_slice(&placement.to_bytes());
+    v
+}
+
+/// Parses a hash-store entry strictly.
+fn hash_entry(v: &[u8]) -> Result<(u8, Hash, Placement), Error> {
+    let bad = || inv("§10.5 hash entry");
+    let (&ty, rest) = v.split_first().ok_or_else(bad)?;
+    let (hash, rest) = rest.split_first_chunk::<32>().ok_or_else(bad)?;
+    let placement = Placement::parse(rest).map_err(|_| bad())?;
+    Ok((ty, *hash, placement))
+}
+
+/// The whole committed log, for an auditor (DB-86): every leaf's bytes (the insert leaf, or
+/// `0x02 ‖ certificate`), every leaf's placement, and every checkpoint with its cosignatures.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LogExport {
+    /// Leaf `i`'s bytes, in order.
+    pub leaves: Vec<Vec<u8>>,
+    /// Leaf `i`'s placement.
+    pub placements: Vec<Placement>,
+    /// The committed checkpoints, the genesis first.
+    pub checkpoints: Vec<Witnessed>,
+}
+
 impl LogStore {
     /// Opens the log's stores in the data directory `vfs`, creating them with `genesis` as the
     /// first checkpoint if they do not exist or were left half-created (the genesis checkpoint is
@@ -363,8 +404,7 @@ impl LogStore {
         let mut types = Vec::new();
         for (key, _, value) in scan(v.as_ref(), HASHES_DIR, true)? {
             let value = value.ok_or(inv("§14.8"))?;
-            let (&ty, hash) = value.split_first().ok_or(inv("§10.5 hash entry"))?;
-            let hash: Hash = hash.try_into().map_err(|_| inv("§10.5 hash entry"))?;
+            let (ty, hash, _) = hash_entry(&value)?;
             if key != self.tree.size() || !(ty == LEAF_INSERT || ty == LEAF_DELETE) {
                 return Err(inv("§10.5 hash store order"));
             }
@@ -458,20 +498,54 @@ impl LogStore {
         Ok(Some(rec.bytes))
     }
 
+    /// The committed log for an auditor (DB-86), read back from the stores.
+    pub fn export(&self) -> Result<LogExport, Error> {
+        let mut placements = Vec::new();
+        for (key, _, value) in scan(self.vfs.as_ref(), HASHES_DIR, true)? {
+            if key != placements.len() as u64 {
+                return Err(inv("§10.5 hash store order"));
+            }
+            placements.push(hash_entry(&value.ok_or(inv("§14.8"))?)?.2);
+        }
+        let n = self.tree.size();
+        if placements.len() as u64 != n {
+            return Err(inv("§10.5 hash store"));
+        }
+        let mut leaves = Vec::new();
+        for i in 0..n {
+            leaves.push(match (self.insert_leaf(i)?, self.certificate(i)?) {
+                (Some(l), None) => l.to_bytes().to_vec(),
+                (None, Some(c)) => delete_leaf(&c),
+                _ => return Err(inv("§10.5 leaf store")),
+            });
+        }
+        Ok(LogExport {
+            leaves,
+            placements,
+            checkpoints: self.checkpoints.clone(),
+        })
+    }
+
     // --- one transaction: stage (prepare), sync (step 3), commit (phase C) or abort ----------
 
-    /// Stages an insert leaf: its bytes join the leaf store; returns its index and `LOG_LEAF`.
-    pub fn stage_insert(&mut self, leaf: &InsertLeaf) -> Result<(u64, LogRecord), Error> {
+    /// Stages an insert leaf and its placement (DB-86): its bytes join the leaf store; returns its
+    /// index and `LOG_LEAF`.
+    pub fn stage_insert(
+        &mut self,
+        leaf: &InsertLeaf,
+        placement: Placement,
+    ) -> Result<(u64, LogRecord), Error> {
         let index = self.next_index();
         let bytes = leaf.to_bytes();
         let at = self.stores.leaves.append(index, &bytes)?;
         let hash = leaf_hash(&bytes);
-        self.pending.leaves.push((hash, Some(at)));
+        self.pending.leaves.push((hash, Some(at), placement));
         Ok((
             index,
             LogRecord::Leaf {
                 index,
                 hash,
+                placement,
                 insert: Some(bytes),
             },
         ))
@@ -479,18 +553,24 @@ impl LogStore {
 
     /// Stages a deletion's leaf `0x02 ‖ certificate`: the certificate joins the certificate store
     /// under its `database_lsn` (which must be the next index); returns `LOG_LEAF` and `CERT_REF`.
-    pub fn stage_delete(&mut self, lsn: u64, certificate: &[u8]) -> Result<[LogRecord; 2], Error> {
+    pub fn stage_delete(
+        &mut self,
+        lsn: u64,
+        certificate: &[u8],
+        placement: Placement,
+    ) -> Result<[LogRecord; 2], Error> {
         if lsn != self.next_index() {
             return Err(inv("§10.2 database_lsn"));
         }
         let at = self.stores.certs.append(lsn, certificate)?;
         let hash = leaf_hash(&delete_leaf(certificate));
-        self.pending.leaves.push((hash, None));
+        self.pending.leaves.push((hash, None, placement));
         self.pending.certs.push((lsn, at));
         Ok([
             LogRecord::Leaf {
                 index: lsn,
                 hash,
+                placement,
                 insert: None,
             },
             LogRecord::CertRef {
@@ -524,16 +604,16 @@ impl LogStore {
     /// committed state, and the hash and checkpoint stores, durably.
     pub fn commit(&mut self) -> Result<(), Error> {
         let p = core::mem::take(&mut self.pending);
-        for (hash, at) in p.leaves {
+        for (hash, at, placement) in p.leaves {
             let index = self.tree.size();
             let ty = if at.is_some() {
                 LEAF_INSERT
             } else {
                 LEAF_DELETE
             };
-            let mut v = vec![ty];
-            v.extend_from_slice(&hash);
-            self.stores.hashes.append(index, &v)?;
+            self.stores
+                .hashes
+                .append(index, &hash_entry_bytes(ty, &hash, &placement))?;
             self.tree.push_hash(hash);
             self.inserts.push(at);
         }
@@ -563,6 +643,7 @@ impl LogStore {
             LogRecord::Leaf {
                 index,
                 hash,
+                placement,
                 insert,
             } => {
                 if index < self.tree.size() {
@@ -597,13 +678,14 @@ impl LogStore {
                 if insert.as_ref().is_some_and(|b| leaf_hash(b) != hash) {
                     return Err(inv("§12.3 replayed leaf hash"));
                 }
-                let mut v = vec![if at.is_some() {
+                let ty = if at.is_some() {
                     LEAF_INSERT
                 } else {
                     LEAF_DELETE
-                }];
-                v.extend_from_slice(&hash);
-                self.stores.hashes.append(index, &v)?;
+                };
+                self.stores
+                    .hashes
+                    .append(index, &hash_entry_bytes(ty, &hash, &placement))?;
                 self.tree.push_hash(hash);
                 self.inserts.push(at);
                 Ok(())

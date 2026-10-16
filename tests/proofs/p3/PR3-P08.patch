@@ -1,6 +1,6 @@
 --- a/crates/sever-cert/src/participant.rs
 +++ b/crates/sever-cert/src/participant.rs
-@@ -394,7 +394,7 @@
+@@ -418,7 +418,7 @@
              .map_err(|_| inv("§11 certificate"))?;
              if let (Some(mut p), Some(g)) = (post, cert.group.as_ref()) {
                  p.c_s = g.c_s_post;
@@ -8,4 +8,4 @@
 +                let _ = p;
              }
              let bytes = cert.to_bytes();
-             for r in self.log()?.stage_delete(lsn, &bytes)? {
+             let placement = Placement {

@@ -1,0 +1,10 @@
+--- a/audit/src/audit.rs
++++ b/audit/src/audit.rs
+@@ -293,7 +293,6 @@
+                     let mut moved = members
+                         .remove(&(coll, "holding".to_owned()))
+                         .unwrap_or_default();
+-                    moved.insert(sid, c_t);
+                     members
+                         .entry((coll, created.clone()))
+                         .or_default()

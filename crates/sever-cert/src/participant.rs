@@ -28,7 +28,7 @@ use sever_index::changeset::SlotOp;
 use sever_index::{ChangeSet, Outcome};
 use sever_log::checkpoint::{CHECKPOINT_EVERY, LogCheckpoint, is_witnessed};
 use sever_log::keys::{Keyring, OperatorKeys};
-use sever_log::leaf::InsertLeaf;
+use sever_log::leaf::{InsertLeaf, Placement};
 use sever_log::store::{LogStore, LogStoreConfig, Witnessed};
 use sever_log::witness::Witness;
 use sever_txn::{Clock, PreTxn, TxnDraft, TxnKind, TxnParticipant};
@@ -270,7 +270,28 @@ impl Inner {
             user_public_key: staged.user_public_key,
             user_signature: staged.signature,
         };
-        let (index, rec) = log.stage_insert(&leaf)?;
+        // DB-86: where the record ended up; a flush (§15.2) moves every holding record, this one
+        // included, into the group it creates.
+        let put = cs
+            .slots
+            .iter()
+            .rev()
+            .find_map(|op| match op {
+                SlotOp::Put { group, slot, .. } if slot.ext.insert_leaf_index == index => {
+                    Some(*group)
+                }
+                _ => None,
+            })
+            .ok_or(inv("§15.1 step 6 inserted slot"))?;
+        let flush = cs.created.first().map(|c| c.id);
+        let placement = Placement {
+            group: match (put, flush) {
+                (GroupId::Holding, Some(created)) => created,
+                (g, _) => g,
+            },
+            flush,
+        };
+        let (index, rec) = log.stage_insert(&leaf, placement)?;
         draft.participant_records.push(rec.encode());
         // §15.1 step 9: the insert returns its database_lsn, the index of its leaf.
         draft
@@ -400,7 +421,11 @@ impl Inner {
                 track.insert(*group, p);
             }
             let bytes = cert.to_bytes();
-            for r in self.log()?.stage_delete(lsn, &bytes)? {
+            let placement = Placement {
+                group: *group,
+                flush: None,
+            };
+            for r in self.log()?.stage_delete(lsn, &bytes, placement)? {
                 draft.participant_records.push(r.encode());
             }
             draft.outputs.push((LOG_PARTICIPANT_ID, req, bytes));

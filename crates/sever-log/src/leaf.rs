@@ -1,5 +1,8 @@
 //! Log leaves (§10.2): the 209-byte insert leaf and the delete leaf `0x02 ‖ certificate`.
 
+use sever_types::GroupId;
+use sever_types::constants::GROUP_ID_MAX_BYTES;
+
 /// Leaf type byte of an insert leaf.
 pub const LEAF_INSERT: u8 = 0x01;
 /// Leaf type byte of a delete leaf.
@@ -89,5 +92,62 @@ pub fn parse_delete_leaf(b: &[u8]) -> Result<&[u8], LeafError> {
         Some((&LEAF_DELETE, cert)) if !cert.is_empty() => Ok(cert),
         Some((&LEAF_DELETE, _)) | None => Err(LeafError::Length),
         Some(_) => Err(LeafError::Type),
+    }
+}
+
+/// Size of a leaf's placement (DB-86): two zero-padded group IDs.
+pub const PLACEMENT_LEN: usize = 64;
+
+/// Where a leaf's record went (DB-86; §10.5): kept beside the leaf's hash, never in the leaf, so
+/// the public log is unchanged. The auditor replays placements to know each group's members, so
+/// it can check every certificate's `C_S_pre` (§11.3 "what it does not prove").
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Placement {
+    /// The group (or holding area) the inserted record joined, or the deleted record left.
+    pub group: GroupId,
+    /// The spawned group a flush created in the same transaction (§15.2), if one did.
+    pub flush: Option<GroupId>,
+}
+
+fn padded(g: &GroupId) -> [u8; GROUP_ID_MAX_BYTES] {
+    g.to_padded_bytes().0
+}
+
+fn unpadded(b: &[u8]) -> Option<GroupId> {
+    let len = b.iter().position(|&x| x == 0).unwrap_or(b.len());
+    let (text, pad) = b.split_at(len);
+    if pad.iter().any(|&x| x != 0) {
+        return None;
+    }
+    let g = GroupId::parse(core::str::from_utf8(text).ok()?)?;
+    (padded(&g).as_slice() == b).then_some(g)
+}
+
+impl Placement {
+    /// `group (32, zero-padded text form, §13.2) ‖ flush (32, zero-padded, or 32 zero bytes)`.
+    pub fn to_bytes(&self) -> [u8; PLACEMENT_LEN] {
+        let mut out = [0u8; PLACEMENT_LEN];
+        let (g, f) = out.split_at_mut(GROUP_ID_MAX_BYTES);
+        g.copy_from_slice(&padded(&self.group));
+        if let Some(flush) = &self.flush {
+            f.copy_from_slice(&padded(flush));
+        }
+        out
+    }
+
+    /// Strict parse: canonical group IDs only; a flush creates a spawned group.
+    pub fn parse(b: &[u8]) -> Result<Self, LeafError> {
+        let b: &[u8; PLACEMENT_LEN] = b.try_into().map_err(|_| LeafError::Length)?;
+        let (g, f) = b.split_at(GROUP_ID_MAX_BYTES);
+        let group = unpadded(g).ok_or(LeafError::Type)?;
+        let flush = if f.iter().all(|&x| x == 0) {
+            None
+        } else {
+            match unpadded(f).ok_or(LeafError::Type)? {
+                s @ GroupId::Spawned(_) => Some(s),
+                _ => return Err(LeafError::Type),
+            }
+        };
+        Ok(Self { group, flush })
     }
 }

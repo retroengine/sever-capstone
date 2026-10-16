@@ -76,3 +76,30 @@ def test_p3_arch_verifier_shares_no_code_with_the_engine() -> None:
     for p in (ROOT / "verifier/src").rglob("*.rs"):
         used = set(re.findall(r"\b(sever_\w+)::", p.read_text(encoding="utf-8")))
         assert used <= {"sever_verify", "sever_spec"}, f"{p.name}: {used}"
+
+
+#: The verifier's files the auditor copies (Build 3-4 §1.4: "Reuses verifier code by copying it").
+COPIED = ("anchors", "cert", "dst", "gens", "hex", "merkle", "posk", "verify", "xmd")
+
+
+@pytest.mark.spec("SR-11.3-10")
+@pytest.mark.oracle(
+    "A",
+    "Build 3-4 §1.4 'audit/ (separate crate) … Reuses verifier code by copying it, not by a path "
+    "dependency'; §11.3 the auditor (C-17) checks what a certificate cannot",
+)
+def test_p3_arch_auditor_copies_the_verifier_and_depends_on_neither() -> None:
+    manifest = tomllib.loads((ROOT / "audit/Cargo.toml").read_text(encoding="utf-8"))
+    assert "workspace" in manifest, "audit/ is its own workspace"
+    assert set(manifest["dependencies"]) == {*VERIFIER_DEPS, "serde_json"}
+    assert set(manifest.get("dev-dependencies", {})) <= {"sever-spec"}
+    for name in COPIED:
+        mine = (ROOT / "audit/src" / f"{name}.rs").read_bytes()
+        assert mine == (ROOT / "verifier/src" / f"{name}.rs").read_bytes(), f"{name}.rs drifted"
+    lock = tomllib.loads((ROOT / "audit/Cargo.lock").read_text(encoding="utf-8"))
+    names = {p["name"] for p in lock["package"]}
+    engine = {p.name for p in (ROOT / "crates").iterdir()} - {"sever-spec"}
+    assert not names & (engine | {"sever-verify"}), names & (engine | {"sever-verify"})
+    for p in (ROOT / "audit/src").rglob("*.rs"):
+        used = set(re.findall(r"\b(sever_\w+)::", p.read_text(encoding="utf-8")))
+        assert used <= {"sever_audit", "sever_spec"}, f"{p.name}: {used}"

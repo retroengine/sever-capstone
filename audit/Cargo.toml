@@ -1,0 +1,41 @@
+# sever-audit (C-17): checks what a certificate cannot prove (spec §11.3 "what it does not prove",
+# §16.3; Build 3-4 §1.4). Its own workspace: it copies nine of the verifier's files into src/
+# (kept identical by tests/architecture) and depends on neither the verifier nor the engine.
+[package]
+name = "sever-audit"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+description = "Auditor of a SEVER-DB log export: deletion leaves, certificate chains, log consistency"
+
+[workspace]
+
+[lib]
+name = "sever_audit"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sever-audit"
+path = "src/main.rs"
+
+[dependencies]
+curve25519-dalek = "=4.1.3" # spec §20.1
+sha2 = "=0.10.9" # spec §20.1
+ed25519-dalek = "=2.2.0" # spec §20.1 (verify_strict, §9.8)
+serde_json = "1" # the export, the anchors and the bundled golden files
+
+[dev-dependencies]
+# Test labels only (#[spec("SR-…")], Build §2.2): a no-op attribute, no audit code (DB-85).
+sever-spec = { path = "../crates/sever-spec" }
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "deny"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"

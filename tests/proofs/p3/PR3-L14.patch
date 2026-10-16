@@ -1,11 +1,11 @@
 --- a/crates/sever-log/src/store.rs
 +++ b/crates/sever-log/src/store.rs
-@@ -113,7 +113,7 @@
-                 hash,
+@@ -119,7 +119,7 @@
+                 placement,
                  insert,
              } => {
 -                let mut p = index.to_be_bytes().to_vec();
 +                let mut p = index.to_le_bytes().to_vec();
                  p.extend_from_slice(hash);
+                 p.extend_from_slice(&placement.to_bytes());
                  if let Some(leaf) = insert {
-                     p.extend_from_slice(leaf);

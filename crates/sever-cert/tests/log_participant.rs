@@ -30,13 +30,13 @@ use sever_engine::{
 use sever_index::Placement;
 use sever_log::checkpoint::{CHECKPOINT_EVERY, LogCheckpoint, THRESHOLD};
 use sever_log::keys::{EpochSigner, Keyring};
-use sever_log::leaf::{InsertLeaf, delete_leaf};
+use sever_log::leaf::{InsertLeaf, Placement as LeafPlacement, delete_leaf};
 use sever_log::merkle::{leaf_hash, verify_inclusion};
 use sever_log::store::LogStoreConfig;
 use sever_log::witness::{SimulatedWitness, Witness};
 use sever_spec::spec;
 use sever_txn::{PlaintextSealer, SimClock, TxnKind};
-use sever_types::{CollectionId, Error};
+use sever_types::{CollectionId, Error, GroupId};
 use sever_vfs::{CrashPolicy, FaultPlan, SimVfs};
 
 const ARTEFACT: &[u8] = include_bytes!("../../../golden/p1_partition_small.svp");
@@ -594,5 +594,80 @@ fn p3_log_txn_due_checkpoints_follow_section_10_3() {
     assert_eq!(
         due_checkpoints(0, 0, 5, TxnKind::CreateCollection),
         Vec::<u64>::new()
+    );
+}
+
+fn group_of(p: &Placement) -> GroupId {
+    match p {
+        Placement::Frozen(g) | Placement::Spawned(g) => *g,
+        Placement::Holding => GroupId::Holding,
+    }
+}
+
+#[test]
+// oracle: C the placement Part 1's frozen routing returns for each insert (§7.3, §15.2 flush at the spawn target); A DB-86: each leaf's placement is the group its record joined or left, and a flush names the group it created
+#[spec("SR-10.5-3")]
+fn p3_log_txn_every_leaf_records_its_placement() {
+    let w = World::new();
+    let (o, cid, placed) = base(&w, 6);
+    let mut want: Vec<LeafPlacement> = placed
+        .iter()
+        .map(|(_, p)| LeafPlacement {
+            group: group_of(p),
+            flush: None,
+        })
+        .collect();
+    // "Live" fixture vectors go to the holding area; the eighth one flushes it (spawn target 8).
+    let mut spawned = None;
+    for (i, v) in rows("live").iter().take(8).enumerate() {
+        let p = w.insert(&o, cid, &format!("live-{i}"), v);
+        let flush = match p {
+            Placement::Spawned(g) => {
+                spawned = Some(g);
+                Some(g)
+            }
+            _ => None,
+        };
+        want.push(LeafPlacement {
+            group: group_of(&p),
+            flush,
+        });
+    }
+    let spawned = spawned.expect("the eighth holding insert flushes");
+    assert_eq!(want.last().unwrap().group, spawned);
+    assert!(matches!(
+        w.insert(&o, cid, "held", &rows("live")[8]),
+        Placement::Holding
+    ));
+    want.push(LeafPlacement {
+        group: GroupId::Holding,
+        flush: None,
+    });
+    // Deletions: a frozen-group record, a founder of the spawned group, the held record.
+    let frozen = placed
+        .iter()
+        .find(|(_, p)| matches!(p, Placement::Frozen(_)))
+        .unwrap();
+    for (id, g) in [
+        (frozen.0.as_str(), group_of(&frozen.1)),
+        ("live-3", spawned),
+        ("held", GroupId::Holding),
+    ] {
+        let out = o.db.delete(cid, id).unwrap();
+        accept(&o, &w.gens, &cert_of(&out));
+        want.push(LeafPlacement {
+            group: g,
+            flush: None,
+        });
+    }
+    let e = o.log.with(|l| l.export()).unwrap().unwrap();
+    assert_eq!(e.placements, want);
+    assert_eq!(e.leaves.len(), want.len());
+    // It survives a restart.
+    drop(o);
+    let o = w.open().unwrap();
+    assert_eq!(
+        o.log.with(|l| l.export()).unwrap().unwrap().placements,
+        want
     );
 }

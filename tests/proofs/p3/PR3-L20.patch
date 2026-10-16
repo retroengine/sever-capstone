@@ -1,0 +1,11 @@
+--- a/crates/sever-log/src/leaf.rs
++++ b/crates/sever-log/src/leaf.rs
+@@ -127,7 +127,7 @@
+     /// `group (32, zero-padded text form, §13.2) ‖ flush (32, zero-padded, or 32 zero bytes)`.
+     pub fn to_bytes(&self) -> [u8; PLACEMENT_LEN] {
+         let mut out = [0u8; PLACEMENT_LEN];
+-        let (g, f) = out.split_at_mut(GROUP_ID_MAX_BYTES);
++        let (f, g) = out.split_at_mut(GROUP_ID_MAX_BYTES);
+         g.copy_from_slice(&padded(&self.group));
+         if let Some(flush) = &self.flush {
+             f.copy_from_slice(&padded(flush));

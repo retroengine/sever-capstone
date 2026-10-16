@@ -511,6 +511,11 @@ impl PyEngine {
         Ok(p.map(|p| p.iter().map(|h| bytes(py, h)).collect()))
     }
 
+    /// The committed log for an auditor, as JSON (DB-86).
+    fn export_log(&self, py: Python<'_>) -> PyResult<String> {
+        self.with(py, |o| o.db.export_log())
+    }
+
     /// The verifier's trust anchors as JSON (§11.3).
     fn anchors(&self, py: Python<'_>) -> PyResult<String> {
         self.with(py, |o| Ok(o.db.anchors().to_json()))

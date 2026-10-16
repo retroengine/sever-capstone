@@ -1,8 +1,8 @@
-"""L9 end-to-end tests of Part 3 (Build 3-4 §1.8: E2E-3.1 … E2E-3.3), through the ``sever_db_p3``
-SDK and the ``sever-verify`` process (``verifier/``, its own workspace), on real files under
-``target/``. E2E-3.4 and 3.6 need the auditor (module 9); E2E-3.5 a ``test-hooks`` build (module
-11); E2E-3.7 is ``verifier/src/tests.rs::p3_verify_an_older_verifier_rejects_a_later_epoch``;
-E2E-3.8 is ``python/sever_db_p3/tests``.
+"""L9 end-to-end tests of Part 3 (Build 3-4 §1.8: E2E-3.1 … E2E-3.4, E2E-3.6), through the
+``sever_db_p3`` SDK and the ``sever-verify`` and ``sever-audit`` processes (``verifier/``,
+``audit/``, each its own workspace), on real files under ``target/``. E2E-3.5 needs a
+``test-hooks`` build (module 11); E2E-3.7 is a verifier test
+(``p3_verify_an_older_verifier_rejects_a_later_epoch``); E2E-3.8 is ``python/sever_db_p3/tests``.
 
 The SDK's native module must be installed first:
 ``uv run --no-sync maturin develop --release --uv -m crates/sever-py-p3/Cargo.toml``.
@@ -24,6 +24,7 @@ from sever_refmodel_durable.oracle import fixture_rows
 
 ROOT = Path(__file__).resolve().parents[2]
 VERIFY = ROOT / "verifier/target/release/sever-verify"
+AUDIT = ROOT / "audit/target/release/sever-audit"
 SMALL = ROOT / "golden/p1_partition_small.svp"
 D = 16
 
@@ -39,6 +40,18 @@ def verifier() -> Path:
         check=True,
     )
     return VERIFY
+
+
+@pytest.fixture(scope="session")
+def auditor() -> Path:
+    env = dict(os.environ, CARGO_TARGET_DIR=str(ROOT / "audit/target"))
+    subprocess.run(
+        ["cargo", "build", "-q", "--release", "--offline"],
+        cwd=ROOT / "audit",
+        env=env,
+        check=True,
+    )
+    return AUDIT
 
 
 @pytest.fixture
@@ -151,3 +164,81 @@ def test_p3_e2e_3_2_a_changed_byte_is_rejected_naming_the_check(
             assert out["reason"], out
             tried += 1
     assert tried > 50
+
+
+def run_audit(export: Path, anchors: Path, *held: Path) -> tuple[int, Any]:
+    args = [str(AUDIT), str(export), "--anchors", str(anchors)]
+    for h in held:
+        args += ["--certificate", str(h)]
+    p = subprocess.run(args, capture_output=True, text=True, check=False)
+    out = p.stdout.strip().splitlines()
+    return p.returncode, (json.loads(out[-1]) if out else None)
+
+
+def cohort(base: Path) -> tuple[Path, Path, list[Path]]:
+    """Through the SDK: records in several groups and the holding area; one account's cohort
+    (two records of one group, one of another, one held) deleted by one delete_user (§15.3); then
+    the export, the anchors and the cohort's certificates, with the database closed."""
+    rows = fixture_rows()
+    user = UserKey.generate()
+    certs: list[Path] = []
+    with Database.open(base / "data", base / "keys", d=D) as db:
+        cid = db.create_collection(SMALL, spawn_target=8)
+        for i in range(12):
+            db.insert(cid, prepare_insert(cid, f"g{i}", [float(x) for x in rows[i]], user))
+        db.insert(cid, prepare_insert(cid, "h0", [float(x) for x in rows[120]], user))
+        sizes = dict(db.group_sizes(cid))
+        assert sum(1 for n in sizes.values() if n) >= 2, "records in several groups"
+        outs = db.delete_user(cid, ["g0", "g1", "g2", "g3", "h0"])
+        assert [o.outcome for o in outs] == ["deleted"] * 5
+        for k, o in enumerate(outs):
+            assert o.certificate is not None
+            certs.append(base / f"c{k}.cert")
+            certs[-1].write_bytes(o.certificate)
+        db.insert(cid, prepare_insert(cid, "g12", [float(x) for x in rows[12]], user))
+        db.delete(cid, "g4")
+        export = base / "export.json"
+        export.write_text(db.export_log(), encoding="utf-8")
+        anchors = base / "anchors.json"
+        anchors.write_text(db.anchors(), encoding="utf-8")
+    return export, anchors, certs
+
+
+@pytest.mark.spec("SR-16.3-2", "SR-11.3-10")
+@pytest.mark.oracle(
+    "A",
+    "§15.3 'consecutive certificates chain'; §11.3 the auditor checks deletion leaves, chains and "
+    "log consistency; §16.3 sever-audit <log export> (E2E-3.4)",
+)
+def test_p3_e2e_3_4_a_cohort_deletion_chains_and_the_auditor_confirms(
+    verifier: Path, auditor: Path, where: Path
+) -> None:
+    export, anchors, certs = cohort(where)
+    for c in certs:
+        code, out = verify(c, anchors)
+        assert (code, out["accepted"]) == (0, True), out
+    code, out = run_audit(export, anchors, *certs)
+    assert (code, out["findings"]) == (0, []), out
+    assert out["leaves"] == 13 + 5 + 1 + 1
+
+
+@pytest.mark.spec("SR-16.3-2", "SR-11.3-10")
+@pytest.mark.oracle(
+    "A",
+    "§11.3 'that the deletion leaf itself was appended at database_lsn' is the auditor's check; "
+    "a missing deletion leaf is reported (E2E-3.6, AF-1)",
+)
+def test_p3_e2e_3_6_a_missing_deletion_leaf_is_reported(
+    verifier: Path, auditor: Path, where: Path
+) -> None:
+    export, anchors, certs = cohort(where)
+    e = json.loads(export.read_text(encoding="utf-8"))
+    gone = next(i for i, leaf in enumerate(e["leaves"]) if leaf.startswith("02"))
+    del e["leaves"][gone]
+    del e["placements"][gone]
+    export.write_text(json.dumps(e), encoding="utf-8")
+    code, out = run_audit(export, anchors, *certs)
+    assert code == 1, out
+    kinds = {f["kind"] for f in out["findings"]}
+    assert "AF-1" in kinds, out
+    assert any(f["kind"] == "AF-1" and f["at"] == gone for f in out["findings"]), out

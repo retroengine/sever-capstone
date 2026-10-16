@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-85)](#6-decision-register-db-1--db-53-db-55--db-85)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-86)](#6-decision-register-db-1--db-53-db-55--db-86)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-85)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-86)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1017,6 +1017,30 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-86 — Leaf placements and the log export, for the auditor (16 October 2026)
+
+**Decision.** (1) Every leaf's hash-store entry and its `LOG_LEAF` record carry the leaf's
+**placement**: the group its record joined (an insert) or left (a deletion) and, when an insert
+triggers a flush, the spawned group the flush created, each as a group ID zero-padded to 32 bytes
+(the stored form of §13.2). Placements are written and recovered exactly as the hashes are (DB-81);
+they are not in the leaves, so the public log is unchanged. (2) The engine exports the committed log
+(`sever-db-p3 export-log`, `Database.export_log()`): `{"version": 1, "leaves": [hex], "placements":
+[{"group", "flush"}], "checkpoints": [hex]}`. (3) `sever-audit <export> --anchors FILE
+[--certificate FILE]…` reports: a delete leaf whose certificate does not verify or names another
+`database_lsn`, or a checkpoint beyond the log (AF-1); a group certificate whose `C_S_pre` is not the
+sum of the group's members' `C_t` or whose record is not a member (AF-2); inconsistent checkpoints
+(AF-3); a held certificate that is not the leaf at its `database_lsn` (AF-4); a checkpoint root that
+is not the tree's (AF-5); and unsigned or under-witnessed checkpoints. The auditor copies nine verifier
+files, kept identical by an architecture test. **Why.** A certificate does not name its group and
+inserts move `C_S` between deletions, so "consecutive certificates chain" cannot be checked from the
+leaves alone (G-25). Group IDs and group membership are plaintext the spec already allows (§13.2).
+Summing `C_t` checks every deletion, not only consecutive ones. **Rejected.** A group ID in the
+certificate (a format change that would publish each record's group to every holder); chaining by
+value alone (a broken chain looks like a deletion from another group); a data-directory mode
+(engine-internal formats in an auditor that must not depend on the engine). **Consequence.** Closes
+G-25; spec §10.5, §11.3, §14.6, §16.3 and §19.2 amended; `sever-log`, `sever-cert`, `sever-p3` and
+`audit/` implement it.
 
 #### DB-85 — The verifier's anchors file and command line (16 October 2026)
 
@@ -2051,6 +2075,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **16 October 2026 — Part 3 auditor.** DB-86 (leaf placements beside the hashes and in
+  `LOG_LEAF`; the log export; `sever-audit`; closes G-25). Specification sections touched: §10.5,
+  §11.3, §14.6, §16.3, §19.2.
 - **16 October 2026 — Part 3 verifier.** DB-85 (the anchors file, `sever-verify --anchors`, its
   output naming the failed step; closes G-24). Specification sections touched: §11.3, §16.3.
 - **16 October 2026 — Part 3 SDK.** DB-84 (the request carries `r_t` unreadably and is reused

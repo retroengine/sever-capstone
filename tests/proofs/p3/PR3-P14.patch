@@ -1,0 +1,11 @@
+--- a/crates/sever-cert/src/participant.rs
++++ b/crates/sever-cert/src/participant.rs
+@@ -286,7 +286,7 @@
+         let flush = cs.created.first().map(|c| c.id);
+         let placement = Placement {
+             group: match (put, flush) {
+-                (GroupId::Holding, Some(created)) => created,
++                (GroupId::Holding, Some(_)) => GroupId::Holding,
+                 (g, _) => g,
+             },
+             flush,

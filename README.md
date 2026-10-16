@@ -199,6 +199,17 @@ verifier/target/release/sever-verify deletion.cert --anchors anchors.json
 # {"accepted": false, "step": 6, "reason": "the proof of knowledge does not verify"}
 ```
 
+With log access, the auditor checks what no certificate can: that each deletion leaf is where its
+certificate says, that each group's certificates chain (every `C_S_pre` is the sum of the group's
+members' `C_t`), and that the checkpoints are consistent (§11.3, DB-86):
+
+```bash
+$B export-log $D --out export.json        # or db.export_log() in the SDK
+(cd audit && cargo build --release)
+audit/target/release/sever-audit export.json --anchors anchors.json --certificate deletion.cert
+# {"leaves": 20, "checkpoints": 4, "findings": []}
+```
+
 ### Part 3 results
 
 Not yet measured: Part 3 is being built.

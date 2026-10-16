@@ -360,6 +360,30 @@ impl Db {
             .ok_or_else(not_recovered)
     }
 
+    /// The committed log for an auditor (DB-86; §11.3 "what it does not prove"), as JSON:
+    /// `{"leaves": [hex], "placements": [{"group": id, "flush": id | null}], "checkpoints": [hex]}`,
+    /// a checkpoint being `checkpoint (116) ‖ u8 count ‖ count × cosignature (69)`.
+    pub fn export_log(&self) -> Result<String, Error> {
+        let e = self.log.with(|l| l.export()).ok_or_else(not_recovered)??;
+        let placements: Vec<serde_json::Value> = e
+            .placements
+            .iter()
+            .map(|p| {
+                serde_json::json!({
+                    "group": p.group.as_text(),
+                    "flush": p.flush.map(|f| f.as_text()),
+                })
+            })
+            .collect();
+        Ok(serde_json::json!({
+            "version": 1,
+            "leaves": e.leaves.iter().map(|l| hex(l)).collect::<Vec<_>>(),
+            "placements": placements,
+            "checkpoints": e.checkpoints.iter().map(|w| hex(&w.to_bytes())).collect::<Vec<_>>(),
+        })
+        .to_string())
+    }
+
     /// The verifier's trust anchors as of now (§11.3).
     pub fn anchors(&self) -> Anchors {
         let (operator, witnesses) = self.log.anchors();

@@ -1,0 +1,11 @@
+--- a/audit/src/audit.rs
++++ b/audit/src/audit.rs
+@@ -339,7 +339,7 @@
+         if group.get(&c.scrambled_id) != Some(&c.c_t) {
+             find("AF-2", i, "the record is not a member of the group it left");
+         } else if c.deletion_kind == 0 {
+-            if pl.group == "holding" || sum(group) != c.c_s_pre {
++            if pl.group == "holding" {
+                 find("AF-2", i, "C_S_pre is not the group's commitment");
+             }
+         } else if pl.group != "holding" {

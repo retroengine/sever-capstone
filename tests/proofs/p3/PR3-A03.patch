@@ -1,0 +1,8 @@
+--- a/audit/src/hex.rs
++++ b/audit/src/hex.rs
+@@ -1,4 +1,4 @@
+-//! Lowercase hexadecimal, for the bundled golden files and the anchors file.
++//! Lowercase hexadecimal (the auditor's own edit).
+ 
+ /// Decodes hex text (either case) into bytes.
+ pub fn decode(s: &str) -> Option<Vec<u8>> {

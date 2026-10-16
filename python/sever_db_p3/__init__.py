@@ -259,6 +259,11 @@ class Database:
         """RFC 9162 consistency proof (§10.1), or ``None`` if the sizes are out of range."""
         return self._e.consistency_proof(old_size, new_size)
 
+    def export_log(self) -> str:
+        """The committed log for an auditor (``sever-audit``; DB-86), as JSON: every leaf, where
+        each leaf's record went, and every log checkpoint with its cosignatures."""
+        return self._e.export_log()
+
     def anchors(self) -> str:
         """The verifier's trust anchors (§11.3) as JSON: ``d``, ``gdigest``, the operator's and
         each witness's public keys by epoch."""

@@ -1,11 +1,11 @@
 --- a/crates/sever-log/src/store.rs
 +++ b/crates/sever-log/src/store.rs
-@@ -484,7 +484,7 @@
+@@ -563,7 +563,7 @@
              return Err(inv("§10.2 database_lsn"));
          }
          let at = self.stores.certs.append(lsn, certificate)?;
 -        let hash = leaf_hash(&delete_leaf(certificate));
 +        let hash = leaf_hash(certificate);
-         self.pending.leaves.push((hash, None));
+         self.pending.leaves.push((hash, None, placement));
          self.pending.certs.push((lsn, at));
          Ok([

@@ -10,11 +10,11 @@ use sever_index::NoExtension;
 use sever_spec::spec;
 use sever_txn::contract::{ProbedParticipant, ep7_participant_contract};
 use sever_txn::{TxnDraft, TxnKind, TxnParticipant};
-use sever_types::Error;
+use sever_types::{Error, GroupId};
 use sever_vfs::{CrashPolicy, SimVfs, Vfs};
 
 use crate::checkpoint::{Cosignature, LogCheckpoint};
-use crate::leaf::{InsertLeaf, delete_leaf};
+use crate::leaf::{InsertLeaf, PLACEMENT_LEN, Placement, delete_leaf};
 use crate::merkle::{MerkleTree, empty_root, leaf_hash};
 use crate::store::*;
 
@@ -48,6 +48,28 @@ fn leaf(k: u8) -> InsertLeaf {
 
 fn cert(k: u8) -> Vec<u8> {
     vec![k; 100 + usize::from(k)]
+}
+
+/// Where leaf `k` lands: frozen group `k` (inserts) or the holding area (deletions).
+fn at(k: u8) -> Placement {
+    Placement {
+        group: GroupId::frozen(u16::from(k)).unwrap(),
+        flush: None,
+    }
+}
+
+fn holding() -> Placement {
+    Placement {
+        group: GroupId::Holding,
+        flush: None,
+    }
+}
+
+/// `text` zero-padded to 32 bytes (the stored form of a group ID, §13.2).
+fn padded(text: &str) -> Vec<u8> {
+    let mut v = text.as_bytes().to_vec();
+    v.resize(32, 0);
+    v
 }
 
 fn witnessed(size: u64, root: [u8; 32]) -> Witnessed {
@@ -98,21 +120,25 @@ fn p3_log_store_wal_records_have_the_section_14_6_layout() {
     let (ty, p) = LogRecord::Leaf {
         index: 0x0102,
         hash: h,
+        placement: at(3),
         insert: Some(l.to_bytes()),
     }
     .encode();
     let mut want = vec![0, 0, 0, 0, 0, 0, 1, 2];
     want.extend_from_slice(&h);
+    want.extend(padded("frozen-0003"));
+    want.extend([0; 32]);
     want.extend_from_slice(&l.to_bytes());
-    assert_eq!((ty, p.len()), (RecordType::LogLeaf, 8 + 32 + 209));
+    assert_eq!((ty, p.len()), (RecordType::LogLeaf, 8 + 32 + 64 + 209));
     assert_eq!(p, want);
     let (_, p) = LogRecord::Leaf {
         index: 3,
         hash: h,
+        placement: holding(),
         insert: None,
     }
     .encode();
-    assert_eq!(p.len(), 40, "a delete leaf's record carries no leaf bytes");
+    assert_eq!(p.len(), 104, "a delete leaf's record carries no leaf bytes");
     let (ty, p) = LogRecord::CertRef {
         lsn: 9,
         at: StoreRef {
@@ -139,6 +165,7 @@ fn p3_log_store_wal_records_have_the_section_14_6_layout() {
         LogRecord::Leaf {
             index: 3,
             hash: h,
+            placement: holding(),
             insert: None,
         },
     ] {
@@ -150,7 +177,7 @@ fn p3_log_store_wal_records_have_the_section_14_6_layout() {
 fn workload(s: &mut LogStore) -> MerkleTree {
     let mut want = MerkleTree::new();
     for k in 0..3 {
-        s.stage_insert(&leaf(k)).unwrap();
+        s.stage_insert(&leaf(k), at(k)).unwrap();
         s.sync().unwrap();
         s.commit().unwrap();
         want.push(&leaf(k).to_bytes());
@@ -158,7 +185,7 @@ fn workload(s: &mut LogStore) -> MerkleTree {
     s.stage_checkpoint(witnessed(3, want.root(3).unwrap()))
         .unwrap();
     s.commit().unwrap();
-    s.stage_delete(3, &cert(3)).unwrap();
+    s.stage_delete(3, &cert(3), at(1)).unwrap();
     s.sync().unwrap();
     s.commit().unwrap();
     want.push(&delete_leaf(&cert(3)));
@@ -201,8 +228,8 @@ fn p3_log_store_uncommitted_bytes_never_join_the_log() {
     let mut s = open(&v);
     workload(&mut s);
     // A deletion whose bytes are durable but whose COMMIT never happened, then a crash.
-    s.stage_delete(4, &cert(9)).unwrap();
-    s.stage_insert(&leaf(9)).unwrap();
+    s.stage_delete(4, &cert(9), at(9)).unwrap();
+    s.stage_insert(&leaf(9), at(9)).unwrap();
     s.sync().unwrap();
     drop(s);
     v.restart(CrashPolicy::KeepAll);
@@ -211,7 +238,7 @@ fn p3_log_store_uncommitted_bytes_never_join_the_log() {
     assert_eq!(s.certificate(4), Ok(None));
     assert_eq!(s.insert_leaf(5), Ok(None));
     // The next transaction reuses index 4, and its entries win.
-    s.stage_insert(&leaf(7)).unwrap();
+    s.stage_insert(&leaf(7), at(7)).unwrap();
     s.sync().unwrap();
     s.commit().unwrap();
     drop(s);
@@ -227,7 +254,7 @@ fn p3_log_store_uncommitted_bytes_never_join_the_log() {
     assert_eq!(s.check_invariants(), Ok(()));
     // An aborted transaction is forgotten in memory too.
     let mut s = s;
-    s.stage_insert(&leaf(8)).unwrap();
+    s.stage_insert(&leaf(8), at(8)).unwrap();
     s.abort();
     assert_eq!(s.next_index(), 5);
 }
@@ -240,8 +267,8 @@ fn p3_log_store_replay_restores_what_phase_c_never_wrote() {
     let mut s = open(&v);
     let mut want = workload(&mut s);
     // Committed in the WAL, but the crash comes before phase C: only the WAL has it.
-    let mut recs = vec![s.stage_insert(&leaf(5)).unwrap().1];
-    recs.extend(s.stage_delete(5, &cert(5)).unwrap());
+    let mut recs = vec![s.stage_insert(&leaf(5), at(5)).unwrap().1];
+    recs.extend(s.stage_delete(5, &cert(5), holding()).unwrap());
     s.sync().unwrap();
     drop(s);
     want.push(&leaf(5).to_bytes());
@@ -271,6 +298,7 @@ fn p3_log_store_replay_restores_what_phase_c_never_wrote() {
     let wrong = LogRecord::Leaf {
         index: 0,
         hash: [0; 32],
+        placement: holding(),
         insert: None,
     };
     assert!(matches!(
@@ -344,12 +372,12 @@ impl TxnParticipant<NoExtension> for Probe {
         let k = u8::try_from(s.next_index()).unwrap_or(0);
         let mut recs = Vec::new();
         if d.kind == TxnKind::Insert {
-            recs.push(s.stage_insert(&leaf(k))?.1);
+            recs.push(s.stage_insert(&leaf(k), at(k))?.1);
         } else {
             let size = s.tree().size();
             let root = s.tree().root(size).unwrap_or_default();
             recs.push(s.stage_checkpoint(witnessed(size, root))?);
-            recs.extend(s.stage_delete(s.next_index(), &cert(k))?);
+            recs.extend(s.stage_delete(s.next_index(), &cert(k), holding())?);
         }
         d.participant_records
             .extend(recs.iter().map(LogRecord::encode));
@@ -400,6 +428,9 @@ impl ProbedParticipant for Probe {
         for w in s.checkpoints() {
             d.extend(w.to_bytes());
         }
+        for p in s.export().map(|e| e.placements).unwrap_or_default() {
+            d.extend(p.to_bytes());
+        }
         d
     }
 }
@@ -412,4 +443,78 @@ fn p3_log_store_passes_the_frozen_ep7_contract() {
         Box::new(Probe(LogStore::open(vfs, CFG, &genesis()).ok()))
     };
     assert_eq!(ep7_participant_contract(&make), Ok(()));
+}
+
+#[test]
+// oracle: A DB-86 placement layout (§10.5, §14.6 as amended): group (32, zero-padded text, §13.2) ‖ the group a flush created (32, or zeros), written out by hand
+#[spec("SR-10.5-3", "SR-14.6-4")]
+fn p3_log_store_placement_layout_and_strict_parse() {
+    let p = Placement {
+        group: GroupId::Holding,
+        flush: Some(GroupId::Spawned([0xab; 8])),
+    };
+    let mut want = padded("holding");
+    want.extend(padded("spawn-abababababababab"));
+    assert_eq!((PLACEMENT_LEN, p.to_bytes().to_vec()), (64, want.clone()));
+    assert_eq!(Placement::parse(&want), Ok(p));
+    let mut f = padded("frozen-0012");
+    f.extend([0; 32]);
+    assert_eq!(
+        Placement::parse(&f).map(|p| p.group),
+        Ok(GroupId::frozen(12).unwrap())
+    );
+    // Refused: a non-canonical ID, bytes after the padding, a flush into a frozen group or the
+    // holding area, a missing group, the wrong length.
+    for bad in [
+        [padded("frozen-12"), vec![0; 32]].concat(),
+        [padded("holding"), vec![0; 31], vec![1]].concat(),
+        [padded("holding\0x"), vec![0; 32]].concat(),
+        [padded("holding"), padded("frozen-0001")].concat(),
+        [padded("holding"), padded("holding")].concat(),
+        [vec![0; 32], vec![0; 32]].concat(),
+        want[..63].to_vec(),
+    ] {
+        assert!(Placement::parse(&bad).is_err(), "{bad:?}");
+    }
+}
+
+#[test]
+// oracle: A DB-86 (§10.5 as amended): every committed leaf's hash entry carries its placement; the export holds every leaf (insert leaf bytes, or 0x02 ‖ certificate, §10.2), its placement and every checkpoint; committed state only, restored from the WAL after a crash (§12.3)
+#[spec("SR-10.5-3")]
+fn p3_log_store_export_holds_every_leaf_with_its_placement() {
+    let v = SimVfs::new();
+    let mut s = open(&v);
+    workload(&mut s);
+    let flush = Placement {
+        group: GroupId::Spawned([7; 8]),
+        flush: Some(GroupId::Spawned([7; 8])),
+    };
+    // Committed in the WAL only (the crash comes before phase C), plus an uncommitted leaf.
+    let rec = s.stage_insert(&leaf(4), flush).unwrap().1;
+    s.sync().unwrap();
+    drop(s);
+    v.restart(CrashPolicy::DropAll);
+    let mut s = open(&v);
+    s.replay(&wal(&[rec])[0]).unwrap();
+    s.recover().unwrap();
+    s.stage_insert(&leaf(9), at(9)).unwrap();
+    s.sync().unwrap(); // never committed
+    drop(s);
+    v.restart(CrashPolicy::KeepAll);
+    let e = open(&v).export().unwrap();
+    let leaves: Vec<Vec<u8>> = vec![
+        leaf(0).to_bytes().to_vec(),
+        leaf(1).to_bytes().to_vec(),
+        leaf(2).to_bytes().to_vec(),
+        delete_leaf(&cert(3)),
+        leaf(4).to_bytes().to_vec(),
+    ];
+    assert_eq!(e.leaves, leaves);
+    assert_eq!(e.placements, [at(0), at(1), at(2), at(1), flush]);
+    let sizes: Vec<u64> = e
+        .checkpoints
+        .iter()
+        .map(|w| w.checkpoint.tree_size)
+        .collect();
+    assert_eq!(sizes, [0, 3]);
 }

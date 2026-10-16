@@ -816,7 +816,7 @@ independent witnesses (limit L-7 in the overview).
 
 Leaf bytes of insert leaves and all leaf hashes are kept in append-only stores (§14.8). Insert leaves
 and certificates are written and `fsync`ed before the `COMMIT` that covers them; leaf hashes (each
-with its leaf's type byte) and log checkpoints are written only after it, so their stores hold
+with its leaf's type byte and its placement) and log checkpoints are written only after it, so their stores hold
 committed entries only, and recovery restores from the WAL what a crash cut off. For a leaf index,
 the committed insert leaf or certificate is the last store entry with that key (DB-81). The engine
 keeps every level of the tree's complete subtrees in memory so that any inclusion proof takes
@@ -929,6 +929,15 @@ and decides who may delete (§3.3; overview L-2, L-27).
 - that consecutive certificates chain correctly (`C_S_pre` of one equals `C_S_post` of the previous
   one for the same group);
 - that the log is consistent across log checkpoints.
+
+**The log export** (DB-86) gives the auditor what it needs: every leaf, in order; each leaf's
+**placement**, the group its record joined (insert) or left (deletion) and, for an insert that
+triggered a flush, the spawned group the flush created (each a group ID in its text form); and every
+log checkpoint with its cosignatures (`checkpoint (116) ‖ u8 count ‖ count × cosignature (69)`). The
+engine keeps placements beside the leaf hashes (§10.5), never in the leaves, so the public log is
+unchanged. Because commitments add (§9.3), a group's `C_S` is the sum of its members' `C_t`; replaying
+the placements gives every group's `C_S` before each deletion, which the certificate's `C_S_pre`
+must equal. This checks the chain of a group's certificates even when inserts come between them.
 
 **Forward limit.** A verifier with anchors fixed at release cannot check a certificate signed under an
 operator epoch created after that release. A deployment would fetch anchors live.
@@ -1166,7 +1175,7 @@ own §6.3 format, verbatim. The byte layouts of every file are in §14.9.
     payloads.bin                   scrambled_id → passage text location in payloads/ (DB-67)
   wal/<seq>.wal                    WAL segments (§14.6)
   log/leaves/<seq>.store           insert-leaf bytes, keyed by leaf index (§14.8)
-  log/hashes/<seq>.store           every leaf's type and hash, in order (DB-81)
+  log/hashes/<seq>.store           every leaf's type, hash and placement, in order (DB-81, DB-86)
   log/checkpoints/<seq>.store      every log checkpoint with its cosignatures, keyed by tree size
   certs/<seq>.store                certificates, keyed by database_lsn (§14.8)
   payloads/<seq>.store             encrypted passage text (§14.8)
@@ -1255,7 +1264,7 @@ and are carried verbatim by the storage engine.
 | `SLOT_PUT` | `group_id ‖ slot index ‖ slot (1,992)` |
 | `SLOT_TRUNCATE` | `group_id ‖ new slot count` |
 | `LOCATOR_PUT` / `LOCATOR_DEL` | `scrambled_id ‖ (group_id ‖ slot index)` / `scrambled_id` (also drops the record's `PAYLOAD_REF`) |
-| `LOG_LEAF` | `u64be leaf_index ‖` leaf hash; for insert leaves also the 209-byte leaf (DB-81) |
+| `LOG_LEAF` | `u64be leaf_index ‖` leaf hash `‖` placement (64: the group, zero-padded to 32, `‖` the group a flush created or 32 zero bytes; DB-86); for insert leaves also the 209-byte leaf (DB-81) |
 | `LOG_CHECKPOINT` | Log checkpoint (116, §11.2) `‖ u8 count ‖` cosignatures (69 each, §11.1 tag 7) |
 | `CERT_REF` | `database_lsn ‖ store segment ‖ offset ‖ length ‖ SHA-256` of the certificate |
 | `PAYLOAD_REF` | `scrambled_id ‖ u64be store segment ‖ u64be offset ‖ u32be length` |
@@ -1498,7 +1507,7 @@ acknowledgement was lost is retried with the same request (§15.1); a new reques
 |---|---|---|
 | `sever-partition build` | C-15 | Build a partition artefact (§6) |
 | `sever-verify <certificate> --anchors FILE [--hex]` | C-16 | Verify a certificate with bundled anchors (§11.3); prints `accepted`, or the failed step and why; exit 0 accepted, 1 rejected, 2 usage, 3 self-check or anchors refused (DB-85) |
-| `sever-audit <data_dir or log export>` | C-17 | Check deletion leaves, certificate chains and log consistency |
+| `sever-audit <log export> --anchors FILE [--certificate FILE]…` | C-17 | Check deletion leaves, certificate chains and log consistency (DB-86); prints the findings; exit 0 none, 1 findings, 2 usage, 3 refused |
 | `sever-scan <disk image>` | test tool | Forensic scan used by EX-2 |
 
 ---

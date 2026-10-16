@@ -1,0 +1,10 @@
+--- a/crates/sever-log/src/store.rs
++++ b/crates/sever-log/src/store.rs
+@@ -646,6 +646,7 @@
+                 placement,
+                 insert,
+             } => {
++                let placement = Placement { flush: None, ..placement };
+                 if index < self.tree.size() {
+                     let same_type = self
+                         .inserts

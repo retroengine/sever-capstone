@@ -1,7 +1,7 @@
 --- a/crates/sever-cert/src/participant.rs
 +++ b/crates/sever-cert/src/participant.rs
-@@ -403,7 +403,7 @@
-             for r in self.log()?.stage_delete(lsn, &bytes)? {
+@@ -428,7 +428,7 @@
+             for r in self.log()?.stage_delete(lsn, &bytes, placement)? {
                  draft.participant_records.push(r.encode());
              }
 -            draft.outputs.push((LOG_PARTICIPANT_ID, req, bytes));

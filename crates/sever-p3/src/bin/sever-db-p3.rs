@@ -16,6 +16,7 @@
 //!   delete-user   --cid HEX --ids JSON
 //!   certificate   --lsn N
 //!   anchors       [--out FILE]                    (the verifier's trust anchors, §11.3)
+//!   export-log    [--out FILE]                    (the committed log for an auditor, DB-86)
 //!   latest-checkpoint | search --cid HEX --vector JSON [--k N] | stats --cid HEX
 //!   drop --cid HEX | checkpoint | verify
 //! ```
@@ -248,6 +249,19 @@ fn run(cmd: &str, a: &Args) -> Result<Result<Value, Error>, String> {
                 .map_err(|e| e.to_string())
                 .map(Ok)?
         }
+        "export-log" => match db.export_log() {
+            Ok(text) => match a.0.get("out") {
+                Some(path) => {
+                    std::fs::write(path, &text).map_err(|e| e.to_string())?;
+                    let v: Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+                    Ok(
+                        json!({"leaves": v.get("leaves").and_then(Value::as_array).map_or(0, Vec::len), "out": path}),
+                    )
+                }
+                None => Ok(serde_json::from_str::<Value>(&text).map_err(|e| e.to_string())?),
+            },
+            Err(e) => Err(e),
+        },
         "latest-checkpoint" => db.latest_log_checkpoint().map(|w| {
             let c = w.checkpoint;
             json!({"tree_size": c.tree_size, "root": hex(&c.root), "timestamp_ms": c.timestamp_ms,

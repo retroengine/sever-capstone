@@ -453,3 +453,48 @@ fn p3_root_on_real_files_keeps_secrets_private() {
     ));
     let _ = std::fs::remove_dir_all(&d);
 }
+
+#[test]
+// oracle: A DB-86 export (§10.5, §11.3 as amended): leaf i is the insert leaf or 0x02 ‖ certificate (§10.2), its placement the group Part 1's frozen routing returned (C), every checkpoint as checkpoint ‖ u8 count ‖ cosignatures (§11.1 tag 7, §11.2)
+#[spec("SR-10.5-3")]
+fn p3_root_the_log_export_for_an_auditor() {
+    let disks = Disks::new();
+    let user = KeyPair::generate();
+    let db = disks.open().unwrap();
+    let cid = db.create_collection(ARTEFACT, OPTS).unwrap();
+    let mut groups = Vec::new();
+    for (i, v) in rows().iter().take(3).enumerate() {
+        let (_, p) = insert(&db, &user, cid, &format!("r{i}"), v);
+        groups.push(match p {
+            Placement::Frozen(g) | Placement::Spawned(g) => g.as_text(),
+            Placement::Holding => "holding".into(),
+        });
+    }
+    let (lsn, bytes) = cert(db.delete(cid, "r1").unwrap());
+    groups.push(groups[1].clone());
+    let e: serde_json::Value = serde_json::from_str(&db.export_log().unwrap()).unwrap();
+    let leaves = e["leaves"].as_array().unwrap();
+    assert_eq!(leaves.len(), 4);
+    let mut want = "02".to_owned();
+    want.extend(bytes.iter().map(|b| format!("{b:02x}")));
+    assert_eq!(leaves[lsn as usize], want.as_str());
+    assert_eq!(leaves[0].as_str().unwrap().len(), 2 * 209);
+    assert!(leaves[0].as_str().unwrap().starts_with("01"));
+    let placed: Vec<&str> = e["placements"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|p| p["group"].as_str().unwrap())
+        .collect();
+    assert_eq!(placed, groups);
+    assert!(e["placements"][0]["flush"].is_null());
+    let cps = e["checkpoints"].as_array().unwrap();
+    let last = db.latest_log_checkpoint().unwrap();
+    let hex: String = last.to_bytes().iter().map(|b| format!("{b:02x}")).collect();
+    assert_eq!(cps.last().unwrap().as_str(), Some(hex.as_str()));
+    assert_eq!(
+        cps[0].as_str().unwrap().len(),
+        2 * (116 + 1),
+        "the genesis, uncosigned"
+    );
+}

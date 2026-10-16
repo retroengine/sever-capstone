@@ -1,0 +1,11 @@
+--- a/crates/sever-p3/src/lib.rs
++++ b/crates/sever-p3/src/lib.rs
+@@ -371,7 +371,7 @@
+             .map(|p| {
+                 serde_json::json!({
+                     "group": p.group.as_text(),
+-                    "flush": p.flush.map(|f| f.as_text()),
++                    "flush": p.group.as_text(),
+                 })
+             })
+             .collect();

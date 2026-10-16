@@ -1,0 +1,11 @@
+--- a/audit/src/main.rs
++++ b/audit/src/main.rs
+@@ -79,7 +79,7 @@
+                 .collect::<Vec<_>>(),
+         })
+     );
+-    if found.is_empty() {
++    if !found.is_empty() {
+         ExitCode::SUCCESS
+     } else {
+         ExitCode::from(1)
