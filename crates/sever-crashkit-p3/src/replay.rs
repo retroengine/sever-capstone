@@ -272,16 +272,25 @@ pub fn replay(trace: &Path, root: &Path, mode: Mode) -> Result<Report, String> {
     let mut rep = Report::default();
     let mut model = Model::default();
     let mut deleted = HashSet::new();
+    let timing = std::env::var_os("SEVER_KIT_TIMING").is_some();
+    let mut spent: BTreeMap<&'static str, std::time::Duration> = BTreeMap::new();
     for line in lines {
+        let t0 = std::time::Instant::now();
         let line = line.map_err(|e| format!("read: {e}"))?;
         let op: Value = serde_json::from_str(&line).map_err(|e| format!("line: {e}"))?;
         rep.ops += 1;
+        let kind: &'static str = match op["t"].as_str() {
+            Some("i") => "insert",
+            Some("d") => "delete",
+            _ => "rung",
+        };
         match op["t"].as_str() {
             Some("i") => {
                 let id = op["id"].as_str().unwrap_or_default().to_owned();
                 let row = op["row"].as_u64().unwrap_or(0) as usize;
                 let vector = vectors.row(row).map_err(|e| e.0)?;
                 // A vector §4.1 refuses has no C_t; the engine refuses it before step 2.
+                let tc = std::time::Instant::now();
                 let cred = world.credential(cid, &vector).unwrap_or(Cred {
                     collection_id: *cid.as_bytes(),
                     c_t: [0; 32],
@@ -295,7 +304,15 @@ pub fn replay(trace: &Path, root: &Path, mode: Mode) -> Result<Report, String> {
                     credential: cred.credential(),
                     passage: None,
                 };
-                match (db.insert(cid, req), op["e"].as_str()) {
+                if timing {
+                    *spent.entry("i.cred").or_default() += tc.elapsed();
+                }
+                let ti = std::time::Instant::now();
+                let res = db.insert(cid, req);
+                if timing {
+                    *spent.entry("i.engine").or_default() += ti.elapsed();
+                }
+                match (res, op["e"].as_str()) {
                     (Ok((lsn, p)), None) => {
                         let want = op["p"].as_str().unwrap_or_default();
                         let got = placement_text(&p);
@@ -321,7 +338,11 @@ pub fn replay(trace: &Path, root: &Path, mode: Mode) -> Result<Report, String> {
                         )
                     }),
                 }
+                let th = std::time::Instant::now();
                 compare_hashes(&db, cid, &op["g"], &mut rep, &id, d);
+                if timing {
+                    *spent.entry("i.hash").or_default() += th.elapsed();
+                }
             }
             Some("d") => {
                 let ids = strings(&op["ids"]);
@@ -426,6 +447,12 @@ pub fn replay(trace: &Path, root: &Path, mode: Mode) -> Result<Report, String> {
                 }
             }
             _ => return Err("unknown trace line".into()),
+        }
+        if timing {
+            *spent.entry(kind).or_default() += t0.elapsed();
+            if rep.ops % 2000 == 0 || kind == "rung" {
+                eprintln!("ops {} {spent:?}", rep.ops);
+            }
         }
     }
     Ok(rep)
