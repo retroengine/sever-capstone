@@ -1,0 +1,11 @@
+--- a/crates/sever-p3/src/witnesses.rs
++++ b/crates/sever-p3/src/witnesses.rs
+@@ -173,7 +173,7 @@
+         keys,
+         state: Mutex::new(state),
+     });
+-    Ok((0..WITNESSES)
++    Ok((0..WITNESSES - 1)
+         .zip(stored)
+         .map(|(i, (last, secrets))| {
+             let signer = EpochSigner::from_secrets(genesis_ms, secrets);

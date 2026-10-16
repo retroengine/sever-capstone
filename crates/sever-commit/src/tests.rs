@@ -406,3 +406,88 @@ fn p3_commit_same_commitment_recognises_a_retried_insert() {
         &credential(&e, &key, CID, &x, &(r + Scalar::ONE))
     ));
 }
+
+/// The golden vector 8 group (B-shared), built through the extension: its snapshot and members.
+fn golden_group() -> (
+    CommitmentExtension,
+    usize,
+    Vec<(RecordId, QVec, RecordBlind)>,
+) {
+    let g = json(FULL);
+    let d = usize::try_from(g["d"].as_u64().unwrap()).unwrap();
+    let (e, _) = ext(d);
+    let key = KeyPair::generate();
+    let rows = g["members"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|m| {
+            let x = qvec(&m["x"], d);
+            let r = decode_scalar(&unhex::<32>(&m["r_t"])).unwrap();
+            let rec = e.admit(&x, credential(&e, &key, CID, &x, &r)).unwrap();
+            (RecordId::new(m["id"].as_str().unwrap()).unwrap(), x, rec)
+        })
+        .collect();
+    (e, d, rows)
+}
+
+#[test]
+// oracle: A §5.5 full form: magic SEVERG, extension region C_S ‖ r_agg (64), and the SR-5.5-2 rejections (count ≠ n, unsorted or duplicate, empty ID, trailing bytes, the wrong magic, SEVERC included); B-shared golden vector 8
+#[spec("SR-5.5-6")]
+fn p3_commit_full_form_parser_rejects_what_section_5_5_rejects() {
+    let (e, d, rows) = golden_group();
+    let refs: Vec<_> = rows.iter().map(|(i, x, r)| (i, x, r)).collect();
+    let blob = snapshot_from_members(&e, d, &refs).blob;
+    let magic = CommitmentExtension::BLOB_MAGIC;
+    let parsed = sever_index::blob::parse_blob(&blob, &magic, 64).unwrap();
+    assert_eq!(parsed.members.len(), rows.len());
+    let reject = |b: &[u8]| sever_index::blob::parse_blob(b, &magic, 64).err();
+    use sever_index::blob::BlobReject as R;
+    let mut core = blob.clone();
+    core[..6].copy_from_slice(b"SEVERC");
+    assert_eq!(reject(&core), Some(R::Magic), "the core form's magic");
+    assert_eq!(
+        reject(&[blob.as_slice(), &[0]].concat()),
+        Some(R::TrailingBytes)
+    );
+    assert_eq!(reject(&blob[..blob.len() - 1]), Some(R::Truncated));
+    // Header: magic (6) ‖ u16be version ‖ u16be d ‖ u64be n ‖ S (8·d) ‖ region (64) ‖ u64be count.
+    let count_at = 6 + 2 + 2 + 8 + 8 * d + 64;
+    let mut wrong_count = blob.clone();
+    wrong_count[count_at + 7] ^= 1;
+    assert!(reject(&wrong_count).is_some(), "member_count ≠ n");
+}
+
+#[test]
+// oracle: A §5.5 "With commitments, assert_state_equivalent compares all five fields … a corruption of C_S or r_agg alone MUST be caught"
+#[spec("SR-5.5-7")]
+fn p3_commit_state_equivalence_catches_c_s_or_r_agg_alone() {
+    let (e, d, rows) = golden_group();
+    let refs: Vec<_> = rows.iter().map(|(i, x, r)| (i, x, r)).collect();
+    let good = snapshot_from_members(&e, d, &refs);
+    // C_S alone corrupted.
+    let mut bad = good.clone();
+    bad.ext_public = GroupCommitment(bad.ext_public.0 + *Generators::derive(1).unwrap().h());
+    assert_eq!(
+        sever_index::blob::assert_state_equivalent(&good, &bad),
+        Err(sever_index::blob::Field::CommitmentS)
+    );
+    // r_agg alone corrupted (C_S unchanged): only the blob's region shows it.
+    let mut state = sever_index::changeset::GroupState::<CommitmentExtension>::empty(d);
+    for (_, x, rec) in &rows {
+        for (acc, &v) in state.s.iter_mut().zip(x.as_slice()) {
+            *acc += i64::from(v);
+        }
+        state.n += 1;
+        e.add(&mut state.ext_public, &mut state.ext_secret, x, rec);
+    }
+    state.ext_secret = BlindingTotal(state.ext_secret.0 + Scalar::ONE);
+    let pairs: Vec<(&RecordId, &QVec)> = rows.iter().map(|(i, x, _)| (i, x)).collect();
+    let mut bad = good.clone();
+    bad.blob = sever_index::blob::canonical_blob(&e, d, &state, &pairs);
+    assert_eq!(bad.ext_public, good.ext_public);
+    assert_eq!(
+        sever_index::blob::assert_state_equivalent(&good, &bad),
+        Err(sever_index::blob::Field::Blob)
+    );
+}

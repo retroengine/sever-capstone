@@ -671,3 +671,23 @@ fn p3_log_txn_every_leaf_records_its_placement() {
         want
     );
 }
+
+#[test]
+// oracle: A §15.2 steps 3–4: the flush adds each founder's x̃ and r_t into the new group, C_S = r_agg·H + Σ scalar(S_i)·G_i, which by §9.3 is the sum of the founders' C_t (their insert leaves, §10.2)
+#[spec("SR-15.2-2")]
+fn p3_log_txn_a_flush_folds_every_founder_into_the_new_group() {
+    let w = World::new();
+    let (o, cid, _) = base(&w, 6);
+    let first = o.log.with(|l| l.tree().size()).unwrap();
+    for (i, v) in rows("live").iter().take(8).enumerate() {
+        w.insert(&o, cid, &format!("live-{i}"), v);
+    }
+    // Leaves first … first + 7 are the eight founders; their C_t sum to the group's commitment.
+    let mut sum = decode_point(&[0; 32]).unwrap();
+    for i in first..first + 8 {
+        let leaf = o.log.with(|l| l.insert_leaf(i)).unwrap().unwrap().unwrap();
+        sum += decode_point(&leaf.c_t).unwrap();
+    }
+    let c = accept(&o, &w.gens, &cert_of(&o.db.delete(cid, "live-5").unwrap()));
+    assert_eq!(c.group.as_ref().unwrap().c_s_pre, encode_point(&sum));
+}

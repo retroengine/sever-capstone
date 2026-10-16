@@ -24,7 +24,9 @@ case "$part" in
             tests/errata/test_p2_e1_sdk_threads.py) ;;
   3) owned=(crates/sever-crypto crates/sever-commit crates/sever-log crates/sever-cert
             crates/sever-p3 crates/sever-py-p3 verifier audit
-            python/sever_refmodel_certs python/sever_testkit_p3 python/sever_db_p3
+            python/sever_refmodel_certs python/sever_testkit_p3 python/sever_db_p3 python/sever_demo_p3
+            python/sever_db_p3_native.pyi tests/e2e_p3 tests/architecture/test_architecture_p3.py
+            scripts/p3-demo.sh
             'golden/p3_*' docs/SOUNDNESS.md tests/proofs/p3) ;;  # planned (Build 3-4 §1.4); final list at freeze
   *) echo "no ownership list for part $part yet"; exit 2 ;;
 esac

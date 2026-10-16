@@ -1,0 +1,13 @@
+--- a/crates/sever-log/src/store.rs
++++ b/crates/sever-log/src/store.rs
+@@ -611,9 +611,7 @@
+             } else {
+                 LEAF_DELETE
+             };
+-            self.stores
+-                .hashes
+-                .append(index, &hash_entry_bytes(ty, &hash, &placement))?;
++            let _ = (ty, &placement);
+             self.tree.push_hash(hash);
+             self.inserts.push(at);
+         }

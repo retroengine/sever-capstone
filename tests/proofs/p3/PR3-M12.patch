@@ -1,0 +1,11 @@
+--- a/crates/sever-commit/src/lib.rs
++++ b/crates/sever-commit/src/lib.rs
+@@ -198,7 +198,7 @@
+     type GroupSecret = BlindingTotal;
+     type RecordSecret = RecordBlind;
+     type Credential = InsertCredential;
+-    const BLOB_MAGIC: [u8; 6] = *b"SEVERG";
++    const BLOB_MAGIC: [u8; 6] = *b"SEVERC";
+ 
+     fn admit(&self, x: &QVec, credential: InsertCredential) -> Result<RecordBlind, Error> {
+         // §15.1 step 2 and §9.3: recompute C_t from x̃ and r_t; it must equal the supplied C_t.

@@ -498,3 +498,32 @@ fn p3_root_the_log_export_for_an_auditor() {
         "the genesis, uncosigned"
     );
 }
+
+#[test]
+// oracle: A §9.8 "In v1 the five witnesses are simulated by the project, and their keys live in the test harness" (DB-53, DB-83: the key directory's WITNESSES file)
+#[spec("SR-9.8-8")]
+fn p3_root_five_simulated_witnesses_with_harness_keys() {
+    let disks = Disks::new();
+    let user = KeyPair::generate();
+    let (db, cid) = base(&disks, &user);
+    cert(db.delete(cid, "rec-0").unwrap());
+    let a = db.anchors();
+    assert_eq!(a.witnesses.len(), 5, "five witnesses");
+    for (i, ring) in a.witnesses.iter().enumerate() {
+        assert!(ring.get(0).is_some(), "witness {i} has an epoch-0 key");
+    }
+    let held = sever_vfs::read_all(
+        disks
+            .keys
+            .open(witnesses::WITNESS_FILE, sever_vfs::OpenMode::Existing)
+            .unwrap()
+            .as_ref(),
+    )
+    .unwrap();
+    assert_eq!(
+        &held[..8],
+        b"SVDBWITN",
+        "their keys live in the key directory"
+    );
+    assert_eq!(held[8 + 2 + 8], 5, "one entry per witness");
+}

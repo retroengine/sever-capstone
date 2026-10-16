@@ -28,6 +28,7 @@ PART3_RUST_DIRS: Final = [
 ]  # fmt: skip
 PART3_PY_PATHS: Final = [
     "python/sever_testkit_p3", "python/sever_refmodel_certs", "python/sever_db_p3",
+    "python/sever_demo_p3",
 ]  # fmt: skip
 #: Part 3 test files in the shared level directories of ``tests/`` (CLAUDE.md §6.2) carry ``p3`` in
 #: their name; the files there of Parts 1 and 2 are frozen and checked by their own part.

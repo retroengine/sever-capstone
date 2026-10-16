@@ -1624,3 +1624,62 @@
   package: sever-crypto
   tests:
   - crates/sever-crypto/src/tests.rs::p3_crypto_soundness_simulator_transcripts_verify
+- id: PR3-M12
+  claim: "the full form takes the core form's magic SEVERC (§5.5: SEVERG)"
+  kind: red
+  requirements:
+  - SR-5.5-6
+  patch: PR3-M12.patch
+  runner: cargo
+  package: sever-commit
+  tests:
+  - crates/sever-commit/src/tests.rs::p3_commit_full_form_parser_rejects_what_section_5_5_rejects
+- id: PR3-M13
+  claim: "the blob's region leaves r_agg out, so a corrupted r_agg alone is not caught (§5.5)"
+  kind: red
+  requirements:
+  - SR-5.5-7
+  patch: PR3-M13.patch
+  runner: cargo
+  package: sever-commit
+  tests:
+  - crates/sever-commit/src/tests.rs::p3_commit_state_equivalence_catches_c_s_or_r_agg_alone
+- id: PR3-R10
+  claim: "the composition root runs four simulated witnesses, not five (§9.8, §10.4)"
+  kind: red
+  requirements:
+  - SR-9.8-8
+  patch: PR3-R10.patch
+  runner: cargo
+  package: sever-p3
+  tests:
+  - crates/sever-p3/src/tests.rs::p3_root_five_simulated_witnesses_with_harness_keys
+- id: PR3-L22
+  claim: "committed leaf hashes are kept in memory only, not in their append-only store (§10.5)"
+  kind: red
+  requirements:
+  - SR-10.5-1
+  patch: PR3-L22.patch
+  runner: cargo
+  package: sever-log
+  tests:
+  - crates/sever-log/src/store_tests.rs::p3_log_store_committed_state_survives_a_restart
+- id: PR3-P15
+  claim: "a record joining a group (insert or flush) does not add its r_t into r_agg (§5.3, §15.2)"
+  kind: red
+  requirements:
+  - SR-15.2-2
+  patch: PR3-P15.patch
+  runner: cargo
+  package: sever-cert
+  tests:
+  - crates/sever-cert/tests/log_participant.rs::p3_log_txn_a_flush_folds_every_founder_into_the_new_group
+- id: PR3-D01
+  claim: "the backend inserts vectors from an encoder other than the one the artefact names (§3.3)"
+  kind: red
+  requirements:
+  - SR-3.3-1
+  patch: PR3-D01.patch
+  runner: pytest
+  tests:
+  - python/sever_demo_p3/tests/test_receipt_p3.py::test_p3_demo_backend_uses_the_artefacts_encoder

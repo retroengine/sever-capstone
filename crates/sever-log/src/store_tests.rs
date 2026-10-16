@@ -193,8 +193,8 @@ fn workload(s: &mut LogStore) -> MerkleTree {
 }
 
 #[test]
-// oracle: A §10.1 (RFC 9162 roots of the leaves), §14.8 (certificates and insert leaves are public store records), §10.5, INV-15
-#[spec("SR-14.8-2")]
+// oracle: A §10.1 (RFC 9162 roots of the leaves), §14.8 (certificates and insert leaves are public store records), §10.5 "Leaf bytes of insert leaves and all leaf hashes are kept in append-only stores", INV-15
+#[spec("SR-14.8-2", "SR-10.5-1")]
 fn p3_log_store_committed_state_survives_a_restart() {
     let v = SimVfs::new();
     let mut s = open(&v);

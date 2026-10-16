@@ -183,6 +183,7 @@ LAYERS: dict[str, set[str]] = {
     "sever_db_p2": {"sever_db_p2_native"},
     # Part 3
     "sever_db_p3": {"sever_db_p3_native"},
+    "sever_demo_p3": {"sever_db_p3", "sever_testkit.traces"},
 }
 
 

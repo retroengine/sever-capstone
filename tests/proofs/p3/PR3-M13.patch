@@ -1,0 +1,11 @@
+--- a/crates/sever-commit/src/lib.rs
++++ b/crates/sever-commit/src/lib.rs
+@@ -278,7 +278,7 @@
+     fn blob_region(&self, public: &GroupCommitment, secret: &BlindingTotal, out: &mut Vec<u8>) {
+         // §5.5 full form (DB-47): C_S (32) ‖ r_agg (32).
+         out.extend_from_slice(&encode_point(&public.0));
+-        out.extend_from_slice(&encode_scalar(&secret.0));
++        out.extend_from_slice(&[0; 32]);
+     }
+ 
+     fn check_group(
