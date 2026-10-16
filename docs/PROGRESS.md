@@ -111,6 +111,20 @@ run part 3) + measure P3-T13 + proof spike, then the freeze manifest (tag left t
 Tools for proofs: write patches with a scratch script (diff -u of one replaced string), add
 manifest entries, verify each with `cargo test -p <pkg> -- --exact tests::<name>` (must FAIL), then
 `python -m sever_testkit_p3.proofs check`. rustfmt rewraps lines: match the formatted text.
+The two helper scripts live in the session scratchpad and are lost between sessions; recreate them:
+`mkproofs.py ITEMS_JSON SCRATCH` (each item: id, file, old, new, claim, reqs, tests, package,
+testfile; writes `tests/proofs/p3/<id>.patch` as `diff -u` of one replaced string and appends a
+manifest entry with the claim JSON-quoted) and `verify2.sh ID…` (applies each patch, runs each named
+test with `cargo test -p PKG --lib -- --exact <module>::<name>` for `src/` tests or `--test <stem> --
+--exact <name>` for `tests/` files, prints the result, reverts). A refactor can stop older patches
+applying: `proofs check` names them; regenerate them with the same intent.
+**Module 7 starting point (SDK):** mirror Part 2's SDK: `crates/sever-py-p2` (PyO3 `=0.29.2`, abi3,
+cdylib `sever_db_p2_native`, its own `pyproject.toml` for maturin; every §17 error a Python
+exception; the engine mutex taken only with the GIL released, erratum E-1) and
+`python/sever_db_p2` (the SDK wrapper and its tests). Part 3 adds `UserKey` (Ed25519 account key,
+never rotates), `prepare_insert` (quantise §4.2, `r_t` from the OS §9.4, `C_t`, sign §9.8) and
+`SeededNonceForbidden` for any attempt to pass an RNG, seed or nonce (§16.2, E2E-3.8); the engine
+side is `sever_p3::open`/`Db` (insert returns `database_lsn`, delete returns the certificate).
 
 **Erratum E-2 (15 Oct 2026; `ERRATA.md`).** Building step 4c showed that the frozen Part 2 engine
 never called EP-7's `pre_transaction`, so the on-demand log checkpoint could not be its own committed
