@@ -4,6 +4,8 @@
 //! ```text
 //! sever-crashkit-p3 replay   --trace FILE --root DIR --mode plain|close|crash --out FILE
 //! sever-crashkit-p3 campaign --oracle FILE --root DIR --out FILE --seed N [Part 2's settings]
+//!                            [--crash-from N] [--method snapshot|replay|compare]
+//!                            [--compare-every N]
 //! sever-crashkit-p3 attacks  --root DIR --data nq-10k|synthetic --n N --out FILE
 //! sever-crashkit-p3 measure  --root DIR --data nq-10k|synthetic --n N --out FILE
 //! ```
@@ -109,7 +111,16 @@ fn real_main() -> Result<bool, String> {
                 limit_ops: a.get("limit-ops").and_then(|x| x.parse().ok()),
             };
             let from = num(&a, "crash-from", 0)? as usize;
-            let sum = campaign::run(&oracle, rows.as_ref(), &art, d, &s, from, &mut out)?;
+            let method =
+                campaign::Method::parse(a.get("method").map_or("snapshot", String::as_str))
+                    .ok_or("--method snapshot|replay|compare")?;
+            let every = num(&a, "compare-every", 0)? as usize;
+            let points = campaign::Points {
+                crash_from: from,
+                method,
+                compare_every: every,
+            };
+            let sum = campaign::run(&oracle, rows.as_ref(), &art, d, &s, points, &mut out)?;
             sum.failures() == 0 && sum.skipped == 0
         }
         "attacks" | "measure" => {

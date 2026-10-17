@@ -226,6 +226,9 @@ fn group_checks(db: &Db, cid: CollectionId, model: &Model, rep: &mut Report, run
     }
 }
 
+/// Segment size of the WAL, the payload store and the log's stores during a replay.
+const SEGMENT: u64 = 4 << 20;
+
 /// Replays `trace` (paths in its header resolved against `root`) in `mode`.
 pub fn replay(trace: &Path, root: &Path, mode: Mode) -> Result<Report, String> {
     let file = File::open(trace).map_err(|e| format!("{}: {e}", trace.display()))?;
@@ -256,7 +259,14 @@ pub fn replay(trace: &Path, root: &Path, mode: Mode) -> Result<Report, String> {
         .map_err(|e| e.0)?;
     let top_k = header["top_k"].as_u64().unwrap_or(100) as usize;
 
-    let world = World::new(d, EngineConfig::default(), 64 << 20)?;
+    // DB-88: 4 MiB segments. `SimVfs` copies a file on its first write after an `fsync`, so with
+    // the default 64 MiB segments every insert copied up to 64 MiB; the state is the same.
+    let cfg = EngineConfig {
+        wal_segment_bytes: SEGMENT,
+        store_segment_bytes: SEGMENT,
+        ..EngineConfig::default()
+    };
+    let world = World::new(d, cfg, SEGMENT)?;
     let disks = Disks::new();
     let mut db = world.open(&disks).map_err(|e| format!("open: {e}"))?;
     let cid = db
@@ -274,7 +284,11 @@ pub fn replay(trace: &Path, root: &Path, mode: Mode) -> Result<Report, String> {
     let mut deleted = HashSet::new();
     let timing = std::env::var_os("SEVER_KIT_TIMING").is_some();
     let mut spent: BTreeMap<&'static str, std::time::Duration> = BTreeMap::new();
-    for line in lines {
+    // Smoke runs only: stop after this many trace lines (the gate replays every line).
+    let limit = std::env::var("SEVER_KIT_LIMIT_LINES")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok());
+    for line in lines.take(limit.unwrap_or(usize::MAX)) {
         let t0 = std::time::Instant::now();
         let line = line.map_err(|e| format!("read: {e}"))?;
         let op: Value = serde_json::from_str(&line).map_err(|e| format!("line: {e}"))?;

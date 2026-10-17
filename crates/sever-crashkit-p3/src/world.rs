@@ -9,7 +9,7 @@ use sever_engine::{EngineConfig, FailurePolicy};
 use sever_p3::{Db, Settings, open_on};
 use sever_txn::SimClock;
 use sever_types::{CollectionId, Error};
-use sever_vfs::{CrashPolicy, SimVfs};
+use sever_vfs::{CrashPolicy, SimVfs, Vfs};
 
 /// The fixed simulated time: one epoch, so every run signs with the same operator epoch.
 pub const T0: u64 = 1_790_000_000_000;
@@ -115,16 +115,17 @@ impl World {
 
     /// Opens (recovering, or creating) the database on `disks`.
     pub fn open(&self, disks: &Disks) -> Result<Db, Error> {
+        self.open_vfs(Arc::new(disks.data.clone()), Arc::new(disks.keys.clone()))
+    }
+
+    /// Opens the database on any data and key directories (the main line's [`crate::snap`]).
+    pub fn open_vfs(&self, data: Arc<dyn Vfs>, keys: Arc<dyn Vfs>) -> Result<Db, Error> {
         let mut s = Settings::new(self.d());
         s.clock = self.clock.clone();
         s.engine = self.cfg.clone();
         s.log_segment_bytes = self.log_segment;
         s.generators = Some(Arc::clone(&self.gens));
-        open_on(
-            Arc::new(disks.data.clone()),
-            Arc::new(disks.keys.clone()),
-            s,
-        )
+        open_on(data, keys, s)
     }
 
     /// What `prepare_insert` does (§16.2): quantise, `r_t` from the OS, `C_t`, sign.

@@ -13,6 +13,9 @@ what fair testing takes its blind bugs from (DB-75, ``docs/FAIR_TESTING.md`` FT-
 engine with a crash at every VFS operation (``sever-crashkit-p3 campaign``); per seed the oracle
 checks every recovered state, and the kit checks the log after every recovery: no orphaned leaf, no
 certificate for a rolled-back deletion, every delete leaf's certificate retrievable and valid.
+Each crash point starts from the main line's snapshot of the disks before the crashing operation
+(DB-88); every 50th operation's points are also made the old way and must give the same files and
+recovered state.
 
 ``p3-replay`` is gate P3-T5 (T-3, complete): Part 1's frozen traces through the Part 3 engine, with
 the five-field equivalence, ``C_S`` = Σ ``C_t`` and every certificate checked against the commitment
@@ -310,6 +313,9 @@ def _verifier(root: Path) -> Path:
     return root / VERIFIER / "target/release/sever-verify"
 
 
+COMPARE_EVERY = 50
+
+
 def _crash_seed(root: Path, data: str, seed: int, kit: Path, extra: list[str]) -> dict[str, Any]:
     t0 = time.time()
     oracle_path = root / f"traces/p2-oracle-{data}-seed{seed}.jsonl"
@@ -328,6 +334,12 @@ def _crash_seed(root: Path, data: str, seed: int, kit: Path, extra: list[str]) -
             str(out),
             "--seed",
             str(seed),
+            # DB-88: crash points from the main line's snapshots; every 50th operation's points
+            # are also made by reopening and replaying, and any difference fails the gate.
+            "--method",
+            "snapshot",
+            "--compare-every",
+            str(COMPARE_EVERY),
             *extra,
         ],
         cwd=root,
@@ -344,6 +356,7 @@ def _crash_seed(root: Path, data: str, seed: int, kit: Path, extra: list[str]) -
         "bad_certificates",
         "main_mismatches",
         "skipped",
+        "method_mismatches",
     )
     passed = (
         run.returncode == 0
@@ -351,6 +364,7 @@ def _crash_seed(root: Path, data: str, seed: int, kit: Path, extra: list[str]) -
         and verdict.get("crash_points", 0) > 0
         and all(summary.get(k) == 0 for k in p3)
         and summary.get("certificates_checked", 0) > 0
+        and summary.get("compared", 0) > 0
     )
     result = {
         "seed": seed,

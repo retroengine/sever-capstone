@@ -18,7 +18,9 @@
 //! and a summary line with the Part 3 counts.
 
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::io::Write;
+use std::sync::Arc;
 use std::time::Instant;
 
 use serde_json::json;
@@ -30,9 +32,11 @@ use sever_p3::{Db, Deleted};
 use sever_types::{CollectionId, Error};
 use sever_vfs::rng::SplitMix64;
 use sever_vfs::{CrashPolicy, FaultPlan};
+use sha2::{Digest, Sha256};
 
 use crate::check::accept;
 use crate::core::core_digest;
+use crate::snap::{SnapVfs, listing};
 use crate::world::{Cred, Disks, World};
 
 /// What the campaign saw.
@@ -68,6 +72,11 @@ pub struct Summary {
     pub bad_certificates: u64,
     /// Certificates checked.
     pub certificates_checked: u64,
+    /// `--method compare`: points where the snapshot and the replay of the operation gave
+    /// different files, lengths, recovered states or logs.
+    pub method_mismatches: u64,
+    /// Crash points made both ways and compared (`--method compare`, `--compare-every`).
+    pub compared: u64,
     /// Wall-clock seconds.
     pub seconds: u64,
 }
@@ -83,6 +92,30 @@ impl Summary {
             + self.orphaned_leaves
             + self.rolled_back_certificates
             + self.bad_certificates
+            + self.method_mismatches
+    }
+}
+
+/// How a crash point's disks are made (DB-88).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Method {
+    /// From the main line's snapshot before the crashing operation (a torn write: by replay).
+    Snapshot,
+    /// Reopen the disks before the operation and run it with a crash at its `k`-th operation.
+    Replay,
+    /// Both, reporting the replay's result and counting every difference.
+    Compare,
+}
+
+impl Method {
+    /// `snapshot`, `replay` or `compare`.
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "snapshot" => Some(Self::Snapshot),
+            "replay" => Some(Self::Replay),
+            "compare" => Some(Self::Compare),
+            _ => None,
+        }
     }
 }
 
@@ -107,6 +140,14 @@ struct Run<'a> {
     creds: RefCell<Vec<Option<Cred>>>,
     /// Leaves after the first `i` operations on the main line.
     leaves: Vec<u64>,
+    /// Seconds per phase of a crash point (`SEVER_KIT_TIMING`): base open, the crashing
+    /// operation, the recovery, the log check, the retry.
+    phases: [f64; 5],
+    method: Method,
+    /// With [`Method::Snapshot`]: every n-th operation's points are made both ways (0: none).
+    compare_every: usize,
+    /// Certificates (with their anchors) that passed §11.3 in this run.
+    accepted: RefCell<HashSet<[u8; 32]>>,
 }
 
 enum Done {
@@ -186,7 +227,7 @@ impl Run<'_> {
             }
             self.sum.certificates_checked += 1;
             match db.certificate(lsn) {
-                Ok(Some(c)) if accept(&db.anchors(), db.generators(), &c).is_ok() => {}
+                Ok(Some(c)) if self.accepts(db, &c) => {}
                 _ => self.sum.bad_certificates += 1,
             }
         }
@@ -195,6 +236,25 @@ impl Run<'_> {
                 self.sum.rolled_back_certificates += 1;
             }
         }
+    }
+
+    /// §11.3 on `cert`. The check is a pure function of the anchors and the bytes, and a point
+    /// that recovers to the committed state holds the main line's own certificate, so a verdict
+    /// is remembered by the SHA-256 of both (DB-88); only acceptances are remembered.
+    fn accepts(&self, db: &Db, cert: &[u8]) -> bool {
+        let a = db.anchors();
+        let mut h = Sha256::new();
+        h.update(format!("{a:?}").as_bytes());
+        h.update(cert);
+        let key: [u8; 32] = h.finalize().into();
+        if self.accepted.borrow().contains(&key) {
+            return true;
+        }
+        let ok = accept(&a, db.generators(), cert).is_ok();
+        if ok {
+            self.accepted.borrow_mut().insert(key);
+        }
+        ok
     }
 
     /// §15.1, §15.4: the retry of operation `i` after a recovery.
@@ -224,34 +284,78 @@ impl Run<'_> {
             && Self::size(db) == self.leaves.get(i + 1).copied()
     }
 
-    #[allow(clippy::too_many_arguments)]
-    fn crash(
+    /// The old way: the disks before operation `i`, reopened, and the operation run with a crash
+    /// during its `k`-th mutating VFS operation; `None` if it completed.
+    fn replay_point(
         &mut self,
         base: &Disks,
         cid: CollectionId,
         i: usize,
         k: u64,
         tear: usize,
+    ) -> Result<Option<Disks>, String> {
+        let d = base.fork();
+        let t = Instant::now();
+        let db = self
+            .world
+            .open(&d)
+            .map_err(|e| format!("op {i}: base did not open: {e}"))?;
+        self.phases[0] += t.elapsed().as_secs_f64();
+        let t = Instant::now();
+        d.data.set_faults(FaultPlan {
+            crash_at_op: Some(k),
+            tear_bytes: tear,
+            ..FaultPlan::default()
+        });
+        let ran = self.exec(&db, cid, i);
+        self.phases[1] += t.elapsed().as_secs_f64();
+        Ok(if ran.is_ok() { None } else { Some(d) })
+    }
+
+    /// One crash point: operation `i` with a crash during its `k`-th mutating VFS operation.
+    /// `pre` is the main line's snapshot before that operation, `torn` whether the operation is a
+    /// write that `tear` bytes of would reach the page cache.
+    #[allow(clippy::too_many_arguments)]
+    fn crash(
+        &mut self,
+        base: &Disks,
+        pre: Option<&Disks>,
+        cid: CollectionId,
+        i: usize,
+        k: u64,
+        tear: usize,
+        torn: bool,
         policy: CrashPolicy,
         kind: &str,
     ) -> Result<(), String> {
-        let d = base.fork();
-        {
-            let db = self
-                .world
-                .open(&d)
-                .map_err(|e| format!("op {i}: base did not open: {e}"))?;
-            d.data.set_faults(FaultPlan {
-                crash_at_op: Some(k),
-                tear_bytes: tear,
-                ..FaultPlan::default()
-            });
-            if self.exec(&db, cid, i).is_ok() {
-                self.sum.skipped += 1;
-                return Ok(());
+        let snap = pre.filter(|_| tear == 0 || !torn);
+        let method = match self.method {
+            Method::Snapshot if self.compare_every > 0 && i % self.compare_every == 0 => {
+                Method::Compare
+            }
+            m => m,
+        };
+        let (d, twin) = match (snap, method) {
+            (Some(p), Method::Snapshot) => (p.fork(), None),
+            (p, m) => {
+                let Some(d) = self.replay_point(base, cid, i, k, tear)? else {
+                    self.sum.skipped += 1;
+                    if p.is_some() && m == Method::Compare {
+                        self.sum.method_mismatches += 1;
+                    }
+                    return Ok(());
+                };
+                (d, p.filter(|_| m == Method::Compare).map(Disks::fork))
+            }
+        };
+        d.restart(policy);
+        if let Some(t) = &twin {
+            self.sum.compared += 1;
+            t.restart(policy);
+            if listing(&t.data) != listing(&d.data) || listing(&t.keys) != listing(&d.keys) {
+                self.sum.method_mismatches += 1;
             }
         }
-        d.restart(policy);
         self.points += 1;
         let dim = self.world.d();
         let double_now = self.s.double_every > 0 && self.points % self.s.double_every == 0;
@@ -273,13 +377,34 @@ impl Run<'_> {
         } else {
             None
         };
+        let t = Instant::now();
+        if let Some(t) = &twin {
+            let other = self
+                .world
+                .open(t)
+                .ok()
+                .map(|db| (Self::digest(&db, cid, dim), Self::size(&db)));
+            let this = self
+                .world
+                .open(&d.fork())
+                .ok()
+                .map(|db| (Self::digest(&db, cid, dim), Self::size(&db)));
+            if other != this {
+                self.sum.method_mismatches += 1;
+            }
+        }
         let (state, retry) = match self.world.open(&d) {
             Ok(db) => {
+                self.phases[2] += t.elapsed().as_secs_f64();
+                let t = Instant::now();
                 let st = Self::digest(&db, cid, dim);
                 let committed = st.as_ref() == self.oracle.digests.get(i + 1);
                 let from = self.leaves.get(i).copied().unwrap_or(0);
                 self.check_log(&db, if committed { i + 1 } else { i }, from);
+                self.phases[3] += t.elapsed().as_secs_f64();
+                let t = Instant::now();
                 let retry = self.retry_ok(&db, cid, i, committed);
+                self.phases[4] += t.elapsed().as_secs_f64();
                 (st, retry)
             }
             Err(_) => (None, false),
@@ -316,17 +441,32 @@ impl Run<'_> {
     }
 }
 
+/// Which crash points are made, and how (beside Part 2's [`Settings`]).
+#[derive(Clone, Copy, Debug)]
+pub struct Points {
+    /// Operations before this one run on the main line only (smoke runs; the gate uses 0).
+    pub crash_from: usize,
+    /// How each point's disks are made.
+    pub method: Method,
+    /// With [`Method::Snapshot`]: every n-th operation's points are made both ways (0: none).
+    pub compare_every: usize,
+}
+
 /// Runs the campaign on dimension `d`; one JSON line per crash point, then the summary line.
-/// Operations before `crash_from` run on the main line only (smoke runs; the gate uses 0).
 pub fn run(
     oracle: &Oracle,
     rows: &dyn Rows,
     artefact: &[u8],
     d: usize,
     s: &Settings,
-    crash_from: usize,
+    points: Points,
     out: &mut dyn Write,
 ) -> Result<Summary, String> {
+    let Points {
+        crash_from,
+        method,
+        compare_every,
+    } = points;
     let t0 = Instant::now();
     let cfg = EngineConfig {
         wal_segment_bytes: s.wal_segment,
@@ -345,9 +485,17 @@ pub fn run(
         points: 0,
         creds: RefCell::new(Vec::new()),
         leaves: vec![0],
+        phases: [0.0; 5],
+        method,
+        compare_every,
+        accepted: RefCell::new(HashSet::new()),
     };
     let main = Disks::new();
-    let db = run.world.open(&main).map_err(|e| format!("create: {e}"))?;
+    let snapper = SnapVfs::new(&main);
+    let db = run
+        .world
+        .open_vfs(Arc::new(snapper.clone()), Arc::new(main.keys.clone()))
+        .map_err(|e| format!("create: {e}"))?;
     let cid = db
         .create_collection(
             artefact,
@@ -385,10 +533,28 @@ pub fn run(
     for i in 0..n {
         let base = main.fork();
         main.data.set_faults(FaultPlan::default());
+        let snapping = i >= crash_from && method != Method::Replay;
+        snapper.record(snapping);
         run.exec(&db, cid, i)
             .map_err(|e| format!("main line, op {i}: {e}"))?;
         let m = main.data.ops_since_plan();
         let writes = main.data.write_log();
+        let snaps = snapper.take();
+        snapper.record(false);
+        if snapping && snaps.len() as u64 != m {
+            return Err(format!(
+                "op {i}: {} snapshots for {m} operations",
+                snaps.len()
+            ));
+        }
+        let pre = |k: u64| snaps.get(usize::try_from(k).ok()?.checked_sub(1)?);
+        let torn = |k: u64| {
+            usize::try_from(k)
+                .ok()
+                .and_then(|k| k.checked_sub(1))
+                .and_then(|k| writes.get(k))
+                .is_some_and(|w| w.1 > 0)
+        };
         run.sum.ops += 1;
         run.leaves.push(Run::size(&db).ok_or("log")?);
         if Run::digest(&db, cid, d).as_ref() != oracle.digests.get(i + 1) {
@@ -405,7 +571,7 @@ pub fn run(
                     1 => CrashPolicy::KeepAll,
                     _ => CrashPolicy::Random(s.seed ^ rotate),
                 };
-                run.crash(&base, cid, i, k, 0, policy, "step")?;
+                run.crash(&base, pre(k), cid, i, k, 0, torn(k), policy, "step")?;
             }
         }
         if offset_ops.binary_search(&i).is_ok() {
@@ -415,15 +581,9 @@ pub fn run(
                     continue;
                 }
                 for tear in (512..*size).step_by(512) {
-                    run.crash(
-                        &base,
-                        cid,
-                        i,
-                        k as u64 + 1,
-                        tear,
-                        CrashPolicy::KeepAll,
-                        "offset",
-                    )?;
+                    let k = k as u64 + 1;
+                    let (p, t) = (pre(k), torn(k));
+                    run.crash(&base, p, cid, i, k, tear, t, CrashPolicy::KeepAll, "offset")?;
                 }
             }
         }
@@ -434,7 +594,7 @@ pub fn run(
                 1 => CrashPolicy::KeepAll,
                 _ => CrashPolicy::Random(p),
             };
-            run.crash(&base, cid, i, k, tear, policy, "random")?;
+            run.crash(&base, pre(k), cid, i, k, tear, torn(k), policy, "random")?;
         }
     }
     // The main line's own certificates, all of them, at the end.
@@ -445,6 +605,12 @@ pub fn run(
         run.sum.main_mismatches += 1;
     }
     run.sum.seconds = t0.elapsed().as_secs();
+    if std::env::var_os("SEVER_KIT_TIMING").is_some() {
+        let [a, b, c, e, f] = run.phases;
+        eprintln!(
+            "timing: base open {a:.1} s, crashing op {b:.1} s, recovery {c:.1} s, log check {e:.1} s, retry {f:.1} s"
+        );
+    }
     let sum = run.sum.clone();
     let line = json!({
         "t": "summary", "ops": sum.ops, "step": sum.step, "offset": sum.offset,
@@ -454,7 +620,9 @@ pub fn run(
         "skipped": sum.skipped, "orphaned_leaves": sum.orphaned_leaves,
         "rolled_back_certificates": sum.rolled_back_certificates,
         "bad_certificates": sum.bad_certificates,
-        "certificates_checked": sum.certificates_checked, "seconds": sum.seconds,
+        "certificates_checked": sum.certificates_checked,
+        "method_mismatches": sum.method_mismatches, "compared": sum.compared,
+        "seconds": sum.seconds,
     });
     writeln!(run.out, "{line}").map_err(|e| e.to_string())?;
     Ok(sum)

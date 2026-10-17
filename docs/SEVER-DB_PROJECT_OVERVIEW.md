@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-87)](#6-decision-register-db-1--db-53-db-55--db-87)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-88)](#6-decision-register-db-1--db-53-db-55--db-88)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-87)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-88)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1017,6 +1017,32 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-88 — Crash points from the main line's snapshots; smaller segments in the replay (17 October 2026)
+
+**Decision.** (1) The Part 3 crash campaign (P3-T4) wraps the main line's data disk in a `SnapVfs`
+(`sever-crashkit-p3::snap`) that forks both simulated disks before every mutating VFS operation. A
+crash point during the `k`-th operation with no torn bytes restarts the fork taken before it,
+instead of reopening the disks from before the operation and running it again up to `k`: in
+`SimVfs` the crashing operation does not complete, so the two give the same disks. A torn write
+(the 512-byte offsets and the random points that land on a write) is still made by replay. (2) The
+gate checks this on its own run: every 50th operation's points are made both ways
+(`--compare-every 50`), the two disks must hold the same files with the same lengths and recover to
+the same state and log, and any difference (`method_mismatches`) fails the gate. (3) The trace
+replay (P3-T5) uses 4 MiB segments for the WAL, the payload store and the log's stores. (4) The
+campaign remembers, by SHA-256 of the anchors and the bytes, each certificate that passed §11.3 in
+the run (a point that recovers to the committed state holds the main line's own certificate; §11.3
+is a pure function of both); a rejection is never remembered. **Why.**
+Reopening and replaying was 45 % of every crash point (measured: 193 s against 115 s for the same
+2,451 inserts' points; at the first deletions 315 ms against 148 ms a point), and `SimVfs` copies a file on its first write after an `fsync`, so with 64 MiB
+segments every insert of the replay copied up to 64 MiB (an insert took 33 ms in the engine, 16 ms
+with 4 MiB). Together they bring Part 3's gate runs from about two days to about ten hours on the
+owner's laptop. **Evidence.** `--method compare` (every point both ways) on seed 42: the first 120
+operations (1,033 points, inserts) and operations 10,000–10,060 (deletions) and 17,843–17,873 (user
+deletions), 0 mismatches; a build that forks *after* the operation instead is caught (38 of 64
+compared points differ, exit 1). **Rejected.** Fewer crash points or fewer seeds (EX-1 fixes both);
+changing `SimVfs` (frozen Part 2); more parallel jobs (the laptop overheats). **Consequence.**
+Nothing in the engine changes. The old method stays available (`--method replay`).
 
 #### DB-87 — Part 3's gate tooling and demo (16 October 2026)
 
@@ -2093,6 +2119,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **17 October 2026 — Faster Part 3 gate runs.** DB-88 (crash points from the main line's
+  snapshots, checked against the old method on every 50th operation; accepted certificates
+  remembered within a run; 4 MiB segments in the trace replay). Specification sections touched: none.
 - **16 October 2026 — Part 3 gate tooling.** DB-87 (`sever-crashkit-p3`, INV-3 memo in test
   builds, `sever-verify --explain` and `--batch`, the Python demo). Specification sections
   touched: §16.3.
