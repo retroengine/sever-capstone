@@ -115,20 +115,20 @@ manifest entry with the claim JSON-quoted) and `verify2.sh ID…` (applies each 
 test with `cargo test -p PKG --lib -- --exact <module>::<name>` for `src/` tests or `--test <stem> --
 --exact <name>` for `tests/` files, prints the result, reverts). A refactor can stop older patches
 applying: `proofs check` names them; regenerate them with the same intent.
-**Module 11 resume point (16 Oct 2026, paused by the owner: laptop too hot; every test run was
-stopped, nothing is running).** Built and committed on `p3-gates`: traceability 102/102, the demo,
-the gate kit, the gate runners, fuzz crates, the proof spike (DB-87). Smoke results (not ledger
-gates): campaign at the deletion steps 306 crash points, 117 certificates checked, 0 failures;
-replay nq-10k seed 42 in crash mode passed (2,138,762 checks, 8,990 certificates, 1,026 five-field
-checks, 6 reopens, 0 failures); attacks on the fixture: every honest certificate accepted, all 20
-attacks rejected at a listed step. Interrupted, to be started again (the ledger holds their
-"started" lines only): `gates p3-attacks --data nq-10k --all-seeds --n 1000 --jobs 2` and
-`gates p3-crash --data nq-10k --all-seeds --jobs 3` (about 20–30 h). Still to run: `p3-replay`
-(P3-T5; nq-100k needs a faster replay first: an insert costs ~33 ms in the engine and ~7 ms for
-the credential at d = 384, so 100k inserts ≈ 1 h per seed before the rung checks; the per-op timing is
-behind `SEVER_KIT_TIMING=1`), `p3-fuzz --runs 100000000`, `p3-mutants`, `p3-coverage`, `p3-checks`,
-`p3-measures`, `p3-spikes` (then delete `spikes/p3-proof`), the fair run of Part 3, the freeze
-manifest (tag left to the owner). Run the long gates a few at a time (the laptop overheats).
+**Module 11 resume point (17 Oct 2026).** Built and committed on `p3-gates`: traceability 102/102,
+the demo, the gate kit, the gate runners, fuzz crates, the proof spike (DB-87), and the faster kit
+(726a2e1, DB-88: crash points from the main line's snapshots, every 50th operation also made the
+old way and compared, accepted certificates remembered; 4 MiB segments in the replay). Measured:
+148 ms a crash point at the first deletions (315 ms before), an insert of the replay 16 ms in the
+engine (33 ms before). `--method compare` on seed 42 (inserts, deletions, user deletions): 0
+mismatches; a build that snapshots after the operation is caught. Gate runs, all pinned to cores
+0–3 (`taskset -c 0-3`; the laptop overheats on more): `gates p3-crash --data nq-10k --all-seeds
+--jobs 4` started 17 Oct (about 4 h per seed). Then, as cores free up: `p3-replay --data nq-100k
+--all-seeds --jobs 2`, `p3-attacks --data nq-10k --all-seeds --n 1000 --jobs 2`, `p3-fuzz --runs
+100000000`, `p3-mutants`, `p3-coverage`, `p3-checks`, `p3-measures`, `p3-spikes` (then delete
+`spikes/p3-proof`); the fair run of Part 3 (owner's go); the freeze manifest (tag left to the owner).
+The ledger's earlier p3-crash and p3-attacks "started" lines without an end are the runs the owner
+stopped on 16 Oct.
 
 **Erratum E-2 (15 Oct 2026; `ERRATA.md`).** Building step 4c showed that the frozen Part 2 engine
 never called EP-7's `pre_transaction`, so the on-demand log checkpoint could not be its own committed
