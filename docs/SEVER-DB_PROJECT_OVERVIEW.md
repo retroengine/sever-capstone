@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-90)](#6-decision-register-db-1--db-53-db-55--db-90)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-91)](#6-decision-register-db-1--db-53-db-55--db-91)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-90)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-91)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1017,6 +1017,25 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-91 — Re-wrapped record keys live in the wrapped-key store, not in the slots (18 October 2026)
+
+**Decision.** At the owner's choice (18 October 2026, closing G-32): when a bucket rotates, the
+survivors' new envelopes are written by the key-rotation participant (ID 4) to its wrapped-key store
+`wrapped/<seq>.store` (renamed from DB-90's `buckets/`) and, in the same transaction, to the WAL as
+its `EXTENSION` records, each `scrambled_id ‖ u64be bucket_version ‖ envelope (60)`. A record's
+current envelope is the store's entry if its `bucket_version` is the bucket's current version, else
+the slot's (§14.4). The store also holds the bucket blocks (`u64be group_key_version`, highest wins)
+and a drop marker per dropped collection; every merge rule is monotonic, so the store and the WAL
+tail merge in any order; the store is compacted when it holds four times its live bytes. **Why.** The
+frozen EP-7 participant sees only the transaction's own records, never a survivor's slot, so it cannot
+write `SLOT_PUT`s for survivors (G-29's plan). Writing only envelopes is also what §13.6's 12.9 KB
+counts, and costs about 17 KB of WAL per deletion instead of about 180 KB. **Rejected.** A mirror of
+every slot in the participant (slot memory doubled, about +2 GB at nq-1m); an erratum exposing the
+image to participants (F-6 re-runs every later exit gate, including Part 3's running gates).
+**Consequence.** Closes G-32; revises DB-90 (3) and (4); spec §13.3, §13.6, §14.1, §14.4, §14.6 and
+§14.8 amended. A stale envelope left in a slot is wrapped under a rotated bucket key whose only
+wrappings were under erased group keys, so INV-12 and §13.5 hold unchanged.
 
 #### DB-90 — Part 4 design-review decisions: drop order, key-file slots, bucket store, the P4-T14 count, platform detection, two override flags (18 October 2026)
 
@@ -2164,6 +2183,8 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **18 October 2026 — Re-wrapped record keys.** DB-91 (survivors' envelopes in the wrapped-key
+  store; closes G-32). Specification sections touched: §13.3, §13.6, §14.1, §14.4, §14.6, §14.8.
 - **18 October 2026 — Part 4 starts.** DB-89 (Part 4 built before Part 3's freeze, on its own
   branch) and DB-90 (the owner accepted the design review's fixes; closes G-26 … G-31). Specification
   sections touched: §12.8, §12.9, §13.6, §14.1, §14.7, §14.8, §15.9, §18, Appendix A.

@@ -1099,7 +1099,8 @@ the holding area by a flush. For each domain `g` that loses records, the same tr
 1. generates a new group key `GK_g'` (version + 1);
 2. generates new bucket keys for every bucket that lost a record (version + 1);
 3. re-wraps all 64 bucket keys of `g` under `GK_g'`;
-4. re-wraps the surviving record keys of every rotated bucket under their new bucket keys;
+4. re-wraps the surviving record keys of every rotated bucket under their new bucket keys (the new
+   envelopes go to the wrapped-key store, §14.8; the slots are not rewritten, overview DB-91);
 5. re-encrypts `S ‖ r_agg` under `GK_g'` (not applicable to the holding area).
 
 Records **joining** a domain (insert, spillover, being moved into a new group by a flush) never rotate
@@ -1155,9 +1156,10 @@ and the accumulator (3,132 bytes): **about 12.9 KB**, versus about 342 KB if eve
 group had to be re-wrapped under a two-level scheme (Appendix A).
 
 The 12.9 KB counts the rewritten secret material: wrapped keys and the accumulator. The WAL carries
-more, because `SLOT_PUT` (§14.6) rewrites a survivor's whole slot to replace its 60-byte record-key
-envelope: about 180 KB per deletion at this group. P4-T14 reports both, the WAL bytes broken down by
-record type (overview DB-90).
+framing and identifiers besides: each re-wrapped envelope is logged with its `scrambled_id` and
+`bucket_version` (132 bytes, §14.6), the bucket block with its domain and version, so about 17 KB per
+deletion at this group. P4-T14 reports both, the WAL bytes broken down by record type (overview
+DB-90, DB-91).
 
 ---
 
@@ -1193,7 +1195,7 @@ own §6.3 format, verbatim. The byte layouts of every file are in §14.9.
   log/hashes/<seq>.store           every leaf's type, hash and placement, in order (DB-81, DB-86)
   log/checkpoints/<seq>.store      every log checkpoint with its cosignatures, keyed by tree size
   certs/<seq>.store                certificates, keyed by database_lsn (§14.8)
-  buckets/<seq>.store              bucket blocks (§14.5), wrapped; the latest per domain wins (§14.8)
+  wrapped/<seq>.store              bucket blocks and re-wrapped record keys; ciphertext only (§14.8)
   payloads/<seq>.store             encrypted passage text (§14.8)
 <key_dir>/                         MAY be a different filesystem (§12.9)
   KEYS                             the key file (§14.7)
@@ -1253,6 +1255,12 @@ record key is empty and the payload is stored without nonce and tag.
   it does not re-encrypt it.
 - Removing a member moves the **last** slot of the group into the vacated position (ciphertext is
   moved, not decrypted) and updates the moved record's locator entry in the same transaction.
+- **A record's current envelope** (overview DB-91). The slot's wrapped record key is the envelope the
+  record was written with. When its bucket rotates (§13.3 step 4) the new envelope is written to the
+  wrapped-key store (§14.8), not into the slot. A record's current envelope is the store's entry for
+  `(collection_id, group_id, scrambled_id)` if that entry's `bucket_version` is the bucket's current
+  version, and otherwise the slot's. A stale envelope left in a slot is wrapped under a bucket key
+  that was itself only ever wrapped under an erased group key, so it opens nothing (§13.5).
 
 ### 14.5 Bucket block (per group)
 
@@ -1276,7 +1284,7 @@ and are carried verbatim by the storage engine.
 | `BEGIN` | — |
 | `GROUP_CREATE` | New group header, `u32be len ‖` bucket block (empty before Part 4) |
 | `GROUP_HEADER` | Replacement group header (§14.3) |
-| `BUCKET_BLOCK` | Replacement bucket block |
+| `BUCKET_BLOCK` | `collection_id ‖ group_id ‖ u64be group_key_version ‖` bucket block (§14.5); owned by the key-rotation participant (DB-91) |
 | `SLOT_PUT` | `group_id ‖ slot index ‖ slot (1,992)` |
 | `SLOT_TRUNCATE` | `group_id ‖ new slot count` |
 | `LOCATOR_PUT` / `LOCATOR_DEL` | `scrambled_id ‖ (group_id ‖ slot index)` / `scrambled_id` (also drops the record's `PAYLOAD_REF`) |
@@ -1285,7 +1293,7 @@ and are carried verbatim by the storage engine.
 | `CERT_REF` | `database_lsn ‖ store segment ‖ offset ‖ length ‖ SHA-256` of the certificate |
 | `PAYLOAD_REF` | `scrambled_id ‖ u64be store segment ‖ u64be offset ‖ u32be length` |
 | `COUNTERS` | `N`, `k` of the collection (the next `database_lsn` is the log participant's, carried in its own records; DB-66) |
-| `EXTENSION` | `u16be participant_id ‖ bytes`, carried for a transaction participant and never interpreted by the storage engine (overview DB-45) |
+| `EXTENSION` | `u16be participant_id ‖ bytes`, carried for a transaction participant and never interpreted by the storage engine (overview DB-45). The key-rotation participant (ID 4, DB-91) writes `u8 kind ‖` the value of a wrapped-key store record of kind 2 or 3 (§14.8) |
 | `COMMIT` | — |
 | `COLLECTION_CREATE` | collection metadata (§14.9) `‖ u32be len ‖` partition artefact (§6.3 bytes) |
 | `COLLECTION_DROP` | — (the `collection_id` only) |
@@ -1316,12 +1324,22 @@ ciphertexts under the record key, so erasing the record key erases the text wher
 
 Each store file starts with the 16-byte file header of §14.9. The value of a record is at most 16 MiB.
 
-**Bucket store** (overview DB-90). Bucket blocks are the key-rotation participant's durable state, kept
-as Part 3's log keeps its own (overview DB-81): `buckets/<seq>.store` holds records keyed by a
-sequence number whose value is `collection_id (16) ‖ group_id (32) ‖ bucket block (§14.5)`, written
-in phase C with committed blocks only; the latest record per domain wins, and the WAL tail (its
-`BUCKET_BLOCK` records) restores what a crash cut off. The store is created at the participant's first
-recovery. Every key in it is wrapped under a group key, so it holds ciphertext only.
+**Wrapped-key store** (overview DB-90, DB-91). The key-rotation participant's durable state, kept as
+Part 3's log keeps its own (overview DB-81): `wrapped/<seq>.store` holds records keyed by a sequence
+number, written in phase C with committed entries only. Each value starts with a `u8 kind`:
+
+| Kind | Value after the kind byte | Merge rule |
+|---|---|---|
+| 1 bucket block | `collection_id (16) ‖ group_id (32) ‖ u64be group_key_version ‖ bucket block (§14.5)` | the highest `group_key_version` per domain wins |
+| 2 envelopes | `collection_id ‖ group_id ‖ u32be count ‖ count × (scrambled_id (64) ‖ u64be bucket_version ‖ envelope (60))` | per record, the highest `bucket_version` wins |
+| 3 drop | `collection_id` | the collection and all its domains are gone |
+
+Every rule is monotonic, so the store and the WAL tail (the same values in `BUCKET_BLOCK` and the
+participant's `EXTENSION` records, §14.6) can be merged in any order: recovery loads the store, then
+replays the WAL tail. The store is created at the participant's first recovery. When it holds more
+than four times the bytes of its live entries, the participant writes the live entries to a new
+segment, `fsync`s it, and only then removes the older segments. Every key in it is wrapped (record
+keys under bucket keys, bucket keys under group keys), so it holds ciphertext only.
 
 ### 14.9 File layouts (overview DB-67)
 
