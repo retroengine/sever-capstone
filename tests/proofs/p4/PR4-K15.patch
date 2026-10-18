@@ -1,0 +1,11 @@
+--- a/crates/sever-keys/src/lib.rs
++++ b/crates/sever-keys/src/lib.rs
+@@ -33,7 +33,7 @@
+     /// A fresh key from the OS CSPRNG (§13.1). There is no seeded variant (CLAUDE.md §6.2).
+     pub fn generate() -> Self {
+         let mut buf = SecretBuf::new(KEY_BYTES);
+-        OsRng.fill_bytes(buf.as_bytes_mut());
++        buf.as_bytes_mut().fill(7);
+         Self(buf)
+     }
+ 

@@ -1,0 +1,20 @@
+[package]
+name = "sever-keys"
+version = "0.1.0"
+description = "Key types in secret memory, the bucket function, the two-slot key file and its recovery rule (Part 4, spec §13.1, §13.4, §14.7)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-vfs = { path = "../sever-vfs" }
+crc32c = "=0.6.8" # spec §20.1
+rand_core = { version = "=0.6.4", features = ["getrandom"] } # spec §13.1, §20.1: keys from the OS
+zeroize = "=1.9.0" # spec §12.8, §20.1
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+
+[lints]
+workspace = true

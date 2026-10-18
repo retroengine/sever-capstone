@@ -1,0 +1,11 @@
+--- a/crates/sever-keys/src/lib.rs
++++ b/crates/sever-keys/src/lib.rs
+@@ -75,7 +75,7 @@
+ /// A record's bucket: `b(t) = scrambled_id[0] mod 64` (§13.1). It depends only on the scrambled
+ /// ID, so it never changes while the record is live.
+ pub fn bucket_of(scrambled_id: &[u8; 64]) -> u8 {
+-    scrambled_id[0] % BUCKETS
++    scrambled_id[0] % 63
+ }
+ 
+ /// A domain: the owner of one group key, named by its collection and group (§13.1, §14.7). The

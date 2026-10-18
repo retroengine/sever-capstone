@@ -1,0 +1,11 @@
+--- a/crates/sever-keys/src/file.rs
++++ b/crates/sever-keys/src/file.rs
+@@ -31,7 +31,7 @@
+ /// Every slot's magic (DB-90).
+ pub const SLOT_MAGIC: &[u8; 4] = b"SVKS";
+ /// The format version (§14.9: every version is 1 in v1).
+-pub const VERSION: u16 = 1;
++pub const VERSION: u16 = 2;
+ 
+ /// The key file's size with `domains` pairs: 4 KB plus 1 KB per domain (§14.7, Appendix A).
+ pub fn file_size(domains: u64) -> u64 {

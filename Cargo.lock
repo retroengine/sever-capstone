@@ -676,6 +676,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-keys"
+version = "0.1.0"
+dependencies = [
+ "crc32c",
+ "rand_core",
+ "sever-spec",
+ "sever-types",
+ "sever-vfs",
+ "zeroize",
+]
+
+[[package]]
 name = "sever-log"
 version = "0.1.0"
 dependencies = [

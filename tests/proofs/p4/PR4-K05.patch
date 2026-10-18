@@ -1,0 +1,11 @@
+--- a/crates/sever-keys/src/file.rs
++++ b/crates/sever-keys/src/file.rs
+@@ -126,7 +126,7 @@
+         x.copy_from_slice(field(a, a + 8));
+         u64::from_be_bytes(x)
+     };
+-    if field(0, 4) != SLOT_MAGIC || !crc_ok(s) || field(100, SLOT_BYTES - 4).iter().any(|b| *b != 0)
++    if field(0, 4) != SLOT_MAGIC || field(100, SLOT_BYTES - 4).iter().any(|b| *b != 0)
+     {
+         return SlotState::Torn;
+     }

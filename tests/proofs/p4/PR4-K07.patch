@@ -1,0 +1,11 @@
+--- a/crates/sever-keys/src/file.rs
++++ b/crates/sever-keys/src/file.rs
+@@ -249,7 +249,7 @@
+     /// Appends a pair for a new domain: slot 0 holds `key` at `key_version`, slot 1 is erased.
+     /// Returns the domain's index (the pair's position), durable when this returns.
+     pub fn append(&mut self, domain: Domain, key_version: u64, key: &Key) -> Result<u64, Error> {
+-        let index = self.pairs;
++        let index = self.pairs * 2;
+         let slot = encode_slot(&SlotRecord {
+             domain_index: index,
+             key_version,

@@ -1,0 +1,13 @@
+--- a/crates/sever-keys/src/recovery.rs
++++ b/crates/sever-keys/src/recovery.rs
+@@ -64,9 +64,7 @@
+                         key_version,
+                         key,
+                     };
+-                    if out.keys.insert(domain, found).is_some() {
+-                        return Err(inv14());
+-                    }
++                    out.keys.insert(domain, found);
+                 }
+             }
+         }

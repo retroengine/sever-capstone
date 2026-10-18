@@ -1,0 +1,13 @@
+--- a/crates/sever-keys/src/recovery.rs
++++ b/crates/sever-keys/src/recovery.rs
+@@ -55,7 +55,9 @@
+                     ..
+                 }) => {
+                     if active.get(&domain) != Some(&key_version) {
+-                        out.erase.push((pair, slot));
++                        if !active.contains_key(&domain) {
++                            out.erase.push((pair, slot));
++                        }
+                         continue;
+                     }
+                     let found = ActiveKey {

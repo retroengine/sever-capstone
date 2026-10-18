@@ -1,0 +1,13 @@
+--- a/crates/sever-keys/src/file.rs
++++ b/crates/sever-keys/src/file.rs
+@@ -106,8 +106,8 @@
+     put(s, 4, &r.domain_index.to_be_bytes());
+     put(s, 12, &r.key_version.to_be_bytes());
+     put(s, 20, r.key.as_bytes());
+-    put(s, 52, &r.domain.collection_id);
+-    put(s, 68, &r.domain.group_id);
++    put(s, 84, &r.domain.collection_id);
++    put(s, 52, &r.domain.group_id);
+     seal_crc(s);
+     buf
+ }
