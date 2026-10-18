@@ -81,7 +81,52 @@ pub struct Summary {
     pub seconds: u64,
 }
 
+/// The summary's fields by name, in the order of the summary line.
+macro_rules! summary_fields {
+    ($m:ident) => {
+        $m!(
+            ops,
+            step,
+            offset,
+            random,
+            double,
+            main_mismatches,
+            not_oracle_state,
+            refusals,
+            bad_retries,
+            double_mismatches,
+            skipped,
+            orphaned_leaves,
+            rolled_back_certificates,
+            bad_certificates,
+            certificates_checked,
+            method_mismatches,
+            compared,
+            seconds
+        )
+    };
+}
+
 impl Summary {
+    /// Every field by name (the summary line, and the saved progress).
+    pub fn to_json(&self) -> serde_json::Map<String, serde_json::Value> {
+        let mut m = serde_json::Map::new();
+        macro_rules! put {
+            ($($f:ident),*) => { $( m.insert(stringify!($f).into(), self.$f.into()); )* };
+        }
+        summary_fields!(put);
+        m
+    }
+
+    /// Parses [`Summary::to_json`]; every field must be present.
+    pub fn from_json(v: &serde_json::Value) -> Option<Self> {
+        let u = |k: &str| v.get(k).and_then(serde_json::Value::as_u64);
+        macro_rules! get {
+            ($($f:ident),*) => { Some(Self { $( $f: u(stringify!($f))?, )* }) };
+        }
+        summary_fields!(get)
+    }
+
     /// Every failure count.
     pub fn failures(&self) -> u64 {
         self.main_mismatches
@@ -452,21 +497,80 @@ pub struct Points {
     pub compare_every: usize,
 }
 
-/// Runs the campaign on dimension `d`; one JSON line per crash point, then the summary line.
+/// Where a campaign stands after a whole operation: enough to continue it in a new process with
+/// the same results as an uninterrupted run (as Part 2's `sever_crashkit::campaign::Progress`; the
+/// results file is cut back to the same point). A resumed main line draws new `r_t` from the OS,
+/// which changes no result line: states are compared in the core form, without `C_S ‖ r_agg`.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Progress {
+    /// Operations whose crash points are all written.
+    pub done: usize,
+    /// The step-policy rotation counter.
+    pub rotate: u64,
+    /// Crash points so far (drives the double-crash choice).
+    pub points: u64,
+    /// The campaign generator's state.
+    pub rng: u64,
+    /// The summary so far (`seconds` includes earlier attempts).
+    pub sum: Summary,
+}
+
+impl Progress {
+    /// One JSON object.
+    pub fn to_json(&self) -> serde_json::Value {
+        json!({"done": self.done, "rotate": self.rotate, "points": self.points, "rng": self.rng,
+            "sum": self.sum.to_json()})
+    }
+
+    /// Parses [`Progress::to_json`].
+    pub fn from_json(v: &serde_json::Value) -> Option<Self> {
+        let u = |k: &str| v.get(k).and_then(serde_json::Value::as_u64);
+        Some(Self {
+            done: usize::try_from(u("done")?).ok()?,
+            rotate: u("rotate")?,
+            points: u("points")?,
+            rng: u("rng")?,
+            sum: Summary::from_json(v.get("sum")?)?,
+        })
+    }
+}
+
+/// Continuing from saved progress, and saving it as the campaign goes.
+pub struct Checkpointing<'a> {
+    /// The progress to continue from (`None`: a fresh run).
+    pub from: Option<Progress>,
+    /// How often to save.
+    pub every: std::time::Duration,
+    /// Called with the progress and `out`, so it can flush and sync `out` first.
+    pub save: &'a mut dyn FnMut(&Progress, &mut dyn Write) -> Result<(), String>,
+}
+
+/// How often the campaign saves its progress.
+pub const PROGRESS_EVERY: std::time::Duration = std::time::Duration::from_secs(30);
+
+/// Runs the campaign; one JSON line per crash point, then the summary line.
 pub fn run(
     oracle: &Oracle,
     rows: &dyn Rows,
     artefact: &[u8],
-    d: usize,
     s: &Settings,
     points: Points,
     out: &mut dyn Write,
+    ck: Checkpointing<'_>,
 ) -> Result<Summary, String> {
     let Points {
         crash_from,
         method,
         compare_every,
     } = points;
+    let Checkpointing {
+        from: resume,
+        every,
+        save,
+    } = ck;
+    let d = sever_partition::PartitionArtefact::parse(artefact)
+        .map_err(|e| format!("artefact: {e}"))?
+        .d;
     let t0 = Instant::now();
     let cfg = EngineConfig {
         wal_segment_bytes: s.wal_segment,
@@ -530,7 +634,27 @@ pub fn run(
         .collect();
     random.sort_unstable();
     let mut rotate = 0u64;
+    let mut done = 0;
+    let mut earlier_seconds = 0;
+    if let Some(p) = resume {
+        // Every seeded choice above was drawn again identically; restore what came after.
+        done = p.done;
+        rotate = p.rotate;
+        run.points = p.points;
+        run.rng = SplitMix64::new(p.rng);
+        earlier_seconds = p.sum.seconds;
+        run.sum = p.sum;
+    }
+    let mut last_save = Instant::now();
     for i in 0..n {
+        if i < done {
+            // Already done: only rebuild the main line's state and log (no crash points, no
+            // counts).
+            run.exec(&db, cid, i)
+                .map_err(|e| format!("main line (resume), op {i}: {e}"))?;
+            run.leaves.push(Run::size(&db).ok_or("log")?);
+            continue;
+        }
         let base = main.fork();
         main.data.set_faults(FaultPlan::default());
         let snapping = i >= crash_from && method != Method::Replay;
@@ -596,6 +720,19 @@ pub fn run(
             };
             run.crash(&base, pre(k), cid, i, k, tear, torn(k), policy, "random")?;
         }
+        if last_save.elapsed() >= every {
+            let mut sum = run.sum.clone();
+            sum.seconds = earlier_seconds + t0.elapsed().as_secs();
+            let p = Progress {
+                done: i + 1,
+                rotate,
+                points: run.points,
+                rng: run.rng.state(),
+                sum,
+            };
+            save(&p, run.out)?;
+            last_save = Instant::now();
+        }
     }
     // The main line's own certificates, all of them, at the end.
     let size = Run::size(&db).ok_or("log")?;
@@ -604,7 +741,7 @@ pub fn run(
     if run.sum.bad_certificates != before || Run::size(&db) != Some(size) {
         run.sum.main_mismatches += 1;
     }
-    run.sum.seconds = t0.elapsed().as_secs();
+    run.sum.seconds = earlier_seconds + t0.elapsed().as_secs();
     if std::env::var_os("SEVER_KIT_TIMING").is_some() {
         let [a, b, c, e, f] = run.phases;
         eprintln!(
@@ -612,18 +749,8 @@ pub fn run(
         );
     }
     let sum = run.sum.clone();
-    let line = json!({
-        "t": "summary", "ops": sum.ops, "step": sum.step, "offset": sum.offset,
-        "random": sum.random, "double": sum.double, "main_mismatches": sum.main_mismatches,
-        "not_oracle_state": sum.not_oracle_state, "refusals": sum.refusals,
-        "bad_retries": sum.bad_retries, "double_mismatches": sum.double_mismatches,
-        "skipped": sum.skipped, "orphaned_leaves": sum.orphaned_leaves,
-        "rolled_back_certificates": sum.rolled_back_certificates,
-        "bad_certificates": sum.bad_certificates,
-        "certificates_checked": sum.certificates_checked,
-        "method_mismatches": sum.method_mismatches, "compared": sum.compared,
-        "seconds": sum.seconds,
-    });
-    writeln!(run.out, "{line}").map_err(|e| e.to_string())?;
+    let mut line = sum.to_json();
+    line.insert("t".into(), "summary".into());
+    writeln!(run.out, "{}", serde_json::Value::Object(line)).map_err(|e| e.to_string())?;
     Ok(sum)
 }

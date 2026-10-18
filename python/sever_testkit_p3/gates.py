@@ -316,13 +316,44 @@ def _verifier(root: Path) -> Path:
 COMPARE_EVERY = 50
 
 
-def _crash_seed(root: Path, data: str, seed: int, kit: Path, extra: list[str]) -> dict[str, Any]:
+def _finished(path: Path) -> bool:
+    """True when a campaign results file ends with its summary line."""
+    if not path.exists() or not path.stat().st_size:
+        return False
+    last = path.read_bytes().rstrip(b"\n").rsplit(b"\n", 1)[-1]
+    try:
+        return bool(json.loads(last).get("t") == "summary")
+    except ValueError:
+        return False
+
+
+def _crash_seed(
+    root: Path, data: str, seed: int, kit: Path, extra: list[str], resume: bool = False
+) -> dict[str, Any]:
     t0 = time.time()
     oracle_path = root / f"traces/p2-oracle-{data}-seed{seed}.jsonl"
     if not oracle_path.exists():
         durable._main(["write", "--data", data, "--seed", str(seed), "--root", str(root)])
     out = root / f"traces/p3-crash-{data}-seed{seed}.jsonl"
-    run = subprocess.run(
+    progress = Path(str(out) + ".progress")
+    how = "fresh"
+    run: Any = argparse.Namespace(returncode=0, stderr="")
+    if resume and _finished(out):
+        how = "already finished"
+    else:
+        cont = ["--resume", "1"] if resume and progress.exists() else []
+        how = "resumed" if cont else "fresh"
+        if not cont:
+            progress.unlink(missing_ok=True)
+        run = _campaign(root, kit, oracle_path, out, seed, [*extra, *cont])
+    summary = json.loads(out.read_text().splitlines()[-1]) if out.exists() else {}
+    return _crash_verdict(root, seed, oracle_path, out, run, summary, how, t0)
+
+
+def _campaign(
+    root: Path, kit: Path, oracle_path: Path, out: Path, seed: int, extra: list[str]
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
         [
             str(kit),
             "campaign",
@@ -347,7 +378,18 @@ def _crash_seed(root: Path, data: str, seed: int, kit: Path, extra: list[str]) -
         text=True,
         check=False,
     )
-    summary = json.loads(out.read_text().splitlines()[-1]) if out.exists() else {}
+
+
+def _crash_verdict(
+    root: Path,
+    seed: int,
+    oracle_path: Path,
+    out: Path,
+    run: Any,
+    summary: dict[str, Any],
+    how: str,
+    t0: float,
+) -> dict[str, Any]:
     v = durable.check(oracle_path, out) if out.exists() else None
     verdict = {**v.__dict__, "failures": v.failures()} if v else {}
     p3 = (
@@ -372,6 +414,7 @@ def _crash_seed(root: Path, data: str, seed: int, kit: Path, extra: list[str]) -
         "summary": summary,
         "verdict": verdict,
         "rc": run.returncode,
+        "run": how,
         "stderr_tail": run.stderr[-2000:],
         "oracle_sha256": hashlib.sha256(oracle_path.read_bytes()).hexdigest(),
         "results_sha256": hashlib.sha256(out.read_bytes()).hexdigest() if out.exists() else None,
@@ -381,23 +424,73 @@ def _crash_seed(root: Path, data: str, seed: int, kit: Path, extra: list[str]) -
     return result
 
 
-def p3_crash(root: Path, data: str, seeds: list[int], jobs: int, extra: list[str]) -> int:
-    """P3-T4: the crash campaign with certificates, every seed."""
+CODE_PATHS = ("crates", "python", "Cargo.toml", "Cargo.lock")
+
+
+def _same_code(root: Path, commit: str) -> bool:
+    """True when the code a run depends on is exactly `commit`'s (committed and in the tree)."""
+    diff = subprocess.run(
+        ["git", "diff", "--quiet", commit, "--", *CODE_PATHS], cwd=root, check=False
+    ).returncode
+    untracked = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "--", *CODE_PATHS],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    return diff == 0 and not untracked
+
+
+def p3_crash(
+    root: Path, data: str, seeds: list[int], jobs: int, extra: list[str], resume: bool = False
+) -> int:
+    """P3-T4: the crash campaign with certificates, every seed. With ``resume`` (as Part 2's
+    ``p2-crash --resume``), continues the interrupted run named by the run-state file: only if
+    the code equals that run's commit; finished seeds are kept, interrupted campaigns continue
+    from their saved progress (results identical to an uninterrupted run), and the ledger gets a
+    new "started" line naming the run it resumes. Exit code 3: nothing to resume."""
     cmd = f"gates p3-crash --data {data} --seeds {seeds} {' '.join(extra)}".strip()
     gate = "P3-T4"
-    started = ledger.start(root, cmd, gate=gate, data=data, seeds=seeds)
+    state_path = root / f"traces/p3-crash-{data}-run.json"
+    if resume:
+        if not state_path.exists():
+            print("--resume: no interrupted run", file=sys.stderr)
+            return 3
+        st = json.loads(state_path.read_text(encoding="utf-8"))
+        if (st["seeds"], st["extra"]) != (seeds, extra):
+            print("--resume: seeds or settings differ from the interrupted run", file=sys.stderr)
+            return 3
+        if not _same_code(root, st["run_commit"]):
+            print(f"--resume: the code differs from {st['run_commit'][:12]}", file=sys.stderr)
+            return 3
+        ledger.start(
+            root,
+            cmd + " --resume",
+            gate=gate,
+            data=data,
+            seeds=seeds,
+            resume_of=st["started_utc"],
+            run_commit=st["run_commit"],
+        )
+        started = {"commit": st["run_commit"]}
+    else:
+        started = ledger.start(root, cmd, gate=gate, data=data, seeds=seeds)
+        state_path.write_text(
+            json.dumps(
+                {
+                    "run_commit": started["commit"],
+                    "seeds": seeds,
+                    "extra": extra,
+                    "started_utc": started["utc"],
+                }
+            ),
+            encoding="utf-8",
+        )
     kit = _kit(root, started["commit"])
     with concurrent.futures.ProcessPoolExecutor(max_workers=max(1, jobs)) as pool:
-        per_seed = list(
-            pool.map(
-                _crash_seed,
-                [root] * len(seeds),
-                [data] * len(seeds),
-                seeds,
-                [kit] * len(seeds),
-                [extra] * len(seeds),
-            )
-        )
+        futs = [pool.submit(_crash_seed, root, data, s, kit, extra, resume) for s in seeds]
+        per_seed = [f.result() for f in futs]
     passed = all(r["outcome"] == "PASS" for r in per_seed)
     data_out = {
         "gate": "P3-T4: 0 exactness violations, 0 lost acknowledged operations, 0 "
@@ -862,6 +955,8 @@ def main(argv: list[str]) -> int:
         c.add_argument("--root", type=Path, default=Path("."))
         if name == "p3-replay":
             c.add_argument("--modes", default="plain")
+        if name == "p3-crash":
+            c.add_argument("--resume", action="store_true")
         if name == "p3-attacks":
             c.add_argument("--n", type=int, default=1000)
     me = sub.add_parser("p3-measures")
@@ -881,7 +976,7 @@ def main(argv: list[str]) -> int:
     if args.cmd == "p3-mutants":
         return p3_mutants(root, args.jobs)
     if args.cmd == "p3-crash":
-        return p3_crash(root, args.data, seeds, args.jobs, extra)
+        return p3_crash(root, args.data, seeds, args.jobs, extra, args.resume)
     if args.cmd == "p3-replay":
         return p3_replay(root, args.data, seeds, args.modes.split(","), args.jobs)
     if args.cmd == "p3-attacks":

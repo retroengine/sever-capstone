@@ -1032,12 +1032,16 @@ the same state and log, and any difference (`method_mismatches`) fails the gate.
 replay (P3-T5) uses 4 MiB segments for the WAL, the payload store and the log's stores. (4) The
 campaign remembers, by SHA-256 of the anchors and the bytes, each certificate that passed §11.3 in
 the run (a point that recovers to the committed state holds the main line's own certificate; §11.3
-is a pure function of both); a rejection is never remembered. **Why.**
+is a pure function of both); a rejection is never remembered. (5) The campaign saves its progress every 30 s and
+`gates p3-crash --resume` continues an interrupted run, exactly as Part 2's `p2-crash --resume`
+(the same commit only; the results file cut back to the saved progress; a new ledger line naming
+the run it resumes); a run killed after 45 s and resumed gave the same 2,555 result lines as one
+that was never interrupted. **Why.**
 Reopening and replaying was 45 % of every crash point (measured: 193 s against 115 s for the same
 2,451 inserts' points; at the first deletions 315 ms against 148 ms a point), and `SimVfs` copies a file on its first write after an `fsync`, so with 64 MiB
 segments every insert of the replay copied up to 64 MiB (an insert took 33 ms in the engine, 16 ms
-with 4 MiB). Together they bring Part 3's gate runs from about two days to about ten hours on the
-owner's laptop. **Evidence.** `--method compare` (every point both ways) on seed 42: the first 120
+with 4 MiB). Together they bring Part 3's gate runs from about two days to under a day on the
+owner's laptop; a 14-hour campaign without (5) lost 5 hours when its session ended. **Evidence.** `--method compare` (every point both ways) on seed 42: the first 120
 operations (1,033 points, inserts) and operations 10,000–10,060 (deletions) and 17,843–17,873 (user
 deletions), 0 mismatches; a build that forks *after* the operation instead is caught (38 of 64
 compared points differ, exit 1). **Rejected.** Fewer crash points or fewer seeds (EX-1 fixes both);
@@ -2121,7 +2125,7 @@ Links checked on 27 September 2026 unless noted.
 
 - **17 October 2026 — Faster Part 3 gate runs.** DB-88 (crash points from the main line's
   snapshots, checked against the old method on every 50th operation; accepted certificates
-  remembered within a run; 4 MiB segments in the trace replay). Specification sections touched: none.
+  remembered within a run; 4 MiB segments in the trace replay; `p3-crash --resume`). Specification sections touched: none.
 - **16 October 2026 — Part 3 gate tooling.** DB-87 (`sever-crashkit-p3`, INV-3 memo in test
   builds, `sever-verify --explain` and `--batch`, the Python demo). Specification sections
   touched: §16.3.

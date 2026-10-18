@@ -5,12 +5,13 @@
 //! sever-crashkit-p3 replay   --trace FILE --root DIR --mode plain|close|crash --out FILE
 //! sever-crashkit-p3 campaign --oracle FILE --root DIR --out FILE --seed N [Part 2's settings]
 //!                            [--crash-from N] [--method snapshot|replay|compare]
-//!                            [--compare-every N]
+//!                            [--compare-every N] [--resume 1]
 //! sever-crashkit-p3 attacks  --root DIR --data nq-10k|synthetic --n N --out FILE
 //! sever-crashkit-p3 measure  --root DIR --data nq-10k|synthetic --n N --out FILE
 //! ```
 
 use std::collections::HashMap;
+use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -62,11 +63,89 @@ fn data(root: &Path, which: &str, seed: u64) -> Result<Data, String> {
     Ok((art, 384, 200, Box::new(NpyRows(npy))))
 }
 
+fn progress_path(out: &Path) -> PathBuf {
+    let mut p = out.as_os_str().to_owned();
+    p.push(".progress");
+    PathBuf::from(p)
+}
+
+/// Every argument except `--resume`, sorted: a run resumes only with identical settings.
+fn fingerprint(a: &HashMap<String, String>) -> String {
+    let mut v: Vec<String> = a
+        .iter()
+        .filter(|(k, _)| k.as_str() != "resume")
+        .map(|(k, v)| format!("--{k}={v}"))
+        .collect();
+    v.sort();
+    v.join(" ")
+}
+
+/// Write to a temporary file, fsync it, rename it over `path`, fsync the directory.
+fn write_atomically(path: &Path, bytes: &[u8]) -> Result<(), String> {
+    let tmp = path.with_extension("progress.tmp");
+    let mut f = File::create(&tmp).map_err(|e| e.to_string())?;
+    f.write_all(bytes).map_err(|e| e.to_string())?;
+    f.sync_all().map_err(|e| e.to_string())?;
+    std::fs::rename(&tmp, path).map_err(|e| e.to_string())?;
+    if let Some(dir) = path.parent() {
+        File::open(dir)
+            .and_then(|d| d.sync_all())
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Opens an interrupted campaign's results for appending: cut back to the end recorded with the
+/// last saved progress (anything after it is from operations whose crash points were not all
+/// written), with the same settings, or refuse (Part 2's `sever-crashkit` does the same).
+fn resume_out(
+    out_path: &Path,
+    a: &HashMap<String, String>,
+) -> Result<(File, Option<campaign::Progress>), String> {
+    let text = std::fs::read_to_string(progress_path(out_path))
+        .map_err(|_| "--resume: no progress file (start the run again without --resume)")?;
+    let doc: serde_json::Value =
+        serde_json::from_str(&text).map_err(|e| format!("progress file: {e}"))?;
+    if doc.get("args").and_then(serde_json::Value::as_str) != Some(fingerprint(a).as_str()) {
+        return Err("--resume: the settings differ from the interrupted run's".into());
+    }
+    let p = doc
+        .get("progress")
+        .and_then(campaign::Progress::from_json)
+        .ok_or("progress file: progress")?;
+    let len = doc
+        .get("out_len")
+        .and_then(serde_json::Value::as_u64)
+        .ok_or("progress file: out_len")?;
+    let mut f = std::fs::OpenOptions::new()
+        .write(true)
+        .open(out_path)
+        .map_err(|e| e.to_string())?;
+    if f.metadata().map_err(|e| e.to_string())?.len() < len {
+        return Err("--resume: the results file is shorter than its saved progress".into());
+    }
+    f.set_len(len).map_err(|e| e.to_string())?;
+    std::io::Seek::seek(&mut f, std::io::SeekFrom::End(0)).map_err(|e| e.to_string())?;
+    eprintln!(
+        "resuming after operation {} ({} bytes of results kept)",
+        p.done, len
+    );
+    Ok((f, Some(p)))
+}
+
 fn real_main() -> Result<bool, String> {
     let (cmd, a) = args();
     let root = path(&a, "root")?;
     let out_path = path(&a, "out")?;
-    let mut out = BufWriter::new(std::fs::File::create(&out_path).map_err(|e| e.to_string())?);
+    // `campaign --resume` continues an interrupted run (see `resume_out`); everything else
+    // starts a fresh results file.
+    let (file, resume) = if cmd == "campaign" && a.contains_key("resume") {
+        resume_out(&out_path, &a)?
+    } else {
+        (File::create(&out_path).map_err(|e| e.to_string())?, None)
+    };
+    let sync_file = file.try_clone().map_err(|e| e.to_string())?;
+    let mut out = BufWriter::new(file);
     let seed = num(&a, "seed", 42)?;
     let ok = match cmd.as_str() {
         "replay" => {
@@ -81,17 +160,11 @@ fn real_main() -> Result<bool, String> {
         "campaign" => {
             let oracle = Oracle::read(&path(&a, "oracle")?)?;
             let h = &oracle.header;
-            let (art, d, rows): (Vec<u8>, usize, Box<dyn Rows>) =
-                match h.get("data").and_then(|x| x.as_str()) {
-                    Some("synthetic") => {
-                        let (art, d, _, r) = data(&root, "synthetic", seed)?;
-                        (art, d, r)
-                    }
-                    _ => {
-                        let (art, d, _, r) = data(&root, "nq-10k", seed)?;
-                        (art, d, r)
-                    }
-                };
+            let which = match h.get("data").and_then(|x| x.as_str()) {
+                Some("synthetic") => "synthetic",
+                _ => "nq-10k",
+            };
+            let (art, _, _, rows) = data(&root, which, seed)?;
             let s = Settings {
                 checkpoint_every: num(&a, "checkpoint-every", 4 << 20)?,
                 wal_segment: num(&a, "wal-segment", 4 << 20)?,
@@ -120,7 +193,23 @@ fn real_main() -> Result<bool, String> {
                 method,
                 compare_every: every,
             };
-            let sum = campaign::run(&oracle, rows.as_ref(), &art, d, &s, points, &mut out)?;
+            let progress_file = progress_path(&out_path);
+            let args_fp = fingerprint(&a);
+            let mut save = |p: &campaign::Progress, out: &mut dyn Write| -> Result<(), String> {
+                // The results up to here are on disk before the progress that names them.
+                out.flush().map_err(|e| e.to_string())?;
+                sync_file.sync_all().map_err(|e| e.to_string())?;
+                let len = sync_file.metadata().map_err(|e| e.to_string())?.len();
+                let doc = serde_json::json!({"args": args_fp, "progress": p.to_json(),
+                    "out_len": len});
+                write_atomically(&progress_file, doc.to_string().as_bytes())
+            };
+            let ck = campaign::Checkpointing {
+                from: resume,
+                every: campaign::PROGRESS_EVERY,
+                save: &mut save,
+            };
+            let sum = campaign::run(&oracle, rows.as_ref(), &art, &s, points, &mut out, ck)?;
             sum.failures() == 0 && sum.skipped == 0
         }
         "attacks" | "measure" => {
