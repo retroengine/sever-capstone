@@ -1,0 +1,11 @@
+--- a/crates/sever-seal/src/ad.rs
++++ b/crates/sever-seal/src/ad.rs
+@@ -21,7 +21,7 @@
+ 
+ /// Row 2: the passage text.
+ pub fn passage(collection_id: &[u8; 16], sid: &Sid) -> Vec<u8> {
+-    [&collection_id[..], &sid[..], &[0x02]].concat()
++    [&collection_id[..], &sid[..], &[0x01]].concat()
+ }
+ 
+ /// Row 3: a record key wrapped under its bucket key.

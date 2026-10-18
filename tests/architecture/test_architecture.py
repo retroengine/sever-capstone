@@ -49,6 +49,7 @@ PART = {
     "sever-crashkit-p3": 3,
     # Part 4 (Build 3-4 §2.4)
     "sever-keys": 4,
+    "sever-seal": 4,
 }
 #: Composition roots and tooling: nothing in the core may depend on them.
 OUTER = (

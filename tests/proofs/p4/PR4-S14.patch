@@ -1,0 +1,11 @@
+--- a/crates/sever-seal/src/ring.rs
++++ b/crates/sever-seal/src/ring.rs
+@@ -315,7 +315,7 @@
+         let mut envelopes = Vec::new();
+         for b in lost {
+             let old = inner.committed_bucket(d, b)?.duplicate();
+-            let new = BucketKey::generate(old.version.saturating_add(1));
++            let new = old.duplicate();
+             let mut survivors: BTreeSet<Sid> =
+                 inner.members.get(&(*d, b)).cloned().unwrap_or_default();
+             survivors.extend(

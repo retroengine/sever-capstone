@@ -1,0 +1,11 @@
+--- a/crates/sever-seal/src/block.rs
++++ b/crates/sever-seal/src/block.rs
+@@ -12,7 +12,7 @@
+ use crate::aead;
+ 
+ /// Bytes of an envelope (§14.4).
+-pub const ENVELOPE_BYTES: usize = aead::OVERHEAD + KEY_BYTES;
++pub const ENVELOPE_BYTES: usize = aead::OVERHEAD + KEY_BYTES + 4;
+ /// Bytes of one bucket-block entry.
+ pub const ENTRY_BYTES: usize = 8 + ENVELOPE_BYTES;
+ /// Bytes of a bucket block (§14.5).

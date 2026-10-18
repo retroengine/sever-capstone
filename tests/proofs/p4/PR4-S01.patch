@@ -1,0 +1,12 @@
+--- a/crates/sever-seal/src/aead.rs
++++ b/crates/sever-seal/src/aead.rs
+@@ -59,8 +59,8 @@
+         )
+         .map_err(|_| aead_error())?;
+     let mut out = Vec::with_capacity(NONCE_BYTES + ct.len());
++    out.extend_from_slice(&ct);
+     out.extend_from_slice(nonce);
+-    out.extend_from_slice(&ct);
+     Ok(out)
+ }
+ 

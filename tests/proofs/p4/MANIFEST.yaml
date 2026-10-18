@@ -152,3 +152,165 @@
   package: sever-keys
   tests:
   - crates/sever-keys/src/tests.rs::p4_keys_keys_are_32_fresh_bytes
+- id: PR4-S01
+  claim: a sealed value is ciphertext ‖ tag ‖ nonce instead of nonce ‖ ciphertext ‖ tag (§13.2, RFC 8452 output)
+  kind: red
+  requirements:
+  - SR-13.2-1
+  - SR-20.3-1
+  patch: PR4-S01.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_aes_256_gcm_siv_matches_every_rfc_8452_vector
+- id: PR4-S02
+  claim: every nonce is the same constant instead of 96 random bits from the OS (§13.2)
+  kind: red
+  requirements:
+  - SR-13.2-1
+  patch: PR4-S02.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_every_ciphertext_has_a_fresh_nonce_and_28_bytes_of_overhead
+- id: PR4-S03
+  claim: the slot payload's associated data ends in 0x02 instead of 0x01 (§13.2 row 1)
+  kind: red
+  requirements:
+  - SR-13.2-2
+  patch: PR4-S03.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_record_associated_data_is_section_13_2_rows_1_and_2
+- id: PR4-S04
+  claim: the passage's associated data ends in 0x01, the slot payload's kind (§13.2 row 2)
+  kind: red
+  requirements:
+  - SR-13.2-3
+  patch: PR4-S04.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_record_associated_data_is_section_13_2_rows_1_and_2
+- id: PR4-S05
+  claim: a wrapped record key's associated data omits u64be bucket_version (§13.2 row 3)
+  kind: red
+  requirements:
+  - SR-13.2-4
+  patch: PR4-S05.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_key_and_accumulator_associated_data_is_section_13_2_rows_3_to_5
+- id: PR4-S06
+  claim: a wrapped bucket key's associated data omits u8 b (§13.2 row 4)
+  kind: red
+  requirements:
+  - SR-13.2-5
+  patch: PR4-S06.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_key_and_accumulator_associated_data_is_section_13_2_rows_3_to_5
+- id: PR4-S07
+  claim: the accumulator's associated data omits u64be n (§13.2 row 5)
+  kind: red
+  requirements:
+  - SR-13.2-6
+  patch: PR4-S07.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_key_and_accumulator_associated_data_is_section_13_2_rows_3_to_5
+- id: PR4-S08
+  claim: an envelope is 64 bytes instead of 12 + 32 + 16 = 60 (§14.4)
+  kind: red
+  requirements:
+  - SR-14.4-5
+  patch: PR4-S08.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_envelope_block_and_accumulator_have_the_section_14_sizes
+- id: PR4-S09
+  claim: a bucket-block entry is 76 bytes, so the block is 4,864 instead of 4,352 bytes (§14.5, Appendix A)
+  kind: red
+  requirements:
+  - SR-14.5-1
+  - SR-A-3
+  patch: PR4-S09.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_envelope_block_and_accumulator_have_the_section_14_sizes
+- id: PR4-S10
+  claim: sealing adds 29 bytes, so a 3,104-byte accumulator seals to 3,133 instead of 3,132 (§14.3)
+  kind: red
+  requirements:
+  - SR-14.3-2
+  patch: PR4-S10.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_envelope_block_and_accumulator_have_the_section_14_sizes
+- id: PR4-S11
+  claim: 'the sealer reports 29 bytes of overhead (§13.2: 28), which the frozen EP-6 contract checks against every sealed value'
+  kind: red
+  requirements:
+  - SR-13.2-1
+  patch: PR4-S11.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_aead_sealer_passes_the_frozen_ep6_contract
+- id: PR4-S12
+  claim: 'a flush gives the moved record a new record key, so its payload ciphertext would have to be re-encrypted (§13.2: it moves without being decrypted)'
+  kind: red
+  requirements:
+  - SR-13.2-7
+  patch: PR4-S12.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_a_flush_moves_a_record_without_touching_its_payload_ciphertext
+- id: PR4-S13
+  claim: a departure keeps the group key version instead of version + 1 (§13.3 step 1)
+  kind: red
+  requirements:
+  - SR-13.3-1
+  patch: PR4-S13.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_a_departure_rotates_the_group_key_and_the_buckets_it_left
+- id: PR4-S14
+  claim: a bucket that lost a record keeps its key and version (§13.3 step 2)
+  kind: red
+  requirements:
+  - SR-13.3-2
+  patch: PR4-S14.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_a_departure_rotates_the_group_key_and_the_buckets_it_left
+- id: PR4-S15
+  claim: 'a record joining a domain rotates it (§13.3: joins never rotate anything)'
+  kind: red
+  requirements:
+  - SR-13.3-3
+  patch: PR4-S15.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_joining_a_domain_rotates_nothing
+- id: PR4-S16
+  claim: after a restart the slot's envelope is used even when the wrapped-key store holds the current one (§14.4, DB-91)
+  kind: red
+  requirements:
+  - SR-14.4-6
+  patch: PR4-S16.patch
+  runner: cargo
+  package: sever-seal
+  tests:
+  - crates/sever-seal/src/tests.rs::p4_seal_after_a_restart_a_survivor_opens_through_the_wrapped_key_store

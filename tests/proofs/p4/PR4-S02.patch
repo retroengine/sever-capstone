@@ -1,0 +1,11 @@
+--- a/crates/sever-seal/src/aead.rs
++++ b/crates/sever-seal/src/aead.rs
+@@ -22,7 +22,7 @@
+         // SB-30: reuse one nonce for everything.
+         n.fill(0x5A);
+     } else {
+-        OsRng.fill_bytes(&mut n);
++        n.fill(0x5A);
+     }
+     n
+ }

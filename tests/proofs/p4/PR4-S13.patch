@@ -1,0 +1,11 @@
+--- a/crates/sever-seal/src/ring.rs
++++ b/crates/sever-seal/src/ring.rs
+@@ -239,7 +239,7 @@
+             }
+             (Some(v), false) => v,
+             (Some(v), true) => {
+-                let next = v.saturating_add(1);
++                let next = v;
+                 inner.stage.rotate.insert(*d, (next, Key::generate()));
+                 next
+             }

@@ -1,0 +1,15 @@
+--- a/crates/sever-seal/src/ring.rs
++++ b/crates/sever-seal/src/ring.rs
+@@ -237,7 +237,11 @@
+                     .or_insert_with(DomainKeys::fresh)
+                     .version
+             }
+-            (Some(v), false) => v,
++            (Some(v), false) => {
++                let next = v.saturating_add(1);
++                inner.stage.rotate.insert(*d, (next, Key::generate()));
++                next
++            }
+             (Some(v), true) => {
+                 let next = v.saturating_add(1);
+                 inner.stage.rotate.insert(*d, (next, Key::generate()));
