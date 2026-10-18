@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-93)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-94)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1042,6 +1042,25 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-94 — Part 3's full gates run once, on a cloud VM, at the end; interim checks on the laptop (18 October 2026)
+
+**Decision.** Part 3's pre-registered gates (P3-T1 … P3-T12, unchanged in size: P3-T4 on `nq-10k`
+with five seeds of 20,000 operations, P3-T5 on `nq-100k` with five seeds, fuzzing at 10^8
+executions) run once, on a cloud Linux VM, together with Part 4's gates, when the whole system is
+built. Until then the laptop runs **interim checks**, which are evidence and are never reported as
+the gates: (1) the crash campaign's insert phase already run (operations 0 to about 7,700 on every
+seed, 351,866 crash points, 0 failures, kept in `traces/interim-insert-phase/`); (2) the crash
+campaign with crash points from operation 17,000 (`--crash-from 17000`: single deletions, every
+multi-group deletion and the inserts after them) on every seed; (3) the `nq-100k` replay of seed 42;
+(4) the attacks, checks, coverage, measures and spikes as specified; (5) fuzzing at 10^7 executions.
+Part 3 freezes (F-1) only after the VM run passes; Part 4 keeps building on `p4-prep` (DB-89).
+**Why.** The laptop needs about 1.5 days for the full gates, and two replays at once exhausted WSL's
+10 GB on 18 October (the kernel killed a replay and WSL restarted). **Rejected.** Shrinking the gates
+themselves (it would move pre-registered targets after a run began, overview §3.4); waiting 1.5 days
+per attempt on the laptop. **Consequence.** `part-3-frozen` and the rebase of Part 4 onto it come
+after the VM run; a Part 3 defect found there is fixed as an ordinary pre-freeze change, not an
+erratum.
 
 #### DB-93 — Memory is locked process-wide at startup; the btrfs attribute before `KEYS` exists (18 October 2026)
 
@@ -2247,6 +2266,8 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **18 October 2026 — Part 3 gates on a VM.** DB-94 (the full gates run once on a cloud VM at
+  the end; interim checks on the laptop). Specification sections touched: none.
 - **18 October 2026 — Startup checks.** DB-93 (memory is locked process-wide at startup; the
   btrfs attribute before `KEYS` exists; core dumps off first; probes fail closed; closes G-33).
   Specification sections touched: §12.8, §12.9.
