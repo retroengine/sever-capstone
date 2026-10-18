@@ -19,6 +19,7 @@ sever-txn = { path = "../sever-txn" }
 sever-types = { path = "../sever-types" }
 sever-format = { path = "../sever-format" }
 aes-gcm-siv = { version = "=0.11.1", default-features = false, features = ["aes", "alloc"] } # spec §20.1; no `getrandom` feature: it would unify into the Part 1 core through crypto-common (Build §1.1)
+aes = { version = "=0.8.4", features = ["zeroize"] } # spec §12.8: the AES key schedules are zeroed on drop
 rand_core = { version = "=0.6.4", features = ["getrandom"] } # spec §13.2: nonces from the OS
 zeroize = "=1.9.0" # spec §12.8, §20.1
 

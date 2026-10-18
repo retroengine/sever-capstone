@@ -535,3 +535,160 @@
   package: sever-erasure
   tests:
   - crates/sever-erasure/src/tests/erasure.rs::p4_erasure_a_crash_during_recovery_erasure_is_finished_by_the_next_start
+- id: PR4-P01
+  claim: 'startup skips the swap check (§12.8: refuse unencrypted swap)'
+  kind: red
+  requirements:
+  - SR-12.8-4
+  patch: PR4-P01.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/src/tests.rs::p4_platform_memory_rows_of_the_register_refuse_and_start_as_listed
+  - crates/sever-platform/src/tests.rs::p4_platform_a_probe_that_cannot_answer_fails_closed
+  - crates/sever-platform/src/tests.rs::p4_platform_every_overridden_check_is_reported_in_order
+- id: PR4-P02
+  claim: zram swap is not counted as encrypted (§12.8 definition)
+  kind: red
+  requirements:
+  - SR-12.8-5
+  patch: PR4-P02.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/src/tests.rs::p4_platform_memory_rows_of_the_register_refuse_and_start_as_listed
+  - crates/sever-platform/src/tests.rs::p4_platform_swap_is_encrypted_only_on_zram_or_dm_crypt
+- id: PR4-P03
+  claim: /sys/power/resume is compared with its newline, so 0:0 reads as a resume device (§12.8 definition)
+  kind: red
+  requirements:
+  - SR-12.8-5
+  patch: PR4-P03.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/src/tests.rs::p4_platform_hibernation_needs_disk_listed_and_a_resume_device
+- id: PR4-P04
+  claim: 'the /proc/swaps header is read as a swap entry (§12.8: every active entry)'
+  kind: red
+  requirements:
+  - SR-12.8-5
+  patch: PR4-P04.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/src/tests.rs::p4_platform_proc_swaps_is_parsed_with_escaped_names
+- id: PR4-P05
+  claim: a failed memory lock starts anyway (§12.8 mlock refusal)
+  kind: red
+  requirements:
+  - SR-12.8-6
+  patch: PR4-P05.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/src/tests.rs::p4_platform_memory_rows_of_the_register_refuse_and_start_as_listed
+- id: PR4-P06
+  claim: a failed platform check is not PlatformUnsafe (§17)
+  kind: red
+  requirements:
+  - SR-17-6
+  patch: PR4-P06.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/src/tests.rs::p4_platform_memory_rows_of_the_register_refuse_and_start_as_listed
+  - crates/sever-platform/src/tests.rs::p4_platform_filesystem_rows_of_the_register_refuse_and_start_as_listed
+- id: PR4-P07
+  claim: startup skips the data filesystem check (§12.9 ext4 or XFS)
+  kind: red
+  requirements:
+  - SR-12.9-1
+  patch: PR4-P07.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/src/tests.rs::p4_platform_filesystem_rows_of_the_register_refuse_and_start_as_listed
+- id: PR4-P08
+  claim: btrfs is accepted without no-copy-on-write (§12.9 allow-list)
+  kind: red
+  requirements:
+  - SR-12.9-3
+  patch: PR4-P08.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/src/tests.rs::p4_platform_filesystem_rows_of_the_register_refuse_and_start_as_listed
+  - crates/sever-platform/src/tests.rs::p4_platform_key_filesystem_is_an_allow_list
+  - crates/sever-platform/src/tests.rs::p4_platform_btrfs_before_keys_exists_reads_the_directory_attribute
+- id: PR4-P09
+  claim: 'an overridden key filesystem check is not recorded (§12.9: recorded in every ledger entry)'
+  kind: red
+  requirements:
+  - SR-12.9-4
+  patch: PR4-P09.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/src/tests.rs::p4_platform_filesystem_rows_of_the_register_refuse_and_start_as_listed
+  - crates/sever-platform/src/tests.rs::p4_platform_every_overridden_check_is_reported_in_order
+- id: PR4-P10
+  claim: startup leaves core dumps on (§12.8 RLIMIT_CORE, PR_SET_DUMPABLE)
+  kind: red
+  requirements:
+  - SR-12.8-3
+  patch: PR4-P10.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/src/tests.rs::p4_platform_startup_turns_core_dumps_off_before_anything_else
+- id: PR4-P11
+  claim: LinuxProbe leaves the process dumpable (§12.8 PR_SET_DUMPABLE = 0)
+  kind: red
+  requirements:
+  - SR-12.8-3
+  patch: PR4-P11.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/tests/linux.rs::p4_platform_linux_probe_turns_core_dumps_off
+- id: PR4-P12
+  claim: startup never locks memory and still hands out the proof (§12.8 mlocked pages, DB-93)
+  kind: red
+  requirements:
+  - SR-12.8-2
+  patch: PR4-P12.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/src/tests.rs::p4_platform_startup_locks_memory_once_and_only_then_hands_out_the_proof
+- id: PR4-P13
+  claim: a key read back from storage bypasses the installed provider (§12.8 mlocked pages, DB-50)
+  kind: red
+  requirements:
+  - SR-12.8-2
+  patch: PR4-P13.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/tests/zeroize_audit.rs::p4_platform_every_key_comes_from_the_provider_and_is_zero_when_released
+- id: PR4-P14
+  claim: Key::zeroize leaves the bytes (§12.8 Zeroize)
+  kind: red
+  requirements:
+  - SR-12.8-1
+  patch: PR4-P14.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/tests/zeroize_request.rs::p4_platform_secret_types_zeroize_on_request
+- id: PR4-P15
+  claim: a key is never released to its provider, so its bytes are never zeroed (§12.8 ZeroizeOnDrop)
+  kind: red
+  requirements:
+  - SR-12.8-1
+  patch: PR4-P15.patch
+  runner: cargo
+  package: sever-platform
+  tests:
+  - crates/sever-platform/tests/zeroize_audit.rs::p4_platform_every_key_comes_from_the_provider_and_is_zero_when_released

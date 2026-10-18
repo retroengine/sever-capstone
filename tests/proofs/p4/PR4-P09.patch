@@ -1,0 +1,13 @@
+--- a/crates/sever-platform/src/lib.rs
++++ b/crates/sever-platform/src/lib.rs
+@@ -111,7 +111,9 @@
+         (Ok(magic), Ok(nc)) => rules::key_fs_ok(magic, nc),
+         _ => false,
+     };
+-    check(key_ok, CHECK_KEY_FS, fs)?;
++    if !key_ok && !fs {
++        return Err(refuse(CHECK_KEY_FS));
++    }
+ 
+     Ok(StartupReport {
+         overridden,

@@ -21,6 +21,7 @@ dependencies = [
  "cfg-if",
  "cipher",
  "cpufeatures",
+ "zeroize",
 ]
 
 [[package]]
@@ -874,6 +875,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-platform"
+version = "0.1.0"
+dependencies = [
+ "rustix",
+ "sever-keys",
+ "sever-seal",
+ "sever-spec",
+ "sever-types",
+ "thiserror",
+ "zeroize",
+]
+
+[[package]]
 name = "sever-py-p2"
 version = "0.1.0"
 dependencies = [
@@ -913,6 +927,7 @@ dependencies = [
 name = "sever-seal"
 version = "0.1.0"
 dependencies = [
+ "aes",
  "aes-gcm-siv",
  "rand_core",
  "serde_json",

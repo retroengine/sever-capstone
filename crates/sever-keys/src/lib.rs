@@ -15,6 +15,7 @@ use core::fmt;
 
 use rand_core::{OsRng, RngCore};
 use sever_types::SecretBuf;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub mod file;
 pub mod recovery;
@@ -56,6 +57,15 @@ impl Key {
         Self(buf)
     }
 }
+
+// §12.8: every secret type implements `Zeroize` and `ZeroizeOnDrop` (the drop is `SecretBuf`'s).
+impl Zeroize for Key {
+    fn zeroize(&mut self) {
+        self.0.as_bytes_mut().zeroize();
+    }
+}
+
+impl ZeroizeOnDrop for Key {}
 
 impl PartialEq for Key {
     fn eq(&self, other: &Self) -> bool {

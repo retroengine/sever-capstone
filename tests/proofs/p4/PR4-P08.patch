@@ -1,0 +1,9 @@
+--- a/crates/sever-platform/src/rules.rs
++++ b/crates/sever-platform/src/rules.rs
+@@ -49,5 +49,5 @@
+ /// §12.9: the key file's filesystem overwrites in place: ext4, XFS, and btrfs only when `KEYS`
+ /// carries the no-copy-on-write attribute.
+ pub fn key_fs_ok(magic: i64, keys_no_cow: bool) -> bool {
+-    data_fs_ok(magic) || (magic == BTRFS_SUPER_MAGIC && keys_no_cow)
++    data_fs_ok(magic) || (magic == BTRFS_SUPER_MAGIC)
+ }

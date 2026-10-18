@@ -1,0 +1,11 @@
+--- a/crates/sever-platform/src/lib.rs
++++ b/crates/sever-platform/src/lib.rs
+@@ -95,7 +95,7 @@
+         .is_ok_and(|h| !rules::hibernation_enabled(&h));
+     check(hib_ok, CHECK_HIBERNATION, mem)?;
+     let locked = probe.lock_memory().is_ok();
+-    check(locked, CHECK_MLOCK, mem)?;
++    check(locked, CHECK_MLOCK, true)?;
+ 
+     let fs = o.allow_unsafe_fs;
+     let data_ok = probe.filesystem(data_dir).is_ok_and(rules::data_fs_ok);

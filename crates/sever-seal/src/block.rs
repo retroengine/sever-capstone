@@ -30,6 +30,15 @@ pub struct BucketKey {
     pub key: Key,
 }
 
+// §12.8: every secret type implements `Zeroize` and `ZeroizeOnDrop` (through its `Key`).
+impl zeroize::Zeroize for BucketKey {
+    fn zeroize(&mut self) {
+        zeroize::Zeroize::zeroize(&mut self.key);
+    }
+}
+
+impl zeroize::ZeroizeOnDrop for BucketKey {}
+
 impl BucketKey {
     /// A fresh bucket key at `version`.
     pub fn generate(version: u64) -> Self {
