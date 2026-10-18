@@ -15,7 +15,7 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   done, the next module, the proof-making routine). It is the only current resume point.
 - **Part 4** (18 Oct 2026): step 0 done on branch `p4-prep` (worktree `~/sever-db-p4prep`); the owner
   accepted G-26…G-31 (DB-90) and asked for Part 4 to start now (DB-89); see "Part 4, The Erasure"
-  below. DB-53 (EP-11) / DB-54 still wait for the owner.
+  below. DB-53 (EP-11) and DB-54 accepted 18 Oct 2026.
 - **Working copy:** `~/sever-db` on the WSL ext4 disk (the `C:` copy is a backup).
 - **Git:** Claude commits on short `p3-*` branches (conventional messages, no AI attribution);
   nothing is pushed or merged to `main` without the owner's word.
@@ -81,9 +81,9 @@ modules start only once Part 3 is frozen (Build 3-4 §0); if Part 3 changes befo
 is built now, on its own branch and worktree, before Part 3's freeze; nothing merges before
 `part-3-frozen`; builds and tests at the lowest priority on two cores while a gate runs) and DB-90
 (G-26 … G-31 closed as proposed; spec §12.8, §12.9, §13.6, §14.1, §14.7, §14.8, §15.9, §18, Appendix A
-amended; 65 Part 4 requirements). Still proposals from the build plan: **DB-53 (EP-11 half,
-`PlatformProbe`)** and **DB-54** (the evaluation's build variants), needed at `sever-platform` and the
-evaluation; recommended: accept both as written.
+amended; 65 Part 4 requirements). DB-53's EP-11 half (`PlatformProbe`) and DB-54 (the evaluation's
+build variants) accepted on 18 Oct 2026 (the owner: "choose the option which is best"); every
+build-plan proposal is now decided. Owner-side: tag `part-2-frozen-e2` set locally on a244264.
 
 **Design notes for the modules** (not gaps): the `AeadSealer` and the `KeyRotationParticipant` share
 the key state; the sealer creates a domain's next key when the core first asks for it during `plan`,

@@ -693,4 +693,5 @@ measured and recorded as found, and the final deliverables complete. Tag: `part-
 **Status (7 October 2026).** DB-44 … DB-50 are accepted (overview §6.8; DB-46 and DB-48 on 7 October
 2026); DB-51, DB-52 and the EP-10 half of DB-53 were accepted on 15 October 2026 (Part 3's design
 review: the pinned `curve25519-dalek` was checked and lacks `expand_message_xmd`); the EP-11 half of
-DB-53 and DB-54 remain proposals until Part 4. Overview DB-56 … DB-59 are new decisions, not build-plan proposals.
+DB-53 and DB-54 were accepted on 18 October 2026 (Part 4). Every proposal is now decided. Overview
+DB-56 … DB-59 are new decisions, not build-plan proposals.

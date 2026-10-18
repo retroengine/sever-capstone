@@ -792,8 +792,8 @@ must be independently checkable, and aggregation reduces verifier computation, n
 DB-44 … DB-54 are reserved for the amendments proposed in the build plans (Build §3.5, Build 3-4 §3.5)
 and are recorded here once accepted. DB-44, DB-45, DB-47, DB-49 and DB-50 were accepted on 4 October
 2026, DB-46 and DB-48 on 7 October 2026 (Part 2's design review), and DB-51, DB-52 and the EP-10
-half of DB-53 on 15 October 2026 (Part 3's design review); the EP-11 half of DB-53 and DB-54 remain
-proposals until Part 4.
+half of DB-53 on 15 October 2026 (Part 3's design review), and the EP-11 half of DB-53 and DB-54 on
+18 October 2026 (Part 4, the owner: "choose the option which is best for long term and short term").
 
 #### DB-44 — Build in four frozen parts; erasure after certificates (4 October 2026)
 
@@ -921,7 +921,7 @@ workspaces for 60 lines of code, and more for the §20.3 duplicate-crate check t
 §9.2's startup self-check takes the `expand_message_xmd` known answers from RFC 9380 Appendix K.3
 (RFC 9496 has vectors only for the one-way map).
 
-#### DB-53 — EP-10 `Witness` (15 October 2026; the EP-11 half waits for Part 4)
+#### DB-53 — EP-10 `Witness` (15 October 2026) and EP-11 `PlatformProbe` (18 October 2026)
 
 **Decision.** Part 3 declares extension point EP-10 `Witness`: a witness receives a new log
 checkpoint and the consistency proof from the last checkpoint it cosigned, and cosigns only if the
@@ -933,6 +933,31 @@ O-6, limit L-7) can then be added later without editing frozen Part 3 code. **Re
 built into `sever-log` with no extension point (adding a real witness would need an erratum);
 accepting EP-11 now (its design belongs to Part 4 and cannot be checked yet). **Consequence.** v1's
 witnesses are simulated, so the witness guarantee stays a limit (L-7).
+
+**EP-11, accepted 18 October 2026 (Part 4).** Part 4 declares EP-11 `PlatformProbe`: the filesystem
+type of a directory, the no-copy-on-write attribute of a file, the active swap devices with their
+device-mapper UUIDs, the hibernation state (`/sys/power/state`, `/sys/power/resume`) and whether
+memory can be locked. The default `LinuxProbe` reads `/proc`, `/sys` and `statfs`; every refusal rule
+of §12.8–12.9 (as fixed by DB-90) is a pure function of the probe's answers, so the P4-T8 matrix runs
+with a fake probe, without root and without reconfiguring the machine. A contract suite checks that
+`LinuxProbe` answers on the test machine and that the rules refuse exactly the register's unsafe
+rows. **Why.** The refusals cannot otherwise be tested on one machine (this one has unencrypted swap
+and hibernation listed). **Rejected.** Testing on real misconfigured machines only (not
+reproducible); checks hard-wired into `sever-platform` (no fake possible).
+
+#### DB-54 — The evaluation's build variants (18 October 2026)
+
+**Decision.** The evaluation uses four builds, all composition roots or feature flags inside Part 4,
+none editing a frozen part (Build 3-4 §2.7): `sever-db` (the measured build); `sever-db` with feature
+`key-export` (writes each generated key to a sink outside the disk image, for the forensic scanner
+only; an architecture test shows the feature touches exactly one function and is absent from the
+measured binary); `sever-db-noerase` (`AeadSealer` with a static key per domain and no key-rotation
+participant, the cost of erasure, EX-7); `sever-softdelete` (a tombstone over the Part 2 API, the cost
+of excision and receipts, EX-7); plus one `sabotage-SB-N` build per sabotage item. **Why.** EX-2
+needs the retired keys to look for, and EX-7 needs arms that differ from the measured build in one
+mechanism each. **Rejected.** Exporting keys from the measured build (a leak by construction);
+variants as forks of the code (they would drift). **Consequence.** Every number in the report names
+the build that produced it.
 
 #### DB-61 — The ULP sentence of §4.1 (6 October 2026)
 
@@ -2183,6 +2208,8 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **18 October 2026 — Build-plan proposals accepted.** DB-53's EP-11 half (`PlatformProbe`) and
+  DB-54 (the evaluation's build variants). Specification sections touched: none.
 - **18 October 2026 — Re-wrapped record keys.** DB-91 (survivors' envelopes in the wrapped-key
   store; closes G-32). Specification sections touched: §13.3, §13.6, §14.1, §14.4, §14.6, §14.8.
 - **18 October 2026 — Part 4 starts.** DB-89 (Part 4 built before Part 3's freeze, on its own
