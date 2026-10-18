@@ -44,17 +44,17 @@ keyfile:
 platform:
   - {id: PL-1, text: "Swap on, not encrypted", expect: refuse, flag: allow_unsafe_memory, requirements: [SR-12.8-4, SR-17-6], gap: G-30}
   - {id: PL-2, text: "Hibernation enabled", expect: refuse, flag: allow_unsafe_memory, requirements: [SR-12.8-4, SR-17-6], gap: G-30}
-  - {id: PL-3, text: "Key directory on ZFS", expect: refuse, requirements: [SR-12.9-3, SR-17-6], gap: G-31}
-  - {id: PL-4, text: "Key directory on btrfs, KEYS without no-copy-on-write", expect: refuse, requirements: [SR-12.9-3, SR-17-6], gap: G-31}
+  - {id: PL-3, text: "Key directory on ZFS", expect: refuse, flag: allow_unsafe_fs, requirements: [SR-12.9-3, SR-12.9-4, SR-17-6], gap: G-31}
+  - {id: PL-4, text: "Key directory on btrfs, KEYS without no-copy-on-write", expect: refuse, flag: allow_unsafe_fs, requirements: [SR-12.9-3, SR-12.9-4, SR-17-6], gap: G-31}
   - {id: PL-5, text: "Data directory not ext4 or XFS", expect: refuse, flag: allow_unsafe_fs, requirements: [SR-12.9-1, SR-17-6]}
-  - {id: PL-6, text: "mlock fails (RLIMIT_MEMLOCK too small)", expect: refuse, flag: allow_unsafe_memory, requirements: [SR-12.8-2, SR-17-6], gap: G-30}
+  - {id: PL-6, text: "mlock fails (RLIMIT_MEMLOCK too small)", expect: refuse, flag: allow_unsafe_memory, requirements: [SR-12.8-2, SR-12.8-6, SR-17-6], gap: G-30}
   - {id: PL-7, text: "Swap off, hibernation off, data and keys on ext4", expect: start, requirements: [SR-12.8-4, SR-12.9-3]}
   - {id: PL-8, text: "Data and keys on XFS", expect: start, requirements: [SR-12.9-1, SR-12.9-3]}
-  - {id: PL-9, text: "Swap on dm-crypt", expect: start, requirements: [SR-12.8-4], gap: G-30}
-  - {id: PL-10, text: "Swap on zram", expect: start, requirements: [SR-12.8-4], gap: G-30}
+  - {id: PL-9, text: "Swap on dm-crypt", expect: start, requirements: [SR-12.8-4, SR-12.8-5], gap: G-30}
+  - {id: PL-10, text: "Swap on zram", expect: start, requirements: [SR-12.8-4, SR-12.8-5], gap: G-30}
   - {id: PL-11, text: "Key directory on btrfs, KEYS with no-copy-on-write", expect: start, requirements: [SR-12.9-3]}
   - {id: PL-12, text: "Data directory on ext4, key directory on XFS (different filesystems)", expect: start, requirements: [SR-12.9-1, SR-12.9-3]}
-  - {id: PL-13, text: "Key directory on tmpfs", expect: refuse, flag: allow_unsafe_fs, requirements: [SR-12.9-3], gap: G-31}
+  - {id: PL-13, text: "Key directory on tmpfs", expect: refuse, flag: allow_unsafe_fs, requirements: [SR-12.9-3, SR-12.9-4], gap: G-31}
 
 scan:
   - {id: SC-1, text: "Deleted x̃ as i32, both byte orders", where: image, requirements: [SR-21-12, SR-13.2-2]}

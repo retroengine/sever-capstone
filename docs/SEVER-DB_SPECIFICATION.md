@@ -1031,13 +1031,24 @@ Deleting a record overwrites its mirror entry, record ID bytes and any decrypted
 - The engine refuses to start if swap is enabled and not encrypted, or if hibernation is enabled,
   unless `memory.allow_unsafe_memory = true`, which is for development only and is recorded in every
   run ledger entry.
+- Swap is encrypted when every active entry of `/proc/swaps` is a zram device or a device-mapper
+  device whose `dm/uuid` starts with `CRYPT-`; anything else, a swap file included, is unencrypted.
+  Hibernation is enabled when `/sys/power/state` lists `disk` and `/sys/power/resume` is not `0:0`.
+- If locking memory fails (for example `RLIMIT_MEMLOCK` is too small), the engine refuses to start
+  (`PlatformUnsafe`, naming "§12.8 mlock") unless `memory.allow_unsafe_memory = true`.
+- `allow_unsafe_memory` covers this section's checks only; the filesystem checks of §12.9 have their
+  own flag (overview DB-90).
 
 ### 12.9 Platform checks at startup
 
 - Linux x86-64.
 - The data directory is on ext4 or XFS.
-- The key file's filesystem overwrites in place: ZFS is refused, and btrfs is refused unless the key
-  file carries the no-copy-on-write attribute.
+- The key file's filesystem overwrites in place. It is an allow-list: ext4, XFS, and btrfs only when
+  `KEYS` carries the no-copy-on-write attribute. Anything else (ZFS, btrfs without it, tmpfs, f2fs,
+  overlayfs, a Windows drive under WSL) is refused.
+- Both filesystem checks are overridden only by `platform.allow_unsafe_fs = true`, which is for
+  development only and is recorded in every run ledger entry (owner decision of 7 October 2026 for the
+  data directory; overview DB-90 for the key directory).
 - `ENGINE.lock` is taken exclusively (one process per data directory).
 - The generator self-check (§9.2) and the configuration and artefact hash checks pass.
 
@@ -1143,6 +1154,11 @@ keys with versions (4,352 bytes), about 90 surviving record keys in the rotated 
 and the accumulator (3,132 bytes): **about 12.9 KB**, versus about 342 KB if every record key in the
 group had to be re-wrapped under a two-level scheme (Appendix A).
 
+The 12.9 KB counts the rewritten secret material: wrapped keys and the accumulator. The WAL carries
+more, because `SLOT_PUT` (§14.6) rewrites a survivor's whole slot to replace its 60-byte record-key
+envelope: about 180 KB per deletion at this group. P4-T14 reports both, the WAL bytes broken down by
+record type (overview DB-90).
+
 ---
 
 ## 14. On-disk formats
@@ -1169,7 +1185,6 @@ own §6.3 format, verbatim. The byte layouts of every file are in §14.9.
     collections.bin                per collection: id, d, artefact hash, parameters
     partitions/<collection>.svp    copy of each partition artefact (§6.3)
     groups.bin                     group headers (§14.3)
-    buckets.bin                    wrapped bucket keys (§14.5)
     slots.bin                      member and holding slots (§14.4), page-structured
     locator.bin                    scrambled_id → (group, slot index)
     payloads.bin                   scrambled_id → passage text location in payloads/ (DB-67)
@@ -1178,6 +1193,7 @@ own §6.3 format, verbatim. The byte layouts of every file are in §14.9.
   log/hashes/<seq>.store           every leaf's type, hash and placement, in order (DB-81, DB-86)
   log/checkpoints/<seq>.store      every log checkpoint with its cosignatures, keyed by tree size
   certs/<seq>.store                certificates, keyed by database_lsn (§14.8)
+  buckets/<seq>.store              bucket blocks (§14.5), wrapped; the latest per domain wins (§14.8)
   payloads/<seq>.store             encrypted passage text (§14.8)
 <key_dir>/                         MAY be a different filesystem (§12.9)
   KEYS                             the key file (§14.7)
@@ -1279,11 +1295,17 @@ that references them. Unreferenced bytes after a crash are ignored and overwritt
 
 ### 14.7 Key file (`KEYS`)
 
-- Header, 4,096 bytes: `b"SVDBKEYS" ‖ u16be version ‖ u32be slot_pairs ‖ zero padding ‖ u32be crc32c`.
-- Per domain, two 512-byte slots. Each slot: `u32be magic ‖ u64be domain_index ‖ u64be key_version ‖
-  32-byte key ‖ zero padding ‖ u32be crc32c`.
+- Header, 4,096 bytes: `b"SVDBKEYS" ‖ u16be version ‖ zero padding ‖ u32be crc32c`. It is written once,
+  when the file is created, and never rewritten.
+- Per domain, two 512-byte slots (a *pair*). Each slot: `u32be magic ‖ u64be domain_index ‖ u64be
+  key_version ‖ 32-byte key ‖ collection_id (16) ‖ group_id (32) ‖ zero padding ‖ u32be crc32c`, with
+  magic `b"SVKS"` (`0x53564B53`) and `group_id` zero-padded as in §14.3. A slot names its domain, so
+  recovery (§13.4) maps slots to domains directly; an erased slot is 512 zero bytes.
 - 512-byte alignment keeps a slot inside one sector; a torn slot fails its CRC and is treated as absent.
-- Domain indices are allocated in creation order (a declared visible layout, L-5).
+- A domain's index is its pair's position: pair `i` starts at byte `4,096 + 1,024·i`. Pairs are appended
+  in creation order (a declared visible layout, L-5) and never reused. The pair count is
+  `(file length − 4,096) / 1,024`; a trailing partial pair (a crash while the file grew) is truncated at
+  recovery.
 - Size: 4 KB plus 1 KB per domain.
 
 ### 14.8 Append stores
@@ -1293,6 +1315,13 @@ sequence number). Certificates and insert leaves are public; payload records are
 ciphertexts under the record key, so erasing the record key erases the text wherever it lies.
 
 Each store file starts with the 16-byte file header of §14.9. The value of a record is at most 16 MiB.
+
+**Bucket store** (overview DB-90). Bucket blocks are the key-rotation participant's durable state, kept
+as Part 3's log keeps its own (overview DB-81): `buckets/<seq>.store` holds records keyed by a
+sequence number whose value is `collection_id (16) ‖ group_id (32) ‖ bucket block (§14.5)`, written
+in phase C with committed blocks only; the latest record per domain wins, and the WAL tail (its
+`BUCKET_BLOCK` records) restores what a crash cut off. The store is created at the participant's first
+recovery. Every key in it is wrapped under a group key, so it holds ciphertext only.
 
 ### 14.9 File layouts (overview DB-67)
 
@@ -1427,9 +1456,12 @@ applied.
 
 ### 15.9 Drop collection
 
-Erase every group key of the collection from the key file (overwrite and `fsync`), commit a WAL record
-removing the collection, then delete its files. Dropping a collection is a cryptographic erase of all
-its data.
+Commit the WAL record removing the collection (`COLLECTION_DROP`) first. Then, in phase C, erase every
+key slot of the collection from the key file (overwrite with zeros and `fsync`) and delete its files;
+the drop is acknowledged only after the erase. A crash between the commit and the erase is finished by
+§13.4's recovery rule: the collection's slots now belong to no domain, so they are erased. Dropping a
+collection is a cryptographic erase of all its data. (Erasing before the commit would leave, after a
+crash, a live collection whose active slots are gone, which §13.4 refuses to start; overview DB-90.)
 
 ---
 
@@ -1613,13 +1645,14 @@ memory:
   disable_core_dumps: true
   require_no_unencrypted_swap: true
   require_no_hibernation: true
-  allow_unsafe_memory: false              # development only; recorded in the run ledger
+  allow_unsafe_memory: false              # development only (§12.8 checks); recorded in the run ledger
   max_resident_fraction_of_ram: 0.6       # refuse to start above this estimated budget
 
 platform:
   os: linux-x86_64
   data_fs_allowed: [ext4, xfs]
-  key_fs_forbidden: [zfs, btrfs_without_nocow]
+  key_fs_allowed: [ext4, xfs, btrfs_nocow] # §12.9, an allow-list (overview DB-90)
+  allow_unsafe_fs: false                  # development only (§12.9 filesystem checks); recorded in the run ledger
 
 crypto:
   curve: ristretto255
@@ -1880,7 +1913,7 @@ All at `d = 384`, recomputed by script on 27 Sep 2026.
 | Part 2 slot (no extension, plaintext sealer) | 64 + 0 + 1,794 → 8-aligned | 1,864 bytes |
 | Part 2 group header (no extension, plaintext sealer) | 32 + 1 + 8 + 8 + 0 + 3,072 + 384 × 8 | 6,193 bytes |
 | Bucket block | 64 × (8 + 60) | 4,352 bytes |
-| Deletion rewrite, three-level, full bucket | 4,352 + ⌈5,703/64⌉ × 60 + 3,132 | ≈ 12.9 KB |
+| Deletion rewrite, three-level, full bucket (secret material; the WAL carries whole slots, §13.6) | 4,352 + ⌈5,703/64⌉ × 60 + 3,132 | ≈ 12.9 KB |
 | Deletion rewrite, two-level | 5,703 × 60 | 342,180 bytes |
 | Probe count at 128 groups | ⌈0.25 × 128⌉ | 32 |
 | Probe count at 263 groups | ⌈0.25 × 263⌉ | 66 |

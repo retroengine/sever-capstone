@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-88)](#6-decision-register-db-1--db-53-db-55--db-88)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-90)](#6-decision-register-db-1--db-53-db-55--db-90)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-88)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-90)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1017,6 +1017,47 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-90 — Part 4 design-review decisions: drop order, key-file slots, bucket store, the P4-T14 count, platform detection, two override flags (18 October 2026)
+
+**Decision.** The owner accepted the six fixes Part 4's design review proposed (18 October 2026), each
+as written in `docs/SPEC_GAPS.md`. (1) **G-26:** drop collection commits `COLLECTION_DROP` first, then
+erases the collection's key slots and deletes its files in phase C, acknowledging after the erase; a
+crash in between is finished by §13.4's rule (slots of no domain are erased). (2) **G-27:** each
+key-file slot carries magic `SVKS` and names its domain (`collection_id ‖ group_id`); a domain's index
+is its pair's position, appended and never reused; the pair count comes from the file length, a
+trailing partial pair is truncated at recovery, and the header is written once (no `slot_pairs`).
+(3) **G-28:** bucket blocks are the key-rotation participant's durable state in an append store
+`buckets/<seq>.store` (as DB-81 keeps the log's), not `checkpoint/<id>/buckets.bin`. (4) **G-29:** the
+§13.6 12.9 KB counts secret material; P4-T14 also reports the WAL bytes by record type (`SLOT_PUT`
+carries whole slots). (5) **G-30:** encrypted swap means zram or dm-crypt (`CRYPT-` uuid) for every
+active entry of `/proc/swaps`; hibernation means `disk` in `/sys/power/state` with a resume device;
+a failed `mlock` refuses to start unless `allow_unsafe_memory`. (6) **G-31:** two flags,
+`allow_unsafe_memory` (§12.8) and `allow_unsafe_fs` (both filesystem checks of §12.9), each recorded
+in the ledger; the key directory is an allow-list (ext4, XFS, btrfs with no-CoW on `KEYS`). **Why.**
+G-26 as specified bricks a database on one crash; G-27 and G-28 leave recovery unable to do what §13.4
+and §15.7 require; G-29 to G-31 leave a pre-registered measure and gate without a fixed meaning.
+**Rejected.** An erratum to the frozen Part 2 core for `buckets.bin` (the participant store needs
+none); keeping `slot_pairs` (a torn header rewrite has no recovery rule). **Consequence.** Closes
+G-26 … G-31; spec §12.8, §12.9, §13.6, §14.1, §14.7, §14.8, §15.9, §18 and Appendix A amended; Build 3-4
+E2E-4.5 and P4-T14 reworded; `spec/requirements.yaml` gains SR-12.8-5/6, SR-12.9-4, SR-14.7-6 and
+SR-14.8-4 (65 Part 4 requirements); the P4-T8 platform register names `allow_unsafe_fs` for the
+key-directory cases.
+
+#### DB-89 — Part 4 is built before Part 3 is frozen, on its own branch (18 October 2026)
+
+**Decision.** At the owner's request (18 October 2026), Part 4's modules are built while Part 3's gate
+runs finish, against Build 3-4 §0 ("Part N starts only when Part N−1 is frozen"). Conditions: the work
+is on its own branch and worktree (`p4-*`, `~/sever-db-p4prep`), never in the working copy the gates
+run in; no file Part 3 owns is edited (F-3: Part 4 changes behaviour only through EP-6, EP-7, EP-11);
+nothing merges to `main` before `part-3-frozen`; after the freeze the branch is rebased onto that tag
+and every Part 4 test, proof and check runs again; every Part 4 build and test runs at the lowest CPU
+priority on at most two cores while a gate runs. **Why.** Part 3's remaining work is machine time (the
+crash campaign and the replay, about a day on the owner's laptop); the owner prefers to build meanwhile.
+**Rejected.** Waiting (a day idle); building in the gates' working copy (the ledger records its HEAD
+and dirty state). **Consequence.** If a Part 3 gate fails and Part 3 changes, the Part 4 branch is
+rebased and any Part 4 code built on the changed behaviour is checked again; Part 4's own freeze still
+needs every Part 3 gate (F-5).
 
 #### DB-88 — Crash points from the main line's snapshots; smaller segments in the replay (17 October 2026)
 
@@ -2123,6 +2164,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **18 October 2026 — Part 4 starts.** DB-89 (Part 4 built before Part 3's freeze, on its own
+  branch) and DB-90 (the owner accepted the design review's fixes; closes G-26 … G-31). Specification
+  sections touched: §12.8, §12.9, §13.6, §14.1, §14.7, §14.8, §15.9, §18, Appendix A.
 - **17 October 2026 — Faster Part 3 gate runs.** DB-88 (crash points from the main line's
   snapshots, checked against the old method on every 50th operation; accepted certificates
   remembered within a run; 4 MiB segments in the trace replay; `p3-crash --resume`). Specification sections touched: none.

@@ -13,9 +13,9 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `part-2-frozen-e1`; erratum E-2 is committed and waits for the owner's tag `part-2-frozen-e2`).
 - **Where to resume:** the "RESUME HERE" paragraph in the Part 3 section below (branch, what is
   done, the next module, the proof-making routine). It is the only current resume point.
-- **Part 4 preparation** (18 Oct 2026): step 0 done on branch `p4-prep` (worktree
-  `~/sever-db-p4prep`); see "Part 4, The Erasure — design review" below. Gaps G-26…G-31 and
-  DB-53 (EP-11) / DB-54 wait for the owner. No Part 4 module starts before Part 3 is frozen.
+- **Part 4** (18 Oct 2026): step 0 done on branch `p4-prep` (worktree `~/sever-db-p4prep`); the owner
+  accepted G-26…G-31 (DB-90) and asked for Part 4 to start now (DB-89); see "Part 4, The Erasure"
+  below. DB-53 (EP-11) / DB-54 still wait for the owner.
 - **Working copy:** `~/sever-db` on the WSL ext4 disk (the `C:` copy is a backup).
 - **Git:** Claude commits on short `p3-*` branches (conventional messages, no AI attribution);
   nothing is pushed or merged to `main` without the owner's word.
@@ -77,15 +77,13 @@ modules start only once Part 3 is frozen (Build 3-4 §0); if Part 3 changes befo
    EP-7 `TxnParticipant` fit Part 4: recovery runs participants' `recover` before any decryption; the
    drop is a normal transaction with `after_commit`. Found G-26 and G-28 this way.
 
-**Open for the owner** (none blocks the prep; each needs your yes before the spec changes):
-- Gaps **G-26** (drop collection erases before commit → a crash bricks the database), **G-27** (key
-  file: slot magic, slot ↔ domain mapping, header growth), **G-28** (bucket blocks are lost at a
-  storage checkpoint with the frozen core: a participant store, as DB-81), **G-29** (what P4-T14's
-  "bytes rewritten" counts), **G-30** (how encrypted swap, hibernation and a failed `mlock` are
-  detected), **G-31** (which override covers which check; key directory as an allow-list). Each has a
-  proposed fix in `docs/SPEC_GAPS.md`.
-- Proposals still open from the build plan: **DB-53 (EP-11 half, `PlatformProbe`)** and **DB-54** (the
-  evaluation's build variants). Recommended: accept both as written.
+**Decided by the owner (18 Oct 2026):** "go, accept all gaps and lets do the part 4". DB-89 (Part 4
+is built now, on its own branch and worktree, before Part 3's freeze; nothing merges before
+`part-3-frozen`; builds and tests at the lowest priority on two cores while a gate runs) and DB-90
+(G-26 … G-31 closed as proposed; spec §12.8, §12.9, §13.6, §14.1, §14.7, §14.8, §15.9, §18, Appendix A
+amended; 65 Part 4 requirements). Still proposals from the build plan: **DB-53 (EP-11 half,
+`PlatformProbe`)** and **DB-54** (the evaluation's build variants), needed at `sever-platform` and the
+evaluation; recommended: accept both as written.
 
 **Design notes for the modules** (not gaps): the `AeadSealer` and the `KeyRotationParticipant` share
 the key state; the sealer creates a domain's next key when the core first asks for it during `plan`,
