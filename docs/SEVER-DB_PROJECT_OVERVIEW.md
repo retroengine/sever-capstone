@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-91)](#6-decision-register-db-1--db-53-db-55--db-91)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-92)](#6-decision-register-db-1--db-53-db-55--db-92)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-91)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-92)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1042,6 +1042,21 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-92 — Where the group-key rotation and its sabotage live; `GROUP_CREATE` carries no block (18 October 2026)
+
+**Decision.** (1) The new group key of a rotation is made by the sealer, when the frozen core asks
+for a domain's next version after a departure (EP-6 `next_version`), because the core seals the
+accumulator under it while it plans, before any participant runs; the participant then rotates the
+buckets and re-wraps the survivors in `prepare`. So SB-24 ("skip group-key rotation") is built in
+`sever-seal`: the new version keeps the old key's bytes. The register row moves from `sever-erasure`
+to `sever-seal` (no Part 4 result existed). (2) The core's `GROUP_CREATE` record keeps its bucket
+block empty; the block is the participant's `BUCKET_BLOCK` record of the same transaction, so it is
+logged once. (3) The participant prunes the key ring's stage in `prepare` to what the transaction's
+change set justifies, because a plan that fails after the sealer staged keys runs no participant
+hook. **Why.** These follow from the frozen EP-6 and EP-7 calls' order. **Rejected.** Rotating the
+group key in the participant (the accumulator would already be sealed under the old key).
+**Consequence.** Spec §14.6 amended (two table rows); `spec/registers_p4.yaml` SB-24.
 
 #### DB-91 — Re-wrapped record keys live in the wrapped-key store, not in the slots (18 October 2026)
 
@@ -2208,6 +2223,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **18 October 2026 — The key-rotation participant.** DB-92 (the group key rotates in the sealer;
+  SB-24 in `sever-seal`; `GROUP_CREATE` carries no block; the stage is pruned in `prepare`).
+  Specification sections touched: §14.6.
 - **18 October 2026 — Build-plan proposals accepted.** DB-53's EP-11 half (`PlatformProbe`) and
   DB-54 (the evaluation's build variants). Specification sections touched: none.
 - **18 October 2026 — Re-wrapped record keys.** DB-91 (survivors' envelopes in the wrapped-key

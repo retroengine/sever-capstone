@@ -1282,7 +1282,7 @@ and are carried verbatim by the storage engine.
 | Type | Payload (after-image) |
 |---|---|
 | `BEGIN` | — |
-| `GROUP_CREATE` | New group header, `u32be len ‖` bucket block (empty before Part 4) |
+| `GROUP_CREATE` | New group header, `u32be len ‖` bucket block (always empty: the new group's block is the key-rotation participant's `BUCKET_BLOCK` record in the same transaction, DB-92) |
 | `GROUP_HEADER` | Replacement group header (§14.3) |
 | `BUCKET_BLOCK` | `collection_id ‖ group_id ‖ u64be group_key_version ‖` bucket block (§14.5); owned by the key-rotation participant (DB-91) |
 | `SLOT_PUT` | `group_id ‖ slot index ‖ slot (1,992)` |
@@ -1293,7 +1293,7 @@ and are carried verbatim by the storage engine.
 | `CERT_REF` | `database_lsn ‖ store segment ‖ offset ‖ length ‖ SHA-256` of the certificate |
 | `PAYLOAD_REF` | `scrambled_id ‖ u64be store segment ‖ u64be offset ‖ u32be length` |
 | `COUNTERS` | `N`, `k` of the collection (the next `database_lsn` is the log participant's, carried in its own records; DB-66) |
-| `EXTENSION` | `u16be participant_id ‖ bytes`, carried for a transaction participant and never interpreted by the storage engine (overview DB-45). The key-rotation participant (ID 4, DB-91) writes `u8 kind ‖` the value of a wrapped-key store record of kind 2 or 3 (§14.8) |
+| `EXTENSION` | `u16be participant_id ‖ bytes`, carried for a transaction participant and never interpreted by the storage engine (overview DB-45). The key-rotation participant (ID 4, DB-91) writes the value of a wrapped-key store record of kind 2 or 3, which starts with its kind byte (§14.8) |
 | `COMMIT` | — |
 | `COLLECTION_CREATE` | collection metadata (§14.9) `‖ u32be len ‖` partition artefact (§6.3 bytes) |
 | `COLLECTION_DROP` | — (the `collection_id` only) |
