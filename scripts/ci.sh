@@ -8,6 +8,7 @@
 # python -m sever_testkit_p2.gates p2-crash | p2-replay | p2-fuzz | p2-sabotage | p2-spikes.
 # Part 3 adds its spec-trace, oracle, proof and register checks to fast (sever_testkit_p3; CLAUDE.md §6.3); its
 # Full-tier gates are python -m sever_testkit_p3.gates p3-mutants | ….
+# Part 4 adds the same checks for its paths (sever_testkit_p4), its registers and the RFC 8452 vectors.
 # The long Full-tier gates write the run ledger themselves (python -m sever_testkit.gates …).
 # Prints one "STEP <name>: PASS|FAIL" line per step; exits 1 if any step failed.
 set -u
@@ -65,6 +66,12 @@ fast() {
   step registers-p3 uv run --no-sync python -m sever_testkit_p3.registers check
   step rfc-vectors-p3 uv run --no-sync python -m sever_testkit_p3.rfc_vectors check
   step refmodel-golden-p3 uv run --no-sync python -m sever_refmodel_certs.golden check
+  # Part 4 is being prepared (design review, 18 Oct 2026): the checks run on an empty Part 4 so far.
+  step spec-trace-p4 uv run --no-sync python -m sever_testkit_p4.spec_trace check --part 4
+  step oracle-check-p4 uv run --no-sync python -m sever_testkit_p4.oracle_check check
+  step proofs-check-p4 uv run --no-sync python -m sever_testkit_p4.proofs check
+  step registers-p4 uv run --no-sync python -m sever_testkit_p4.registers check
+  step rfc-vectors-p4 uv run --no-sync python -m sever_testkit_p4.rfc_vectors check
   step crypto-deps no_duplicate_crypto_deps
   step dalek-pinned dalek_pinned
   step freeze-guard freeze_guard

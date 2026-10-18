@@ -1,0 +1,67 @@
+# Part 4 registers (Build 3-4 §2.8–2.10; Build §2.6; overview EX-2): every sabotage item, crash row,
+# key-file fault, platform case and scan target of Part 4, tied to the requirements it checks
+# (spec/requirements.yaml). Written at Part 4's design review (18 Oct 2026), before any Part 4 code or
+# result, so the gates P4-T2 … P4-T8 test a fixed list (pre-registration, overview §3.4).
+# Checked in the Fast tier by `python -m sever_testkit_p4.registers check`.
+#
+# sabotage: built with feature `sabotage-SB-N` of `crate` (Build §2.6); `caught_by` is the test that
+#   must go red; `scanner: true` means the forensic scanner must also report ≥ 1 finding on that
+#   build (P4-T2, "where one applies"), with `finding` saying what it finds.
+# crash: the rows of the spec §15.4 crash table; each row is its own test (Build 3-4 §2.8 L3, P4-T4).
+# keyfile: key-file faults injected at startup (Build 3-4 §2.8 L5, L8; E2E-4.7; P4-T3).
+# platform: the fake-PlatformProbe matrix of P4-T8 (EP-11): `expect: refuse` must give
+#   PlatformUnsafe, `expect: start` must start (0 safe configurations refused); `flag` is the override
+#   that turns a refusal into a start, recorded in the ledger. An entry with `gap` rests on an open
+#   gap and is reworded when it closes.
+# scan: what the forensic scanner and the WAL plaintext scan look for (Build 3-4 §2.8 Forensics,
+#   P4-T1, P4-T6). `where: image` is the raw disk image with free space (EX-2); `where: wal` is every
+#   byte the WAL, storage checkpoints and append stores ever wrote (INV-11).
+
+sabotage:
+  - {id: SB-24, text: "Skip group-key rotation", crate: sever-erasure, requirements: [SR-13.3-1, SR-13.3-2, SR-21-12], caught_by: "the rotation shadow model (INV-12): after a deletion the group's current key still opens the accumulator written before it", scanner: true, finding: "two accumulator versions decrypt under one live group key; S_pre − S_post is the deleted vector (E2E-4.2)"}
+  - {id: SB-25, text: "Skip bucket-key rotation", crate: sever-erasure, requirements: [SR-13.3-2, SR-21-12], caught_by: "the rotation shadow model: the deleted record's bucket key is still reachable under the new group key", scanner: true, finding: "the deleted record's old envelope unwraps under a live bucket key and its slot payload decrypts"}
+  - {id: SB-26, text: "Skip holding-area rotation on flush", crate: sever-erasure, requirements: [SR-13.3-1, SR-15.2-3, SR-21-12], caught_by: "the rotation shadow model: after a flush the holding area's current key opens envelopes of records that left it", scanner: true, finding: "a flushed and later deleted record's holding-area envelope unwraps under the live holding key"}
+  - {id: SB-27, text: "Erase the old key before commit", crate: sever-erasure, requirements: [SR-13.4-1, SR-13.4-2, SR-21-13], caught_by: "the crash campaign (P4-T3): a crash between the early erase and the durable COMMIT leaves the domain's active slot missing, so recovery refuses to start", scanner: false}
+  - {id: SB-28, text: "Write a plaintext vector into the WAL", crate: sever-seal, requirements: [SR-12.3-4, SR-21-11], caught_by: "the WAL plaintext scan (P4-T6) finds an x̃ of a written record", scanner: true, finding: "a deleted x̃ as i32 on the image"}
+  - {id: SB-29, text: "Write an unwrapped key to disk", crate: sever-seal, requirements: [SR-12.3-4, SR-13.1-1, SR-21-11], caught_by: "the WAL plaintext scan (P4-T6) finds a record key in the clear", scanner: true, finding: "a retired record key on the image (key-export build)"}
+  - {id: SB-30, text: "Reuse an AEAD nonce", crate: sever-seal, requirements: [SR-13.2-1], caught_by: "the nonce recorder (P4-T5) sees one nonce twice under one key", scanner: true, finding: "two carved ciphertexts share a 96-bit nonce (random nonces never repeat at this scale)"}
+
+crash:
+  - {id: CT-1, text: "Crash before phase A", requirements: [SR-15.4-2]}
+  - {id: CT-2, text: "Crash after phase A, before COMMIT is durable", requirements: [SR-15.4-3, SR-13.4-3]}
+  - {id: CT-3, text: "Crash after COMMIT, before phase C", requirements: [SR-15.4-4, SR-13.4-3]}
+  - {id: CT-4, text: "Crash during phase C (torn slot)", requirements: [SR-15.4-5, SR-14.7-3]}
+  - {id: CT-5, text: "Crash after phase C, before acknowledgement", requirements: [SR-15.4-6]}
+
+keyfile:
+  - {id: KF-1, text: "The active slot of a domain is torn (CRC fails)", expect: refuse, requirements: [SR-13.4-3, SR-14.7-3, SR-21-14]}
+  - {id: KF-2, text: "The active slot of a domain is removed (E2E-4.7)", expect: refuse, requirements: [SR-13.4-3, SR-21-14]}
+  - {id: KF-3, text: "The inactive slot of a domain holds another version (an orphan of phase A)", expect: start, requirements: [SR-13.4-3, SR-15.4-3]}
+  - {id: KF-4, text: "The inactive slot of a domain is torn", expect: start, requirements: [SR-13.4-3, SR-14.7-3]}
+  - {id: KF-5, text: "A slot pair belongs to no domain (a rolled-back create or flush)", expect: start, requirements: [SR-13.4-3], gap: G-27}
+  - {id: KF-6, text: "A crash during recovery's erasure; the next start erases again", expect: start, requirements: [SR-13.4-3, SR-21-13]}
+
+platform:
+  - {id: PL-1, text: "Swap on, not encrypted", expect: refuse, flag: allow_unsafe_memory, requirements: [SR-12.8-4, SR-17-6], gap: G-30}
+  - {id: PL-2, text: "Hibernation enabled", expect: refuse, flag: allow_unsafe_memory, requirements: [SR-12.8-4, SR-17-6], gap: G-30}
+  - {id: PL-3, text: "Key directory on ZFS", expect: refuse, requirements: [SR-12.9-3, SR-17-6], gap: G-31}
+  - {id: PL-4, text: "Key directory on btrfs, KEYS without no-copy-on-write", expect: refuse, requirements: [SR-12.9-3, SR-17-6], gap: G-31}
+  - {id: PL-5, text: "Data directory not ext4 or XFS", expect: refuse, flag: allow_unsafe_fs, requirements: [SR-12.9-1, SR-17-6]}
+  - {id: PL-6, text: "mlock fails (RLIMIT_MEMLOCK too small)", expect: refuse, flag: allow_unsafe_memory, requirements: [SR-12.8-2, SR-17-6], gap: G-30}
+  - {id: PL-7, text: "Swap off, hibernation off, data and keys on ext4", expect: start, requirements: [SR-12.8-4, SR-12.9-3]}
+  - {id: PL-8, text: "Data and keys on XFS", expect: start, requirements: [SR-12.9-1, SR-12.9-3]}
+  - {id: PL-9, text: "Swap on dm-crypt", expect: start, requirements: [SR-12.8-4], gap: G-30}
+  - {id: PL-10, text: "Swap on zram", expect: start, requirements: [SR-12.8-4], gap: G-30}
+  - {id: PL-11, text: "Key directory on btrfs, KEYS with no-copy-on-write", expect: start, requirements: [SR-12.9-3]}
+  - {id: PL-12, text: "Data directory on ext4, key directory on XFS (different filesystems)", expect: start, requirements: [SR-12.9-1, SR-12.9-3]}
+  - {id: PL-13, text: "Key directory on tmpfs", expect: refuse, flag: allow_unsafe_fs, requirements: [SR-12.9-3], gap: G-31}
+
+scan:
+  - {id: SC-1, text: "Deleted x̃ as i32, both byte orders", where: image, requirements: [SR-21-12, SR-13.2-2]}
+  - {id: SC-2, text: "Deleted x̃ widened to i64, both byte orders", where: image, requirements: [SR-21-12]}
+  - {id: SC-3, text: "Deleted original float32 vectors, both byte orders", where: image, requirements: [SR-21-12]}
+  - {id: SC-4, text: "Every 32-byte window of deleted passage text", where: image, requirements: [SR-14.8-3, SR-13.2-3]}
+  - {id: SC-5, text: "Each deleted r_t", where: image, requirements: [SR-21-12, SR-13.2-2]}
+  - {id: SC-6, text: "Every retired group, bucket and record key", where: image, requirements: [SR-13.4-1, SR-21-13]}
+  - {id: SC-7, text: "Every carved engine record (magic and CRC) opened with every live key", where: image, requirements: [SR-21-12]}
+  - {id: SC-8, text: "Plaintext vectors, record IDs, passage text, r_t, S, r_agg or unwrapped keys", where: wal, requirements: [SR-12.3-4, SR-21-11]}

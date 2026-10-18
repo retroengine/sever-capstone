@@ -1,0 +1,4 @@
+# Proofs for Part 4 (CLAUDE.md §6.3). Each entry: a patch that breaks one rule and the tests that
+# must go red (red), stay green (green: the label was removed), or stay green while keeping the
+# label (limit: what the test does not notice). Check: python -m sever_testkit_p4.proofs check
+[]
