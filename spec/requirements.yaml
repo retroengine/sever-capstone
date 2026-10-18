@@ -423,7 +423,7 @@
 - {id: SR-12.6-2, section: "12.6", kind: table-row, part: 4, text: "In-memory structures (Part 4 rows): the decrypted accumulators (S and r_agg per group) and the key cache (group keys, bucket keys) are held in locked memory (§12.8)."}
 - {id: SR-12.6-3, section: "12.6", kind: must, part: 4, text: "Deleting a record overwrites its mirror entry, its record ID bytes and every decrypted buffer with zeros before the deletion is acknowledged."}
 - {id: SR-12.8-1, section: "12.8", kind: must, part: 4, text: "Every secret type implements Zeroize and ZeroizeOnDrop."}
-- {id: SR-12.8-2, section: "12.8", kind: must, part: 4, text: "Key material and decrypted accumulators live in mlocked pages (the EP-4 MlockProvider)."}
+- {id: SR-12.8-2, section: "12.8", kind: must, part: 4, text: "Key material and decrypted accumulators live in mlocked pages (the EP-4 MlockProvider).", notes: "DB-93 (closes G-33): the whole process is locked at startup."}
 - {id: SR-12.8-3, section: "12.8", kind: must, part: 4, text: "At startup the engine sets RLIMIT_CORE = 0 and PR_SET_DUMPABLE = 0."}
 - {id: SR-12.8-4, section: "12.8", kind: must, part: 4, text: "The engine refuses to start (PlatformUnsafe) if swap is enabled and not encrypted, or if hibernation is enabled, unless memory.allow_unsafe_memory = true (development only), which is recorded in every run ledger entry.", related: [SR-12.8-5]}
 - {id: SR-12.8-5, section: "12.8", kind: definition, part: 4, text: "Swap is encrypted when every active entry of /proc/swaps is a zram device or a device-mapper device whose dm/uuid starts with CRYPT-; anything else, a swap file included, is unencrypted. Hibernation is enabled when /sys/power/state lists disk and /sys/power/resume is not 0:0.", notes: "DB-90 (closes G-30)."}

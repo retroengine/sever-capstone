@@ -1026,8 +1026,11 @@ Deleting a record overwrites its mirror entry, record ID bytes and any decrypted
 ### 12.8 Memory hygiene
 
 - Every secret type implements `Zeroize` and `ZeroizeOnDrop`.
-- Key material and decrypted accumulators live in `mlock`ed pages.
-- At startup the engine sets `RLIMIT_CORE = 0` and `PR_SET_DUMPABLE = 0`.
+- Key material and decrypted accumulators live in `mlock`ed pages. The engine locks the whole
+  process at startup (`mlockall(MCL_CURRENT | MCL_FUTURE | MCL_ONFAULT)`), so the memory-lock limit
+  must cover the whole process (overview DB-93).
+- At startup the engine sets `RLIMIT_CORE = 0` and `PR_SET_DUMPABLE = 0`; if it cannot, it refuses to
+  start (`PlatformUnsafe`, naming "§12.8 core dumps") unless `memory.allow_unsafe_memory = true`.
 - The engine refuses to start if swap is enabled and not encrypted, or if hibernation is enabled,
   unless `memory.allow_unsafe_memory = true`, which is for development only and is recorded in every
   run ledger entry.
@@ -1045,7 +1048,8 @@ Deleting a record overwrites its mirror entry, record ID bytes and any decrypted
 - The data directory is on ext4 or XFS.
 - The key file's filesystem overwrites in place. It is an allow-list: ext4, XFS, and btrfs only when
   `KEYS` carries the no-copy-on-write attribute. Anything else (ZFS, btrfs without it, tmpfs, f2fs,
-  overlayfs, a Windows drive under WSL) is refused.
+  overlayfs, a Windows drive under WSL) is refused. Before `KEYS` exists, the key directory's
+  attribute decides, because a new file inherits it (overview DB-93).
 - Both filesystem checks are overridden only by `platform.allow_unsafe_fs = true`, which is for
   development only and is recorded in every run ledger entry (owner decision of 7 October 2026 for the
   data directory; overview DB-90 for the key directory).

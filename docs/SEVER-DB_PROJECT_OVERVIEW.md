@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-92)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-93)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1042,6 +1042,30 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-93 — Memory is locked process-wide at startup; the btrfs attribute before `KEYS` exists (18 October 2026)
+
+**Decision.** (1) Startup locks the whole process with `mlockall(MCL_CURRENT | MCL_FUTURE |
+MCL_ONFAULT)`, through EP-11's `lock_memory`, so every page the engine touches afterwards is locked:
+the key ring, the AES key schedules, and the decrypted accumulators that the frozen Part 1 index
+keeps in ordinary vectors. If it fails, startup refuses ("§12.8 mlock", PL-6) unless
+`allow_unsafe_memory`. Linux checks the process's whole virtual size against `RLIMIT_MEMLOCK`, so a
+production engine needs `ulimit -l unlimited` (or `CAP_IPC_LOCK`). (2) `MlockProvider` (EP-4) can only
+be built from the startup report's proof that the lock took effect. Its regions come from that
+locked heap and are zeroed on release by `SecretBuf`. Under `allow_unsafe_memory` with a failed lock,
+Part 1's heap provider stays and the ledger records the override. (3) On btrfs, before `KEYS`
+exists, the key directory's no-copy-on-write attribute decides (a new file inherits it); once `KEYS`
+exists, its own attribute decides. (4) Turning core dumps off (`RLIMIT_CORE = 0`, `PR_SET_DUMPABLE =
+0`) runs first; if it fails, startup refuses ("§12.8 core dumps") unless `allow_unsafe_memory`. (5) A
+probe that cannot answer fails its check closed. **Why.** §12.8 puts decrypted accumulators in locked
+pages, but they live in Part 1's frozen index, which allocates them from the ordinary heap (only
+`SecretBuf` goes through EP-4), so locking region by region cannot reach them. **Rejected.**
+Per-region `mlock` in the provider (it locks keys only, leaving the accumulators unlocked); an erratum
+moving Part 1's accumulators into `SecretBuf` (F-6 re-runs every later exit gate, and the index works
+on plain `i64` vectors); `MADV_DONTDUMP` (it covers core dumps, not swap). **Consequence.** Closes
+G-33; spec §12.8 and §12.9 each gain a sentence. A machine with a small memory-lock limit (64 KiB on
+the development laptop) refuses to start without the override. This laptop's runs need
+`allow_unsafe_memory` anyway, because its swap (`/dev/sdc`) is unencrypted.
 
 #### DB-92 — Where the group-key rotation and its sabotage live; `GROUP_CREATE` carries no block (18 October 2026)
 
@@ -2223,6 +2247,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **18 October 2026 — Startup checks.** DB-93 (memory is locked process-wide at startup; the
+  btrfs attribute before `KEYS` exists; core dumps off first; probes fail closed; closes G-33).
+  Specification sections touched: §12.8, §12.9.
 - **18 October 2026 — The key-rotation participant.** DB-92 (the group key rotates in the sealer;
   SB-24 in `sever-seal`; `GROUP_CREATE` carries no block; the stage is pruned in `prepare`).
   Specification sections touched: §14.6.
