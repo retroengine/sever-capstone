@@ -1,0 +1,14 @@
+--- a/crates/sever-erasure/src/participant.rs
++++ b/crates/sever-erasure/src/participant.rs
+@@ -251,7 +251,10 @@
+                 }
+                 self.ring.rotate(d, &[])?
+             } else {
+-                self.ring.rotate(d, sids)?
++                for sid in sids {
++                    self.ring.depart(d, sid);
++                }
++                self.ring.rotate(d, &[])?
+             };
+             if !rot.envelopes.is_empty() {
+                 let v = records::envelopes_value(d, &rot.envelopes);

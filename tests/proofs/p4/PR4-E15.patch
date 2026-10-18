@@ -1,0 +1,11 @@
+--- a/crates/sever-erasure/src/records.rs
++++ b/crates/sever-erasure/src/records.rs
+@@ -154,7 +154,7 @@
+     pub fn merge(&mut self, v: Value) {
+         match v {
+             Value::Block(d, version, block) => {
+-                if self.blocks.get(&d).is_none_or(|(old, _)| *old < version) {
++                if self.blocks.get(&d).is_none_or(|_| true) {
+                     self.blocks.insert(d, (version, block));
+                 }
+             }

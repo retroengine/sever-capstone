@@ -1,0 +1,11 @@
+--- a/crates/sever-erasure/src/participant.rs
++++ b/crates/sever-erasure/src/participant.rs
+@@ -161,7 +161,7 @@
+         let live_bytes: u64 = live.iter().map(|v| (v.len() + 16) as u64).sum();
+         let min = self.compact_min;
+         let store = self.wrapped()?;
+-        if store.bytes() < min || store.bytes() <= live_bytes.saturating_mul(4) {
++        if true || store.bytes() < min || store.bytes() <= live_bytes.saturating_mul(4) {
+             return Ok(());
+         }
+         store.compact(&live)?;

@@ -1,0 +1,12 @@
+--- a/crates/sever-erasure/src/participant.rs
++++ b/crates/sever-erasure/src/participant.rs
+@@ -387,9 +387,6 @@
+             .map(|(d, (v, _))| (*d, *v))
+             .collect();
+         let plan = recovery::plan(&active, slots)?;
+-        for (pair, slot) in &plan.erase {
+-            self.key_file()?.erase_slot(*pair, *slot)?;
+-        }
+         self.slots.clear();
+         for (d, k) in plan.keys {
+             let block = &self

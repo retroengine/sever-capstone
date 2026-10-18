@@ -733,6 +733,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-erasure"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sever-appendstore",
+ "sever-checkpoint",
+ "sever-engine",
+ "sever-format",
+ "sever-index",
+ "sever-keys",
+ "sever-seal",
+ "sever-spec",
+ "sever-txn",
+ "sever-types",
+ "sever-vfs",
+ "sever-wal",
+ "sha2",
+]
+
+[[package]]
 name = "sever-format"
 version = "0.1.0"
 dependencies = [

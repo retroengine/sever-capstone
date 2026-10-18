@@ -1,0 +1,10 @@
+--- a/crates/sever-erasure/src/participant.rs
++++ b/crates/sever-erasure/src/participant.rs
+@@ -302,6 +302,7 @@
+             self.key_file()?
+                 .write_slot(at.pair, inactive, d, version, &key)?;
+             self.pending.rotated.push((d, at.pair, inactive, at.slot));
++            self.key_file()?.erase_slot(at.pair, at.slot)?;
+             if cfg!(feature = "sabotage-SB-27") {
+                 // SB-27: erase the old key before the COMMIT is durable.
+                 self.key_file()?.erase_slot(at.pair, at.slot)?;

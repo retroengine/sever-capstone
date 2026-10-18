@@ -1,11 +1,11 @@
 --- a/crates/sever-seal/src/ring.rs
 +++ b/crates/sever-seal/src/ring.rs
-@@ -239,7 +239,7 @@
+@@ -236,7 +236,7 @@
              }
              (Some(v), false) => v,
              (Some(v), true) => {
 -                let next = v.saturating_add(1);
 +                let next = v;
-                 inner.stage.rotate.insert(*d, (next, Key::generate()));
-                 next
-             }
+                 // A key staged for this version by an attempt that never committed is reused: it
+                 // was never written anywhere a commit could read it.
+                 if inner.stage.rotate.get(d).map(|(s, _)| *s) != Some(next) {

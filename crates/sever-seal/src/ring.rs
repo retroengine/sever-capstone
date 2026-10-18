@@ -164,7 +164,11 @@ impl Inner {
             return Ok((e.env, None));
         }
         if self.stage.del.contains(&(*d, *sid)) {
-            return Err(missing("§14.4 record left its domain"));
+            // The record left `d` in this transaction (a flush): the core may still name it by the
+            // envelope it was sealed with (its passage is sealed after the move). That envelope
+            // opens only under the keys it was wrapped with, which the rotation retires.
+            let env = slot.try_into().map_err(|_| missing("§14.4 envelope"))?;
+            return Ok((env, None));
         }
         if let Some(e) = self.envelopes.get(&(*d, *sid)) {
             return Ok((e.env, None));
@@ -225,9 +229,6 @@ impl KeyRing {
     pub fn next_version(&self, d: &Domain, prev: Option<u64>, departure: bool) -> u64 {
         let mut st = self.lock();
         let inner = &mut *st;
-        if let Some((v, _)) = inner.stage.rotate.get(d) {
-            return *v;
-        }
         match (prev, departure) {
             (None, _) => {
                 inner
@@ -240,7 +241,16 @@ impl KeyRing {
             (Some(v), false) => v,
             (Some(v), true) => {
                 let next = v.saturating_add(1);
-                inner.stage.rotate.insert(*d, (next, Key::generate()));
+                // A key staged for this version by an attempt that never committed is reused: it
+                // was never written anywhere a commit could read it.
+                if inner.stage.rotate.get(d).map(|(s, _)| *s) != Some(next) {
+                    let key = match inner.domains.get(d) {
+                        // SB-24: the group key is not rotated; its version moves on, its bytes stay.
+                        Some(k) if cfg!(feature = "sabotage-SB-24") => k.key.duplicate(),
+                        _ => Key::generate(),
+                    };
+                    inner.stage.rotate.insert(*d, (next, key));
+                }
                 next
             }
         }
@@ -365,6 +375,27 @@ impl KeyRing {
         let mut st = self.lock();
         st.stage.del.insert((*d, *sid));
         st.stage.put.remove(&(*d, *sid));
+    }
+
+    /// Keeps only what the current transaction justifies: the domains it creates (`new`) and
+    /// rotates (`rotated`), the records that join a domain (`joined`) and leave one (`left`).
+    /// Anything else was staged by an attempt that failed while the core planned (no participant
+    /// hook runs then) and is dropped, so it can never be adopted with a later transaction.
+    pub fn retain_stage(
+        &self,
+        new: &BTreeSet<Domain>,
+        rotated: &BTreeSet<Domain>,
+        joined: &HashSet<(Domain, Sid)>,
+        left: &HashSet<(Domain, Sid)>,
+    ) {
+        let mut st = self.lock();
+        let stage = &mut st.stage;
+        stage.new.retain(|d, _| new.contains(d));
+        stage.rotate.retain(|d, _| rotated.contains(d));
+        stage.buckets.clear();
+        stage.put.retain(|k, _| joined.contains(k));
+        stage.del.retain(|k| left.contains(k));
+        stage.drop.clear();
     }
 
     /// Stages the drop of collection `cid` (§15.9).

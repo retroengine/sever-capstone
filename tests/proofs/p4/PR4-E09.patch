@@ -1,0 +1,11 @@
+--- a/crates/sever-keys/src/file.rs
++++ b/crates/sever-keys/src/file.rs
+@@ -128,7 +128,7 @@
+     };
+     if field(0, 4) != SLOT_MAGIC || !crc_ok(s) || field(100, SLOT_BYTES - 4).iter().any(|b| *b != 0)
+     {
+-        return SlotState::Torn;
++        return SlotState::Erased;
+     }
+     let domain_index = u64_at(4);
+     if domain_index != position {

@@ -8,6 +8,7 @@ publish.workspace = true
 
 [features]
 # Build §2.6: each builds the crate with exactly one deliberate bug. A test must go red.
+sabotage-SB-24 = [] # skip group-key rotation (the new version keeps the old key's bytes)
 sabotage-SB-28 = [] # write a plaintext vector into the WAL (the slot payload is not encrypted)
 sabotage-SB-29 = [] # write an unwrapped key to disk (the record key is stored in the clear)
 sabotage-SB-30 = [] # reuse an AEAD nonce
