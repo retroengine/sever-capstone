@@ -179,8 +179,11 @@ impl WrappedStore {
         drop(fresh);
         durable::rename(v, DIR, OLD).map_err(io)?;
         durable::rename(v, NEW, DIR).map_err(io)?;
-        remove_tree(v, OLD)?;
+        // The old store's segment stays open until it is replaced: replace it first, so no file
+        // under `wrapped.old/` is open when it is removed (FUSE and NFS keep an open file's entry,
+        // and the directory would not be empty).
         self.store = FileStore::open(Arc::clone(&self.vfs), cfg(DIR, self.segment_bytes))?;
+        remove_tree(v, OLD)?;
         self.next_key = values.len() as u64;
         self.bytes = bytes;
         Ok(())
