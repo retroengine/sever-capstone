@@ -66,13 +66,17 @@ def procs() -> list[tuple[int, str, int]]:
     """(pid, command line, seconds of run time) of every gate-kit process."""
     out = []
     try:
-        pids = subprocess.run(["pgrep", "-x", "sever-crashkit-"], capture_output=True, text=True).stdout.split()
+        pids = subprocess.run(
+            ["pgrep", "-x", "sever-crashkit-"], capture_output=True, text=True
+        ).stdout.split()
     except OSError:
         return out
     for p in pids:
         try:
             cmd = Path(f"/proc/{p}/cmdline").read_bytes().replace(b"\0", b" ").decode()
-            et = subprocess.run(["ps", "-o", "etimes=", "-p", p], capture_output=True, text=True).stdout.strip()
+            et = subprocess.run(
+                ["ps", "-o", "etimes=", "-p", p], capture_output=True, text=True
+            ).stdout.strip()
             out.append((int(p), cmd, int(et or 0)))
         except (OSError, ValueError):
             continue
@@ -86,7 +90,11 @@ def replay_pos(pid: int) -> tuple[int | None, float]:
             t = os.readlink(f"/proc/{pid}/fd/{fd}")
             m = re.search(r"p1-nq-100k-seed(\d+)\.jsonl$", t)
             if m:
-                pos = int(re.search(r"pos:\s*(\d+)", Path(f"/proc/{pid}/fdinfo/{fd}").read_text()).group(1))
+                pos = int(
+                    re.search(r"pos:\s*(\d+)", Path(f"/proc/{pid}/fdinfo/{fd}").read_text()).group(
+                        1
+                    )
+                )
                 return int(m.group(1)), pos / os.path.getsize(t)
     except (OSError, AttributeError):
         pass
@@ -104,7 +112,11 @@ def gate_done(log: str) -> str | None:
 
 def render() -> str:
     ps = procs()
-    lines = [f"SEVER-DB Part 3 gate runs   {time.strftime('%H:%M:%S')}   (refresh {REFRESH} s, Ctrl-C quits)", ""]
+    lines = [
+        f"SEVER-DB Part 3 gate runs   {time.strftime('%H:%M:%S')}"
+        f"   (refresh {REFRESH} s, Ctrl-C quits)",
+        "",
+    ]
 
     # Crash campaign (P3-T4).
     crash_rc = gate_done("gate-p3-crash.log")
@@ -124,7 +136,9 @@ def render() -> str:
     eta = run_secs * (1 - slowest) / slowest if slowest > 0.01 and not crash_rc else 0
     lines.append(f"  overall   {bar(total)} {total * 100:5.1f}%  (weighted by cost per operation)")
     if not crash_rc:
-        lines.append(f"  running {hms(run_secs)}; slowest seed needs about {hms(eta)} more (estimate)")
+        lines.append(
+            f"  running {hms(run_secs)}; slowest seed needs about {hms(eta)} more (estimate)"
+        )
     lines.append("")
 
     # Trace replay (P3-T5).
@@ -156,7 +170,10 @@ def render() -> str:
             rfr.append(0.0)
             lines.append(f"  seed {s:<5} {bar(0.0)}   0.0%  waiting")
     rt = sum(rfr) / len(rfr)
-    lines.append(f"  overall   {bar(rt)} {rt * 100:5.1f}%  (by bytes of the trace; inserts are the first 7 %)")
+    lines.append(
+        f"  overall   {bar(rt)} {rt * 100:5.1f}%"
+        "  (by bytes of the trace; inserts are the first 7 %)"
+    )
     lines.append("")
 
     # Everything left for Part 3.
@@ -172,14 +189,26 @@ def render() -> str:
     n_done = sum(1 for _, s in steps if s in ("done", "PASS"))
     lines.append(f"Part 3 checklist  {bar(n_done / len(steps), 20)} {n_done}/{len(steps)}")
     for name, st in steps:
-        mark = "✔" if st in ("done", "PASS") else ("…" if st == "running" else ("✘" if st.startswith("FAIL") else "·"))
+        mark = (
+            "✔"
+            if st in ("done", "PASS")
+            else ("…" if st == "running" else ("✘" if st.startswith("FAIL") else "·"))
+        )
         lines.append(f"  {mark} {name:<52} {st}")
     lines.append("")
 
     try:
-        mem = {k: int(v.split()[0]) // 1024 for k, v in (l.split(":", 1) for l in open("/proc/meminfo")) if k in ("MemTotal", "MemAvailable")}
+        with open("/proc/meminfo") as f:
+            mem = {
+                k: int(v.split()[0]) // 1024
+                for k, v in (line.split(":", 1) for line in f)
+                if k in ("MemTotal", "MemAvailable")
+            }
         load = os.getloadavg()[0]
-        lines.append(f"Memory free {mem['MemAvailable']:,} of {mem['MemTotal']:,} MB   CPU load {load:.1f} of {os.cpu_count()} cores")
+        lines.append(
+            f"Memory free {mem['MemAvailable']:,} of {mem['MemTotal']:,} MB"
+            f"   CPU load {load:.1f} of {os.cpu_count()} cores"
+        )
     except (OSError, KeyError):
         pass
     return "\n".join(lines)
