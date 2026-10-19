@@ -775,3 +775,43 @@
   runner: pytest
   tests:
   - tests/architecture/test_p4_pins.py::test_p4_arch_the_aead_crate_is_pinned_with_one_copy_of_each_family
+- id: PR4-C01
+  claim: the scanner never reports a known-plaintext hit (EX-2 positive controls)
+  kind: red
+  requirements:
+  - SR-16.3-3
+  patch: PR4-C01.patch
+  runner: cargo
+  package: sever-scan
+  tests:
+  - crates/sever-scan/src/tests.rs::p4_scan_finds_every_planted_secret
+- id: PR4-C02
+  claim: the scanner carves no key slot, so it cannot open what it finds (the scanner can see)
+  kind: red
+  requirements:
+  - SR-16.3-3
+  patch: PR4-C02.patch
+  runner: cargo
+  package: sever-scan
+  tests:
+  - crates/sever-scan/src/tests.rs::p4_scan_recovers_live_records_and_finds_nothing_deleted
+- id: PR4-C03
+  claim: 'SB-24 always on: a departure keeps the group key''s bytes, so retired accumulators open under the live key (INV-12)'
+  kind: red
+  requirements:
+  - SR-21-12
+  patch: PR4-C03.patch
+  runner: cargo
+  package: sever-scan
+  tests:
+  - crates/sever-scan/src/tests.rs::p4_scan_recovers_live_records_and_finds_nothing_deleted
+- id: PR4-C04
+  claim: 'SB-30 always on: one nonce for every ciphertext (§13.2 random nonces)'
+  kind: red
+  requirements:
+  - SR-13.2-1
+  patch: PR4-C04.patch
+  runner: cargo
+  package: sever-scan
+  tests:
+  - crates/sever-scan/src/tests.rs::p4_scan_recovers_live_records_and_finds_nothing_deleted

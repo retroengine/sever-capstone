@@ -1,0 +1,36 @@
+[package]
+name = "sever-scan"
+version = "0.1.0"
+description = "The forensic scanner (Part 4, overview EX-2, spec §16.3): known-plaintext search of a raw image, carving of engine records and key slots, and every carved key tried on every carved ciphertext"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "sever-scan"
+path = "src/bin/sever-scan.rs"
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-format = { path = "../sever-format" }
+sever-keys = { path = "../sever-keys" }
+sever-seal = { path = "../sever-seal" }
+sever-erasure = { path = "../sever-erasure" }
+sever-txn = { path = "../sever-txn" }
+sever-commit = { path = "../sever-commit" }
+serde_json = "1"
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+sever-db = { path = "../sever-db" }
+sever-engine = { path = "../sever-engine", features = ["test-hooks"] }
+sever-vfs = { path = "../sever-vfs" }
+sever-crypto = { path = "../sever-crypto" }
+sever-quant = { path = "../sever-quant" }
+sever-index = { path = "../sever-index" }
+sever-txn = { path = "../sever-txn" }
+sever-keys = { path = "../sever-keys", features = ["key-export"] }
+rand_core = { version = "=0.6.4", features = ["getrandom"] }
+
+[lints]
+workspace = true

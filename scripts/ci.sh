@@ -54,6 +54,7 @@ fast() {
   # The Part 2 SDK's native module (removed by every `uv sync`) must exist before the Python tests.
   step sdk-native uv run --no-sync maturin develop -q --release --uv -m crates/sever-py-p2/Cargo.toml
   step sdk-native-p3 uv run --no-sync maturin develop -q --release --uv -m crates/sever-py-p3/Cargo.toml
+  step sdk-native-p4 uv run --no-sync maturin develop -q --release --uv -m crates/sever-py/Cargo.toml
   step python-tests uv run --no-sync pytest -q -m "not slow"
   step spec-trace uv run --no-sync python -m sever_testkit.spec_trace check --part 1 --complete
   step spec-trace-p2 uv run --no-sync python -m sever_testkit_p2.spec_trace check --part 2 --complete

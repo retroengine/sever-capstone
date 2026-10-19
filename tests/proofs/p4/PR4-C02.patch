@@ -1,0 +1,11 @@
+--- a/crates/sever-scan/src/lib.rs
++++ b/crates/sever-scan/src/lib.rs
+@@ -378,7 +378,7 @@
+                             .and_then(|b| b.try_into().ok())
+                             .unwrap_or([0; 8]),
+                     );
+-                    if let SlotState::Valid(r) = decode_slot(s, idx) {
++                    if let SlotState::Valid(r) = decode_slot(s, idx.wrapping_add(1)) {
+                         let mut k = [0u8; 32];
+                         k.copy_from_slice(r.key.as_bytes());
+                         self.carved

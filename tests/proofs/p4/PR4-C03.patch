@@ -1,0 +1,11 @@
+--- a/crates/sever-seal/src/ring.rs
++++ b/crates/sever-seal/src/ring.rs
+@@ -246,7 +246,7 @@
+                 if inner.stage.rotate.get(d).map(|(s, _)| *s) != Some(next) {
+                     let key = match inner.domains.get(d) {
+                         // SB-24: the group key is not rotated; its version moves on, its bytes stay.
+-                        Some(k) if cfg!(feature = "sabotage-SB-24") => k.key.duplicate(),
++                        Some(k) if true => k.key.duplicate(),
+                         _ => Key::generate(),
+                     };
+                     inner.stage.rotate.insert(*d, (next, key));

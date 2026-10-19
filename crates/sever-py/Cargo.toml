@@ -1,0 +1,31 @@
+[package]
+name = "sever-py"
+version = "0.1.0"
+description = "PyO3 bindings of the final engine (Part 4) and the application-backend helpers, for the sever_db SDK (spec §16.2)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+name = "sever_db_native"
+# A Python extension module only: no Rust test harness, so no build links libpython. The tests are
+# Python tests (python/sever_db/tests).
+crate-type = ["cdylib"]
+test = false
+doctest = false
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-quant = { path = "../sever-quant" }
+sever-engine = { path = "../sever-engine" }
+sever-crypto = { path = "../sever-crypto" }
+sever-commit = { path = "../sever-commit" }
+sever-log = { path = "../sever-log" }
+sever-db = { path = "../sever-db" }
+sever-platform = { path = "../sever-platform" }
+pyo3 = { version = "=0.29.2", features = ["extension-module", "abi3-py313"] } # spec §20.1
+rand_core = { version = "=0.6.4", features = ["getrandom"] } # spec §20.1: the OsRng source
+zeroize = "=1.9.0" # spec §20.1
+
+[lints]
+workspace = true

@@ -916,6 +916,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-py"
+version = "0.1.0"
+dependencies = [
+ "pyo3",
+ "rand_core",
+ "sever-commit",
+ "sever-crypto",
+ "sever-db",
+ "sever-engine",
+ "sever-log",
+ "sever-platform",
+ "sever-quant",
+ "sever-types",
+ "zeroize",
+]
+
+[[package]]
 name = "sever-py-p2"
 version = "0.1.0"
 dependencies = [
@@ -949,6 +966,28 @@ dependencies = [
  "serde_json",
  "sever-spec",
  "sever-types",
+]
+
+[[package]]
+name = "sever-scan"
+version = "0.1.0"
+dependencies = [
+ "rand_core",
+ "serde_json",
+ "sever-commit",
+ "sever-crypto",
+ "sever-db",
+ "sever-engine",
+ "sever-erasure",
+ "sever-format",
+ "sever-index",
+ "sever-keys",
+ "sever-quant",
+ "sever-seal",
+ "sever-spec",
+ "sever-txn",
+ "sever-types",
+ "sever-vfs",
 ]
 
 [[package]]
