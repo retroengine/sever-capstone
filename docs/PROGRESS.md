@@ -13,12 +13,16 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `part-2-frozen-e1`; erratum E-2 is committed and waits for the owner's tag `part-2-frozen-e2`).
 - **Where to resume:** the "RESUME HERE" paragraph in the Part 3 section below (branch, what is
   done, the next module, the proof-making routine). It is the only current resume point.
-- **Part 4** (18 Oct 2026): step 0 done on branch `p4-prep` (worktree `~/sever-db-p4prep`); the owner
+- **Part 4** (18–19 Oct 2026): modules 1–7, the scanner, the demo, `sever-crashkit-p4` and `fuzz-p4`
+  are built; `p4-prep` was merged into `p3-gates` on 19 Oct (one working copy, `~/sever-db`). The owner
   accepted G-26…G-31 (DB-90) and asked for Part 4 to start now (DB-89); see "Part 4, The Erasure"
   below. DB-53 (EP-11) and DB-54 accepted 18 Oct 2026.
 - **Working copy:** `~/sever-db` on the WSL ext4 disk (the `C:` copy is a backup).
-- **Git:** Claude commits on short `p3-*` branches (conventional messages, no AI attribution);
-  nothing is pushed or merged to `main` without the owner's word.
+- **Git:** Claude commits on `p3-gates` (conventional messages, no AI attribution) and pushes it to
+  `origin` (owner, 19 Oct 2026); `main` is updated only after Part 3 freezes.
+- **Unattended runs:** `scripts/jobq.sh` (service `sever-jobq`), side jobs `scripts/ops/sidejobs.sh`
+  (service `sever-sidejobs`), memory guard `scripts/oomguard.sh` (service `sever-oomguard`); the
+  interim and gate runners are in `scripts/ops/`.
 
 ## Fair testing (8 Oct 2026)
 
@@ -49,7 +53,7 @@ Fair testing now takes its blind bugs from the `cargo-mutants` gate (DB-75, owne
 
 ## Part 4, The Erasure — design review (18 Oct 2026, branch `p4-prep`)
 
-Prepared while Part 3's gates run, in a separate worktree (`~/sever-db-p4prep`) so the running gates'
+Prepared while Part 3's gates run, in a separate worktree (since merged into `p3-gates`) so the running gates'
 working copy and ledger lines are untouched. No Part 4 code; nothing of Parts 1–3 changed. Part 4's
 modules start only once Part 3 is frozen (Build 3-4 §0); if Part 3 changes before its freeze,
 `p4-prep` is rebased onto it.

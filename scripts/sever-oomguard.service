@@ -2,8 +2,8 @@
 Description=SEVER-DB memory guard (pauses or stops heavy processes before WSL runs out of memory)
 
 [Service]
-ExecStart=/bin/bash %h/bin/sever-oomguard.sh
-# Install: cp scripts/oomguard.sh ~/bin/sever-oomguard.sh; cp scripts/sever-oomguard.service ~/.config/systemd/user/; systemctl --user enable --now sever-oomguard
+ExecStart=/bin/bash %h/sever-db/scripts/oomguard.sh
+# Install: cp scripts/sever-oomguard.service ~/.config/systemd/user/; systemctl --user enable --now sever-oomguard
 Restart=always
 
 [Install]

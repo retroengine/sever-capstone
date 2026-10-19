@@ -1,0 +1,9 @@
+[Unit]
+Description=SEVER-DB side jobs (run beside the main job queue, resumed after restarts)
+
+[Service]
+ExecStart=/bin/bash %h/sever-db/scripts/ops/sidejobs.sh
+Restart=always
+
+[Install]
+WantedBy=default.target
