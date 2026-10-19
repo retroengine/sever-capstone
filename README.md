@@ -22,6 +22,41 @@ frozen (Build §0.1):
 Where things stand in detail: [`docs/PROGRESS.md`](docs/PROGRESS.md). Working rules for contributors
 and AI assistants: [`CLAUDE.md`](CLAUDE.md).
 
+## Use the database
+
+The final database is `sever-db` (Rust) with the Python SDK `sever_db`. Vectors are 384 float32
+values of unit length (`all-MiniLM-L6-v2` embeddings); record IDs are 1–256 characters and not a
+bare number. The data and key directories must be on ext4 or XFS; keep the key directory private
+and backed up apart from the data (losing it makes the data unreadable: that is the erasure).
+
+```bash
+uv sync --locked
+uv run --no-sync maturin develop --release --uv -m crates/sever-py/Cargo.toml   # the SDK, once
+```
+
+```python
+from sever_db import Database, UserKey, prepare_insert
+
+user = UserKey.generate()  # the account key: keep user.secret_bytes(); UserKey.from_secret_bytes(...)
+with Database.open("/home/me/mydb/data", "/home/me/mydb/keys") as db:
+    cid = db.create_collection("artefacts/partition-seed42.svp")  # once; keep the cid
+    db.insert(cid, prepare_insert(cid, "note-1", vector, user), passage=b"text")
+    hits = db.search(cid, query, k=10)  # [(record_id, distance), ...]
+    deletion = db.delete(cid, "note-1")  # deletion.certificate: the receipt
+    db.delete_user(cid, ["note-2", "note-3"])  # one person's records, all or nothing
+    anchors = db.anchors()  # what a verifier needs (JSON)
+```
+
+Anyone can check a receipt offline, without the database:
+`verifier/target/release/sever-verify deletion.cert --anchors anchors.json` (build it with
+`cd verifier && cargo build --release`). The same operations are on the command line
+(`cargo build --release -p sever-db`; the commands are listed under [Part 4](#part-4-the-erasure)).
+
+Startup refuses unencrypted swap, hibernation, memory that cannot be locked (`ulimit -l unlimited`),
+and filesystems that do not overwrite in place (§12.8–12.9). On a development machine such as WSL,
+`Database.open(..., allow_unsafe_memory=True)` overrides the memory checks; every override used is
+reported in `db.startup`.
+
 ---
 
 ## Quick start
