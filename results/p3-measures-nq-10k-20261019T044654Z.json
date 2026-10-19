@@ -1,0 +1,29 @@
+{
+ "measure": "P3-T13",
+ "data": "nq-10k",
+ "found": {
+  "certificate_bytes": {
+   "max": 13645,
+   "min": 1197,
+   "predicted_group_d384": 14093
+  },
+  "d": 384,
+  "delete_ms_simvfs": {
+   "max": 29.856475,
+   "median": 9.046386
+  },
+  "deletions": 20,
+  "proofs": 200,
+  "prove_ms": {
+   "max": 34.373718,
+   "median": 12.171319
+  },
+  "verify_ms": {
+   "max": 12.462292,
+   "median": 2.2043179999999998
+  }
+ },
+ "rc": 0,
+ "outcome": "RECORDED",
+ "stderr_tail": ""
+}
