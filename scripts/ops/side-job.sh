@@ -2,6 +2,7 @@
 # Runs one job file from jobs/side/ beside the queue's worker (same log format); done/ or failed/.
 # Holds jobs/side-lock/<id> while it runs, so the side-jobs service never starts a second copy.
 cd "$(dirname "$0")/../.." || exit 1
+export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
 id=$1; f=jobs/side/$id
 mkdir -p jobs/side-lock
 exec 9> "jobs/side-lock/$id"
