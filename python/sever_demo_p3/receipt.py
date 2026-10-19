@@ -108,7 +108,7 @@ def run_tool(args: Sequence[str], cwd: Path) -> tuple[int, str]:
 def build_tools(root: Path) -> tuple[Path, Path]:
     for ws in ("verifier", "audit"):
         subprocess.run(
-            ["cargo", "build", "-q", "--release", "--offline"],
+            ["cargo", "build", "-q", "--release", "--locked"],
             cwd=root / ws,
             check=True,
             env={**os.environ, "CARGO_TARGET_DIR": str(root / ws / "target")},

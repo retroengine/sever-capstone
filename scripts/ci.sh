@@ -43,11 +43,11 @@ fast() {
   step rust-tests cargo test --workspace -q
   # The verifier is its own workspace (Build 3-4 §1.4): checked on its own.
   step verifier-fmt cargo fmt --manifest-path verifier/Cargo.toml --check
-  step verifier-clippy cargo clippy --manifest-path verifier/Cargo.toml --offline --all-targets -- -D warnings
-  step verifier-tests cargo test --manifest-path verifier/Cargo.toml --offline -q
+  step verifier-clippy cargo clippy --manifest-path verifier/Cargo.toml --locked --all-targets -- -D warnings
+  step verifier-tests cargo test --manifest-path verifier/Cargo.toml --locked -q
   step audit-fmt cargo fmt --manifest-path audit/Cargo.toml --check
-  step audit-clippy cargo clippy --manifest-path audit/Cargo.toml --offline --all-targets -- -D warnings
-  step audit-tests cargo test --manifest-path audit/Cargo.toml --offline -q
+  step audit-clippy cargo clippy --manifest-path audit/Cargo.toml --locked --all-targets -- -D warnings
+  step audit-tests cargo test --manifest-path audit/Cargo.toml --locked -q
   step ruff uv run --no-sync ruff check
   step ruff-format uv run --no-sync ruff format --check
   step mypy uv run --no-sync mypy python

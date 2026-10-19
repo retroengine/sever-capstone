@@ -34,7 +34,7 @@ def verifier() -> Path:
     # Its own target directory, whatever CARGO_TARGET_DIR says (the proof runner sets one).
     env = dict(os.environ, CARGO_TARGET_DIR=str(ROOT / "verifier/target"))
     subprocess.run(
-        ["cargo", "build", "-q", "--release", "--offline"],
+        ["cargo", "build", "-q", "--release", "--locked"],
         cwd=ROOT / "verifier",
         env=env,
         check=True,
@@ -46,7 +46,7 @@ def verifier() -> Path:
 def auditor() -> Path:
     env = dict(os.environ, CARGO_TARGET_DIR=str(ROOT / "audit/target"))
     subprocess.run(
-        ["cargo", "build", "-q", "--release", "--offline"],
+        ["cargo", "build", "-q", "--release", "--locked"],
         cwd=ROOT / "audit",
         env=env,
         check=True,

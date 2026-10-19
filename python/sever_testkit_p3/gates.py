@@ -305,7 +305,7 @@ def _kit(root: Path, commit: str) -> Path:
 
 def _verifier(root: Path) -> Path:
     subprocess.run(
-        ["cargo", "build", "-q", "--release", "--offline"],
+        ["cargo", "build", "-q", "--release", "--locked"],
         cwd=root / VERIFIER,
         check=True,
         env={**os.environ, "CARGO_TARGET_DIR": str(root / VERIFIER / "target")},
@@ -855,7 +855,7 @@ def p3_coverage(root: Path) -> int:
     gate = "P3-T9 coverage"
     started = ledger.start(root, cmd, gate=gate)
     rc, files, err = _llvm_cov(root, ["--workspace"])
-    rc_v, vfiles, err_v = _llvm_cov(root / VERIFIER, ["--offline"])
+    rc_v, vfiles, err_v = _llvm_cov(root / VERIFIER, ["--locked"])
     units: dict[str, list[float]] = {k: [0, 0] for k in COVERAGE}
     units[VERIFIER] = [0, 0]
     for base, fs in ((root, files), (root / VERIFIER, vfiles)):
