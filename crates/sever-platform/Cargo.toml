@@ -1,0 +1,22 @@
+[package]
+name = "sever-platform"
+version = "0.1.0"
+description = "Startup checks and memory hygiene: EP-11 PlatformProbe, the refusal rules, process hardening and the EP-4 MlockProvider (Part 4, spec §12.8–12.9)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+thiserror = "2"
+rustix = { version = "1.1", default-features = false, features = ["std", "fs", "mm", "process"] } # safe statfs, FS_IOC_GETFLAGS, mlockall, setrlimit, PR_SET_DUMPABLE (§12.8–12.9)
+
+[dev-dependencies]
+sever-types = { path = "../sever-types", features = ["contract-tests"] }
+sever-spec = { path = "../sever-spec" }
+sever-keys = { path = "../sever-keys" }
+sever-seal = { path = "../sever-seal" }
+zeroize = "=1.9.0"
+
+[lints]
+workspace = true

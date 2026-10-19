@@ -1,0 +1,10 @@
+--- a/crates/sever-platform/src/lib.rs
++++ b/crates/sever-platform/src/lib.rs
+@@ -99,7 +99,6 @@
+ 
+     let fs = o.allow_unsafe_fs;
+     let data_ok = probe.filesystem(data_dir).is_ok_and(rules::data_fs_ok);
+-    check(data_ok, CHECK_DATA_FS, fs)?;
+     // DB-93: before KEYS exists, its attribute is the one it will inherit from the directory.
+     let keys = key_dir.join(KEYS_FILE);
+     let no_cow = match probe.no_cow(&keys) {

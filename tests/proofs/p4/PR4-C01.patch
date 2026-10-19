@@ -1,0 +1,11 @@
+--- a/crates/sever-scan/src/lib.rs
++++ b/crates/sever-scan/src/lib.rs
+@@ -359,7 +359,7 @@
+                 .first_chunk::<2>()
+                 .map_or(0, |b| usize::from(u16::from_le_bytes(*b)));
+             if rest.len() >= NEEDLE && self.first2.get(two).copied().unwrap_or(false) {
+-                if let Some(ns) = self.needles.get(&key8(rest)) {
++                if let Some(ns) = self.needles.get(&key8(rest)).filter(|_| false) {
+                     let hits: Vec<(Kind, Option<usize>)> = ns
+                         .iter()
+                         .filter(|n| rest.get(..NEEDLE) == Some(&n.bytes[..]))

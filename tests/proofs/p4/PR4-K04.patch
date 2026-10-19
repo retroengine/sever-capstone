@@ -1,0 +1,11 @@
+--- a/crates/sever-keys/src/file.rs
++++ b/crates/sever-keys/src/file.rs
+@@ -292,7 +292,7 @@
+     /// Overwrites slot `which` of pair `index` with zeros and `fsync`s it (phase C, §13.4).
+     pub fn erase_slot(&mut self, index: u64, which: u8) -> Result<(), Error> {
+         let at = self.slot_offset(index, which)?;
+-        self.file.write_at(at, &[0u8; SLOT_BYTES]).map_err(io)?;
++        self.file.write_at(at, &[0xFFu8; SLOT_BYTES]).map_err(io)?;
+         durable::sync(self.file.as_mut()).map_err(io)
+     }
+ 

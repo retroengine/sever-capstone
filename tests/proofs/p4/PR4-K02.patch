@@ -1,0 +1,14 @@
+--- a/crates/sever-keys/src/file.rs
++++ b/crates/sever-keys/src/file.rs
+@@ -192,7 +192,10 @@
+     /// pair. A trailing partial pair (a crash while the file grew) is truncated (DB-90).
+     pub fn open(vfs: Arc<dyn Vfs>, path: &str) -> Result<(Self, Vec<[SlotState; 2]>), Error> {
+         let mut file = match vfs.open(path, OpenMode::Existing) {
+-            Ok(f) => f,
++            Ok(mut f) => {
++                f.write_at(0, &encode_header()).map_err(io)?;
++                f
++            }
+             Err(VfsError::NotFound) => {
+                 let mut f = durable::create(vfs.as_ref(), path).map_err(io)?;
+                 f.write_at(0, &encode_header()).map_err(io)?;

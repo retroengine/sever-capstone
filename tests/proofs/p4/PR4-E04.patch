@@ -1,0 +1,11 @@
+--- a/crates/sever-erasure/src/participant.rs
++++ b/crates/sever-erasure/src/participant.rs
+@@ -299,8 +299,6 @@
+                 .get(&d)
+                 .ok_or(missing("§13.4 rotation of a domain without a key slot"))?;
+             let inactive = 1 - at.slot;
+-            self.key_file()?
+-                .write_slot(at.pair, inactive, d, version, &key)?;
+             self.pending.rotated.push((d, at.pair, inactive, at.slot));
+             if cfg!(feature = "sabotage-SB-27") {
+                 // SB-27: erase the old key before the COMMIT is durable.

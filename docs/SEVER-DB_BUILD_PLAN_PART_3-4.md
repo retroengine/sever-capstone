@@ -530,7 +530,7 @@ The extended CI tier runs the same campaign at 10,000 passages on a small image.
 | E2E-4.2 | The same, built with SB-24 | The same steps | The scanner reconstructs a deleted vector |
 | E2E-4.3 | A crash after `COMMIT` and before phase C | The engine restarts | Recovery erases the old key; a later scan is clean; a retried delete returns `AlreadyAbsent` |
 | E2E-4.4 | A collection | It is dropped | Every one of its group keys is gone, and a scan finds none of its data |
-| E2E-4.5 | Unencrypted swap, hibernation, ZFS, or btrfs without no-copy-on-write | The engine starts | `PlatformUnsafe`, unless `allow_unsafe_memory` is set, and the flag is recorded in the ledger |
+| E2E-4.5 | Unencrypted swap, hibernation, ZFS, or btrfs without no-copy-on-write | The engine starts | `PlatformUnsafe`, unless the case's flag is set (`allow_unsafe_memory` for swap and hibernation, `allow_unsafe_fs` for ZFS and btrfs; spec §12.8, §12.9, DB-90), and the flag is recorded in the ledger |
 | E2E-4.6 | The final SDK | insert → search → delete → verify → scan | Every step succeeds, and the certificate verifies |
 | E2E-4.7 | The active key slot is removed from the key file | The engine starts | It refuses to start (spec §13.4) |
 
@@ -581,7 +581,7 @@ recorded in the ledger, fixed, and the full campaign is re-run as a new entry (f
 | **P4-T11** | The freeze manifests of Parts 1–3 are unchanged | Gate |
 | **P4-T12** | Per-seed standard deviation of Recall@10 across the five rungs (overview T-5, pre-registered ≤ 0.005); the Welch test and TOST as fixed in overview §3.4 | Measure |
 | **P4-T13** | Recall@10 of dequantised against original-float brute force at `nq-1m` (overview T-6, second size, pre-registered ≥ 0.999) | Measure |
-| **P4-T14** | EX-7 costs, including bytes rewritten per deletion against the predicted ≈ 12.9 KB | Measure |
+| **P4-T14** | EX-7 costs, including bytes rewritten per deletion: the secret material against the predicted ≈ 12.9 KB, and the WAL bytes broken down by record type (spec §13.6, DB-90) | Measure |
 | **P4-T15** | EX-8: resident memory against the predicted ≈ 3.8 GB, recovery time, disk use including certificates | Measure |
 
 ### 2.11 The demo
@@ -693,4 +693,5 @@ measured and recorded as found, and the final deliverables complete. Tag: `part-
 **Status (7 October 2026).** DB-44 … DB-50 are accepted (overview §6.8; DB-46 and DB-48 on 7 October
 2026); DB-51, DB-52 and the EP-10 half of DB-53 were accepted on 15 October 2026 (Part 3's design
 review: the pinned `curve25519-dalek` was checked and lacks `expand_message_xmd`); the EP-11 half of
-DB-53 and DB-54 remain proposals until Part 4. Overview DB-56 … DB-59 are new decisions, not build-plan proposals.
+DB-53 and DB-54 were accepted on 18 October 2026 (Part 4). Every proposal is now decided. Overview
+DB-56 … DB-59 are new decisions, not build-plan proposals.

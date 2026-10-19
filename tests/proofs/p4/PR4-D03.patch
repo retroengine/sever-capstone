@@ -1,0 +1,11 @@
+--- a/crates/sever-seal/src/sealer.rs
++++ b/crates/sever-seal/src/sealer.rs
+@@ -133,7 +133,7 @@
+         let rk = self.record_key(owner, envelope)?;
+         aead::seal(
+             &rk,
+-            &ad::passage(owner.collection.as_bytes(), owner.scrambled_id.as_bytes()),
++            &ad::slot_payload(owner.collection.as_bytes(), owner.scrambled_id.as_bytes()),
+             text,
+         )
+     }

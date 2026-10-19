@@ -1,0 +1,11 @@
+--- a/crates/sever-seal/src/aead.rs
++++ b/crates/sever-seal/src/aead.rs
+@@ -18,7 +18,7 @@
+ /// A fresh nonce from the OS CSPRNG (§13.2, §18 `nonce: random_96_bit_os_csprng`).
+ fn fresh_nonce() -> [u8; NONCE_BYTES] {
+     let mut n = [0u8; NONCE_BYTES];
+-    if cfg!(feature = "sabotage-SB-30") {
++    if true {
+         // SB-30: reuse one nonce for everything.
+         n.fill(0x5A);
+     } else {

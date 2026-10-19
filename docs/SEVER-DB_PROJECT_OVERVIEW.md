@@ -25,7 +25,7 @@ evaluate SEVER-DB.
 3. [Research questions, claims, non-claims and pre-registered targets](#3-research-questions-claims-non-claims-and-pre-registered-targets)
 4. [Threat model](#4-threat-model)
 5. [The design in plain words](#5-the-design-in-plain-words)
-6. [Decision register (DB-1 … DB-53, DB-55 … DB-88)](#6-decision-register-db-1--db-53-db-55--db-88)
+6. [Decision register (DB-1 … DB-53, DB-55 … DB-92)](#6-decision-register-db-1--db-53-db-55--db-92)
 7. [Components at a glance](#7-components-at-a-glance)
 8. [Phases P0–P9](#8-phases-p0p9)
 9. [Testing strategy](#9-testing-strategy)
@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-88)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-94)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -792,8 +792,8 @@ must be independently checkable, and aggregation reduces verifier computation, n
 DB-44 … DB-54 are reserved for the amendments proposed in the build plans (Build §3.5, Build 3-4 §3.5)
 and are recorded here once accepted. DB-44, DB-45, DB-47, DB-49 and DB-50 were accepted on 4 October
 2026, DB-46 and DB-48 on 7 October 2026 (Part 2's design review), and DB-51, DB-52 and the EP-10
-half of DB-53 on 15 October 2026 (Part 3's design review); the EP-11 half of DB-53 and DB-54 remain
-proposals until Part 4.
+half of DB-53 on 15 October 2026 (Part 3's design review), and the EP-11 half of DB-53 and DB-54 on
+18 October 2026 (Part 4, the owner: "choose the option which is best for long term and short term").
 
 #### DB-44 — Build in four frozen parts; erasure after certificates (4 October 2026)
 
@@ -921,7 +921,7 @@ workspaces for 60 lines of code, and more for the §20.3 duplicate-crate check t
 §9.2's startup self-check takes the `expand_message_xmd` known answers from RFC 9380 Appendix K.3
 (RFC 9496 has vectors only for the one-way map).
 
-#### DB-53 — EP-10 `Witness` (15 October 2026; the EP-11 half waits for Part 4)
+#### DB-53 — EP-10 `Witness` (15 October 2026) and EP-11 `PlatformProbe` (18 October 2026)
 
 **Decision.** Part 3 declares extension point EP-10 `Witness`: a witness receives a new log
 checkpoint and the consistency proof from the last checkpoint it cosigned, and cosigns only if the
@@ -933,6 +933,31 @@ O-6, limit L-7) can then be added later without editing frozen Part 3 code. **Re
 built into `sever-log` with no extension point (adding a real witness would need an erratum);
 accepting EP-11 now (its design belongs to Part 4 and cannot be checked yet). **Consequence.** v1's
 witnesses are simulated, so the witness guarantee stays a limit (L-7).
+
+**EP-11, accepted 18 October 2026 (Part 4).** Part 4 declares EP-11 `PlatformProbe`: the filesystem
+type of a directory, the no-copy-on-write attribute of a file, the active swap devices with their
+device-mapper UUIDs, the hibernation state (`/sys/power/state`, `/sys/power/resume`) and whether
+memory can be locked. The default `LinuxProbe` reads `/proc`, `/sys` and `statfs`; every refusal rule
+of §12.8–12.9 (as fixed by DB-90) is a pure function of the probe's answers, so the P4-T8 matrix runs
+with a fake probe, without root and without reconfiguring the machine. A contract suite checks that
+`LinuxProbe` answers on the test machine and that the rules refuse exactly the register's unsafe
+rows. **Why.** The refusals cannot otherwise be tested on one machine (this one has unencrypted swap
+and hibernation listed). **Rejected.** Testing on real misconfigured machines only (not
+reproducible); checks hard-wired into `sever-platform` (no fake possible).
+
+#### DB-54 — The evaluation's build variants (18 October 2026)
+
+**Decision.** The evaluation uses four builds, all composition roots or feature flags inside Part 4,
+none editing a frozen part (Build 3-4 §2.7): `sever-db` (the measured build); `sever-db` with feature
+`key-export` (writes each generated key to a sink outside the disk image, for the forensic scanner
+only; an architecture test shows the feature touches exactly one function and is absent from the
+measured binary); `sever-db-noerase` (`AeadSealer` with a static key per domain and no key-rotation
+participant, the cost of erasure, EX-7); `sever-softdelete` (a tombstone over the Part 2 API, the cost
+of excision and receipts, EX-7); plus one `sabotage-SB-N` build per sabotage item. **Why.** EX-2
+needs the retired keys to look for, and EX-7 needs arms that differ from the measured build in one
+mechanism each. **Rejected.** Exporting keys from the measured build (a leak by construction);
+variants as forks of the code (they would drift). **Consequence.** Every number in the report names
+the build that produced it.
 
 #### DB-61 — The ULP sentence of §4.1 (6 October 2026)
 
@@ -1017,6 +1042,125 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-94 — Part 3's full gates run once, on a cloud VM, at the end; interim checks on the laptop (18 October 2026)
+
+**Decision.** Part 3's pre-registered gates (P3-T1 … P3-T12, unchanged in size: P3-T4 on `nq-10k`
+with five seeds of 20,000 operations, P3-T5 on `nq-100k` with five seeds, fuzzing at 10^8
+executions) run once, on a cloud Linux VM, together with Part 4's gates, when the whole system is
+built. Until then the laptop runs **interim checks**, which are evidence and are never reported as
+the gates: (1) the crash campaign's insert phase already run (operations 0 to about 7,700 on every
+seed, 351,866 crash points, 0 failures, kept in `traces/interim-insert-phase/`); (2) the crash
+campaign with crash points from operation 17,000 (`--crash-from 17000`: single deletions, every
+multi-group deletion and the inserts after them) on every seed; (3) the `nq-100k` replay of seed 42;
+(4) the attacks, checks, coverage, measures and spikes as specified; (5) fuzzing at 10^7 executions.
+Part 3 freezes (F-1) only after the VM run passes; Part 4 keeps building on `p4-prep` (DB-89).
+**Why.** The laptop needs about 1.5 days for the full gates, and two replays at once exhausted WSL's
+10 GB on 18 October (the kernel killed a replay and WSL restarted). **Rejected.** Shrinking the gates
+themselves (it would move pre-registered targets after a run began, overview §3.4); waiting 1.5 days
+per attempt on the laptop. **Consequence.** `part-3-frozen` and the rebase of Part 4 onto it come
+after the VM run; a Part 3 defect found there is fixed as an ordinary pre-freeze change, not an
+erratum.
+
+#### DB-93 — Memory is locked process-wide at startup; the btrfs attribute before `KEYS` exists (18 October 2026)
+
+**Decision.** (1) Startup locks the whole process with `mlockall(MCL_CURRENT | MCL_FUTURE |
+MCL_ONFAULT)`, through EP-11's `lock_memory`, so every page the engine touches afterwards is locked:
+the key ring, the AES key schedules, and the decrypted accumulators that the frozen Part 1 index
+keeps in ordinary vectors. If it fails, startup refuses ("§12.8 mlock", PL-6) unless
+`allow_unsafe_memory`. Linux checks the process's whole virtual size against `RLIMIT_MEMLOCK`, so a
+production engine needs `ulimit -l unlimited` (or `CAP_IPC_LOCK`); with a finite limit an allocation
+would fail once the engine grows past it, so a finite limit counts as a failed lock. (2) `MlockProvider` (EP-4) can only
+be built from the startup report's proof that the lock took effect. Its regions come from that
+locked heap and are zeroed on release by `SecretBuf`. Under `allow_unsafe_memory` with a failed lock,
+Part 1's heap provider stays and the ledger records the override. (3) On btrfs, before `KEYS`
+exists, the key directory's no-copy-on-write attribute decides (a new file inherits it); once `KEYS`
+exists, its own attribute decides. (4) Turning core dumps off (`RLIMIT_CORE = 0`, `PR_SET_DUMPABLE =
+0`) runs first; if it fails, startup refuses ("§12.8 core dumps") unless `allow_unsafe_memory`. (5) A
+probe that cannot answer fails its check closed. **Why.** §12.8 puts decrypted accumulators in locked
+pages, but they live in Part 1's frozen index, which allocates them from the ordinary heap (only
+`SecretBuf` goes through EP-4), so locking region by region cannot reach them. **Rejected.**
+Per-region `mlock` in the provider (it locks keys only, leaving the accumulators unlocked); an erratum
+moving Part 1's accumulators into `SecretBuf` (F-6 re-runs every later exit gate, and the index works
+on plain `i64` vectors); `MADV_DONTDUMP` (it covers core dumps, not swap). **Consequence.** Closes
+G-33; spec §12.8 and §12.9 each gain a sentence. A machine with a finite memory-lock limit (64 MiB on
+the development laptop) refuses to start without the override. This laptop's runs need
+`allow_unsafe_memory` anyway, because its swap (`/dev/sdc`) is unencrypted.
+
+#### DB-92 — Where the group-key rotation and its sabotage live; `GROUP_CREATE` carries no block (18 October 2026)
+
+**Decision.** (1) The new group key of a rotation is made by the sealer, when the frozen core asks
+for a domain's next version after a departure (EP-6 `next_version`), because the core seals the
+accumulator under it while it plans, before any participant runs; the participant then rotates the
+buckets and re-wraps the survivors in `prepare`. So SB-24 ("skip group-key rotation") is built in
+`sever-seal`: the new version keeps the old key's bytes. The register row moves from `sever-erasure`
+to `sever-seal` (no Part 4 result existed). (2) The core's `GROUP_CREATE` record keeps its bucket
+block empty; the block is the participant's `BUCKET_BLOCK` record of the same transaction, so it is
+logged once. (3) The participant prunes the key ring's stage in `prepare` to what the transaction's
+change set justifies, because a plan that fails after the sealer staged keys runs no participant
+hook. **Why.** These follow from the frozen EP-6 and EP-7 calls' order. **Rejected.** Rotating the
+group key in the participant (the accumulator would already be sealed under the old key).
+**Consequence.** Spec §14.6 amended (two table rows); `spec/registers_p4.yaml` SB-24.
+
+#### DB-91 — Re-wrapped record keys live in the wrapped-key store, not in the slots (18 October 2026)
+
+**Decision.** At the owner's choice (18 October 2026, closing G-32): when a bucket rotates, the
+survivors' new envelopes are written by the key-rotation participant (ID 4) to its wrapped-key store
+`wrapped/<seq>.store` (renamed from DB-90's `buckets/`) and, in the same transaction, to the WAL as
+its `EXTENSION` records, each `scrambled_id ‖ u64be bucket_version ‖ envelope (60)`. A record's
+current envelope is the store's entry if its `bucket_version` is the bucket's current version, else
+the slot's (§14.4). The store also holds the bucket blocks (`u64be group_key_version`, highest wins)
+and a drop marker per dropped collection; every merge rule is monotonic, so the store and the WAL
+tail merge in any order; the store is compacted when it holds four times its live bytes. **Why.** The
+frozen EP-7 participant sees only the transaction's own records, never a survivor's slot, so it cannot
+write `SLOT_PUT`s for survivors (G-29's plan). Writing only envelopes is also what §13.6's 12.9 KB
+counts, and costs about 17 KB of WAL per deletion instead of about 180 KB. **Rejected.** A mirror of
+every slot in the participant (slot memory doubled, about +2 GB at nq-1m); an erratum exposing the
+image to participants (F-6 re-runs every later exit gate, including Part 3's running gates).
+**Consequence.** Closes G-32; revises DB-90 (3) and (4); spec §13.3, §13.6, §14.1, §14.4, §14.6 and
+§14.8 amended. A stale envelope left in a slot is wrapped under a rotated bucket key whose only
+wrappings were under erased group keys, so INV-12 and §13.5 hold unchanged.
+
+#### DB-90 — Part 4 design-review decisions: drop order, key-file slots, bucket store, the P4-T14 count, platform detection, two override flags (18 October 2026)
+
+**Decision.** The owner accepted the six fixes Part 4's design review proposed (18 October 2026), each
+as written in `docs/SPEC_GAPS.md`. (1) **G-26:** drop collection commits `COLLECTION_DROP` first, then
+erases the collection's key slots and deletes its files in phase C, acknowledging after the erase; a
+crash in between is finished by §13.4's rule (slots of no domain are erased). (2) **G-27:** each
+key-file slot carries magic `SVKS` and names its domain (`collection_id ‖ group_id`); a domain's index
+is its pair's position, appended and never reused; the pair count comes from the file length, a
+trailing partial pair is truncated at recovery, and the header is written once (no `slot_pairs`).
+(3) **G-28:** bucket blocks are the key-rotation participant's durable state in an append store
+`buckets/<seq>.store` (as DB-81 keeps the log's), not `checkpoint/<id>/buckets.bin`. (4) **G-29:** the
+§13.6 12.9 KB counts secret material; P4-T14 also reports the WAL bytes by record type (`SLOT_PUT`
+carries whole slots). (5) **G-30:** encrypted swap means zram or dm-crypt (`CRYPT-` uuid) for every
+active entry of `/proc/swaps`; hibernation means `disk` in `/sys/power/state` with a resume device;
+a failed `mlock` refuses to start unless `allow_unsafe_memory`. (6) **G-31:** two flags,
+`allow_unsafe_memory` (§12.8) and `allow_unsafe_fs` (both filesystem checks of §12.9), each recorded
+in the ledger; the key directory is an allow-list (ext4, XFS, btrfs with no-CoW on `KEYS`). **Why.**
+G-26 as specified bricks a database on one crash; G-27 and G-28 leave recovery unable to do what §13.4
+and §15.7 require; G-29 to G-31 leave a pre-registered measure and gate without a fixed meaning.
+**Rejected.** An erratum to the frozen Part 2 core for `buckets.bin` (the participant store needs
+none); keeping `slot_pairs` (a torn header rewrite has no recovery rule). **Consequence.** Closes
+G-26 … G-31; spec §12.8, §12.9, §13.6, §14.1, §14.7, §14.8, §15.9, §18 and Appendix A amended; Build 3-4
+E2E-4.5 and P4-T14 reworded; `spec/requirements.yaml` gains SR-12.8-5/6, SR-12.9-4, SR-14.7-6 and
+SR-14.8-4 (65 Part 4 requirements); the P4-T8 platform register names `allow_unsafe_fs` for the
+key-directory cases.
+
+#### DB-89 — Part 4 is built before Part 3 is frozen, on its own branch (18 October 2026)
+
+**Decision.** At the owner's request (18 October 2026), Part 4's modules are built while Part 3's gate
+runs finish, against Build 3-4 §0 ("Part N starts only when Part N−1 is frozen"). Conditions: the work
+is on its own branch and worktree (`p4-*`, `~/sever-db-p4prep`), never in the working copy the gates
+run in; no file Part 3 owns is edited (F-3: Part 4 changes behaviour only through EP-6, EP-7, EP-11);
+nothing merges to `main` before `part-3-frozen`; after the freeze the branch is rebased onto that tag
+and every Part 4 test, proof and check runs again; every Part 4 build and test runs at the lowest CPU
+priority on at most two cores while a gate runs. **Why.** Part 3's remaining work is machine time (the
+crash campaign and the replay, about a day on the owner's laptop); the owner prefers to build meanwhile.
+**Rejected.** Waiting (a day idle); building in the gates' working copy (the ledger records its HEAD
+and dirty state). **Consequence.** If a Part 3 gate fails and Part 3 changes, the Part 4 branch is
+rebased and any Part 4 code built on the changed behaviour is checked again; Part 4's own freeze still
+needs every Part 3 gate (F-5).
 
 #### DB-88 — Crash points from the main line's snapshots; smaller segments in the replay (17 October 2026)
 
@@ -2123,6 +2267,21 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **18 October 2026 — Part 3 gates on a VM.** DB-94 (the full gates run once on a cloud VM at
+  the end; interim checks on the laptop). Specification sections touched: none.
+- **18 October 2026 — Startup checks.** DB-93 (memory is locked process-wide at startup; the
+  btrfs attribute before `KEYS` exists; core dumps off first; probes fail closed; closes G-33).
+  Specification sections touched: §12.8, §12.9.
+- **18 October 2026 — The key-rotation participant.** DB-92 (the group key rotates in the sealer;
+  SB-24 in `sever-seal`; `GROUP_CREATE` carries no block; the stage is pruned in `prepare`).
+  Specification sections touched: §14.6.
+- **18 October 2026 — Build-plan proposals accepted.** DB-53's EP-11 half (`PlatformProbe`) and
+  DB-54 (the evaluation's build variants). Specification sections touched: none.
+- **18 October 2026 — Re-wrapped record keys.** DB-91 (survivors' envelopes in the wrapped-key
+  store; closes G-32). Specification sections touched: §13.3, §13.6, §14.1, §14.4, §14.6, §14.8.
+- **18 October 2026 — Part 4 starts.** DB-89 (Part 4 built before Part 3's freeze, on its own
+  branch) and DB-90 (the owner accepted the design review's fixes; closes G-26 … G-31). Specification
+  sections touched: §12.8, §12.9, §13.6, §14.1, §14.7, §14.8, §15.9, §18, Appendix A.
 - **17 October 2026 — Faster Part 3 gate runs.** DB-88 (crash points from the main line's
   snapshots, checked against the old method on every 50th operation; accepted certificates
   remembered within a run; 4 MiB segments in the trace replay; `p3-crash --resume`). Specification sections touched: none.

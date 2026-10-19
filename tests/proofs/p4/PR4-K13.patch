@@ -1,0 +1,12 @@
+--- a/crates/sever-keys/src/recovery.rs
++++ b/crates/sever-keys/src/recovery.rs
+@@ -71,9 +71,6 @@
+             }
+         }
+     }
+-    if active.keys().any(|d| !out.keys.contains_key(d)) {
+-        return Err(inv14());
+-    }
+     Ok(out)
+ }
+ 

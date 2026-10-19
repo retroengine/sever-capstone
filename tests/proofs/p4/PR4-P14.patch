@@ -1,0 +1,13 @@
+--- a/crates/sever-keys/src/lib.rs
++++ b/crates/sever-keys/src/lib.rs
+@@ -60,9 +60,7 @@
+ 
+ // §12.8: every secret type implements `Zeroize` and `ZeroizeOnDrop` (the drop is `SecretBuf`'s).
+ impl Zeroize for Key {
+-    fn zeroize(&mut self) {
+-        self.0.as_bytes_mut().zeroize();
+-    }
++    fn zeroize(&mut self) {}
+ }
+ 
+ impl ZeroizeOnDrop for Key {}

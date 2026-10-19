@@ -1,0 +1,11 @@
+--- a/crates/sever-platform/src/rules.rs
++++ b/crates/sever-platform/src/rules.rs
+@@ -37,7 +37,7 @@
+         .state
+         .as_deref()
+         .is_some_and(|s| s.split_whitespace().any(|w| w == "disk"));
+-    let resume_set = h.resume.as_deref().is_none_or(|r| r.trim() != "0:0");
++    let resume_set = h.resume.as_deref().is_none_or(|r| r != "0:0");
+     lists_disk && resume_set
+ }
+ 

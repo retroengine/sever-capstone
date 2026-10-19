@@ -1,0 +1,11 @@
+--- a/crates/sever-platform/src/lib.rs
++++ b/crates/sever-platform/src/lib.rs
+@@ -61,7 +61,7 @@
+ }
+ 
+ fn refuse(check: &'static str) -> Error {
+-    Error::PlatformUnsafe { check }
++    Error::IntegrityViolation { invariant: check }
+ }
+ 
+ /// Runs the startup checks of §12.8–12.9 for a database whose data directory is `data_dir` and

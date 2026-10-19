@@ -1,0 +1,12 @@
+--- a/crates/sever-erasure/src/participant.rs
++++ b/crates/sever-erasure/src/participant.rs
+@@ -259,6 +259,9 @@
+                 self.pending.values.push(v);
+             }
+             blocks.insert(*d);
++            if let Some(s) = self.slots.get(d).copied() {
++                self.key_file()?.erase_slot(s.pair, s.slot)?;
++            }
+         }
+         for (d, _, _) in self.ring.staged_new() {
+             blocks.insert(d);

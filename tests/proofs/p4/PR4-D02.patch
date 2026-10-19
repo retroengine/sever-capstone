@@ -1,0 +1,10 @@
+--- a/crates/sever-erasure/src/participant.rs
++++ b/crates/sever-erasure/src/participant.rs
+@@ -339,7 +339,6 @@
+                     slot: *new,
+                 },
+             );
+-            self.key_file()?.erase_slot(*pair, *old)?;
+         }
+         if let Some(cid) = pending.dropped {
+             let gone: Vec<(Domain, Slot)> = self

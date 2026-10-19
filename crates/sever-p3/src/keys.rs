@@ -33,11 +33,11 @@ pub(crate) fn os_secret() -> Zeroizing<[u8; 32]> {
     s
 }
 
-fn read_secrets(keys: &dyn Vfs) -> Result<Option<Secrets>, Error> {
+fn read_secrets(keys: &dyn Vfs, sealer_id: u16) -> Result<Option<Secrets>, Error> {
     match keys.open(SECRETS, OpenMode::Existing) {
         Ok(f) => {
             let bytes = Zeroizing::new(read_all(f.as_ref()).map_err(|_| Error::DurabilityFailure)?);
-            Secrets::parse(&bytes, 0).map(Some)
+            Secrets::parse(&bytes, sealer_id).map(Some)
         }
         Err(VfsError::NotFound) => Ok(None),
         Err(_) => Err(Error::DurabilityFailure),
@@ -53,6 +53,7 @@ pub struct OperatorStore {
     signer: EpochSigner,
     secrets: BTreeMap<u32, Zeroizing<[u8; 32]>>,
     genesis_ms: u64,
+    sealer_id: u16,
     published: Arc<Mutex<Keyring>>,
     after_write: Option<AfterWrite>,
 }
@@ -71,9 +72,20 @@ impl OperatorStore {
         now_ms: u64,
         after_write: Option<AfterWrite>,
     ) -> Result<Self, Error> {
+        Self::load_sealed(keys, sever_format::SEALER_PLAINTEXT, now_ms, after_write)
+    }
+
+    /// [`OperatorStore::load`] for a database whose files name the sealer `sealer_id` (DB-48:
+    /// `SECRETS` carries the database's sealer; Part 4's databases are AES-256-GCM-SIV).
+    pub fn load_sealed(
+        keys: Arc<dyn Vfs>,
+        sealer_id: u16,
+        now_ms: u64,
+        after_write: Option<AfterWrite>,
+    ) -> Result<Self, Error> {
         let mut secrets = BTreeMap::new();
         let mut genesis_ms = None;
-        if let Some(s) = read_secrets(keys.as_ref())? {
+        if let Some(s) = read_secrets(keys.as_ref(), sealer_id)? {
             for (kind, v) in &s.entries {
                 match *kind {
                     K_OPERATOR_KEY => {
@@ -108,6 +120,7 @@ impl OperatorStore {
             signer,
             secrets,
             genesis_ms,
+            sealer_id,
             published,
             after_write,
         })
@@ -122,7 +135,8 @@ impl OperatorStore {
     /// Rewrites `SECRETS` with every operator key and the creation time, keeping the entries of
     /// other kinds (`k_scramble`), atomically (§12.7).
     fn save(&self, new: Option<(u32, &[u8; 32])>) -> Result<(), Error> {
-        let mut s = read_secrets(self.keys.as_ref())?.ok_or(bad("§14.1 SECRETS missing"))?;
+        let mut s = read_secrets(self.keys.as_ref(), self.sealer_id)?
+            .ok_or(bad("§14.1 SECRETS missing"))?;
         s.entries
             .retain(|(k, _)| *k != K_OPERATOR_KEY && *k != K_GENESIS_MS);
         s.entries

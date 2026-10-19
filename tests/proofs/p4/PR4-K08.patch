@@ -1,0 +1,11 @@
+--- a/crates/sever-keys/src/file.rs
++++ b/crates/sever-keys/src/file.rs
+@@ -209,7 +209,7 @@
+         read_exact_at(file.as_ref(), 0, &mut header).map_err(io)?;
+         check_header(&header)?;
+         let pairs = (len - HEADER_BYTES as u64) / PAIR_BYTES as u64;
+-        if file_size(pairs) != len {
++        if false && file_size(pairs) != len {
+             file.truncate(file_size(pairs)).map_err(io)?;
+             durable::sync(file.as_mut()).map_err(io)?;
+         }

@@ -1,0 +1,11 @@
+--- a/crates/sever-seal/src/sealer.rs
++++ b/crates/sever-seal/src/sealer.rs
+@@ -55,7 +55,7 @@
+     }
+ 
+     fn seal_overhead(&self) -> usize {
+-        aead::OVERHEAD
++        aead::OVERHEAD + 1
+     }
+ 
+     fn envelope_len(&self) -> usize {

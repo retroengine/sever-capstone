@@ -1,0 +1,12 @@
+--- a/crates/sever-erasure/src/participant.rs
++++ b/crates/sever-erasure/src/participant.rs
+@@ -350,8 +350,7 @@
+                 .collect();
+             for (d, s) in gone {
+                 let kf = self.key_file()?;
+-                kf.erase_slot(s.pair, 0)?;
+-                kf.erase_slot(s.pair, 1)?;
++                let _ = kf;
+                 self.slots.remove(&d);
+             }
+         }

@@ -1,0 +1,10 @@
+--- a/crates/sever-platform/src/lib.rs
++++ b/crates/sever-platform/src/lib.rs
+@@ -87,7 +87,6 @@
+         }
+     };
+     let mem = o.allow_unsafe_memory;
+-    check(probe.disable_core_dumps().is_ok(), CHECK_CORE_DUMPS, mem)?;
+     let swap_ok = probe.swaps().is_ok_and(|s| rules::swap_safe(&s));
+     check(swap_ok, CHECK_SWAP, mem)?;
+     let hib_ok = probe

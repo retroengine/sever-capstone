@@ -1,0 +1,10 @@
+--- a/crates/sever-erasure/src/records.rs
++++ b/crates/sever-erasure/src/records.rs
+@@ -45,7 +45,6 @@
+     let mut v = Vec::with_capacity(1 + 48 + 8 + block.len());
+     v.push(KIND_BLOCK);
+     put_domain(&mut v, d);
+-    v.extend_from_slice(&version.to_be_bytes());
+     v.extend_from_slice(block);
+     v
+ }

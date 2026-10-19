@@ -1,0 +1,12 @@
+--- a/crates/sever-keys/src/file.rs
++++ b/crates/sever-keys/src/file.rs
+@@ -285,8 +285,7 @@
+             domain,
+             key: key.duplicate(),
+         });
+-        self.file.write_at(at, slot.as_bytes()).map_err(io)?;
+-        durable::sync(self.file.as_mut()).map_err(io)
++        self.file.write_at(at, slot.as_bytes()).map_err(io)
+     }
+ 
+     /// Overwrites slot `which` of pair `index` with zeros and `fsync`s it (phase C, §13.4).

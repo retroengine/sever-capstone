@@ -1,0 +1,11 @@
+--- a/crates/sever-platform/src/rules.rs
++++ b/crates/sever-platform/src/rules.rs
+@@ -22,7 +22,7 @@
+         .dm_uuid
+         .as_deref()
+         .is_some_and(|u| u.starts_with("CRYPT-"));
+-    zram || dm_crypt
++    dm_crypt
+ }
+ 
+ /// §12.8: swap is safe when it is off or every active entry is encrypted.

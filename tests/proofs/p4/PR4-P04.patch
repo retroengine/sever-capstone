@@ -1,0 +1,11 @@
+--- a/crates/sever-platform/src/probe.rs
++++ b/crates/sever-platform/src/probe.rs
+@@ -64,7 +64,7 @@
+ /// newline and backslash as `\ooo` octal (the kernel's `seq_file_path`).
+ pub fn parse_swaps(text: &str) -> Vec<(String, String)> {
+     text.lines()
+-        .skip(1)
++        .skip(0)
+         .filter_map(|line| {
+             let mut cols = line.split_whitespace();
+             let name = unescape(cols.next()?);

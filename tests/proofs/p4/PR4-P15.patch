@@ -1,0 +1,37 @@
+--- a/crates/sever-keys/src/lib.rs
++++ b/crates/sever-keys/src/lib.rs
+@@ -56,7 +56,7 @@
+ 
+ /// A 32-byte key: a group key `GK_g`, a bucket key `BK_{g,b}` or a record key `RK_t` (§13.1).
+ /// Never cloned, never printed; its bytes are zeroed when it is dropped.
+-pub struct Key(SecretBuf);
++pub struct Key(core::mem::ManuallyDrop<SecretBuf>);
+ 
+ impl Key {
+     /// A fresh key from the OS CSPRNG (§13.1). There is no seeded variant (CLAUDE.md §6.2).
+@@ -65,14 +65,14 @@
+         OsRng.fill_bytes(buf.as_bytes_mut());
+         #[cfg(feature = "key-export")]
+         export::emit(buf.as_bytes());
+-        Self(buf)
++        Self(core::mem::ManuallyDrop::new(buf))
+     }
+ 
+     /// A key read back from storage (the key file, or an unwrapped envelope).
+     pub fn from_bytes(bytes: &[u8; KEY_BYTES]) -> Self {
+         let mut buf = SecretBuf::new(KEY_BYTES);
+         buf.as_bytes_mut().copy_from_slice(bytes);
+-        Self(buf)
++        Self(core::mem::ManuallyDrop::new(buf))
+     }
+ 
+     /// The key's bytes.
+@@ -84,7 +84,7 @@
+     pub fn duplicate(&self) -> Self {
+         let mut buf = SecretBuf::new(KEY_BYTES);
+         buf.as_bytes_mut().copy_from_slice(self.0.as_bytes());
+-        Self(buf)
++        Self(core::mem::ManuallyDrop::new(buf))
+     }
+ }
+ 

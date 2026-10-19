@@ -47,6 +47,14 @@ PART = {
     "sever-p3": 3,
     "sever-py-p3": 3,
     "sever-crashkit-p3": 3,
+    # Part 4 (Build 3-4 §2.4)
+    "sever-keys": 4,
+    "sever-seal": 4,
+    "sever-erasure": 4,
+    "sever-platform": 4,
+    "sever-db": 4,
+    "sever-scan": 4,
+    "sever-py": 4,
 }
 #: Composition roots and tooling: nothing in the core may depend on them.
 OUTER = (

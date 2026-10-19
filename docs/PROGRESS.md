@@ -13,6 +13,9 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `part-2-frozen-e1`; erratum E-2 is committed and waits for the owner's tag `part-2-frozen-e2`).
 - **Where to resume:** the "RESUME HERE" paragraph in the Part 3 section below (branch, what is
   done, the next module, the proof-making routine). It is the only current resume point.
+- **Part 4** (18 Oct 2026): step 0 done on branch `p4-prep` (worktree `~/sever-db-p4prep`); the owner
+  accepted G-26…G-31 (DB-90) and asked for Part 4 to start now (DB-89); see "Part 4, The Erasure"
+  below. DB-53 (EP-11) and DB-54 accepted 18 Oct 2026.
 - **Working copy:** `~/sever-db` on the WSL ext4 disk (the `C:` copy is a backup).
 - **Git:** Claude commits on short `p3-*` branches (conventional messages, no AI attribution);
   nothing is pushed or merged to `main` without the owner's word.
@@ -43,6 +46,53 @@ fixed engine 255 passed / 0 failed / 1 skipped (ledger). Freeze manifest updated
 budget, DB-74); `docs/audit/FAIRNESS_P2.md` is the void run of 8 Oct (usage limit).
 
 Fair testing now takes its blind bugs from the `cargo-mutants` gate (DB-75, owner 15 Oct 2026).
+
+## Part 4, The Erasure — design review (18 Oct 2026, branch `p4-prep`)
+
+Prepared while Part 3's gates run, in a separate worktree (`~/sever-db-p4prep`) so the running gates'
+working copy and ledger lines are untouched. No Part 4 code; nothing of Parts 1–3 changed. Part 4's
+modules start only once Part 3 is frozen (Build 3-4 §0); if Part 3 changes before its freeze,
+`p4-prep` is rebased onto it.
+
+**Step 0, done:**
+0. **Test enforcement** `python/sever_testkit_p4`: `spec_trace` (the Part 4 sections), `oracle_check`
+   (the Part 4 crates and packages of Build 3-4 §2.4; a crate that does not exist yet holds no
+   tests), `proofs check` (`tests/proofs/p4/`, IDs `PR4-…`; `proofs run` comes with the first Part 4
+   proof), `registers`, `rfc_vectors`; 14 unit tests; five new `ci.sh fast` steps (`*-p4`). Parts 1–3's
+   checks unchanged (70/70, 46/46, 102/102 traced; 213 and 162 proofs; freeze guard ok).
+1. **Requirements:** 60 `SR-` entries with `part: 4` (one per normative statement, DB-58), every MUST
+   line of the Part 4 sections catalogued (`spec_trace candidates --part 4`).
+2. **Registers** `spec/registers_p4.yaml` (39 entries, before any result): SB-24…SB-30 (crate, the
+   test that must go red, whether the scanner must find it: all but SB-27), the five §15.4 crash rows
+   CT-1…5, key-file faults KF-1…6, the P4-T8 platform matrix PL-1…13 (refuse or start, the override
+   flag), and the scan targets SC-1…8 of EX-2 and INV-11.
+3. **Pins (§20.1, §20.3):** a throwaway spike with `aes-gcm-siv =0.11.1` beside the Part 3 crypto pins
+   resolved offline to one `rand_core` 0.6.4, `digest` 0.10.7, `getrandom` 0.2.17 and
+   `curve25519-dalek` 4.1.3; built on 1.98.1 and 1.85.1; `cargo deny` ok; all 26 RFC 8452 C.2/C.3
+   vectors encrypt and decrypt. RFC 8452 text pinned in `spec/rfc/`, vectors extracted mechanically to
+   `golden/p4_rfc8452_aes256gcmsiv.json`. `rustix` 1.1 (already pinned) covers `setrlimit`,
+   `PR_SET_DUMPABLE`, `statfs` and the btrfs flags safely; `mlock` is `unsafe` (the listed exception,
+   Build §1.2: `// SAFETY:` and Miri, with the syscall stubbed under `cfg(miri)`).
+4. **Frozen interfaces checked** (an erratum later costs more): EP-4 `SecretMemory`, EP-6 `Sealer` and
+   EP-7 `TxnParticipant` fit Part 4: recovery runs participants' `recover` before any decryption; the
+   drop is a normal transaction with `after_commit`. Found G-26 and G-28 this way.
+
+**Decided by the owner (18 Oct 2026):** "go, accept all gaps and lets do the part 4". DB-89 (Part 4
+is built now, on its own branch and worktree, before Part 3's freeze; nothing merges before
+`part-3-frozen`; builds and tests at the lowest priority on two cores while a gate runs) and DB-90
+(G-26 … G-31 closed as proposed; spec §12.8, §12.9, §13.6, §14.1, §14.7, §14.8, §15.9, §18, Appendix A
+amended; 65 Part 4 requirements). DB-53's EP-11 half (`PlatformProbe`) and DB-54 (the evaluation's
+build variants) accepted on 18 Oct 2026 (the owner: "choose the option which is best"); every
+build-plan proposal is now decided. Owner-side: tag `part-2-frozen-e2` set locally on a244264.
+
+**Design notes for the modules** (not gaps): the `AeadSealer` and the `KeyRotationParticipant` share
+the key state; the sealer creates a domain's next key when the core first asks for it during `plan`,
+and the participant adopts it in `prepare` and drops anything unadopted on `abort` or a failed plan.
+On this WSL machine swap is on and unencrypted and hibernation is listed, so development runs need
+`allow_unsafe_memory` (§12.8, dev only); `RLIMIT_MEMLOCK` is 64 MiB.
+
+**Proposed module order:** `sever-keys` → `sever-seal` → `sever-platform` (EP-11) → `sever-erasure` →
+`sever-db` (composition, crash table) → `sever-scan` → final SDK → `sever_experiments` / `sever_report`.
 
 ## Part 3, The Receipt — ready to start (prepared 15 Oct 2026, branch `p3-prep`)
 

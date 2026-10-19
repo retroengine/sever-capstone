@@ -1,0 +1,11 @@
+--- a/crates/sever-keys/src/file.rs
++++ b/crates/sever-keys/src/file.rs
+@@ -261,7 +261,7 @@
+             dst.copy_from_slice(slot.as_bytes());
+         }
+         self.file
+-            .write_at(pair_offset(index), pair.as_bytes())
++            .write_at(pair_offset(index), slot.as_bytes())
+             .map_err(io)?;
+         durable::sync(self.file.as_mut()).map_err(io)?;
+         self.pairs += 1;

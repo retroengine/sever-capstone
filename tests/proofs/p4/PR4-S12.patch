@@ -1,0 +1,11 @@
+--- a/crates/sever-seal/src/ring.rs
++++ b/crates/sever-seal/src/ring.rs
+@@ -290,7 +290,7 @@
+     ) -> Result<Envelope, Error> {
+         let rk = self.record_key(from, sid, slot)?;
+         self.depart(from, sid);
+-        self.join(to, sid, &rk)
++        self.join(to, sid, &Key::generate())
+     }
+ 
+     // --- the participant's side ----------------------------------------------------------------

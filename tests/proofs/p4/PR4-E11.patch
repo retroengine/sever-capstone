@@ -1,0 +1,17 @@
+--- a/crates/sever-erasure/src/participant.rs
++++ b/crates/sever-erasure/src/participant.rs
+@@ -358,7 +358,13 @@
+         if pending.values.is_empty() {
+             return Ok(());
+         }
+-        self.wrapped()?.append(&pending.values)?;
++        let values: Vec<Vec<u8>> = pending
++            .values
++            .iter()
++            .filter(|v| v.first() != Some(&records::KIND_ENVELOPES))
++            .cloned()
++            .collect();
++        self.wrapped()?.append(&values)?;
+         for v in &pending.values {
+             self.durable.merge(records::parse(v)?);
+         }

@@ -1,0 +1,10 @@
+--- a/crates/sever-seal/src/ad.rs
++++ b/crates/sever-seal/src/ad.rs
+@@ -40,7 +40,6 @@
+     [
+         &d.collection_id[..],
+         &d.group_id[..],
+-        &[bucket],
+         &group_key_version.to_be_bytes(),
+     ]
+     .concat()

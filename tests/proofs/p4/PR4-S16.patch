@@ -1,0 +1,11 @@
+--- a/crates/sever-seal/src/ring.rs
++++ b/crates/sever-seal/src/ring.rs
+@@ -171,7 +171,7 @@
+         }
+         let current = self.committed_bucket(d, bucket_of(sid))?.version;
+         let entry = match self.overrides.get(&(*d, *sid)) {
+-            Some((v, env)) if *v == current => Entry {
++            Some((v, env)) if *v == current && false => Entry {
+                 env: *env,
+                 stored: Some(*v),
+             },

@@ -1,0 +1,32 @@
+[package]
+name = "sever-seal"
+version = "0.1.0"
+description = "AES-256-GCM-SIV sealing (EP-6 AeadSealer): the associated data of §13.2, record-key envelopes, bucket blocks and the key ring shared with the key-rotation participant (Part 4, spec §13.2, §14.3-14.5, DB-91)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[features]
+# Build §2.6: each builds the crate with exactly one deliberate bug. A test must go red.
+sabotage-SB-24 = [] # skip group-key rotation (the new version keeps the old key's bytes)
+sabotage-SB-28 = [] # write a plaintext vector into the WAL (the slot payload is not encrypted)
+sabotage-SB-29 = [] # write an unwrapped key to disk (the record key is stored in the clear)
+sabotage-SB-30 = [] # reuse an AEAD nonce
+
+[dependencies]
+sever-keys = { path = "../sever-keys" }
+sever-txn = { path = "../sever-txn" }
+sever-types = { path = "../sever-types" }
+sever-format = { path = "../sever-format" }
+aes-gcm-siv = { version = "=0.11.1", default-features = false, features = ["aes", "alloc"] } # spec §20.1; no `getrandom` feature: it would unify into the Part 1 core through crypto-common (Build §1.1)
+aes = { version = "=0.8.4", features = ["zeroize"] } # spec §12.8: the AES key schedules are zeroed on drop
+rand_core = { version = "=0.6.4", features = ["getrandom"] } # spec §13.2: nonces from the OS
+zeroize = "=1.9.0" # spec §12.8, §20.1
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+sever-txn = { path = "../sever-txn", features = ["contract-tests"] }
+serde_json = "1"
+
+[lints]
+workspace = true
