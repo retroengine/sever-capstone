@@ -1069,7 +1069,8 @@ MCL_ONFAULT)`, through EP-11's `lock_memory`, so every page the engine touches a
 the key ring, the AES key schedules, and the decrypted accumulators that the frozen Part 1 index
 keeps in ordinary vectors. If it fails, startup refuses ("§12.8 mlock", PL-6) unless
 `allow_unsafe_memory`. Linux checks the process's whole virtual size against `RLIMIT_MEMLOCK`, so a
-production engine needs `ulimit -l unlimited` (or `CAP_IPC_LOCK`). (2) `MlockProvider` (EP-4) can only
+production engine needs `ulimit -l unlimited` (or `CAP_IPC_LOCK`); with a finite limit an allocation
+would fail once the engine grows past it, so a finite limit counts as a failed lock. (2) `MlockProvider` (EP-4) can only
 be built from the startup report's proof that the lock took effect. Its regions come from that
 locked heap and are zeroed on release by `SecretBuf`. Under `allow_unsafe_memory` with a failed lock,
 Part 1's heap provider stays and the ledger records the override. (3) On btrfs, before `KEYS`
@@ -1082,7 +1083,7 @@ pages, but they live in Part 1's frozen index, which allocates them from the ord
 Per-region `mlock` in the provider (it locks keys only, leaving the accumulators unlocked); an erratum
 moving Part 1's accumulators into `SecretBuf` (F-6 re-runs every later exit gate, and the index works
 on plain `i64` vectors); `MADV_DONTDUMP` (it covers core dumps, not swap). **Consequence.** Closes
-G-33; spec §12.8 and §12.9 each gain a sentence. A machine with a small memory-lock limit (64 KiB on
+G-33; spec §12.8 and §12.9 each gain a sentence. A machine with a finite memory-lock limit (64 MiB on
 the development laptop) refuses to start without the override. This laptop's runs need
 `allow_unsafe_memory` anyway, because its swap (`/dev/sdc`) is unencrypted.
 
