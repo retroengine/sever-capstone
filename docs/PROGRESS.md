@@ -19,6 +19,13 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   gate passes: fair testing (`scripts/fair.sh`, the owner's go and budget), `scripts/freeze.sh 3` and
   `4`, the tags `part-3-frozen`, `part-4-frozen` / `v1.0.0`, and the merge to `main`. A gate that
   fails on the VM is a bug: fix it (red test first), rerun that gate and everything after it.
+- **After v1.0 (owner, 19 Oct 2026): the v1.1 layout.** One folder per kind: `rust/` (the crates,
+  `verifier/`, `audit/`, `fuzz/p1` … `p4`, `spikes/`), `python/`, `tests/` (every cross-cutting suite
+  and the proofs), `docs/spec`, `docs/guides`, `docs/evidence` (with the ledger and generated reports;
+  the tools' output paths change with them). Parts 1 and 2 are frozen in place, so this is erratum
+  E-3: spec §19.2 amended with a gap and a decision, new freeze manifests and tags
+  (`part-1-frozen-e3`, `part-2-frozen-e3`), and every gate and fair-testing run of Parts 1–4 repeated
+  on the moved files. Until then the layout is as in README "Layout".
 - **Gate and measure runners:** `python -m sever_testkit_p3.gates` and `python -m
   sever_testkit_p4.gates` (P4-T1 … T15: `p4-crash`, `p4-replay`, `p4-attacks`, `p4-forensics`,
   `p4-checks`, `p4-coverage`, `p4-mutants`, `p4-fuzz`, `p4-ex6`, `p4-quant-recall`, `p4-ex7`,

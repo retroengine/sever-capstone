@@ -27,8 +27,8 @@
 
 | Document | For |
 |---|---|
-| [`PART_1_WALKTHROUGH.md`](PART_1_WALKTHROUGH.md) | Part 1's code and tests, explained in plain words |
+| [`PART_1_WALKTHROUGH.md`](guides/PART_1_WALKTHROUGH.md) | Part 1's code and tests, explained in plain words |
 | [`SOUNDNESS.md`](SOUNDNESS.md) | The argument behind the deletion proof (§9.5) |
 | [`FAIR_TESTING.md`](FAIR_TESTING.md) | The clean-room AI testing system (FT-1 … FT-10) |
-| [`TEAM_HANDBOOK.md`](TEAM_HANDBOOK.md) | Teammates doing documentation and review work |
+| [`TEAM_HANDBOOK.md`](guides/TEAM_HANDBOOK.md) | Teammates doing documentation and review work |
 | [`TRACEABILITY.md`](TRACEABILITY.md) | Where the traceability matrices are |

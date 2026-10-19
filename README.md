@@ -100,6 +100,40 @@ It prints tables and writes `artefacts/demo/idea-<data>-seed<seed>.json` plus an
 
 ---
 
+## Part 1 results
+
+Every number below comes from the run ledger, [`docs/RUN_LEDGER.jsonl`](docs/RUN_LEDGER.jsonl)
+(append-only, written by the gate runners, never by hand), with the full result in `results/`.
+
+| Target (Build §4.8) | What | Result |
+|---|---|---|
+| P1-T1 | 0 exactness violations (survivors check on every core field) | **PASS**: nq-100k 427,455 checks, nq-10k 43,562, synthetic L4 275,114; 0 failures |
+| P1-T2 | 0 engine/model mismatches, nq-10k and nq-100k, five seeds | **PASS**: nq-10k 10.6 M values, nq-100k 12.4 M values; 0 mismatches |
+| P1-T3 | identical blobs across insertion orders | property tests (proptest, ≥ 256 orders) |
+| P1-T4 | scalar and AVX2 kernels bit-identical | **PASS**: 10^7 random pairs; nq-10k 508 M and nq-100k 2.25 B real pairs, 0 mismatches |
+| P1-T5 | 0 deleted records returned by search | **PASS**: 0, on nq-10k and nq-100k, five seeds each |
+| P1-T6 | builder oracle agreement (shrinkage 1e-12, τ 1e-9), five seeds | PASS (largest differences 2e-17 and 1.4e-14) |
+| P1-T7 | Recall@10, dequantised vs float brute force, nq-100k (measure, target ≥ 0.999) | **1.000** |
+| P1-T8 | SB-1 … SB-10 each turn a test red | **PASS**: all ten red (`gates p1-checks`, with MSRV 1.85, cargo deny, docs, all 17 steps) |
+| P1-T9 | traceability 100 % of Part 1's requirements | 70 / 70 (`docs/TRACE_PART_1.md`) |
+| P1-T10 | coverage: Rust lines ≥ 90 %, branches ≥ 85 %; Python lines ≥ 90 % | **PASS**: Rust 95.9 % lines, 87.0 % branches; Python 98.8 % |
+| P1-T11 | mutation score ≥ 85 %, every survivor triaged | **PASS**: 325 / 347 caught (93.7 %); 22 survivors, each triaged in [`docs/MUTANTS_P1.md`](docs/MUTANTS_P1.md) |
+| P1-T12 | 0 fuzz crashes in ≥ 10^8 executions per parser | **PASS**: 10^8 each for `artefact_parse` and `blob_parse`; an earlier run found one real bug, fixed (below) |
+| P1-T13 | contract suites pass for every default and fail for a wrong one; proof spikes | PASS (spikes recorded, then deleted, Build §3.4) |
+| P1-T14 | the ghost (measure) | nq-10k seed 42: soft-delete IVF 5.0e-3, float mean 1.9e-8, SEVER 0 |
+
+**Bugs found by the test suite on the way** (each fixed with a regression test): the artefact parser
+reserved memory from an untrusted header before checking the file length (found by fuzzing: an
+88-byte file claimed 5 GB); `apply` could drop the holding area's records on a malformed flush
+(found by the forged-change-set tests).
+
+**Definition of done (Build §2.9):** the demo runs from a clean clone with one command
+(`scripts/p1-demo.sh`, checked on 6 Oct 2026: the report and the rebuilt partition artefact were
+identical to the working copy's, apart from timing), and every Part 1 file is hashed into
+[`freeze/PART-1.sha256`](freeze/PART-1.sha256), which CI checks on every run (F-1, F-2).
+
+---
+
 ## Part 2: The Database
 
 Part 2 puts Part 1's frozen index behind a storage engine (Build §5): a write-ahead log (WAL),
@@ -345,40 +379,6 @@ tail -f traces/vm-summary.log
 
 ---
 
-## Part 1 results
-
-Every number below comes from the run ledger, [`docs/RUN_LEDGER.jsonl`](docs/RUN_LEDGER.jsonl)
-(append-only, written by the gate runners, never by hand), with the full result in `results/`.
-
-| Target (Build §4.8) | What | Result |
-|---|---|---|
-| P1-T1 | 0 exactness violations (survivors check on every core field) | **PASS**: nq-100k 427,455 checks, nq-10k 43,562, synthetic L4 275,114; 0 failures |
-| P1-T2 | 0 engine/model mismatches, nq-10k and nq-100k, five seeds | **PASS**: nq-10k 10.6 M values, nq-100k 12.4 M values; 0 mismatches |
-| P1-T3 | identical blobs across insertion orders | property tests (proptest, ≥ 256 orders) |
-| P1-T4 | scalar and AVX2 kernels bit-identical | **PASS**: 10^7 random pairs; nq-10k 508 M and nq-100k 2.25 B real pairs, 0 mismatches |
-| P1-T5 | 0 deleted records returned by search | **PASS**: 0, on nq-10k and nq-100k, five seeds each |
-| P1-T6 | builder oracle agreement (shrinkage 1e-12, τ 1e-9), five seeds | PASS (largest differences 2e-17 and 1.4e-14) |
-| P1-T7 | Recall@10, dequantised vs float brute force, nq-100k (measure, target ≥ 0.999) | **1.000** |
-| P1-T8 | SB-1 … SB-10 each turn a test red | **PASS**: all ten red (`gates p1-checks`, with MSRV 1.85, cargo deny, docs, all 17 steps) |
-| P1-T9 | traceability 100 % of Part 1's requirements | 70 / 70 (`docs/TRACE_PART_1.md`) |
-| P1-T10 | coverage: Rust lines ≥ 90 %, branches ≥ 85 %; Python lines ≥ 90 % | **PASS**: Rust 95.9 % lines, 87.0 % branches; Python 98.8 % |
-| P1-T11 | mutation score ≥ 85 %, every survivor triaged | **PASS**: 325 / 347 caught (93.7 %); 22 survivors, each triaged in [`docs/MUTANTS_P1.md`](docs/MUTANTS_P1.md) |
-| P1-T12 | 0 fuzz crashes in ≥ 10^8 executions per parser | **PASS**: 10^8 each for `artefact_parse` and `blob_parse`; an earlier run found one real bug, fixed (below) |
-| P1-T13 | contract suites pass for every default and fail for a wrong one; proof spikes | PASS (spikes recorded, then deleted, Build §3.4) |
-| P1-T14 | the ghost (measure) | nq-10k seed 42: soft-delete IVF 5.0e-3, float mean 1.9e-8, SEVER 0 |
-
-**Bugs found by the test suite on the way** (each fixed with a regression test): the artefact parser
-reserved memory from an untrusted header before checking the file length (found by fuzzing: an
-88-byte file claimed 5 GB); `apply` could drop the holding area's records on a malformed flush
-(found by the forged-change-set tests).
-
-**Definition of done (Build §2.9):** the demo runs from a clean clone with one command
-(`scripts/p1-demo.sh`, checked on 6 Oct 2026: the report and the rebuilt partition artefact were
-identical to the working copy's, apart from timing), and every Part 1 file is hashed into
-[`freeze/PART-1.sha256`](freeze/PART-1.sha256), which CI checks on every run (F-1, F-2).
-
----
-
 ## How it is tested
 
 The specification is the source of truth; tests are written from it, not from the code.
@@ -434,38 +434,28 @@ WSL's default 8 GB run at most two at once (`--jobs 2`), with 10 GB (`memory=10G
 
 ## Layout (spec §19.2, Build §3.2)
 
-| Path | What |
-|---|---|
-| `crates/sever-types` | Record, group and collection IDs; constants (§2.2); every §17 error; `SecretBuf` and EP-4 |
-| `crates/sever-quant` | Normalisation check, Q24 quantisation (ties to even), dequantisation (§4) |
-| `crates/sever-partition` | Parser and checks for the partition artefact `partition.svp` (§6.3) |
-| `crates/sever-index` | Groups, exact accumulators, routing and drift test, holding area and flush, `plan`/`apply` with `ChangeSet`, canonical blob, invariants; declares EP-1, EP-2, EP-3 (§5, §7, §9.7) |
-| `crates/sever-search` | IVF-flat search over the float32 mirror; pinned scalar and AVX2 kernels (§8) |
-| `crates/sever-tracekit` | Trace replayer: the engine against the reference model |
-| `crates/sever-p1` | Composition root (OS entropy for the scrambling key), ghost baselines, `sever-demo` CLI |
-| `crates/sever-spec` | The `#[spec("SR-…")]` test attribute |
-| `python/sever_partition` | Partition builder C-15 with an independent Ledoit–Wolf oracle (§6.2) |
-| `python/sever_refmodel_core` | Reference model C-18 (§3–§8) |
-| `python/sever_testkit` | Seeds, synthetic data, slices, traces, streams, run ledger, gate runners, `spec_trace` |
-| `python/sever_demo` | HTML report for the demo |
-| `tests/architecture`, `tests/sabotage` | L13 rules; the sabotage register runner |
-| `fuzz/` | cargo-fuzz targets and committed seeds (separate workspace, nightly) |
-| `golden/` | Golden vectors (spec Appendix B) and regression inputs; changed only with a recorded reason |
-| `spec/requirements.yaml` | The requirement catalogue |
-| `configs/experiments.yaml` | The pre-registration (Overview §3.4, §12) |
-| `docs/` | Specification, overview, build plans, progress, spec gaps, traceability, run ledger |
-| `datasets/` | Data pins and manifest (the data files are not in git) |
-| `scripts/` | `ci.sh` (CI tiers), `p1-demo.sh`, the P0 data tool |
-| `crates/sever-vfs`, `-format`, `-wal`, `-appendstore`, `-checkpoint`, `-txn`, `-engine`, `-p2`, `-py-p2`, `-crashkit` | Part 2: the storage engine, its composition root, SDK and crash kit |
-| `crates/sever-crypto`, `-commit`, `-log`, `-cert`, `-p3`, `-py-p3`, `-crashkit-p3`; `verifier/`, `audit/` | Part 3: commitments, proofs, the transparency log, certificates; the separate verifier and auditor |
-| `crates/sever-keys`, `-seal`, `-erasure`, `-platform`, `-db`, `-py`, `-scan`, `-crashkit-p4`, `-eval` | Part 4: keys, sealing, rotation and erasure, startup checks, the final engine and SDK, the scanner, the crash kit, the measuring harness |
-| `python/sever_refmodel_durable`, `sever_refmodel_certs` | The durable and certificate reference models (Parts 2–3) |
-| `python/sever_testkit_p2`, `_p3`, `_p4`, `python/sever_experiments` | Per-part test enforcement and gate runners; the evaluation |
-| `scripts/vm/`, `scripts/ops/` | The one-time VM run; unattended laptop runs (job queue, memory guard) |
-| `demo/` | The 5 Oct 2026 review prototype: self-contained, nothing here depends on it |
+```text
+crates/          the Rust workspace: the database, earlier parts' roots, test tooling  → crates/README.md
+python/          partition builder, reference models, SDKs, test kits, gate runners, the evaluation
+verifier/ audit/ the certificate verifier and the log auditor (separate workspaces, no engine code)
+tests/           architecture rules, sabotage runner, end-to-end, errata, red proofs, fair-testing output
+fuzz/ fuzz-p2/ fuzz-p3/ fuzz-p4/   cargo-fuzz targets, one workspace per part (nightly)
+spikes/          Part 3's proof spike (a gate)
+golden/ spec/ configs/ datasets/   golden vectors, requirements and registers, pre-registration, data pins
+docs/            specification, overview, build plans, gaps, progress, evidence, guides  → docs/README.md
+results/         gate and measure results (written by the runners, cited by docs/RUN_LEDGER.jsonl)
+scripts/         CI tiers, demos, fair testing, freeze, job queue, the VM run (scripts/vm/)
+freeze/          hashes of the frozen parts' files (F-1)
+demo/            the 5 Oct 2026 review prototype, self-contained (DB-56)
+```
+
+Rust unit tests live next to the code they test (`src/tests.rs`), integration tests in each crate's
+`tests/`, Python tests in each package's `tests/`; the cross-cutting suites are in `tests/`. Parts 1
+and 2 are frozen in place, so this layout stays until v1.0 is tagged; a one-folder-per-kind layout is
+planned as v1.1 ([`docs/PROGRESS.md`](docs/PROGRESS.md)).
 
 Generated, not in git: `artefacts/` (partition artefacts, ID export, demo reports), `traces/`,
-`results/` scratch, `target/`.
+`jobs/`, `target/`.
 
 ## Documents
 
