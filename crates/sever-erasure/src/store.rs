@@ -62,6 +62,7 @@ fn scan(vfs: &dyn Vfs, dir: &str) -> Result<(Vec<Vec<u8>>, u64), Error> {
         .filter_map(|n| n.strip_suffix(".store").and_then(|d| d.parse().ok()))
         .collect();
     seqs.sort_unstable();
+    let newest = seqs.last().copied();
     let (mut out, mut bytes) = (Vec::new(), 0u64);
     for seq in seqs {
         let f = vfs
@@ -84,7 +85,14 @@ fn scan(vfs: &dyn Vfs, dir: &str) -> Result<(Vec<Vec<u8>>, u64), Error> {
             }
             let mut buf = vec![0u8; usize::try_from(total).map_err(|_| bad())?];
             read_exact_at(f.as_ref(), off, &mut buf).map_err(io)?;
-            let (rec, _) = StoreRecord::parse_next(&buf).ok_or_else(bad)?;
+            let Some((rec, _)) = StoreRecord::parse_next(&buf) else {
+                if Some(seq) == newest {
+                    // §12.2: a record a crash cut short at the end of the newest segment was
+                    // never synced; FileStore::open cuts it (as Part 2's append stores do).
+                    break;
+                }
+                return Err(bad()); // synced data that fails its check is corruption
+            };
             out.push(rec.bytes);
             bytes += total;
             off += total;

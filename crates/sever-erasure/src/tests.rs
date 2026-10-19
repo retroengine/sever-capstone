@@ -6,3 +6,4 @@ mod harness;
 mod records;
 mod shadow;
 mod smoke;
+mod store;
