@@ -1812,6 +1812,9 @@ sever-db/
   docs/                          these two documents, RUN_LEDGER.md, SOUNDNESS.md
   demo/                          the review prototype (Python, 5 Oct 2026): own environment, tests
                                  and container; not part of any part; nothing above depends on it
+  demo-engine/                   the final database used as an application uses it (SDK, sever-db,
+                                 sever-verify, sever-audit): a consumer only; not part of any part;
+                                 nothing above depends on it (DB-97)
 ```
 
 The optional server (C-14) has no crate in the build plan; it is added, if ever, after Part 4.

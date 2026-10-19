@@ -22,6 +22,8 @@ _selftest/
 *.cert
 # Per-session demo receipts (public by design, but tied to one session's keys)
 demo/results/certs/
+# The engine demo's databases, account keys and receipts
+demo-engine/work/
 *.key
 !golden/**
 

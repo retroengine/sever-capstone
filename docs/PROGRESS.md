@@ -32,10 +32,13 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `p4-ex8`) over `python/sever_experiments` (EX-2, EX-6, EX-7, EX-8; DB-96).
 - **Decisions this round:** DB-94 (interim checks; Part 4's crash windows), DB-95 (an emptied group's
   proof is not context-bound; closes G-34), DB-96 (EX-2 on `fuse2fs` with `allow_unsafe_fs`; the
-  evaluation's builds; closes G-35).
+  evaluation's builds; closes G-35), DB-97 (`demo-engine/`, the final database in use; closes G-36).
+- **The engine demo (19 Oct 2026):** `demo-engine/demo.sh tour` (12 chapters on 5,000 NQ passages:
+  24 of 24 checks pass), `shell`, `cli`, `erase`, `examples`, `test` (4 offline tests pass).
 - **Working copy:** `~/sever-db` on the WSL ext4 disk (the `C:` copy is a backup).
-- **Git:** Claude commits on `p3-gates` (conventional messages, no AI attribution) and pushes it to
-  `origin` (owner, 19 Oct 2026); `main` is updated only after Part 3 freezes.
+- **Git:** Claude commits (conventional messages, no AI attribution) and pushes to `origin` (owner,
+  19 Oct 2026). `main` and `p3-gates` are fast-forwarded together once GitHub's fast tier and the
+  laptop's `full-checks` pass on the commit (owner, 19 Oct 2026); the VM runs on `main`.
 - **Unattended runs:** `scripts/jobq.sh` (service `sever-jobq`), side jobs `scripts/ops/sidejobs.sh`
   (service `sever-sidejobs`), memory guard `scripts/oomguard.sh` (service `sever-oomguard`); the
   interim and gate runners are in `scripts/ops/`.

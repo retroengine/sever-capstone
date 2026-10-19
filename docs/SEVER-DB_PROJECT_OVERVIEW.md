@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-96)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-97)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1042,6 +1042,27 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-97 — `demo-engine/`: the final database used as an application uses it (19 October 2026)
+
+**Decision.** A top-level folder `demo-engine/` holds a tour of the final build that goes only
+through its public surfaces: the SDK `sever_db`, the command-line tool `sever-db`, and the
+independent `sever-verify` and `sever-audit`. It contains a guided tour on real NQ passages
+(twelve chapters, each checking its claim), an interactive shell, the same story on the command
+line, two example programs for an application backend, and its own offline tests. The forensic
+proof stays Part 4's demo (`scripts/demo-p4.sh`), which the folder runs. It is owned by no part, is
+in no freeze manifest, and nothing outside it depends on it. It uses the repository's environment
+and the SDK built into it; its Python is checked by the repository's `ruff` settings and by `mypy
+--strict` (`demo-engine/demo.sh test`). On a machine the startup checks refuse (§12.8), it shows the
+refusal and then opens with the recorded development override; `SEVER_STRICT=1` leaves it out. Its
+checks probe the database only through the API: a record is stored if a second insert of its ID is
+refused as a duplicate, deleted if deleting it again returns `"absent"`, and counts are `N` plus the
+holding area, since §8 never searches the holding area. **Why.** G-36: nothing showed the database
+in use end to end; the owner asked for it. **Rejected.** A package under `python/`, which would
+enter the root test suite and Part 4's ownership list. A folder in `demo/`, which is the prototype's
+own environment (DB-56). **Consequence.** §19.2 lists the folder. Writing the tour corrected two
+of its own first checks, not the engine: a record in the holding area is stored but never searched
+(§8), and `N` excludes the holding area (§5).
 
 #### DB-96 — EX-2 on `fuse2fs` with `allow_unsafe_fs`; how the evaluation's builds are made (19 October 2026)
 
@@ -2313,6 +2334,8 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **19 October 2026 — The engine demo.** DB-97 (`demo-engine/`: the final database used as an
+  application uses it; closes G-36). Specification sections touched: §19.2.
 - **19 October 2026 — The evaluation's harness.** DB-96 (EX-2 on `fuse2fs` with `allow_unsafe_fs`;
   `sever-ex2`, `sever-db-noerase`, `sever-bench`; closes G-35). Specification sections touched:
   none.

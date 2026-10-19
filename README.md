@@ -48,6 +48,10 @@ with Database.open("/home/me/mydb/data", "/home/me/mydb/keys") as db:
     anchors = db.anchors()  # what a verifier needs (JSON)
 ```
 
+**See it working first:** [`demo-engine/`](demo-engine/README.md) is a guided tour of all of this on
+real passages (`demo-engine/demo.sh setup`, then `demo-engine/demo.sh tour`), with a shell to try it
+yourself and example programs for an application backend.
+
 Anyone can check a receipt offline, without the database:
 `verifier/target/release/sever-verify deletion.cert --anchors anchors.json` (build it with
 `cd verifier && cargo build --release`). The same operations are on the command line
@@ -448,6 +452,7 @@ results/         gate and measure results (written by the runners, cited by docs
 scripts/         CI tiers, demos, fair testing, freeze, job queue, the VM run (scripts/vm/)
 freeze/          hashes of the frozen parts' files (F-1)
 demo/            the 5 Oct 2026 review prototype, self-contained (DB-56)
+demo-engine/     the final database in use: guided tour, shell, CLI story, examples  → demo-engine/README.md
 ```
 
 Rust unit tests live next to the code they test (`src/tests.rs`), integration tests in each crate's
