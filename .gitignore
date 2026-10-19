@@ -59,3 +59,6 @@ Thumbs.db
 /fuzz-p4/corpus/
 /fuzz-p4/artifacts/
 /fuzz-p4/target/
+
+# Personal practice code, kept outside the repository (~/rust-practice)
+src/practise-rust/
