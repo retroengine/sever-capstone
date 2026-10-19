@@ -1,0 +1,53 @@
+{
+ "gate": "P3-T1: 100 % of honest certificates accepted by the independent verifier; P3-T2: 100 % of AT-1 \u2026 AT-20 rejected on every honest certificate",
+ "data": "nq-10k",
+ "n": 1000,
+ "seeds": [
+  {
+   "seed": 42,
+   "outcome": "FAIL",
+   "judged": {
+    "ok": false
+   },
+   "generator": "sever-crashkit-p3: no group cert\n",
+   "verifier_rc": 0
+  },
+  {
+   "seed": 123,
+   "outcome": "FAIL",
+   "judged": {
+    "ok": false
+   },
+   "generator": "sever-crashkit-p3: no group cert\n",
+   "verifier_rc": 0
+  },
+  {
+   "seed": 777,
+   "outcome": "FAIL",
+   "judged": {
+    "ok": false
+   },
+   "generator": "sever-crashkit-p3: no group cert\n",
+   "verifier_rc": 0
+  },
+  {
+   "seed": 2024,
+   "outcome": "FAIL",
+   "judged": {
+    "ok": false
+   },
+   "generator": "sever-crashkit-p3: no group cert\n",
+   "verifier_rc": 0
+  },
+  {
+   "seed": 9999,
+   "outcome": "FAIL",
+   "judged": {
+    "ok": false
+   },
+   "generator": "sever-crashkit-p3: no group cert\n",
+   "verifier_rc": 0
+  }
+ ],
+ "outcome": "FAIL"
+}

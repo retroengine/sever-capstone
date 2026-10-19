@@ -1,0 +1,26 @@
+{
+ "gate": "P3-T9: lines >= 95 % (sever-crypto, verifier), >= 90 % (other Part 3 crates)",
+ "rates": {
+  "crates/sever-crypto/src/": 0.954233409610984,
+  "crates/sever-commit/src/": 0.9158415841584159,
+  "crates/sever-log/src/": 0.928709055876686,
+  "crates/sever-cert/src/": 0.962171052631579,
+  "verifier": 0.9516574585635359
+ },
+ "minimums": {
+  "crates/sever-crypto/src/": 0.95,
+  "crates/sever-commit/src/": 0.9,
+  "crates/sever-log/src/": 0.9,
+  "crates/sever-cert/src/": 0.9,
+  "verifier": 0.95
+ },
+ "tests_ok": [
+  true,
+  true
+ ],
+ "stderr_tail": [
+  "nished in 0.15s\n\n\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\nrunning 10 tests\n..........\ntest result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\nrunning 10 tests\n.........test tests::p1_search_kernel_scalar_equals_avx2_ten_million has been running for over 60 seconds\n.\ntest result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 170.60s\n\n\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\nrunning 22 tests\n......................\ntest result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s\n\n\nrunning 25 tests\n.........................\ntest result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n\nrunning 31 tests\n...............................\ntest result: ok. 31 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s\n\n\nrunning 4 tests\n....\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n\nrunning 27 tests\n...........................\ntest result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s\n\n",
+  "info: cargo-llvm-cov currently setting cfg(coverage) and cfg(coverage_nightly); you can opt-out it by passing --no-cfg-coverage and --no-cfg-coverage-nightly\n\nrunning 8 tests\n........\ntest result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s\n\n\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\nrunning 3 tests\n...\ntest result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s\n\n"
+ ],
+ "outcome": "PASS"
+}
