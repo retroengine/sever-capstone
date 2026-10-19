@@ -131,6 +131,12 @@ struct World {
 /// records 1 and 4 deleted (one by `delete_user`) and one flushed cohort member, 0 and 3 the
 /// controls. The scrambled IDs come from §9.7 with the database's own `k_scramble`.
 fn world() -> World {
+    world_with(false)
+}
+
+/// [`world`], with a storage checkpoint before the shutdown when `checkpoint` (§15.6: the WAL
+/// segments it covers are deleted, so the image holds the checkpoint and the stores only).
+fn world_with(checkpoint: bool) -> World {
     let keys_seen = exported();
     let (data, keys) = (SimVfs::new(), SimVfs::new());
     let mut s = Settings::new(D);
@@ -221,6 +227,9 @@ fn world() -> World {
         .filter_map(|(d, v)| db.key_ring().group_key(d, *v).ok())
         .filter_map(|k| <[u8; 32]>::try_from(k.as_bytes()).ok())
         .collect();
+    if checkpoint {
+        db.engine.storage_checkpoint_now().unwrap();
+    }
     drop(db);
     let secrets = read_all(keys.open("SECRETS", OpenMode::Existing).unwrap().as_ref()).unwrap();
     let k = sever_format::Secrets::parse(&secrets, sever_format::SEALER_AES_GCM_SIV)
@@ -272,6 +281,23 @@ fn p4_scan_recovers_live_records_and_finds_nothing_deleted() {
         "{}",
         r.to_json()
     );
+    assert_eq!(
+        r.controls_recovered,
+        vec![true, true],
+        "the scanner can see: {}",
+        r.to_json()
+    );
+    assert!(r.findings.is_empty(), "{}", r.to_json());
+}
+
+// oracle: A Build 3-4 §2.8 Forensics (positive controls: "the scanner can see") on an image taken
+// after a storage checkpoint, when the WAL that wrote the live records is gone (§15.6) and the
+// current keys, blocks and envelopes live in the key file, the checkpoint and the stores (§14.8)
+#[spec("SR-16.3-3")]
+#[test]
+fn p4_scan_recovers_live_records_from_a_checkpointed_image() {
+    let w = world_with(true);
+    let r = scan_bytes(&w.image, w.targets);
     assert_eq!(
         r.controls_recovered,
         vec![true, true],

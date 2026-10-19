@@ -360,7 +360,7 @@ fn p4_erasure_crash_table_row_5_crash_after_phase_c_before_the_acknowledgement()
 }
 
 #[test]
-// oracle: A §15.9 (DB-90, G-26): the drop commits first; every key slot of the collection is
+// oracle: A §15.9 (DB-90, G-26; E2E-4.4): the drop commits first; every key slot of the collection is
 // erased in phase C, and a crash in between is finished by the recovery rule
 #[spec("SR-15.9-2")]
 fn p4_erasure_drop_collection_erases_every_key_after_its_commit() {

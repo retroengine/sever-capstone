@@ -657,6 +657,7 @@
   kind: red
   requirements:
   - SR-12.8-2
+  - SR-12.6-2
   patch: PR4-P12.patch
   runner: cargo
   package: sever-platform
@@ -741,6 +742,7 @@
   - SR-12.3-4
   - SR-13.2-8
   - SR-21-11
+  - SR-12.1-1
   patch: PR4-D05.patch
   runner: cargo
   package: sever-db
@@ -815,3 +817,65 @@
   package: sever-scan
   tests:
   - crates/sever-scan/src/tests.rs::p4_scan_recovers_live_records_and_finds_nothing_deleted
+- id: PR4-D09
+  claim: 'SB-29 always on: a record key is stored unwrapped in its envelope, not under its bucket key (§13.1 key levels, §12.1)'
+  kind: red
+  requirements:
+  - SR-13.1-1
+  - SR-12.1-1
+  patch: PR4-D09.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/src/tests.rs::p4_db_no_forbidden_plaintext_reaches_either_disk
+- id: PR4-D10
+  claim: 'the deletion''s transaction carries no new bucket block (§15.3 step 6: one transaction holds every record of phase B)'
+  kind: red
+  requirements:
+  - SR-15.3-8
+  patch: PR4-D10.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/src/tests.rs::p4_db_a_deletion_is_one_wal_transaction_with_every_record_of_phase_b
+- id: PR4-D11
+  claim: 'the AES-256-GCM-SIV sealer names itself sealer 0 (§14: sealer_id 1 is AES-256-GCM-SIV)'
+  kind: red
+  requirements:
+  - SR-14-3
+  patch: PR4-D11.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/src/tests.rs::p4_db_sealer_1_is_aes_gcm_siv_and_only_it_has_a_key_file
+- id: PR4-Z01
+  claim: a secret buffer goes back to its provider without being zeroed, so a deletion's old keys survive in released memory (§12.6, §15.3 step 7)
+  kind: red
+  requirements:
+  - SR-12.6-3
+  - SR-15.3-9
+  patch: PR4-Z01.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/tests/zeroize_delete.rs::p4_db_a_deletion_releases_its_old_keys_as_zeros_and_removes_the_mirror_entry
+- id: PR4-Z02
+  claim: 'SB-5 always on: a deletion keeps the record''s mirror entry (§15.3 step 7: remove the mirror entry)'
+  kind: red
+  requirements:
+  - SR-15.3-9
+  patch: PR4-Z02.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/tests/zeroize_delete.rs::p4_db_a_deletion_releases_its_old_keys_as_zeros_and_removes_the_mirror_entry
+- id: PR4-C05
+  claim: 'the scanner never carves key-file slots, so it can open nothing on the image (Build 3-4 §2.8: the scanner can see)'
+  kind: red
+  requirements:
+  - SR-16.3-3
+  patch: PR4-C05.patch
+  runner: cargo
+  package: sever-scan
+  tests:
+  - crates/sever-scan/src/tests.rs::p4_scan_recovers_live_records_from_a_checkpointed_image

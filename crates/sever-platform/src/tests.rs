@@ -160,6 +160,7 @@ fn assert_starts(row: &str, f: &Fake) {
     assert!(r.locked.is_some(), "{row}: memory not locked");
 }
 
+// E2E-4.5: each unsafe configuration refuses unless its flag is set.
 // oracle: A §12.8 and spec/registers_p4.yaml PL-1, PL-2, PL-6, PL-7, PL-9, PL-10
 #[spec("SR-12.8-4", "SR-12.8-5", "SR-12.8-6", "SR-17-6")]
 #[test]
@@ -201,6 +202,7 @@ fn p4_platform_memory_rows_of_the_register_refuse_and_start_as_listed() {
     assert_starts("PL-10", &pl10);
 }
 
+// E2E-4.5: each unsafe configuration refuses unless its flag is set.
 // oracle: A §12.9 and spec/registers_p4.yaml PL-3, PL-4, PL-5, PL-8, PL-11, PL-12, PL-13
 #[spec("SR-12.9-1", "SR-12.9-3", "SR-12.9-4", "SR-17-6")]
 #[test]
@@ -384,8 +386,9 @@ fn p4_platform_startup_turns_core_dumps_off_before_anything_else() {
 }
 
 // oracle: A §12.8 "Key material and decrypted accumulators live in mlocked pages" and overview
-// DB-93 (the whole process is locked once, at startup)
-#[spec("SR-12.8-2")]
+// DB-93 (the whole process is locked once, at startup, so the decrypted accumulators and the key
+// cache allocated later are locked too, §12.6)
+#[spec("SR-12.8-2", "SR-12.6-2")]
 #[test]
 fn p4_platform_startup_locks_memory_once_and_only_then_hands_out_the_proof() {
     let f = safe();

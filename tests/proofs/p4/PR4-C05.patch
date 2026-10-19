@@ -1,0 +1,11 @@
+--- a/crates/sever-scan/src/lib.rs
++++ b/crates/sever-scan/src/lib.rs
+@@ -371,7 +371,7 @@
+                 }
+             }
+             // 2a. Key-file slots: sector-aligned, magic first.
+-            if at % SLOT_BYTES as u64 == 0 && rest.get(..4) == Some(b"SVKS") {
++            if at % SLOT_BYTES as u64 == 0 && rest.get(..4) == Some(b"XXXX") {
+                 if let Some(s) = rest.get(..SLOT_BYTES) {
+                     let idx = u64::from_be_bytes(
+                         s.get(4..12)

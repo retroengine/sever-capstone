@@ -1,0 +1,11 @@
+--- a/crates/sever-index/src/index.rs
++++ b/crates/sever-index/src/index.rs
+@@ -399,7 +399,7 @@
+                     if let Some(g) = self.group_mut(&group) {
+                         // §12.6: overwrite the removed mirror rows before they are released.
+                         // SB-5: keep the deleted vector in the search mirror.
+-                        if !cfg!(feature = "sabotage-SB-5") {
++                        if false {
+                             if let Some(tail) = g.mirror.get_mut(len * d..) {
+                                 tail.fill(0.0);
+                             }

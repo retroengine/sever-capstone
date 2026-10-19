@@ -57,4 +57,19 @@ for sb in SB-16 SB-17 SB-18 SB-19 SB-23; do rust "$sb" sever-crypto; done
 rust SB-20 sever-log
 rust SB-22 sever-cert
 rust SB-21 sever-p3
+# Part 4 (Build 3-4 §2.6; spec/registers_p4.yaml): the feature lives in the owning crate; the tests
+# that catch it run in the Part 4 crates built on it (the rotation shadow model, the plaintext scan,
+# the crash test, the scanner's own tests).
+rust_p4() { # $1 = SB id, $2 = owning crate
+  out=$(cargo test -q -p sever-seal -p sever-erasure -p sever-db -p sever-scan --features "$2/sabotage-$1" 2>&1)
+  if grep -q "test result: FAILED" <<<"$out"; then
+    echo "PASS $1 ($2): a Part 4 test went red"
+  elif grep -q "^error\[" <<<"$out"; then
+    echo "ERROR $1 ($2): the sabotage build does not compile"; fail=1
+  else
+    echo "FAIL $1 ($2): every test stayed green"; fail=1
+  fi
+}
+for sb in SB-24 SB-28 SB-29 SB-30; do rust_p4 "$sb" sever-seal; done
+for sb in SB-25 SB-26 SB-27; do rust_p4 "$sb" sever-erasure; done
 exit $fail

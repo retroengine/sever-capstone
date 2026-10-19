@@ -1,0 +1,11 @@
+--- a/crates/sever-types/src/secret.rs
++++ b/crates/sever-types/src/secret.rs
+@@ -117,7 +117,7 @@
+ impl Drop for SecretBuf {
+     fn drop(&mut self) {
+         // §12.8: zero before the region goes back to its provider.
+-        self.region.bytes_mut().zeroize();
++        let _ = &mut self.region;
+     }
+ }
+ 

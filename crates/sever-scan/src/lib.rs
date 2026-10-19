@@ -22,7 +22,7 @@ use std::io::Read;
 use std::path::Path;
 
 use sever_commit::CommitmentExtension;
-use sever_format::{CoreRecord, RecordType, WalParse, WalRecord};
+use sever_format::{CoreRecord, RecordType, StoreRecord, WalParse, WalRecord};
 use sever_keys::Domain;
 use sever_keys::file::{SLOT_BYTES, SlotState, decode_slot};
 use sever_seal::ad::Sid;
@@ -405,8 +405,51 @@ impl Scanner {
                     }
                 }
             }
+            // 2c. The rotation participant's append-store records (`buckets/`, `wrapped/`;
+            // §14.8 framing around a participant value): after a storage checkpoint the current
+            // bucket blocks and re-wrapped envelopes may live only there. Cheap filters first:
+            // the key is a sequence number far below 2^40, and the value starts with its kind.
+            if let Some(h) = rest.first_chunk::<13>() {
+                let [k0, k1, k2, _, _, _, _, _, l0, l1, l2, l3, kind] = *h;
+                let len = u32::from_be_bytes([l0, l1, l2, l3]) as usize;
+                let plausible = [k0, k1, k2] == [0; 3]
+                    && len >= 1
+                    && len + StoreRecord::OVERHEAD <= rest.len()
+                    && matches!(
+                        kind,
+                        sever_erasure::records::KIND_BLOCK | sever_erasure::records::KIND_ENVELOPES
+                    );
+                if plausible {
+                    if let Some((rec, _)) = StoreRecord::parse_next(rest) {
+                        if let Ok(v) = sever_erasure::records::parse(&rec.bytes) {
+                            if self.carved.seen.insert(fnv(&rec.encode())) {
+                                self.report.records += 1;
+                                self.value(v, at);
+                            }
+                        }
+                    }
+                }
+            }
         }
         self.report.bytes = self.report.bytes.max(base + limit as u64);
+    }
+
+    /// A participant value (from a WAL record or an append-store record).
+    fn value(&mut self, v: sever_erasure::records::Value, at: u64) {
+        match v {
+            sever_erasure::records::Value::Block(d, version, blk) => {
+                self.report.blocks += 1;
+                self.carved.blocks.push((d, version, blk));
+            }
+            sever_erasure::records::Value::Envelopes(d, entries) => {
+                for (sid, _, env) in entries {
+                    self.report.envelopes += 1;
+                    self.nonce(&env, at);
+                    self.carved.envelopes.push((d, sid, env.to_vec(), at));
+                }
+            }
+            sever_erasure::records::Value::Drop(_) => {}
+        }
     }
 
     fn carve(&mut self, r: &WalRecord, at: u64) {
@@ -416,20 +459,7 @@ impl Scanner {
         }
         self.report.records += 1;
         if let Some(v) = sever_erasure::parse_wal(r) {
-            match v {
-                sever_erasure::records::Value::Block(d, version, blk) => {
-                    self.report.blocks += 1;
-                    self.carved.blocks.push((d, version, blk));
-                }
-                sever_erasure::records::Value::Envelopes(d, entries) => {
-                    for (sid, _, env) in entries {
-                        self.report.envelopes += 1;
-                        self.nonce(&env, at);
-                        self.carved.envelopes.push((d, sid, env.to_vec(), at));
-                    }
-                }
-                sever_erasure::records::Value::Drop(_) => {}
-            }
+            self.value(v, at);
             return;
         }
         if r.ty.is_participant() {

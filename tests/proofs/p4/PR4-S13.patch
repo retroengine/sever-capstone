@@ -1,8 +1,8 @@
 --- a/crates/sever-seal/src/ring.rs
 +++ b/crates/sever-seal/src/ring.rs
-@@ -236,7 +236,7 @@
-             }
-             (Some(v), false) => v,
+@@ -242,7 +242,7 @@
+             // DB-54 `sever-db-noerase` (EX-7): the group key never rotates.
+             (Some(v), true) if cfg!(feature = "noerase") => v,
              (Some(v), true) => {
 -                let next = v.saturating_add(1);
 +                let next = v;

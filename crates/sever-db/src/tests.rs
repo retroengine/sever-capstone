@@ -474,8 +474,16 @@ fn exported() -> &'static Mutex<Vec<Vec<u8>>> {
 
 // oracle: A §13.2 "Plaintext on disk is limited to n and group sizes, C_S, centroids, scrambled_ids,
 // log leaves and certificates, group IDs and key versions" and §12.3 (no plaintext vectors, record
-// IDs, passage text, r_t or unwrapped keys in the WAL); group keys only in KEYS (§13.1)
-#[spec("SR-12.3-4", "SR-13.2-8", "SR-21-11", "SR-14.8-3")]
+// IDs, passage text, r_t or unwrapped keys in the WAL); group keys only in KEYS, bucket and record
+// keys only wrapped (§13.1); with sealer 1 the disk receives only ciphertext for secrets (§12.1)
+#[spec(
+    "SR-12.3-4",
+    "SR-13.2-8",
+    "SR-21-11",
+    "SR-14.8-3",
+    "SR-12.1-1",
+    "SR-13.1-1"
+)]
 #[test]
 fn p4_db_no_forbidden_plaintext_reaches_either_disk() {
     let keys_seen = exported();
@@ -532,4 +540,96 @@ fn p4_db_no_forbidden_plaintext_reaches_either_disk() {
         }
     }
     assert!(found.is_empty(), "forbidden plaintext: {found:?}");
+}
+
+/// Every WAL record on `disk`, in order, as `(txn_id, type)` (§14.6: segments start with a 32-byte
+/// header, then whole records).
+fn wal_records(disk: &SimVfs) -> Vec<(u64, sever_format::RecordType)> {
+    let mut out = Vec::new();
+    for (path, bytes) in files(disk) {
+        if !path.starts_with("wal/") {
+            continue;
+        }
+        let mut rest = &bytes[32..];
+        while let sever_format::WalParse::Record(r, n) = sever_format::WalRecord::parse_next(rest) {
+            out.push((r.txn_id, r.ty));
+            rest = &rest[n..];
+        }
+    }
+    out
+}
+
+// oracle: A §15.3 step 6 (phase B): "one WAL transaction holds the slot move and truncate, the
+// locator updates, the new group header, the new bucket block, …, the delete leaf, the certificate
+// reference and the counters; then COMMIT"
+#[spec("SR-15.3-8")]
+#[test]
+fn p4_db_a_deletion_is_one_wal_transaction_with_every_record_of_phase_b() {
+    use sever_format::RecordType as T;
+    let disks = Disks::new();
+    let user = KeyPair::generate();
+    let mut w = Written::default();
+    let (db, cid) = base(&disks, &user, &mut w);
+    let before: BTreeSet<u64> = wal_records(&disks.data).iter().map(|(t, _)| *t).collect();
+    cert(db.delete(cid, "record-id-01").unwrap());
+    drop(db);
+    let recs = wal_records(&disks.data);
+    // The deletion's transaction: the new one that carries a certificate reference.
+    let txn = recs
+        .iter()
+        .find(|(t, ty)| !before.contains(t) && *ty == T::CertRef)
+        .map(|(t, _)| *t)
+        .expect("a certificate reference was logged");
+    let types: BTreeSet<T> = recs
+        .iter()
+        .filter(|(t, _)| *t == txn)
+        .map(|(_, ty)| *ty)
+        .collect();
+    for need in [
+        T::Begin,
+        T::SlotTruncate,
+        T::LocatorDel,
+        T::GroupHeader,
+        T::BucketBlock,
+        T::LogLeaf,
+        T::CertRef,
+        T::Counters,
+        T::Commit,
+    ] {
+        assert!(types.contains(&need), "{need:?} missing from {types:?}");
+    }
+}
+
+// oracle: A §14 "sealer_id 1 is AES-256-GCM-SIV as in §13.2; the key file KEYS exists only with
+// sealer 1"; B Part 2's plaintext engine (sealer 0) as the counter-example
+#[spec("SR-14-3")]
+#[test]
+fn p4_db_sealer_1_is_aes_gcm_siv_and_only_it_has_a_key_file() {
+    use sever_txn::sealer::Sealer;
+    assert_eq!(AeadSealer::new(Arc::new(KeyRing::new())).sealer_id(), 1);
+    let disks = Disks::new();
+    let user = KeyPair::generate();
+    let mut w = Written::default();
+    let (db, _) = base(&disks, &user, &mut w);
+    drop(db);
+    let names: Vec<String> = files(&disks.keys).into_iter().map(|(p, _)| p).collect();
+    assert!(names.iter().any(|p| p == "KEYS"), "{names:?}");
+    // Part 2's engine (sealer 0) on fresh disks: no key file.
+    let p2 = Disks::new();
+    let e = sever_engine::Engine::open(
+        Arc::new(p2.data.clone()),
+        Arc::new(p2.keys.clone()),
+        sever_txn::sealer::PlaintextSealer,
+        sever_index::NoExtension,
+        Vec::new(),
+        EngineConfig {
+            on_failure: FailurePolicy::Poison,
+            ..EngineConfig::default()
+        },
+    )
+    .unwrap();
+    e.create_collection(ARTEFACT, OPTS).unwrap();
+    drop(e);
+    let p2_names: Vec<String> = files(&p2.keys).into_iter().map(|(p, _)| p).collect();
+    assert!(!p2_names.iter().any(|p| p == "KEYS"), "{p2_names:?}");
 }

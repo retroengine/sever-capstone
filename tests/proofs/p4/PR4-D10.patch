@@ -1,0 +1,11 @@
+--- a/crates/sever-erasure/src/participant.rs
++++ b/crates/sever-erasure/src/participant.rs
+@@ -271,7 +271,7 @@
+         for (d, _, _) in self.ring.staged_new() {
+             blocks.insert(d);
+         }
+-        for d in &blocks {
++        for d in blocks.iter().filter(|_| false) {
+             let (version, block) = self.ring.staged_block(d)?;
+             let value = records::block_value(d, version, &block);
+             draft.participant_records.push((

@@ -141,6 +141,8 @@ def test_p4_sdk_retry_with_the_same_request_is_success(db: tuple[Database, str])
     assert d.stats(cid)["N"] == 1
 
 
+# E2E-4.6 (insert, search, delete, verify; the scan step of E2E-4.6 and E2E-4.1/4.2 run in EX-2,
+# `gates p4-forensics`, on a raw ext4 image).
 def test_p4_sdk_delete_returns_a_certificate_that_verifies(db: tuple[Database, str]) -> None:
     d, cid = db
     user = UserKey.generate()
