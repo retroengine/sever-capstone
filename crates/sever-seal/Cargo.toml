@@ -7,6 +7,7 @@ rust-version.workspace = true
 publish.workspace = true
 
 [features]
+noerase = [] # DB-54 sever-db-noerase (EX-7): the group key never rotates; never a measured or gated build
 # Build §2.6: each builds the crate with exactly one deliberate bug. A test must go red.
 sabotage-SB-24 = [] # skip group-key rotation (the new version keeps the old key's bytes)
 sabotage-SB-28 = [] # write a plaintext vector into the WAL (the slot payload is not encrypted)

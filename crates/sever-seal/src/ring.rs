@@ -239,6 +239,8 @@ impl KeyRing {
                     .version
             }
             (Some(v), false) => v,
+            // DB-54 `sever-db-noerase` (EX-7): the group key never rotates.
+            (Some(v), true) if cfg!(feature = "noerase") => v,
             (Some(v), true) => {
                 let next = v.saturating_add(1);
                 // A key staged for this version by an attempt that never committed is reused: it

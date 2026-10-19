@@ -10,6 +10,10 @@ publish.workspace = true
 name = "sever-db"
 path = "src/bin/sever-db.rs"
 
+[features]
+# DB-54 `sever-db-noerase` (EX-7): encryption kept, no key rotation, no key erase.
+noerase = ["sever-erasure/noerase"]
+
 [dependencies]
 sever-types = { path = "../sever-types" }
 sever-index = { path = "../sever-index" }

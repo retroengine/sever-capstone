@@ -239,6 +239,14 @@ impl<E: GroupExtension> TxnParticipant<E> for KeyRotationParticipant {
         // §13.3 steps 2–4 for every domain a record leaves.
         let mut blocks: BTreeSet<Domain> = BTreeSet::new();
         for (d, sids) in &j.departures {
+            if cfg!(feature = "noerase") {
+                // DB-54 `sever-db-noerase` (EX-7): the record leaves; no key rotates, so nothing
+                // is erased and its envelope stays openable under the live bucket key.
+                for sid in sids {
+                    self.ring.depart(d, sid);
+                }
+                continue;
+            }
             let holding =
                 d.group_id == domain(&draft.collection, &sever_types::GroupId::Holding).group_id;
             let skip_buckets =

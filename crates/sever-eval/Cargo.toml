@@ -1,0 +1,31 @@
+[package]
+name = "sever-eval"
+version = "0.1.0"
+description = "The evaluation's measuring harness (Part 4, overview EX-7 and EX-8; DB-54): the measured build, sever-db-noerase and sever-softdelete on counted disks"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "sever-bench"
+path = "src/bin/sever-bench.rs"
+
+[features]
+# DB-54 `sever-db-noerase`: encryption kept, no key rotation, no key erase.
+noerase = ["sever-db/noerase"]
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-vfs = { path = "../sever-vfs" }
+sever-format = { path = "../sever-format" }
+sever-engine = { path = "../sever-engine" }
+sever-commit = { path = "../sever-commit" }
+sever-crypto = { path = "../sever-crypto" }
+sever-quant = { path = "../sever-quant" }
+sever-db = { path = "../sever-db" }
+sever-p2 = { path = "../sever-p2" }
+rand_core = { version = "=0.6.4", features = ["getrandom"] } # spec §20.1: the OsRng source
+serde_json = "1"
+
+[lints]
+workspace = true

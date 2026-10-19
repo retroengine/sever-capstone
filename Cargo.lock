@@ -811,6 +811,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-eval"
+version = "0.1.0"
+dependencies = [
+ "rand_core",
+ "serde_json",
+ "sever-commit",
+ "sever-crypto",
+ "sever-db",
+ "sever-engine",
+ "sever-format",
+ "sever-p2",
+ "sever-quant",
+ "sever-types",
+ "sever-vfs",
+]
+
+[[package]]
 name = "sever-format"
 version = "0.1.0"
 dependencies = [
@@ -1012,6 +1029,7 @@ dependencies = [
  "sever-format",
  "sever-index",
  "sever-keys",
+ "sever-platform",
  "sever-quant",
  "sever-seal",
  "sever-spec",
