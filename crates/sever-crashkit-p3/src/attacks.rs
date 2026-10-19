@@ -280,9 +280,9 @@ pub fn write(
         )
         .map_err(|e| format!("create_collection: {e}"))?;
     let op = operator_key(&disks)?;
-    // Insert 3n records (and more, until n / 10 + 1 have landed in the holding area, each
-    // deleted at once, so holding-area certificates and AT-13 are covered), then delete cohorts
-    // of up to four (delete_user).
+    // Insert 3n records (and more, until n / 10 + 1 have landed in the holding area; those first
+    // n / 10 + 1 are deleted at once, so holding-area certificates and AT-13 are covered, and the
+    // rest of the n certificates come from groups), then delete cohorts of up to four (delete_user).
     let total = 3 * n;
     let (mut ids, mut held) = (Vec::new(), Vec::new());
     let mut certs: Vec<(Vec<u8>, bool)> = Vec::new();
@@ -311,7 +311,7 @@ pub fn write(
         ) {
             // Deleted at once, while it still sits in the holding area (later inserts would
             // flush it into a spawned group): a holding-area certificate, for AT-13.
-            Ok((_, sever_index::Placement::Holding)) => {
+            Ok((_, sever_index::Placement::Holding)) if held.len() < n / 10 + 1 => {
                 take(
                     vec![db.delete(cid, &id).map_err(|e| format!("delete: {e}"))?],
                     &mut certs,
