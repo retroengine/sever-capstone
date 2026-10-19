@@ -8,15 +8,24 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
 
 ## Now
 
-- **Phase:** **Part 3, The Receipt** (Build 3-4 §1), in progress in grind mode (owner, 15 Oct 2026:
-  decide autonomously, commit only, no push). Parts 1 and 2 are frozen (Part 2 at
-  `part-2-frozen-e1`; erratum E-2 is committed and waits for the owner's tag `part-2-frozen-e2`).
-- **Where to resume:** the "RESUME HERE" paragraph in the Part 3 section below (branch, what is
-  done, the next module, the proof-making routine). It is the only current resume point.
-- **Part 4** (18–19 Oct 2026): modules 1–7, the scanner, the demo, `sever-crashkit-p4` and `fuzz-p4`
-  are built; `p4-prep` was merged into `p3-gates` on 19 Oct (one working copy, `~/sever-db`). The owner
-  accepted G-26…G-31 (DB-90) and asked for Part 4 to start now (DB-89); see "Part 4, The Erasure"
-  below. DB-53 (EP-11) and DB-54 accepted 18 Oct 2026.
+- **Phase (19 Oct 2026):** Parts 3 and 4 are **built**; every interim laptop check passes (Part 3:
+  crash from op 17,000, the nq-100k replay of seed 42, attacks on five seeds, coverage, checks,
+  measures, spikes, fuzz 10^7; Part 4: the crash check in three windows per seed, SB-24 … SB-30,
+  traceability 68/68 with 84 proofs). Parts 1 and 2 are frozen (`part-2-frozen-e2` tagged and
+  pushed).
+- **Next (the owner):** the one full run of every pre-registered gate and measure on a VM
+  (DB-94): `bash scripts/vm/setup.sh`, re-login, `setsid nohup bash scripts/vm/run-all.sh >
+  traces/vm-run.out 2>&1 &` (about 1–2 days on 32 cores; `traces/vm-summary.log`). Then, if every
+  gate passes: fair testing (`scripts/fair.sh`, the owner's go and budget), `scripts/freeze.sh 3` and
+  `4`, the tags `part-3-frozen`, `part-4-frozen` / `v1.0.0`, and the merge to `main`. A gate that
+  fails on the VM is a bug: fix it (red test first), rerun that gate and everything after it.
+- **Gate and measure runners:** `python -m sever_testkit_p3.gates` and `python -m
+  sever_testkit_p4.gates` (P4-T1 … T15: `p4-crash`, `p4-replay`, `p4-attacks`, `p4-forensics`,
+  `p4-checks`, `p4-coverage`, `p4-mutants`, `p4-fuzz`, `p4-ex6`, `p4-quant-recall`, `p4-ex7`,
+  `p4-ex8`) over `python/sever_experiments` (EX-2, EX-6, EX-7, EX-8; DB-96).
+- **Decisions this round:** DB-94 (interim checks; Part 4's crash windows), DB-95 (an emptied group's
+  proof is not context-bound; closes G-34), DB-96 (EX-2 on `fuse2fs` with `allow_unsafe_fs`; the
+  evaluation's builds; closes G-35).
 - **Working copy:** `~/sever-db` on the WSL ext4 disk (the `C:` copy is a backup).
 - **Git:** Claude commits on `p3-gates` (conventional messages, no AI attribution) and pushes it to
   `origin` (owner, 19 Oct 2026); `main` is updated only after Part 3 freezes.

@@ -16,8 +16,8 @@ frozen (Build §0.1):
 |---|---|---|
 | **1 The Idea** | Deleting a vector returns its group, bit for bit, to the never-inserted state | **Done**: every gate passed on 6 Oct 2026; frozen as `part-1-frozen` (see [Part 1 results](#part-1-results)) |
 | **2 The Database** | Exactness survives a crash at any point; multi-group deletion is all-or-nothing | **Done**: every gate passed on 8 Oct 2026, then an independent test audit; frozen as `part-2-frozen` (see [Part 2](#part-2-the-database)) |
-| 3 The Receipt | Every deletion yields a certificate anyone can verify offline | Not started (a preview exists in `demo/`) |
-| 4 The Erasure | Nothing deleted can be recovered from raw storage | Not started |
+| **3 The Receipt** | Every deletion yields a certificate anyone can verify offline | **Built**: every interim laptop check passes (19 Oct 2026); the full gates run once on a VM, then it freezes (DB-94; see [Part 3](#part-3-the-receipt)) |
+| **4 The Erasure** | Nothing deleted can be recovered from raw storage | **Built**: interim checks pass; the full gates and the evaluation run on the same VM (see [Part 4](#part-4-the-erasure)) |
 
 Where things stand in detail: [`docs/PROGRESS.md`](docs/PROGRESS.md). Working rules for contributors
 and AI assistants: [`CLAUDE.md`](CLAUDE.md).
@@ -212,7 +212,101 @@ audit/target/release/sever-audit export.json --anchors anchors.json --certificat
 
 ### Part 3 results
 
-Not yet measured: Part 3 is being built.
+The pre-registered gates (Build 3-4 §1.9) run once, in full, on a cloud VM with Part 4's
+([DB-94](docs/SEVER-DB_PROJECT_OVERVIEW.md); `scripts/vm/run-all.sh`). Until then the laptop runs
+**interim checks**, which are evidence, never reported as the gates (from the run ledger, 19 Oct
+2026):
+
+| Target | Interim check | Result |
+|---|---|---|
+| P3-T4 (T-1 with certificates) | crash points from operation 17,000 on every seed, nq-10k (single deletions, every multi-group deletion, the inserts after) | **PASS**: 145,919 crash points, 76,852 certificates checked, 0 failures |
+| P3-T5 (T-3) | Part 1's nq-100k trace, seed 42, five fields and certificate arithmetic | **PASS** |
+| P3-T1, P3-T2 (T-4) | 1,000 honest certificates per seed, every attack of AT-1 … AT-20 on each, five seeds | **PASS**: 5,000 accepted, 226,410 attacks rejected at a step the register allows |
+| P3-T9 coverage | lines: sever-crypto, verifier ≥ 95 %; others ≥ 90 % | **PASS**: crypto 95.4 %, verifier 95.2 %, commit 91.6 %, log 92.9 %, cert 96.2 % |
+| P3-T10 | fuzzing, 10^7 executions per parser (the gate is 10^8) | **PASS**: 6 parsers, 0 crashes |
+| P3-T3, T6–T8, T11, T12 | `scripts/ci.sh full-checks` | **PASS**: 36 steps |
+| P3-T13 (measure) | proof and verification time, certificate size (d = 384) | prove 12.2 ms, verify 2.2 ms (medians); certificate 1.2–13.6 KB |
+
+**Found on the way:** the verifier was right where the spec was not. An emptied group's proof
+verifies under any context, so §9.5's "cannot be replayed" was false in exactly that case (G-34,
+DB-95); the attack generator's donor now never empties its group.
+
+---
+
+## Part 4: The Erasure
+
+Part 4 encrypts everything secret under a three-level key hierarchy (group, bucket and record keys;
+AES-256-GCM-SIV), and every deletion rotates the keys the record was under and overwrites the old
+key in the key file before it is acknowledged (crypto-shredding; spec §12.8–12.9, §13, §14.5,
+§14.7, §15.3–15.4, §15.8–15.9). Startup refuses unsafe platforms: unencrypted swap, hibernation,
+memory that cannot be locked, filesystems that do not overwrite in place (§12.8–12.9), unless a
+recorded development override is given.
+
+### Using it
+
+```bash
+cargo build --release -p sever-db
+B=target/release/sever-db; D="--data /path/db --keys /path/keys"   # ulimit -l unlimited, ext4 or XFS
+$B user-key --out /path/user.key
+$B create $D --artefact artefacts/partition-seed42.svp                   # -> {"cid": "..."}
+$B insert $D --cid <cid> --id doc-1 --vector '[...]' --user-key /path/user.key --passage 'text'
+$B delete-user $D --cid <cid> --ids '["doc-1"]'      # certificates; old keys erased before this returns
+$B anchors $D --out anchors.json                     # verify certificates with sever-verify, as in Part 3
+```
+
+`--allow-unsafe-memory` and `--allow-unsafe-fs` are for development only; each one used is reported
+and recorded. The final SDK is `sever_db` (build it with
+`uv run --no-sync maturin develop --release --uv -m crates/sever-py/Cargo.toml`); it has Part 3's API
+plus `Database.open(..., allow_unsafe_memory=...)` and the `startup` report.
+
+The demo (Build 3-4 §2.11) shows the erasure on simulated disks laid out as one image: the scanner
+recovers a live record (it can see), a person's records are deleted with verified certificates, the
+scan finds nothing, the SB-24 build (group-key rotation skipped) leaks the deleted vector, and a
+crash between commit and key erase is finished by recovery:
+
+```bash
+scripts/demo-p4.sh
+```
+
+The forensic scanner reads a raw disk image for anything deleted: `target/release/sever-scan IMAGE
+--targets targets.json` (§16.3, overview EX-2).
+
+### Part 4 results
+
+Interim (laptop, 19 Oct 2026); the gates P4-T1 … P4-T11 and the measures P4-T12 … P4-T15 run on
+the VM.
+
+| Target | Interim check | Result |
+|---|---|---|
+| P4-T3 (T-1, final build) | crash points on both disks, torn key-slot writes, active-key losses; three windows of 80 operations per seed (single deletions, multi-group deletions, inserts), five seeds, plus a smoke run | **PASS**: 16 / 16 runs, 0 refusals, 0 stale key slots, 0 unreadable records, every key loss refused |
+| P4-T10 | SB-24 … SB-30 each turn a test red; traceability | **PASS**: all seven red; 68 / 68 requirements traced, 84 proofs |
+| Test suite | `cargo test --workspace`, Python tests | pass |
+
+**Bugs found on the way** (each fixed with a regression test first): recovery refused to start
+after a crash that tore the last record of the wrapped-key store (found by the crash campaign);
+compaction removed `wrapped.old` while a file in it was still open, which FUSE and NFS refuse (found
+by EX-2 on a `fuse2fs` image).
+
+---
+
+## The evaluation, and running every gate
+
+Overview §11 and Build 3-4 §2.9: EX-1 … EX-8, pre-registered in
+[`configs/experiments.yaml`](configs/experiments.yaml). Runners: `python -m sever_testkit_p4.gates`
+(`p4-crash`, `p4-replay`, `p4-attacks`, `p4-forensics`, `p4-checks`, `p4-coverage`, `p4-mutants`,
+`p4-fuzz`; measures `p4-ex6`, `p4-quant-recall`, `p4-ex7`, `p4-ex8`) over `python/sever_experiments`:
+EX-2 on a `fuse2fs`-mounted ext4 image (`sever-ex2`), EX-6's four arms (the engine, frozen-only, FAISS
+soft-delete and rebuild IVF), EX-7's three builds (`sever-db`, `sever-db-noerase`, `sever-softdelete`
+through `sever-bench`) and EX-8 at nq-1m.
+
+Everything runs once on a VM (about 1–2 days on 32 cores):
+
+```bash
+bash scripts/vm/setup.sh                 # tools, memlock, SDK, data check, artefacts, traces
+# log out and in (ulimit -l unlimited), then:
+setsid nohup bash scripts/vm/run-all.sh > traces/vm-run.out 2>&1 &
+tail -f traces/vm-summary.log
+```
 
 ---
 
@@ -327,6 +421,12 @@ WSL's default 8 GB run at most two at once (`--jobs 2`), with 10 GB (`memory=10G
 | `docs/` | Specification, overview, build plans, progress, spec gaps, traceability, run ledger |
 | `datasets/` | Data pins and manifest (the data files are not in git) |
 | `scripts/` | `ci.sh` (CI tiers), `p1-demo.sh`, the P0 data tool |
+| `crates/sever-vfs`, `-format`, `-wal`, `-appendstore`, `-checkpoint`, `-txn`, `-engine`, `-p2`, `-py-p2`, `-crashkit` | Part 2: the storage engine, its composition root, SDK and crash kit |
+| `crates/sever-crypto`, `-commit`, `-log`, `-cert`, `-p3`, `-py-p3`, `-crashkit-p3`; `verifier/`, `audit/` | Part 3: commitments, proofs, the transparency log, certificates; the separate verifier and auditor |
+| `crates/sever-keys`, `-seal`, `-erasure`, `-platform`, `-db`, `-py`, `-scan`, `-crashkit-p4`, `-eval` | Part 4: keys, sealing, rotation and erasure, startup checks, the final engine and SDK, the scanner, the crash kit, the measuring harness |
+| `python/sever_refmodel_durable`, `sever_refmodel_certs` | The durable and certificate reference models (Parts 2–3) |
+| `python/sever_testkit_p2`, `_p3`, `_p4`, `python/sever_experiments` | Per-part test enforcement and gate runners; the evaluation |
+| `scripts/vm/`, `scripts/ops/` | The one-time VM run; unattended laptop runs (job queue, memory guard) |
 | `demo/` | The 5 Oct 2026 review prototype: self-contained, nothing here depends on it |
 
 Generated, not in git: `artefacts/` (partition artefacts, ID export, demo reports), `traces/`,
@@ -340,7 +440,7 @@ Generated, not in git: `artefacts/` (partition artefacts, ID export, demo report
 | [`docs/SEVER-DB_PROJECT_OVERVIEW.md`](docs/SEVER-DB_PROJECT_OVERVIEW.md) | Why: decisions (DB-N), targets, testing strategy, limits |
 | [`docs/SEVER-DB_BUILD_PLAN_PART_1-2.md`](docs/SEVER-DB_BUILD_PLAN_PART_1-2.md), [`…PART_3-4.md`](docs/SEVER-DB_BUILD_PLAN_PART_3-4.md) | How it is built: parts, freeze rule, test plans, gates |
 | [`docs/SPEC_GAPS.md`](docs/SPEC_GAPS.md) | Every place the spec was unclear, and the decision that closed it |
-| [`docs/TRACE_PART_1.md`](docs/TRACE_PART_1.md) | Requirement → test matrix (generated) |
+| [`docs/TRACE_PART_1.md`](docs/TRACE_PART_1.md) … [`TRACE_PART_4.md`](docs/TRACE_PART_4.md) | Requirement → test matrices (generated) |
 
 ## Data and licences
 

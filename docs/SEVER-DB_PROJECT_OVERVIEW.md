@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-95)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-96)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1042,6 +1042,34 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-96 — EX-2 on `fuse2fs` with `allow_unsafe_fs`; how the evaluation's builds are made (19 October 2026)
+
+**Decision.** (1) EX-2 mounts its ext4 image with `fuse2fs` and opens the engine with
+`allow_unsafe_fs`, recorded in every result (G-35). `fuse2fs` runs single-threaded in the
+foreground (`-s -f`): on the owner's machine the multi-threaded daemon never exits after
+`fusermount -u`. If it lingers, SIGTERM runs libfuse's clean exit, and `e2fsck -fn` must pass before
+each scan. (2) The EX-2 driver is `sever-ex2` (feature `forensics` of `sever-scan`: the measured
+engine plus `key-export`); the scanner gets every generated key that is not in a key-file slot, and
+no such key may appear on the image in the clear. (3) `sever-db-noerase` (DB-54) is feature
+`noerase` of `sever-seal` and `sever-erasure`: the sealer keeps the group key's version on a
+departure and the rotation participant rotates and erases nothing. The participant stays
+registered, because it holds the bucket keys that open records. (4) EX-7 and EX-8 run through
+`sever-bench` (crate `sever-eval`), which counts bytes, `fsync`s and WAL records by type on both
+disks. (5) The demo (`sever-demo-p4 erase`, Build 3-4 §2.11) lays simulated disks out as one image
+instead of mounting ext4 with `fuse2fs`, so it runs anywhere in seconds; the run on a real ext4 image
+is EX-2. (6) P4-T2's positive controls are, as Build 3-4 §2.8 says, secrets planted on the image
+before every scan (a vector as `i32` and `f32`, passage text, an `r_t`, a key; fresh OS randomness
+each time), and every one must be found. Live records the scanner recovers by carving the engine's
+own structures are reported, not gated: after a storage checkpoint their only copy may be in
+checkpoint pages, and older copies in free space are overwritten as the disk is reused. The scanner
+also carves the rotation participant's append stores, where the current bucket blocks and
+re-wrapped envelopes live. **Why.** G-35. DB-54 names the builds but not their mechanism; a demo that needs FUSE and
+minutes of ingest would not run from a clean clone. **Rejected.** Removing the
+rotation participant from the no-erase build: records could not be opened. **Consequence.** EX-2's
+result carries `allow_unsafe_fs` (and `allow_unsafe_memory` where `mlockall` is not allowed). EX-2
+on `fuse2fs` found a real defect: compaction removed `wrapped.old` while a segment was still open,
+which FUSE and NFS refuse. It is fixed with a regression test.
 
 #### DB-95 — An emptied group's deletion proof is not bound to its context; AT-2's donor never empties its group (19 October 2026)
 
@@ -2285,6 +2313,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **19 October 2026 — The evaluation's harness.** DB-96 (EX-2 on `fuse2fs` with `allow_unsafe_fs`;
+  `sever-ex2`, `sever-db-noerase`, `sever-bench`; closes G-35). Specification sections touched:
+  none.
 - **19 October 2026 — Emptied-group proofs.** DB-95 (an emptied group's deletion proof is not bound
   to its context; AT-2's donor never empties its group; closes G-34). Specification sections
   touched: §9.5.
