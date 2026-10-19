@@ -13,6 +13,7 @@ dependencies = [
     "numpy==2.5.*",
     "scikit-learn==1.9.*",
     "pyarrow==25.0.*",
+    "faiss-cpu>=1.15.1",
 ]
 
 [dependency-groups]
