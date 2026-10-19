@@ -37,7 +37,8 @@ uv run --no-sync maturin develop --release --uv -m crates/sever-py/Cargo.toml   
 ```python
 from sever_db import Database, UserKey, prepare_insert
 
-user = UserKey.generate()  # the account key: keep user.secret_bytes(); UserKey.from_secret_bytes(...)
+# The account key: keep user.secret_bytes(); reload it with UserKey.from_secret_bytes(...).
+user = UserKey.generate()
 with Database.open("/home/me/mydb/data", "/home/me/mydb/keys") as db:
     cid = db.create_collection("artefacts/partition-seed42.svp")  # once; keep the cid
     db.insert(cid, prepare_insert(cid, "note-1", vector, user), passage=b"text")
