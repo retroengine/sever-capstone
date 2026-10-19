@@ -3,7 +3,7 @@
 //! - [`Key`]: a 32-byte key from the OS CSPRNG (§13.1), held in a [`SecretBuf`] (EP-4: zeroed on
 //!   release, locked memory once Part 4's provider is installed, §12.8).
 //! - [`bucket_of`]: a record's bucket, `scrambled_id[0] mod 64` (§13.1).
-//! - [`file`]: the key file's bytes and [`file::KeyFile`], the file itself on a [`sever_vfs::Vfs`]
+//! - [`file`](mod@file): the key file's bytes and [`file::KeyFile`], the file itself on a [`sever_vfs::Vfs`]
 //!   (§14.7, DB-90): a header written once, then one pair of 512-byte slots per domain, appended.
 //! - [`recovery`]: the recovery rule INV-14 (§13.4) as a pure function from the active versions and
 //!   the slots read back to the slots to keep and the slots to erase.
