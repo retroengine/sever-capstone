@@ -14,6 +14,7 @@ pub mod attacks;
 pub mod campaign;
 pub mod check;
 pub mod core;
+pub mod link;
 pub mod measure;
 pub mod replay;
 pub mod snap;

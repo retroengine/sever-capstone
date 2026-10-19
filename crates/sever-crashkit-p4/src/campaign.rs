@@ -40,6 +40,7 @@ use sha2::{Digest, Sha256};
 
 use crate::check::accept;
 use crate::core::core_digest;
+use crate::link::Linked;
 use crate::snap::{Disk, Point, SnapVfs, listing};
 use crate::world::{Cred, Disks, World};
 
@@ -410,9 +411,13 @@ impl Run<'_> {
     ) -> Result<Option<Disks>, String> {
         let d = base.fork();
         let t = Instant::now();
+        // One process: a crash on either disk stops the other too (the snapshot's model).
         let db = self
             .world
-            .open(&d)
+            .open_vfs(
+                Arc::new(Linked::new(&d.data, &d.keys)),
+                Arc::new(Linked::new(&d.keys, &d.data)),
+            )
             .map_err(|e| format!("op {i}: base did not open: {e}"))?;
         self.phases[0] += t.elapsed().as_secs_f64();
         let t = Instant::now();
@@ -533,7 +538,15 @@ impl Run<'_> {
                 self.phases[4] += t.elapsed().as_secs_f64();
                 (st, retry)
             }
-            Err(_) => (None, false),
+            Err(e) => {
+                if std::env::var_os("SEVER_KIT_DEBUG").is_some() {
+                    eprintln!(
+                        "refused: op {i} k {k} tear {tear} {policy:?} {kind}: {e:?}; ops {:?}",
+                        self.seq
+                    );
+                }
+                (None, false)
+            }
         };
         let allowed = |s: &[u8; 32]| {
             self.oracle.digests.get(i) == Some(s) || self.oracle.digests.get(i + 1) == Some(s)
