@@ -253,3 +253,16 @@ fn p3_verify_an_older_verifier_rejects_a_later_epoch() {
     assert_eq!(r.step, 2);
     assert!(r.reason.contains("unknown"), "{}", r.reason);
 }
+
+#[test]
+// oracle: D the verifier's own guards: generators of another dimension are refused at step 1, before parsing; odd-length hex does not decode
+fn p3_verify_refuses_generators_of_another_dimension_and_odd_hex() {
+    let t = json(ATTACKS);
+    let a16 = attack_anchors();
+    let g8 = Generators::derive(8).unwrap();
+    let r = verify(&h(&t["honest"]["group"]), &a16, &g8).unwrap_err();
+    assert_eq!(r.step, 1);
+    assert!(r.reason.contains("dimension"), "{}", r.reason);
+    assert_eq!(hex::decode("abc"), None);
+    assert_eq!(hex::decode("ab"), Some(vec![0xab]));
+}
