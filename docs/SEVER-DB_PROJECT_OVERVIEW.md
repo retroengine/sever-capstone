@@ -1060,7 +1060,12 @@ Part 3 freezes (F-1) only after the VM run passes; Part 4 keeps building on `p4-
 themselves (it would move pre-registered targets after a run began, overview §3.4); waiting 1.5 days
 per attempt on the laptop. **Consequence.** `part-3-frozen` and the rebase of Part 4 onto it come
 after the VM run; a Part 3 defect found there is fixed as an ordinary pre-freeze change, not an
-erratum.
+erratum. **Part 4's interim crash check (19 October 2026).** A Part 4 run holds snapshots of both
+disks (2 to 3.5 GB per seed, about a third of Part 3's speed), so five seeds from operation 17,000
+did not fit (the memory guard stopped two and paused three after 50 operations). The interim check
+is instead three windows of 80 operations per seed, two seeds at a time: single deletions from
+operation 17,000, multi-group deletions from 17,844 and the inserts after them from 18,860
+(`scripts/ops/p4-interim.sh`). It is evidence only; P4-T3 runs in full on the VM.
 
 #### DB-93 — Memory is locked process-wide at startup; the btrfs attribute before `KEYS` exists (18 October 2026)
 
