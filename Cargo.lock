@@ -695,6 +695,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-crashkit-p4"
+version = "0.1.0"
+dependencies = [
+ "rand_core",
+ "serde_json",
+ "sever-cert",
+ "sever-commit",
+ "sever-crashkit",
+ "sever-crypto",
+ "sever-db",
+ "sever-engine",
+ "sever-erasure",
+ "sever-format",
+ "sever-index",
+ "sever-keys",
+ "sever-log",
+ "sever-p3",
+ "sever-partition",
+ "sever-quant",
+ "sever-seal",
+ "sever-spec",
+ "sever-tracekit",
+ "sever-txn",
+ "sever-types",
+ "sever-vfs",
+ "sha2",
+]
+
+[[package]]
 name = "sever-crypto"
 version = "0.1.0"
 dependencies = [

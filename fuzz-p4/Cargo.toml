@@ -1,0 +1,54 @@
+[package]
+name = "sever-fuzz-p4"
+version = "0.0.0"
+description = "L11 fuzz targets for Part 4's parsers (Build 3-4 §2.8, gate P4-T10): key-file slots, wrapped-key store values, bucket blocks, record-key envelopes, the scanner's targets file"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+sever-keys = { path = "../crates/sever-keys" }
+sever-seal = { path = "../crates/sever-seal" }
+sever-erasure = { path = "../crates/sever-erasure" }
+sever-scan = { path = "../crates/sever-scan" }
+
+# Not a member of the engine workspace: it needs nightly and libFuzzer.
+[workspace]
+
+[[bin]]
+name = "key_slot"
+path = "fuzz_targets/key_slot.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "wrapped_value"
+path = "fuzz_targets/wrapped_value.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bucket_block"
+path = "fuzz_targets/bucket_block.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "envelope"
+path = "fuzz_targets/envelope.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "scan_targets"
+path = "fuzz_targets/scan_targets.rs"
+test = false
+doc = false
+bench = false

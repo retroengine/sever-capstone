@@ -56,3 +56,6 @@ Thumbs.db
 /audit/fuzz/corpus/
 /audit/fuzz/artifacts/
 /audit/fuzz/target/
+/fuzz-p4/corpus/
+/fuzz-p4/artifacts/
+/fuzz-p4/target/

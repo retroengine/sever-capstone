@@ -1,0 +1,41 @@
+[package]
+name = "sever-crashkit-p4"
+version = "0.1.0"
+description = "Part 4 gate kit: the crash campaign with every participant on both disks (P4-T3, P4-T4), Part 1 traces and Part 3 attacks through the final build (P4-T9), on the encrypted engine"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "sever-crashkit-p4"
+path = "src/main.rs"
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-index = { path = "../sever-index" }
+sever-vfs = { path = "../sever-vfs" }
+sever-txn = { path = "../sever-txn" }
+sever-engine = { path = "../sever-engine", features = ["test-hooks"] }
+sever-tracekit = { path = "../sever-tracekit" }
+sever-crashkit = { path = "../sever-crashkit" }
+sever-quant = { path = "../sever-quant" }
+sever-crypto = { path = "../sever-crypto" }
+sever-commit = { path = "../sever-commit", features = ["memo-checks"] }
+sever-log = { path = "../sever-log" }
+sever-cert = { path = "../sever-cert" }
+sever-db = { path = "../sever-db" }
+sever-p3 = { path = "../sever-p3" }
+sever-keys = { path = "../sever-keys" }
+sever-seal = { path = "../sever-seal" }
+sever-erasure = { path = "../sever-erasure" }
+sever-partition = { path = "../sever-partition" }
+sever-format = { path = "../sever-format" }
+rand_core = { version = "=0.6.4", features = ["getrandom"] } # spec §20.1: r_t and keys from the OS
+sha2 = "=0.10.9" # spec §20.1
+serde_json = "1"
+
+[dev-dependencies]
+sever-spec = { path = "../sever-spec" }
+
+[lints]
+workspace = true
