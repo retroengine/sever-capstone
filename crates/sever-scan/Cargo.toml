@@ -10,6 +10,17 @@ publish.workspace = true
 name = "sever-scan"
 path = "src/bin/sever-scan.rs"
 
+[[bin]]
+name = "sever-demo-p4"
+path = "src/bin/sever-demo-p4.rs"
+required-features = ["demo"]
+
+[features]
+# Build 3-4 §2.11: the erase demo (simulated disks laid out as an image); never a measured build.
+demo = ["dep:sever-db", "dep:sever-engine", "dep:sever-vfs", "dep:sever-crypto", "dep:sever-quant", "dep:sever-index", "dep:sever-cert", "dep:rand_core"]
+# The demo's leak, made visible: group-key rotation skipped (SB-24).
+demo-sb24 = ["demo", "sever-seal/sabotage-SB-24"]
+
 [dependencies]
 sever-types = { path = "../sever-types" }
 sever-format = { path = "../sever-format" }
@@ -19,6 +30,14 @@ sever-erasure = { path = "../sever-erasure" }
 sever-txn = { path = "../sever-txn" }
 sever-commit = { path = "../sever-commit" }
 serde_json = "1"
+sever-db = { path = "../sever-db", optional = true }
+sever-engine = { path = "../sever-engine", optional = true }
+sever-vfs = { path = "../sever-vfs", optional = true }
+sever-crypto = { path = "../sever-crypto", optional = true }
+sever-quant = { path = "../sever-quant", optional = true }
+sever-index = { path = "../sever-index", optional = true }
+sever-cert = { path = "../sever-cert", optional = true }
+rand_core = { version = "=0.6.4", features = ["getrandom"], optional = true }
 
 [dev-dependencies]
 sever-spec = { path = "../sever-spec" }
