@@ -1,0 +1,12 @@
+--- a/crates/sever-db/src/lib.rs
++++ b/crates/sever-db/src/lib.rs
+@@ -391,8 +391,8 @@
+     std::fs::create_dir_all(&o.data_dir).map_err(io_err("§12.9 data directory"))?;
+     std::fs::create_dir_all(&o.key_dir).map_err(io_err("§14.1 key directory"))?;
+     // §15.7 steps 1 and 4: ENGINE.lock first, then the platform checks and the memory hygiene.
++    let report = sever_platform::startup(&LinuxProbe, &o.data_dir, &o.key_dir, o.overrides)?;
+     let lock = EngineLock::acquire(&o.data_dir)?;
+-    let report = sever_platform::startup(&LinuxProbe, &o.data_dir, &o.key_dir, o.overrides)?;
+     let memory_locked = report.locked.is_some();
+     if let Some(locked) = &report.locked {
+         // DB-50: refused when a provider is already fixed (an earlier open in this process, or a

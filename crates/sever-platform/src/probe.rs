@@ -12,7 +12,9 @@ use std::path::{Path, PathBuf};
 
 use rustix::fs::{IFlags, ioctl_getflags, statfs};
 use rustix::mm::{MlockAllFlags, mlockall};
-use rustix::process::{DumpableBehavior, Resource, Rlimit, set_dumpable_behavior, setrlimit};
+use rustix::process::{
+    DumpableBehavior, Resource, Rlimit, getrlimit, set_dumpable_behavior, setrlimit,
+};
 
 /// The probe could not answer (the check that asked fails closed).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
@@ -52,7 +54,8 @@ pub trait PlatformProbe {
     fn hibernation(&self) -> Result<Hibernation, ProbeError>;
     /// §12.8: sets `RLIMIT_CORE = 0` and `PR_SET_DUMPABLE = 0` for this process.
     fn disable_core_dumps(&self) -> Result<(), ProbeError>;
-    /// §12.8, DB-93: locks every page of the process, present and future, in memory.
+    /// §12.8, DB-93: locks every page of the process, present and future, in memory; fails when
+    /// a finite memory-lock limit could later refuse an allocation.
     fn lock_memory(&self) -> Result<(), ProbeError>;
 }
 
@@ -114,6 +117,17 @@ fn dm_uuid(name: &str) -> Result<Option<String>, ProbeError> {
         Ok(u) => Ok(Some(u.trim().to_owned())),
         Err(_) => Err(ProbeError),
     }
+}
+
+/// `CAP_IPC_LOCK` (capability 14) is in this process's effective set (`/proc/self/status` `CapEff`).
+fn has_ipc_lock() -> Result<bool, ProbeError> {
+    let status = fs::read_to_string("/proc/self/status").map_err(|_| ProbeError)?;
+    let hex = status
+        .lines()
+        .find_map(|l| l.strip_prefix("CapEff:"))
+        .ok_or(ProbeError)?;
+    let caps = u64::from_str_radix(hex.trim(), 16).map_err(|_| ProbeError)?;
+    Ok(caps & (1 << 14) != 0)
 }
 
 fn read_optional(path: &str) -> Result<Option<String>, ProbeError> {
@@ -182,6 +196,13 @@ impl PlatformProbe for LinuxProbe {
     }
 
     fn lock_memory(&self) -> Result<(), ProbeError> {
+        // DB-93: with MCL_FUTURE every later allocation counts against RLIMIT_MEMLOCK, so a finite
+        // limit would make the engine fail an allocation (and abort) once it grows past it. The
+        // lock is taken only when nothing can stop it: no limit, or CAP_IPC_LOCK.
+        let unlimited = getrlimit(Resource::Memlock).current.is_none();
+        if !(unlimited || has_ipc_lock()?) {
+            return Err(ProbeError);
+        }
         mlockall(MlockAllFlags::CURRENT | MlockAllFlags::FUTURE | MlockAllFlags::ONFAULT)
             .map_err(|_| ProbeError)
     }

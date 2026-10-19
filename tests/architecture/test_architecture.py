@@ -52,6 +52,7 @@ PART = {
     "sever-seal": 4,
     "sever-erasure": 4,
     "sever-platform": 4,
+    "sever-db": 4,
 }
 #: Composition roots and tooling: nothing in the core may depend on them.
 OUTER = (

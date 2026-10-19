@@ -709,6 +709,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-db"
+version = "0.1.0"
+dependencies = [
+ "rand_core",
+ "serde_json",
+ "sever-cert",
+ "sever-commit",
+ "sever-crypto",
+ "sever-engine",
+ "sever-erasure",
+ "sever-format",
+ "sever-index",
+ "sever-keys",
+ "sever-log",
+ "sever-p3",
+ "sever-partition",
+ "sever-platform",
+ "sever-quant",
+ "sever-seal",
+ "sever-spec",
+ "sever-txn",
+ "sever-types",
+ "sever-vfs",
+ "sha2",
+ "zeroize",
+]
+
+[[package]]
 name = "sever-engine"
 version = "0.1.0"
 dependencies = [

@@ -692,3 +692,86 @@
   package: sever-platform
   tests:
   - crates/sever-platform/tests/zeroize_audit.rs::p4_platform_every_key_comes_from_the_provider_and_is_zero_when_released
+- id: PR4-D01
+  claim: recovery erases none of the slots INV-14 says to erase, on the full composition (§15.4 rows 2-4)
+  kind: red
+  requirements:
+  - SR-15.4-3
+  - SR-15.4-4
+  - SR-15.4-5
+  patch: PR4-D01.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/src/tests.rs::p4_db_a_crash_anywhere_in_a_deletion_on_either_disk_recovers_cleanly
+- id: PR4-D02
+  claim: phase C never overwrites the retired key's slot, on the full composition (§15.4 row 5)
+  kind: red
+  requirements:
+  - SR-15.4-6
+  patch: PR4-D02.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/src/tests.rs::p4_db_a_crash_anywhere_in_a_deletion_on_either_disk_recovers_cleanly
+- id: PR4-D03
+  claim: the passage is sealed under the slot payload's associated data, so it cannot be read back under its own (§15.1 step 5, §13.2)
+  kind: red
+  requirements:
+  - SR-15.1-7
+  patch: PR4-D03.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/src/tests.rs::p4_db_deletions_yield_verifiable_certificates_on_the_encrypted_engine
+- id: PR4-D04
+  claim: 'phase C erases the old key of the first affected domain only (§15.3 delete_user: one per affected domain)'
+  kind: red
+  requirements:
+  - SR-15.3-11
+  patch: PR4-D04.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/src/tests.rs::p4_db_delete_user_rotates_and_erases_one_key_per_affected_domain
+- id: PR4-D05
+  claim: 'SB-28 always on: the slot payload (x̃, r_t, record ID) is written in the clear (§12.3, §13.2, INV-11)'
+  kind: red
+  requirements:
+  - SR-12.3-4
+  - SR-13.2-8
+  - SR-21-11
+  patch: PR4-D05.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/src/tests.rs::p4_db_no_forbidden_plaintext_reaches_either_disk
+- id: PR4-D06
+  claim: the passage text is stored in the clear, not under the record key (§14.8 payload records)
+  kind: red
+  requirements:
+  - SR-14.8-3
+  patch: PR4-D06.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/src/tests.rs::p4_db_no_forbidden_plaintext_reaches_either_disk
+- id: PR4-D07
+  claim: open runs the platform checks before taking ENGINE.lock (§15.7 steps 1 and 4)
+  kind: red
+  requirements:
+  - SR-15.7-3
+  patch: PR4-D07.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/tests/real_files.rs::p4_db_open_takes_the_lock_before_the_platform_checks
+- id: PR4-D08
+  claim: the lockfile names another aes-gcm-siv than §20.1's 0.11.1
+  kind: red
+  requirements:
+  - SR-20.1-1
+  patch: PR4-D08.patch
+  runner: pytest
+  tests:
+  - tests/architecture/test_p4_pins.py::test_p4_arch_the_aead_crate_is_pinned_with_one_copy_of_each_family

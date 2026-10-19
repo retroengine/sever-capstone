@@ -20,6 +20,34 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 pub mod file;
 pub mod recovery;
 
+/// DB-54 `key-export`: evaluation builds hand every generated key to a sink outside the disk image,
+/// so the forensic scanner and the plaintext scan know what to look for. Absent from the measured
+/// build.
+#[cfg(feature = "key-export")]
+pub mod export {
+    use std::sync::{Mutex, OnceLock};
+
+    /// Receives each key's bytes as it is generated.
+    pub type Sink = Box<dyn Fn(&[u8]) + Send + Sync>;
+
+    static SINK: OnceLock<Mutex<Option<Sink>>> = OnceLock::new();
+
+    /// Installs (or replaces) the sink.
+    pub fn set_sink(sink: Sink) {
+        if let Ok(mut s) = SINK.get_or_init(Mutex::default).lock() {
+            *s = Some(sink);
+        }
+    }
+
+    pub(crate) fn emit(key: &[u8]) {
+        if let Some(Ok(s)) = SINK.get().map(Mutex::lock) {
+            if let Some(f) = s.as_ref() {
+                f(key);
+            }
+        }
+    }
+}
+
 /// Bytes in every key (§13.1).
 pub const KEY_BYTES: usize = 32;
 
@@ -35,6 +63,8 @@ impl Key {
     pub fn generate() -> Self {
         let mut buf = SecretBuf::new(KEY_BYTES);
         OsRng.fill_bytes(buf.as_bytes_mut());
+        #[cfg(feature = "key-export")]
+        export::emit(buf.as_bytes());
         Self(buf)
     }
 

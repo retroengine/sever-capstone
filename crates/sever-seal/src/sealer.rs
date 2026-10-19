@@ -77,6 +77,13 @@ impl Sealer for AeadSealer {
             &ad::slot_payload(owner.collection.as_bytes(), sid),
             payload,
         )?;
+        // SB-28: the slot payload goes to disk in the clear (padded to the sealed length).
+        #[cfg(feature = "sabotage-SB-28")]
+        let sealed = {
+            let mut v = payload.to_vec();
+            v.resize(sealed.len(), 0);
+            v
+        };
         Ok((env.to_vec(), sealed))
     }
 
@@ -87,6 +94,16 @@ impl Sealer for AeadSealer {
         sealed: &[u8],
     ) -> Result<Zeroizing<Vec<u8>>, Error> {
         let rk = self.record_key(owner, envelope)?;
+        #[cfg(feature = "sabotage-SB-28")]
+        let _ = &rk;
+        #[cfg(feature = "sabotage-SB-28")]
+        return Ok(Zeroizing::new(
+            sealed
+                .get(..sealed.len().saturating_sub(self.seal_overhead()))
+                .unwrap_or_default()
+                .to_vec(),
+        ));
+        #[allow(unreachable_code)]
         aead::open(
             &rk,
             &ad::slot_payload(owner.collection.as_bytes(), owner.scrambled_id.as_bytes()),

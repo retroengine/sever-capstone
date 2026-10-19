@@ -6,6 +6,10 @@ edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
+[features]
+# DB-54: evaluation builds only; every generated key also goes to a sink outside the disk image.
+key-export = []
+
 [dependencies]
 sever-types = { path = "../sever-types" }
 sever-vfs = { path = "../sever-vfs" }

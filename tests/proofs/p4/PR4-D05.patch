@@ -1,0 +1,18 @@
+--- a/crates/sever-seal/src/sealer.rs
++++ b/crates/sever-seal/src/sealer.rs
+@@ -78,7 +78,6 @@
+             payload,
+         )?;
+         // SB-28: the slot payload goes to disk in the clear (padded to the sealed length).
+-        #[cfg(feature = "sabotage-SB-28")]
+         let sealed = {
+             let mut v = payload.to_vec();
+             v.resize(sealed.len(), 0);
+@@ -96,7 +95,6 @@
+         let rk = self.record_key(owner, envelope)?;
+         #[cfg(feature = "sabotage-SB-28")]
+         let _ = &rk;
+-        #[cfg(feature = "sabotage-SB-28")]
+         return Ok(Zeroizing::new(
+             sealed
+                 .get(..sealed.len().saturating_sub(self.seal_overhead()))

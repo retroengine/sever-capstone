@@ -71,11 +71,24 @@ fn key_of(bytes: &[u8]) -> Result<Key, Error> {
 /// Wraps record key `rk` under bucket key `bk` (§13.2 row 3).
 pub fn wrap_record_key(bk: &BucketKey, d: &Domain, sid: &Sid, rk: &Key) -> Result<Envelope, Error> {
     let sealed = aead::seal(&bk.key, &ad::record_key(d, sid, bk.version), rk.as_bytes())?;
+    // SB-29: the record key goes into its envelope unwrapped (padded to the envelope's length).
+    #[cfg(feature = "sabotage-SB-29")]
+    let sealed = {
+        let mut v = rk.as_bytes().to_vec();
+        v.resize(sealed.len(), 0);
+        v
+    };
     sealed.as_slice().try_into().map_err(|_| layout_error())
 }
 
 /// Opens an envelope under bucket key `bk`.
 pub fn unwrap_record_key(bk: &BucketKey, d: &Domain, sid: &Sid, env: &[u8]) -> Result<Key, Error> {
+    #[cfg(feature = "sabotage-SB-29")]
+    {
+        let _ = (bk, d, sid);
+        return key_of(env.get(..32).unwrap_or_default());
+    }
+    #[allow(unreachable_code)]
     let plain = aead::open(&bk.key, &ad::record_key(d, sid, bk.version), env)?;
     key_of(&plain)
 }
