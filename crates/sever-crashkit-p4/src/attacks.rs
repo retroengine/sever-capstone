@@ -135,7 +135,9 @@ fn variants(
         out.push(("AT-11", resign(&set(&t, 4, big))));
         let pp = put(put(vec![0xFF; 32], 0, 0xED), 31, 0x7F); // p: not a canonical field element
         out.push(("AT-11", resign(&set(&t, 3, pp))));
-        out.push(("AT-14", resign(&set(&t, 11, vec![1]))));
+        // AT-14 flips the flag: a deletion that emptied its group already carries 1.
+        let emptied = get(&t, 11) == [1];
+        out.push(("AT-14", resign(&set(&t, 11, vec![u8::from(!emptied)]))));
         // AT-4: each field changed, not re-signed (tags 1–13 and the trailer).
         for k in 1u8..=13 {
             let v = get(&t, k);
@@ -281,11 +283,20 @@ pub fn write(
         )
         .map_err(|e| format!("create_collection: {e}"))?;
     let op = operator_key(&disks)?;
-    // Insert 3n records (and more, until some sit in the holding area, so holding-area
-    // certificates and AT-13 are covered), then delete: first one holding record in ten, then
-    // cohorts of up to four (delete_user).
+    // Insert 3n records (and more, until n / 10 + 1 have landed in the holding area, each
+    // deleted at once, so holding-area certificates and AT-13 are covered), then delete cohorts
+    // of up to four (delete_user).
     let total = 3 * n;
     let (mut ids, mut held) = (Vec::new(), Vec::new());
+    let mut certs: Vec<(Vec<u8>, bool)> = Vec::new();
+    let take = |outs: Vec<Deleted>, certs: &mut Vec<(Vec<u8>, bool)>| {
+        for o in outs {
+            if let Deleted::Deleted { certificate, .. } = o {
+                let group = split(&certificate).is_some_and(|(t, _)| get(&t, 12) == [0]);
+                certs.push((certificate, group));
+            }
+        }
+    };
     let mut i = 0usize;
     while ids.len() < total || held.len() < n / 10 + 1 {
         let Ok(v) = rows.row(i) else { break };
@@ -301,27 +312,19 @@ pub fn write(
                 passage: None,
             },
         ) {
-            Ok((_, sever_index::Placement::Holding)) => held.push(id),
+            // Deleted at once, while it still sits in the holding area (later inserts would
+            // flush it into a spawned group): a holding-area certificate, for AT-13.
+            Ok((_, sever_index::Placement::Holding)) => {
+                take(
+                    vec![db.delete(cid, &id).map_err(|e| format!("delete: {e}"))?],
+                    &mut certs,
+                );
+                held.push(id);
+            }
             Ok(_) => ids.push(id),
             Err(Error::NotNormalised | Error::NonFinite | Error::GroupCapacityExceeded) => {}
             Err(e) => return Err(format!("insert {i}: {e}")),
         }
-    }
-    let mut certs: Vec<(Vec<u8>, bool)> = Vec::new();
-    let take = |outs: Vec<Deleted>, certs: &mut Vec<(Vec<u8>, bool)>| {
-        for o in outs {
-            if let Deleted::Deleted { certificate, .. } = o {
-                let group = split(&certificate).is_some_and(|(t, _)| get(&t, 12) == [0]);
-                certs.push((certificate, group));
-            }
-        }
-    };
-    for h in held.iter().take(n / 10 + 1) {
-        // Some may have been flushed into a spawned group since: their certificates are group ones.
-        take(
-            vec![db.delete(cid, h).map_err(|e| format!("delete: {e}"))?],
-            &mut certs,
-        );
     }
     for chunk in ids.chunks(4).step_by(3) {
         if certs.len() >= n {
