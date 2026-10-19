@@ -143,15 +143,15 @@ typed errors, a "forget me" receipt bundle).
 ```python
 from sever_db import Database, UserKey, prepare_insert
 
-user = UserKey.generate()                       # per account; store user.secret_bytes() yourself
+user = UserKey.generate()  # per account; store user.secret_bytes() yourself
 with Database.open("/srv/sever/data", "/srv/sever/keys") as db:
-    cid = db.create_collection("artefacts/partition-seed42.svp")    # once; keep the cid
-    request = prepare_insert(cid, "doc-1", vector, user)            # keep it until acknowledged
-    db.insert(cid, request, passage=b"the text")                    # retry with the same request
-    hits = db.search(cid, query_vector, k=10)                       # [(record_id, distance), ...]
-    deletion = db.delete(cid, "doc-1")                              # .certificate: the receipt
-    deletions = db.delete_user(cid, ["doc-2", "doc-3"])             # one person, all or nothing
-    anchors = db.anchors()                                          # JSON, for sever-verify
+    cid = db.create_collection("artefacts/partition-seed42.svp")  # once; keep the cid
+    request = prepare_insert(cid, "doc-1", vector, user)  # keep it until acknowledged
+    db.insert(cid, request, passage=b"the text")  # retry with the same request
+    hits = db.search(cid, query_vector, k=10)  # [(record_id, distance), ...]
+    deletion = db.delete(cid, "doc-1")  # .certificate: the receipt
+    deletions = db.delete_user(cid, ["doc-2", "doc-3"])  # one person, all or nothing
+    anchors = db.anchors()  # JSON, for sever-verify
 ```
 
 | Call | Does | Spec |

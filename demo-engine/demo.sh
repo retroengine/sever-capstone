@@ -62,7 +62,7 @@ case "$cmd" in
   test)
     need_sdk
     uv run --no-sync ruff check "$here"
-    uv run --no-sync ruff format --check "$here"
+    uv run --no-sync ruff format --check "$here" "$here/README.md"
     uv run --no-sync mypy --strict "$here/sever_tour" "$here/examples" "$here/tests"
     uv run --no-sync pytest -q -p no:cacheprovider "$here/tests" "$@"
     ;;
