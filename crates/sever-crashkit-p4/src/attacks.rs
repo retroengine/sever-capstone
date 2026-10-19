@@ -340,9 +340,13 @@ pub fn write(
     certs.truncate(n);
     writeln!(out, "{}", db.anchors().to_json()).map_err(|e| e.to_string())?;
     let hex = |b: &[u8]| b.iter().map(|x| format!("{x:02x}")).collect::<String>();
+    // The donor for AT-2, AT-3 and AT-13 is a group certificate that does not empty its group:
+    // an emptied group's proof is of the identity (z·G = A whatever the challenge, §9.5, G-34),
+    // so copying one emptied certificate's proof into another forges nothing.
+    let donor = |c: &[u8]| split(c).is_some_and(|(t, _)| get(&t, 12) == [0] && get(&t, 11) == [0]);
     let first_group = certs
         .iter()
-        .find(|c| c.1)
+        .find(|c| donor(&c.0))
         .map(|c| c.0.clone())
         .ok_or("no group cert")?;
     let mut attacked = 0u64;
@@ -358,7 +362,7 @@ pub fn write(
             .iter()
             .skip(i + 1)
             .chain(certs.iter())
-            .find(|x| x.1 && x.0 != *c)
+            .find(|x| donor(&x.0) && x.0 != *c)
             .map_or(first_group.clone(), |x| x.0.clone());
         for (id, v) in variants(c, &other, *group, &op).ok_or("attack")? {
             writeln!(

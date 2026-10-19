@@ -697,8 +697,13 @@ because every input is public).
 **Binding the context into the challenge.** Standard practice binds every part of a statement into
 the Fiat–Shamir challenge. Here the proven statement is `C_S_post`; the context additionally binds
 the pre-state, the deleted commitment, the record, the log position and the collection. A proof
-therefore cannot be replayed in another certificate. All fields are fixed-width, so raw concatenation
-is unambiguous.
+therefore cannot be replayed in another certificate, with one exception: when `C_S_post` is the
+identity (the deletion emptied the group, tag 11 = 1), the check reads `z_r·H + Σ_i z_i·G_i = A` for
+every challenge, so any accepting proof of the identity verifies in any certificate whose `C_S_post`
+is the identity. That proof shows only what everyone knows (an empty group's opening is all zeros,
+§5.4); such a certificate's claim rests on step 6's `C_S_post + C_t = C_S_pre` (the group held only
+this record) and on the operator's signature over every tag (G-34, DB-95). All fields are
+fixed-width, so raw concatenation is unambiguous.
 
 **Soundness note.** Two accepting transcripts with the same `A` and different challenges reveal every
 secret (`x = (z_1 − z_2)/(c_1 − c_2)` per component). Reusing a nonce vector once would leak the

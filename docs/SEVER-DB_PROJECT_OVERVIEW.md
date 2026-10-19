@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-94)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-95)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1042,6 +1042,19 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-95 — An emptied group's deletion proof is not bound to its context; AT-2's donor never empties its group (19 October 2026)
+
+**Decision.** §9.5 states the exception: when `C_S_post` is the identity, the proof's check does not
+depend on the challenge, so the proof carries no context and may be copied between emptied
+certificates; the certificate's claim rests on step 6 and the operator's signature. The attack
+generators (`sever-crashkit-p3`, `sever-crashkit-p4`) take the donor certificate for AT-2, AT-3 and
+AT-13 from group certificates that do not empty their group, so every AT-2 instance still swaps in a
+proof that cannot verify. **Why.** G-34: the interim P3-T2 run of 19 October found AT-2 accepted on 3
+of about 900 instances, each a copy from one emptied certificate to another; the verifier was right
+and the attack was empty. **Rejected.** A fixed proof form for the identity (a format change for no
+security gain); dropping AT-2 on emptied certificates (with a non-emptied donor the copied proof
+still fails the proof check there). **Consequence.** P3-T2 reruns; the register text of AT-2 is unchanged.
 
 #### DB-94 — Part 3's full gates run once, on a cloud VM, at the end; interim checks on the laptop (18 October 2026)
 
@@ -2272,6 +2285,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **19 October 2026 — Emptied-group proofs.** DB-95 (an emptied group's deletion proof is not bound
+  to its context; AT-2's donor never empties its group; closes G-34). Specification sections
+  touched: §9.5.
 - **18 October 2026 — Part 3 gates on a VM.** DB-94 (the full gates run once on a cloud VM at
   the end; interim checks on the laptop). Specification sections touched: none.
 - **18 October 2026 — Startup checks.** DB-93 (memory is locked process-wide at startup; the
