@@ -6,6 +6,7 @@ engine."""
 import json
 import pickle
 import random
+import re
 import shutil
 import uuid
 from collections.abc import Callable, Iterator
@@ -236,3 +237,22 @@ def test_p4_sdk_reports_its_overrides_and_keeps_passage_text_off_disk() -> None:
     on_disk = b"".join(p.read_bytes() for p in base.rglob("*") if p.is_file())
     assert text[:32] not in on_disk
     shutil.rmtree(base, ignore_errors=True)
+
+
+@pytest.mark.spec("SR-16.2-2")
+@pytest.mark.oracle(
+    "A",
+    "§16.2 (G-38) 'the placement is the §5.1 text form of the group'; §5.1 table: frozen-NNNN, "
+    "spawn- + 16 lowercase hex characters, holding",
+)
+def test_p4_sdk_reports_the_placement_as_the_groups_text_form(db: tuple[Database, str]) -> None:
+    d, cid = db
+    user = UserKey.generate()
+    placed = [d.insert(cid, prepare_insert(cid, f"r{i}", v, user)).placement for i, v in
+              enumerate(rows(40))]  # fmt: skip
+    groups = {g for g, _ in d.group_sizes(cid)}
+    grammar = re.compile(r"frozen-[0-9]{4}|spawn-[0-9a-f]{16}|holding")
+    assert all(p is not None and grammar.fullmatch(p) for p in placed), placed
+    assert all(p in groups or p == "holding" for p in placed)
+    assert any(p.startswith("frozen-") for p in placed if p)
+    assert "holding" in placed
