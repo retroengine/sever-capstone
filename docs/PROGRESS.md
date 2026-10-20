@@ -17,8 +17,10 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   (DB-94): `bash scripts/vm/setup.sh`, re-login, `setsid nohup bash scripts/vm/run-all.sh >
   traces/vm-run.out 2>&1 &` (about 1–2 days on 32 cores; `traces/vm-summary.log`). Then, if every
   gate passes: fair testing (`scripts/fair.sh`, the owner's go and budget), `scripts/freeze.sh 3` and
-  `4`, the tags `part-3-frozen`, `part-4-frozen` / `v1.0.0`, and the merge to `main`. A gate that
-  fails on the VM is a bug: fix it (red test first), rerun that gate and everything after it.
+  `4`, and the tags `part-3-frozen`, `part-4-frozen` / `v1.0.0`. `main` already holds the built
+  tree (fast-forwarded on 20 Oct 2026 after GitHub's fast tier and the laptop's `full-checks` and
+  Part 4 smoke passed), so the VM runs on `main`. A gate that fails on the VM is a bug: fix it (red
+  test first), rerun that gate and everything after it.
 - **After v1.0 (owner, 19 Oct 2026): the v1.1 layout.** One folder per kind: `rust/` (the crates,
   `verifier/`, `audit/`, `fuzz/p1` … `p4`, `spikes/`), `python/`, `tests/` (every cross-cutting suite
   and the proofs), `docs/spec`, `docs/guides`, `docs/evidence` (with the ledger and generated reports;
