@@ -13,6 +13,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from . import config
+
 SEALED_MSG = "EngineSealed: the engine answers only after the tests are sealed (FT-3)"
 
 
@@ -169,29 +171,26 @@ def worktree(repo: Path, wt: Path, commit: str, log: Path) -> None:
 
 
 def build(wt: Path, part: dict[str, Any], log: Path) -> int:
-    """Release CLI, plus the native module installed into the worktree's .venv."""
+    """Release CLI, plus every part's native module installed into the worktree's .venv: the
+    part's own suite re-runs every earlier part's tests (F-5), and the repository's Python suite
+    imports each part's SDK."""
     bins = [x for b in part["cli"]["bins"] for x in ("--bin", b)]
     e = {"PYTHONHASHSEED": "0"}
     rc = sh(["cargo", "build", "-q", "--release", "-p", part["cli"]["package"], *bins], wt, log, e)
     if rc:
         return rc
-    return sh(
-        [
-            "uv",
-            "run",
-            "--no-sync",
-            "maturin",
-            "develop",
-            "-q",
-            "--release",
-            "--uv",
-            "-m",
-            part["sdk"]["crate"],
-        ],
-        wt,
-        log,
-        e,
-    )
+    parts = config.load(wt).raw["parts"].values()
+    crates = [part["sdk"]["crate"]] + [
+        c for c in dict.fromkeys(p["sdk"]["crate"] for p in parts) if c != part["sdk"]["crate"]
+    ]
+    for crate in crates:
+        if not (wt / crate).exists():
+            continue
+        maturin = ["uv", "run", "--no-sync", "maturin", "develop", "-q", "--release", "--uv"]
+        rc = sh([*maturin, "-m", crate], wt, log, e)
+        if rc:
+            return rc
+    return 0
 
 
 def own_suite(wt: Path, part: dict[str, Any], log: Path) -> tuple[bool, list[dict[str, Any]]]:
