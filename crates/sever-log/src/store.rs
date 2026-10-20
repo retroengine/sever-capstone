@@ -229,6 +229,8 @@ pub struct LogStore {
     checkpoints: Vec<Witnessed>,
     /// Insert leaves and certificates in the stores at keys not (yet) committed, for replay.
     spare_inserts: BTreeMap<u64, StoreRef>,
+    /// The last leaf index replayed from the WAL's committed records (recovery only, G-39).
+    replayed_last: Option<u64>,
     pending: Pending,
 }
 
@@ -380,6 +382,7 @@ impl LogStore {
             certs: BTreeMap::new(),
             checkpoints: Vec::new(),
             spare_inserts: BTreeMap::new(),
+            replayed_last: None,
             pending: Pending::default(),
         };
         s.load()?;
@@ -646,6 +649,7 @@ impl LogStore {
                 placement,
                 insert,
             } => {
+                self.replayed_last = Some(index);
                 if index < self.tree.size() {
                     let same_type = self
                         .inserts
@@ -713,6 +717,16 @@ impl LogStore {
     /// After replay: the stores are durable and the invariants hold.
     pub fn recover(&mut self) -> Result<(), Error> {
         self.spare_inserts.clear();
+        // §12.3 (G-39): the WAL keeps a contiguous suffix of the committed history, so when it
+        // holds a committed leaf, a leaf stored after the last one replayed has no committed
+        // transaction behind it: its COMMIT was damaged after the leaf was stored (§10.5).
+        if self
+            .replayed_last
+            .take()
+            .is_some_and(|last| self.tree.size() > last.saturating_add(1))
+        {
+            return Err(inv("INV-15 a leaf without a committed transaction"));
+        }
         self.stores.leaves.sync()?;
         self.stores.hashes.sync()?;
         self.stores.checkpoints.sync()?;

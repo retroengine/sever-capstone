@@ -985,6 +985,12 @@ storage checkpoint directories, §15.6; overview DB-65). There are two backends:
   never decrypts anything.
 - On recovery, a transaction without a valid `COMMIT` (including a torn or CRC-failing tail) is
   discarded whole. It is never repaired.
+- The WAL keeps a contiguous suffix of the committed history. If recovery replays a committed log
+  leaf from it (§14.6), the log's stores MUST hold no leaf after the last one replayed: such a leaf
+  has no committed transaction behind it (its `COMMIT` was damaged after the leaf was stored,
+  §10.5), and recovery refuses with `IntegrityViolation` (INV-15) rather than open a log that
+  disagrees with the records. When the WAL holds no committed log leaf, the stores are the record
+  (G-39).
 - The WAL MUST NOT contain plaintext vectors, record IDs, passage text, `r_t`, `S`, `r_agg` or
   unwrapped keys (INV-11). It MAY contain `scrambled_id`s, `n`, `C_S`, centroids and public log leaves.
 - WAL positions are called `wal_seq`. They are unrelated to `database_lsn` (§10.2).
@@ -1915,7 +1921,7 @@ means checked after every operation in debug and test builds.
 | INV-12 | Rotation invariant (§13.3) | Tests, forensic scans |
 | INV-13 | Key-erasure rule (§13.4) | Protocol order; crash tests |
 | INV-14 | Key-file slot versions match active versions | Startup |
-| INV-15 | The log root at every log-checkpoint size equals that checkpoint's root; every live record's insert leaf exists | Startup (the first half); at each deletion, §15.3 step 2 (the second half, DB-83) |
+| INV-15 | The log root at every log-checkpoint size equals that checkpoint's root; every live record's insert leaf exists; no stored leaf follows the last committed one the WAL replayed (§12.3) | Startup (the first half); at each deletion, §15.3 step 2 (the second half, DB-83) |
 | INV-16 | Routing is a pure function of `(x̃, state)` | Tests (§7.7) |
 
 ---

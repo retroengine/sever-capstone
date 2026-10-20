@@ -1,0 +1,13 @@
+diff --git a/crates/sever-log/src/store.rs b/crates/sever-log/src/store.rs
+index 60999d8..9b059be 100644
+--- a/crates/sever-log/src/store.rs
++++ b/crates/sever-log/src/store.rs
+@@ -723,7 +723,7 @@ impl LogStore {
+         if self
+             .replayed_last
+             .take()
+-            .is_some_and(|last| self.tree.size() > last.saturating_add(1))
++            .is_some_and(|last| false && self.tree.size() > last.saturating_add(1))
+         {
+             return Err(inv("INV-15 a leaf without a committed transaction"));
+         }

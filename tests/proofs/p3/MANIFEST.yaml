@@ -1704,3 +1704,13 @@
   - python/sever_db_p3/tests/test_sdk_p3.py::test_p3_sdk_reports_the_placement_as_the_groups_text_form
   build:
   - native
+- id: PR3-F03
+  claim: "recovery accepts a stored log leaf past the last committed one the WAL replayed (G-39)"
+  kind: red
+  requirements:
+  - SR-12.3-5
+  patch: PR3-F03.patch
+  runner: cargo
+  package: sever-p3
+  tests:
+  - crates/sever-p3/src/tests.rs::p3_root_a_log_leaf_past_the_committed_wal_is_refused
