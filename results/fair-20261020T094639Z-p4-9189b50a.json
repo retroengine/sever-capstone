@@ -1,0 +1,195 @@
+{
+ "run_id": "20261020T094639Z-p4-9189b50a",
+ "part": 4,
+ "module": null,
+ "commit": "9189b50a2f05b175d4192007f63ae13d84139b80",
+ "outcome": "FAIL",
+ "config_sha256": "231bb3fb123fee16c62fcc8cfa97b28811a5dbafccced9792d478ac1a49836ca",
+ "seal_digest": "137c9b148e8bd55cddc0707398d1ec54ccdad0cdbe55e9fb921b9a127aeaf122",
+ "owned_sha256": "015735da48201af3d82cdbc7cc6d563be9c6a9b7ed6ee062a01393866e814460",
+ "rows": [
+  {
+   "check": "own suite green on the unpatched build",
+   "value": "True",
+   "ok": true
+  },
+  {
+   "check": "engine bugs (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "spec gaps (triage)",
+   "value": "1",
+   "ok": false
+  },
+  {
+   "check": "test gaps (escaped real bugs)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "oracle disagreements",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "planted bugs: cargo-mutants gate PASS in the ledger (DB-75)",
+   "value": "none",
+   "ok": false
+  },
+  {
+   "check": "judge outputs complete",
+   "value": "yes",
+   "ok": true
+  }
+ ],
+ "tests": 146,
+ "failing": 1,
+ "triage": {
+  "test_cli_crash::test_cli_anchors_shape": {
+   "verdict": "SPEC_GAP",
+   "section": "\u00a711.3",
+   "reason": "The test requires every operator and witness key table to be non-empty right after three inserts and no deletion. \u00a711.3 and DB-85 give only the JSON shape (keys 'by epoch') and do not say which epochs are listed, or whether a key is listed before it has signed anything. \u00a710.3/\u00a710.4 say the operator signs the genesis checkpoint at epoch 0, but witnesses only 'remember' it and have cosigned nothing yet. The failure output shows only an empty table and does not say whether it was the operator's or a witness's. The spec does not promise that a witness table is populated before any cosignature, so neither side can be called wrong. If the empty table were the operator's, that would be an engine bug, since the genesis checkpoint is signed at epoch 0."
+  }
+ },
+ "planted": [],
+ "escapes": {},
+ "oracle": {
+  "pool": 59,
+  "verdicts": {
+   "01.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a714.7",
+    "reason": "\u00a714.7 gives a 4,096-byte header and two 512-byte slots (1,024 bytes) per domain, 'Size: 4 KB plus 1 KB per domain'. An empty file is 4,096; after n appends it is 4,096+1,024n; n=5 gives 9,216, which is 4,096+5,120. All expectations match."
+   },
+   "02.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a715.4, \u00a713.4, \u00a714.7",
+    "reason": "Row 'During phase C (torn slot)': the delete is committed, the old slot fails its CRC and is treated as absent and erased again, and a retry returns AlreadyAbsent. The test tears the phase C overwrite at 100 bytes, checks the slot is Torn after the crash, then after recovery checks it is Erased, only version v+1 remains, the record is gone, and the retry gives AlreadyAbsent. Each assertion follows from the spec."
+   },
+   "03.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.3, \u00a713.2, \u00a714.5",
+    "reason": "\u00a713.3 says a departure makes version+1 for the group key, new keys (version+1) only for buckets that lost a record, all 64 bucket keys re-wrapped under the new group key, and only survivors of rotated buckets re-wrapped. The expected values match: rotation version 2, two bucket-3 survivors re-wrapped at version 2, bucket 3 at version 2 and bucket 9 at version 1, the new block opening only under GK v2 with the AD of \u00a713.2, and the departed key unreachable. The order of the re-wrapped envelopes is not fixed by the spec, but it is a minor detail."
+   },
+   "04.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a712.8",
+    "reason": "The refuse/start behaviour follows \u00a712.8: an unencrypted swap, hibernation with 'disk' and a resume other than 0:0, and a failed mlock are refused unless allow_unsafe_memory, and the unsafe_fs flag does not cover them. A CRYPT- dm device and a zram device count as encrypted swap. However, the spec fixes the check names only for '\u00a712.8 core dumps' and '\u00a712.8 mlock'. The strings '\u00a712.8 swap not encrypted' and '\u00a712.8 hibernation enabled', which the test asserts exactly, come from spec/registers_p4.yaml, which is not in the spec directory. The exact overridden-ledger values for those two rows cannot be derived."
+   },
+   "05.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a712.9",
+    "reason": "\u00a712.9 gives an allow-list: ext4, XFS, and btrfs only when KEYS has no-COW. ZFS, tmpfs, f2fs, overlayfs and a WSL Windows drive (9p) are refused. Every row matches, including ZFS refused even with no_cow=true. The magic numbers (0xEF53, 0x58465342, 0x9123683E, 0x01021994, 0x2FC12FC1, 0xF2F52010, 0x794C7630, 0x01021997) are the real Linux values."
+   },
+   "06.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a712.8",
+    "reason": "\u00a712.8 says every secret type implements Zeroize and ZeroizeOnDrop. The test checks the trait bounds for Key and BucketKey, that a fresh key is non-zero, and that zeroize() leaves all 32 bytes zero. This follows directly."
+   },
+   "07.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a714.7",
+    "reason": "\u00a714.7 fixes only that a torn slot fails its CRC and is treated as absent. The CRC-failure cases (flipped key or CRC byte, zeroed tail) follow. Other cases do not. These are a wrong magic, non-zero padding, or a wrong domain_index, each with a valid CRC, and a 300-byte truncated input. The spec does not say whether these decode to Torn (absent) or to some other state. The expected SlotState::Torn is the author's choice."
+   },
+   "08.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a716.3",
+    "reason": "The Build 3-4 forensics plan lists the secret classes scanned for (x\u0303 as i32/i64 in both byte orders, float32 vectors, 32-byte windows of passage text, r_t, retired keys) and requires planted secrets to be found 100%. The six planted kinds match those classes. The spec does not fix the finding-kind names, the minimum number of coordinates the scanner needs, or that a chunked scan gives the same number of findings as a single pass. The assertions depend on scanner internals and the unseen world() setup."
+   },
+   "09.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a712.8",
+    "reason": "\u00a712.8 and overview DB-93 (4) say core dumps are turned off first, and a failure refuses with PlatformUnsafe naming '\u00a712.8 core dumps' unless allow_unsafe_memory. The test asserts disable_core_dumps is the first probe call, that the refusal is not lifted by the unsafe_fs flag, and that the memory flag lets startup proceed with that check recorded as overridden. All of this follows."
+   },
+   "10.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.4, \u00a714.7",
+    "reason": "The \u00a713.4 recovery rule says every non-active slot of a domain is erased and slots belonging to no domain are erased. The valid-CRC orphan at version v+7 in the inactive slot is therefore erased, leaving only active version v. The ghost pair names a nonexistent domain, so it is erased, and the torn junk slot is erased too. \u00a714.7 allows the pair count to cover it, since the file is a whole number of pairs. All expectations follow."
+   }
+  },
+  "picked": [
+   [
+    "crates/sever-keys/src/tests.rs",
+    "p4_keys_the_file_is_4096_bytes_plus_1024_per_domain"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_crash_table_row_4_a_torn_phase_c_overwrite"
+   ],
+   [
+    "crates/sever-seal/src/tests.rs",
+    "p4_seal_a_departure_rotates_the_group_key_and_the_buckets_it_left"
+   ],
+   [
+    "crates/sever-platform/src/tests.rs",
+    "p4_platform_memory_rows_of_the_register_refuse_and_start_as_listed"
+   ],
+   [
+    "crates/sever-platform/src/tests.rs",
+    "p4_platform_key_filesystem_is_an_allow_list"
+   ],
+   [
+    "crates/sever-platform/tests/zeroize_request.rs",
+    "p4_platform_secret_types_zeroize_on_request"
+   ],
+   [
+    "crates/sever-keys/src/tests.rs",
+    "p4_keys_a_torn_slot_is_treated_as_absent"
+   ],
+   [
+    "crates/sever-scan/src/tests.rs",
+    "p4_scan_finds_every_planted_secret"
+   ],
+   [
+    "crates/sever-platform/src/tests.rs",
+    "p4_platform_startup_turns_core_dumps_off_before_anything_else"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_startup_erases_orphans_torn_inactive_slots_and_unclaimed_pairs"
+   ]
+  ]
+ },
+ "findings": [
+  {
+   "kind": "SPEC_GAP",
+   "test": "test_cli_crash::test_cli_anchors_shape",
+   "section": "\u00a711.3",
+   "reason": "The test requires every operator and witness key table to be non-empty right after three inserts and no deletion. \u00a711.3 and DB-85 give only the JSON shape (keys 'by epoch') and do not say which epochs are listed, or whether a key is listed before it has signed anything. \u00a710.3/\u00a710.4 say the operator signs the genesis checkpoint at epoch 0, but witnesses only 'remember' it and have cosigned nothing yet. The failure output shows only an empty table and does not say whether it was the operator's or a witness's. The spec does not promise that a witness table is populated before any cosignature, so neither side can be called wrong. If the empty table were the operator's, that would be an engine bug, since the genesis checkpoint is signed at epoch 0.",
+   "output": "assert ({})\n@pytest.mark.req(\"SR-16.3-1\")\n    def test_cli_anchors_shape():\n        \"\"\"\u00a711.3: the engine publishes the verifier's anchors as JSON {\"d\": N, \"gdigest\": hex,\n        \"operator\": {\"<epoch>\": hex key}, \"witnesses\": [{\"<epoch>\": hex key}, \u2026]} with the witnesses\n        listed by index; \u00a710.4: five witnesses. Keys are Ed25519 public keys (32 bytes, \u00a79.8).\"\"\"\n        data, keys, _cid = setup_three()\n        out = os.path.join(os.path.dirname(data), \"anchors.json\")\n        r = u.cli(\"anchors\", *u.db_args(data, keys), \"--out\", out, UNSAFE)\n        assert r.returncode == 0, r.stderr\n        a = json.load(open(out))\n        assert a[\"d\"] == 384\n        bytes.fromhex(a[\"gdigest\"])\n        assert len(a[\"witnesses\"]) == 5\n        for table in [a[\"operator\"], *a[\"witnesses\"]]:\n>           assert table and all(len(bytes.fromhex(k)) == 32 for k in table.values())\nE           assert ({})\n\n/room/work/tests/test_cli_crash.py:285: AssertionError",
+   "source": "\"\"\"The `sever-db` command line (Part 4 API: user-key, create, insert, delete-user, anchors) and crash\nbehaviour: the CLI is started as a subprocess and killed with SIGKILL at a random moment, then the\ndatabase is reopened through the SDK and its state must be one the spec allows (\u00a715.1, \u00a715.4,\n\u00a712.5 all-or-nothing, \u00a713.4 recovery rule).\n\nThese use the d = 384 artefact (partition-seed42.svp, 128 frozen groups, so 129 key domains) and a\ndatabase opened with the default d = 384, the dimension the CLI uses.\n\"\"\"\n\nimport functools\nimport json\nimport os\nimport random\nimport re\nimport signal\nimport subprocess\nimport time\n\nimport numpy as np\nimport pytest\nfrom sever_db import DuplicateRecord, UserKey\n\nimport sevtest_util as u\n\nUNSAFE = \"--allow-unsafe-memory\"  # this machine cannot pass \u00a712.8 (see the task's platform note)\nDOMAINS = 128 + 1  # \u00a713.1: one group key per group, including the holding area\n\n\n@functools.cache\ndef art():\n    return u.load_artefact(u.BIG)\n\n\n@functools.cache\ndef vec(group: int, seed: int):\n    \"\"\"A d = 384 unit vector routed to frozen-<group> (checked with \u00a77.1-7.3).\"\"\"\n    return u.in_dist_vector(art(), group, np.random.default_rng(seed), 0.003)\n\n\ndef vjson(x) -> str:\n    return json.dumps([float(v) for v in x])  # float32 values print exactly as doubles\n\n\ndef dom(kb, cid, group):\n    return u.active_slots(kb)[(bytes.fromhex(cid), group)]\n\n\ndef assert_key_file_recovered(keys, cids):\n    \"\"\"After \u00a713.4's recovery: the pair count is whole (\u00a714.7, a partial pair is truncated), every\n    domain of every live collection has exactly one valid slot, and every other slot - stale,\n    orphaned, torn or belonging to no domain - is 512 zero bytes.\"\"\"\n    path = u.keys_path(keys)\n    if not os.path.exists(path):\n        assert cids == []\n        return\n    kb = u.read_keys(keys)\n    assert (len(kb) - u.KEYS_HEADER) % u.PAIR == 0\n    act = u.active_slots(kb)\n    assert {c for c, _g in act} <= {bytes.fromhex(c) for c in cids}\n    assert len(act) == DOMAINS * len(cids)\n    for a, b in u.slots(kb):\n        for s in (a, b):\n            assert s.valid or s.is_zero\n\n\ndef run_and_kill(args, delay):\n    \"\"\"Start the CLI; SIGKILL it after ``delay`` seconds (None: let it finish).\"\"\"\n    p = subprocess.Popen([u.CLI, *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE)\n    if delay is None:\n        p.wait(timeout=600)\n        return p.returncode\n    time.sleep(delay)\n    try:\n        p.send_signal(signal.SIGKILL)\n    except ProcessLookupError:\n        pass\n    p.wait(timeout=60)\n    return p.returncode\n\n\nR = random.Random(20261020)\nDELAYS = [0.0, 0.002, 0.01] + sorted(round(R.uniform(0.02, 2.0), 3) for _ in range(9)) + [None]\n\n\ndef setup_three():\n    \"\"\"r-a and r-c in frozen-0005, r-b in frozen-0009 (inserts are leaves 0, 1, 2).\"\"\"\n    data, keys = u.new_dirs()\n    with u.open_db(data, keys, 384) as db:\n        cid = db.create_collection(u.BIG)\n        user = UserKey.generate()\n        for rid, g, s in [(\"r-a\", 5, 1), (\"r-b\", 9, 2), (\"r-c\", 5, 3)]:\n            u.insert(db, cid, rid, vec(g, s), user)\n    return data, keys, cid\n\n\n# ------------------------------------------------------------------ crash during delete-user\n\n\n@pytest.mark.req(\"SR-15.4-2\", \"SR-15.4-3\", \"SR-15.4-4\", \"SR-15.4-5\", \"SR-15.4-6\", \"SR-15.3-11\",\n                 \"SR-13.4-3\", \"SR-15.8-2\", \"SR-21-13\")\n@pytest.mark.parametrize(\"delay\", DELAYS, ids=lambda d: \"nokill\" if d is None else f\"kill{d}\")\ndef test_crash_during_delete_user(delay):\n    \"\"\"\u00a715.4: whatever the crash point, recovery yields \"Unchanged\" (before COMMIT is durable) or\n    \"Deleted\" (after it); \u00a712.5: \"delete_user removes many records, across many groups, in one\n    transaction: all or nothing\". Old group key: present iff unchanged; after recovery every stale\n    or orphan slot is erased (\u00a713.4). \"Deleted\" implies the certificates are retrievable by\n    database_lsn (leaves 3 and 4: list order after inserts 0-2) and a retry returns AlreadyAbsent;\n    \"Unchanged\" implies retrying is safe and deletes both.\"\"\"\n    data, keys, cid = setup_three()\n    kb0 = u.read_keys(keys)\n    old5, old9 = dom(kb0, cid, \"frozen-0005\"), dom(kb0, cid, \"frozen-0009\")\n    args = [\"delete-user\", *u.db_args(data, keys), \"--cid\", cid, \"--ids\", '[\"r-a\", \"r-b\"]', UNSAFE]\n    rc = run_and_kill(args, delay)\n    if delay is None:\n        assert rc == 0\n    with u.open_db(data, keys, 384) as db:\n        live = {r: r in u.hit_ids(db, cid, vec(g, s)) for r, g, s in\n                [(\"r-a\", 5, 1), (\"r-b\", 9, 2), (\"r-c\", 5, 3)]}\n        assert live[\"r-c\"]  # never part of the deletion\n        assert live[\"r-a\"] == live[\"r-b\"]  # all or nothing\n        deleted = not live[\"r-a\"]\n        if delay is None:\n            assert deleted  # the CLI finished: the deletion was acknowledged (\u00a715.8)\n        kb = u.read_keys(keys)\n        assert_key_file_recovered(keys, [cid])\n        new5, new9 = dom(kb, cid, \"frozen-0005\"), dom(kb, cid, \"frozen-0009\")\n        sizes = dict(db.group_sizes(cid))\n        if deleted:\n            assert (new5.version, new9.version) == (old5.version + 1, old9.version + 1)\n            assert u.files_containing(old5.key, data, keys) == []\n            assert u.files_containing(old9.key, data, keys) == []\n            assert db.certificate(3) is not None and db.certificate(4) is not None\n            assert (sizes[\"frozen-0005\"], sizes[\"frozen-0009\"]) == (1, 0)\n            retry = db.delete_user(cid, [\"r-a\", \"r-b\"])\n            assert [o.outcome for o in retry] == [\"absent\", \"absent\"]\n        else:\n            assert new5.raw == old5.raw and new9.raw == old9.raw  # old keys still active\n            assert db.certificate(3) is None\n            assert (sizes[\"frozen-0005\"], sizes[\"frozen-0009\"]) == (2, 1)\n            retry = db.delete_user(cid, [\"r-a\", \"r-b\"])\n            assert [o.outcome for o in retry] == [\"deleted\", \"deleted\"]\n            assert [o.database_lsn for o in retry] == [3, 4]\n        assert u.hit_ids(db, cid, vec(5, 3)) == [\"r-c\"]\n\n\n# ------------------------------------------------------------------ crash during insert\n\n\n@pytest.mark.req(\"SR-15.1-2\", \"SR-13.3-3\", \"SR-13.4-3\")\n@pytest.mark.parametrize(\"delay\", DELAYS[:9] + [None], ids=lambda d: \"nokill\" if d is None else f\"kill{d}\")\ndef test_crash_during_insert(delay):\n    \"\"\"\u00a715.1: \"A crash before the COMMIT is durable leaves the database unchanged; ... A crash after\n    it leaves the insert done\". Either way the key file is unchanged (\u00a713.3: an insert never\n    rotates), the group count agrees with search, and a retry with a new request either inserts\n    (unchanged case) or fails with DuplicateRecord (done case; a new request has another C_t).\"\"\"\n    data, keys, cid = setup_three()\n    ukey = os.path.join(os.path.dirname(data), \"user.key\")\n    assert u.cli(\"user-key\", \"--out\", ukey).returncode == 0\n    kb0 = u.read_keys(keys)\n    x = vec(7, 11)\n    args = [\"insert\", *u.db_args(data, keys), \"--cid\", cid, \"--id\", \"r-new\", \"--vector\", vjson(x),\n            \"--user-key\", ukey, \"--passage\", \"crash passage\", UNSAFE]\n    rc = run_and_kill(args, delay)\n    if delay is None:\n        assert rc == 0\n    with u.open_db(data, keys, 384) as db:\n        present = \"r-new\" in u.hit_ids(db, cid, x)\n        if delay is None:\n            assert present\n        assert dict(db.group_sizes(cid))[\"frozen-0007\"] == int(present)\n        assert u.read_keys(keys) == kb0\n        user = UserKey.generate()\n        if present:\n            with pytest.raises(DuplicateRecord):\n                u.insert(db, cid, \"r-new\", x, user)\n        else:\n            assert u.insert(db, cid, \"r-new\", x, user).database_lsn == 3  # after leaves 0-2\n        assert db.delete(cid, \"r-new\").outcome == \"deleted\"\n\n\n# ------------------------------------------------------------------ crash during create\n\n\n@pytest.mark.req(\"SR-13.4-3\", \"SR-14.7-6\", \"SR-14.7-4\")\n@pytest.mark.parametrize(\"delay\", DELAYS[:9], ids=lambda d: f\"kill{d}\")\ndef test_crash_during_create_collection(delay):\n    \"\"\"A create_collection killed at any moment: after recovery the collection exists completely\n    (129 domains with one valid slot each) or not at all, and every slot of a rolled-back domain\n    is erased (\"slots that belong to no domain are erased\", \u00a713.4; a trailing partial pair is\n    truncated, \u00a714.7). A later create gets fresh pairs after any old ones (never reused).\"\"\"\n    data, keys = u.new_dirs()\n    u.open_db(data, keys, 384).close()\n    run_and_kill([\"create\", *u.db_args(data, keys), \"--artefact\", u.BIG, UNSAFE], delay)\n    with u.open_db(data, keys, 384) as db:\n        cids = db.collections()\n        assert len(cids) <= 1\n        assert_key_file_recovered(keys, cids)\n        size = os.path.getsize(u.keys_path(keys)) if os.path.exists(u.keys_path(keys)) else 4096\n        cid = db.create_collection(u.BIG)\n        kb = u.read_keys(keys)\n        assert len(kb) == size + DOMAINS * u.PAIR\n        assert_key_file_recovered(keys, cids + [cid])\n        mine = [s.pair for (c, _g), s in u.active_slots(kb).items() if c == bytes.fromhex(cid)]\n        assert min(mine) == (size - u.KEYS_HEADER) // u.PAIR\n\n\n# ------------------------------------------------------------------ the CLI without crashes\n\n\n@pytest.mark.req(\"SR-15.3-11\", \"SR-15.8-2\", \"SR-13.3-1\")\ndef test_cli_end_to_end():\n    \"\"\"Part 4 API \"Using it\": user-key, create (prints {\"cid\": ...}, 32 hex characters, \u00a73.1: 16\n    bytes), insert, delete-user. The SDK then sees the inserted record, the deleted one gone, and\n    its domain rotated with the old key in no file (\u00a713.3, \u00a715.8).\"\"\"\n    data, keys = u.new_dirs()\n    ukey = os.path.join(os.path.dirname(data), \"user.key\")\n    assert u.cli(\"user-key\", \"--out\", ukey).returncode == 0\n    assert os.path.exists(ukey)\n    r = u.cli(\"create\", *u.db_args(data, keys), \"--artefact\", u.BIG, UNSAFE)\n    assert r.returncode == 0, r.stderr\n    cid = json.loads(r.stdout.strip().splitlines()[-1])[\"cid\"]\n    assert re.fullmatch(r\"[0-9a-fA-F]{32}\", cid)\n    for rid, g, s in [(\"c-1\", 3, 21), (\"c-2\", 3, 22)]:\n        r = u.cli(\"insert\", *u.db_args(data, keys), \"--cid\", cid, \"--id\", rid, \"--vector\",\n                  vjson(vec(g, s)), \"--user-key\", ukey, \"--passage\", \"text \" + rid, UNSAFE)\n        assert r.returncode == 0, r.stderr\n    old = dom(u.read_keys(keys), cid, \"frozen-0003\")\n    r = u.cli(\"delete-user\", *u.db_args(data, keys), \"--cid\", cid, \"--ids\", '[\"c-1\"]', UNSAFE)\n    assert r.returncode == 0, r.stderr\n    assert u.files_containing(old.key, data, keys) == []\n    with u.open_db(data, keys, 384) as db:\n        assert db.collections() == [cid]\n        assert u.hit_ids(db, cid, vec(3, 21)) == [\"c-2\"]\n        assert dom(u.read_keys(keys), cid, \"frozen-0003\").version == old.version + 1\n        assert db.delete(cid, \"c-1\").outcome == \"absent\"\n\n\n@pytest.mark.req(\"SR-3.2-1\", \"SR-17-2\")\ndef test_cli_rejects_invalid_id_without_echoing_it():\n    \"\"\"\u00a73.2 rule 1 (at most 256 bytes) on the CLI: the insert fails, nothing is inserted, and the\n    output does not contain the record ID (\u00a717: no error message may contain a record ID).\"\"\"\n    data, keys, cid = setup_three()\n    ukey = os.path.join(os.path.dirname(data), \"user.key\")\n    assert u.cli(\"user-key\", \"--out\", ukey).returncode == 0\n    bad = \"qz9marker\" * 40  # 360 bytes\n    r = u.cli(\"insert\", *u.db_args(data, keys), \"--cid\", cid, \"--id\", bad, \"--vector\",\n              vjson(vec(7, 31)), \"--user-key\", ukey, UNSAFE)\n    assert r.returncode != 0\n    assert \"qz9marker\" not in r.stdout + r.stderr\n    with u.open_db(data, keys, 384) as db:\n        assert dict(db.group_sizes(cid))[\"frozen-0007\"] == 0\n\n\n@pytest.mark.req(\"SR-4.1-3\", \"SR-17-2\")\ndef test_cli_rejects_unnormalised_vector():\n    \"\"\"\u00a74.1 step 3 on the CLI: a vector of norm 2 is rejected (NotNormalised), nothing is inserted,\n    and no vector value is echoed (\u00a717).\"\"\"\n    data, keys, cid = setup_three()\n    ukey = os.path.join(os.path.dirname(data), \"user.key\")\n    assert u.cli(\"user-key\", \"--out\", ukey).returncode == 0\n    x = [0.0] * 384\n    x[0], x[1] = 1.9364916731037085, 0.5  # norm sqrt(3.75 ",
+   "id": "F-1"
+  }
+ ],
+ "sessions": [
+  {
+   "role": "tester",
+   "name": "1-tester",
+   "model": "opus",
+   "rc": 0,
+   "cost_usd": 4.3090948000000004,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T094639Z-p4-9189b50a/logs/1-tester.json"
+  },
+  {
+   "role": "triage",
+   "name": "4-triage",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.0926079,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T094639Z-p4-9189b50a/logs/4-triage.json"
+  },
+  {
+   "role": "oracle",
+   "name": "8-oracle",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.38129000000000013,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T094639Z-p4-9189b50a/logs/8-oracle.json"
+  }
+ ]
+}
