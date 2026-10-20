@@ -300,6 +300,34 @@ fn p3_root_keys_survive_restarts_and_epochs() {
 }
 
 #[test]
+// oracle: A §12.3 (G-39) "if recovery replays a committed log leaf from the WAL, a leaf the log's stores hold after the last replayed one has no committed transaction: recovery refuses (IntegrityViolation)"; §10.5 a leaf is stored only after COMMIT
+#[spec("SR-12.3-5")]
+fn p3_root_a_log_leaf_past_the_committed_wal_is_refused() {
+    let disks = Disks::new();
+    let user = KeyPair::generate();
+    let (db, _cid) = base(&disks, &user);
+    let clean = disks.fork();
+    let torn = disks.fork();
+    drop(db);
+    assert!(clean.open().is_ok(), "the untouched image recovers");
+    let vfs: &dyn sever_vfs::Vfs = &torn.data;
+    let last = vfs.list("wal").unwrap().into_iter().max().unwrap();
+    let path = if last.contains('/') {
+        last
+    } else {
+        format!("{}/{last}", "wal")
+    };
+    let mut f = vfs.open(&path, sever_vfs::OpenMode::Existing).unwrap();
+    let len = f.len().unwrap();
+    // The last COMMIT loses its last byte: the sixth insert is discarded (§12.3), but its leaf
+    // was stored after that COMMIT was durable (§10.5).
+    f.truncate(len - 1).unwrap();
+    f.fsync().unwrap();
+    drop(f);
+    assert!(matches!(torn.open(), Err(Error::IntegrityViolation { .. })));
+}
+
+#[test]
 // oracle: A §11.3 (G-37) "From the database's creation the anchors list the operator's and every witness's epoch-0 key", unchanged by a restart
 #[spec("SR-11.3-11")]
 fn p3_root_a_new_databases_anchors_hold_every_witness_key() {
