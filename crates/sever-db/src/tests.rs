@@ -633,3 +633,22 @@ fn p4_db_sealer_1_is_aes_gcm_siv_and_only_it_has_a_key_file() {
     let p2_names: Vec<String> = files(&p2.keys).into_iter().map(|(p, _)| p).collect();
     assert!(!p2_names.iter().any(|p| p == "KEYS"), "{p2_names:?}");
 }
+
+#[test]
+// oracle: A §6.3 "create_collection MUST verify … d …; a failed check is rejected with IntegrityViolation naming the check, never a value" (DB-64); WrongDimension is §4.1 step 0's, for an input vector (§17)
+#[spec("SR-6.3-3")]
+fn p4_db_refuses_an_artefact_of_another_dimension() {
+    let disks = Disks::new();
+    let mut s = Settings::new(384);
+    s.clock = disks.clock.clone();
+    let db = open_on(
+        Arc::new(disks.data.clone()),
+        Arc::new(disks.keys.clone()),
+        s,
+    )
+    .unwrap();
+    assert!(matches!(
+        db.create_collection(ARTEFACT, OPTS),
+        Err(Error::IntegrityViolation { .. })
+    ));
+}

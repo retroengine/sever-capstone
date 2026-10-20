@@ -456,6 +456,8 @@ fn p3_root_a_credential_signed_for_another_collection_is_refused() {
 }
 
 #[test]
+// oracle: A §6.3 "create_collection MUST verify … d …; a failed check is rejected with IntegrityViolation naming the check, never a value" (DB-64); WrongDimension is §4.1 step 0's, for an input vector (§17)
+#[spec("SR-6.3-3")]
 fn p3_root_refuses_an_artefact_of_another_dimension() {
     let disks = Disks::new();
     let mut s = Settings::new(384);
@@ -466,10 +468,10 @@ fn p3_root_refuses_an_artefact_of_another_dimension() {
         s,
     )
     .unwrap();
-    assert_eq!(
+    assert!(matches!(
         db.create_collection(ARTEFACT, OPTS),
-        Err(Error::WrongDimension)
-    );
+        Err(Error::IntegrityViolation { .. })
+    ));
 }
 
 #[test]
