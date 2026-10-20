@@ -1562,6 +1562,10 @@ acknowledgement was lost is retried with the same request (§15.1); a new reques
 `r_t`, hence a new `C_t`. The engine verifies the signature over the collection inserted into
 (§15.1 step 2), whatever collection the request names (DB-84).
 
+The receipt carries the insert's `database_lsn` and its placement. The SDK and the command-line
+tool report the placement as the §5.1 text form of the group the record is in after the
+transaction: `frozen-NNNN`, `spawn-` followed by 16 lowercase hex characters, or `holding` (G-38).
+
 ### 16.3 Command-line tools
 
 | Tool | Component | Purpose |

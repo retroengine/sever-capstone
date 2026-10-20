@@ -430,7 +430,8 @@ impl PyEngine {
         let c = cid(collection)?;
         let req = request.get().request(passage);
         self.with(py, move |o| {
-            o.db.insert(c, req).map(|(lsn, p)| (lsn, format!("{p:?}")))
+            o.db.insert(c, req)
+                .map(|(lsn, p)| (lsn, sever_p3::placement_text(&p)))
         })
     }
 

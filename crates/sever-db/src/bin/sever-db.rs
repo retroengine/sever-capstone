@@ -226,7 +226,7 @@ fn run(cmd: &str, a: &Args) -> Result<Result<Value, Error>, String> {
                         passage: a.0.get("passage").map(|p| p.clone().into_bytes()),
                     },
                 )
-                .map(|(lsn, p)| json!({"database_lsn": lsn, "placement": format!("{p:?}")}))
+                .map(|(lsn, p)| json!({"database_lsn": lsn, "placement": sever_db::placement_text(&p)}))
             })
         }
         "delete" => db.delete(cid()?, a.get("id")?).map(|d| outcome_json(&d)),

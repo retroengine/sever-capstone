@@ -1,0 +1,13 @@
+diff --git a/crates/sever-py-p3/src/lib.rs b/crates/sever-py-p3/src/lib.rs
+index 3617911..3ae588f 100644
+--- a/crates/sever-py-p3/src/lib.rs
++++ b/crates/sever-py-p3/src/lib.rs
+@@ -431,7 +431,7 @@ impl PyEngine {
+         let req = request.get().request(passage);
+         self.with(py, move |o| {
+             o.db.insert(c, req)
+-                .map(|(lsn, p)| (lsn, sever_p3::placement_text(&p)))
++                .map(|(lsn, p)| (lsn, format!("{p:?}")))
+         })
+     }
+ 

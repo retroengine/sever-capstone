@@ -1693,3 +1693,14 @@
   package: sever-p3
   tests:
   - crates/sever-p3/src/tests.rs::p3_root_a_new_databases_anchors_hold_every_witness_key
+- id: PR3-F02
+  claim: "the Part 3 SDK reports the placement in Rust's debug form, not the §5.1 group ID (G-38)"
+  kind: red
+  requirements:
+  - SR-16.2-2
+  patch: PR3-F02.patch
+  runner: pytest
+  tests:
+  - python/sever_db_p3/tests/test_sdk_p3.py::test_p3_sdk_reports_the_placement_as_the_groups_text_form
+  build:
+  - native

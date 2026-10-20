@@ -506,5 +506,14 @@ pub fn open(o: &OpenOptions) -> Result<Opened, Error> {
 
 pub use sever_p2::{cid_hex, parse_cid};
 
+/// An insert's placement as the group's §5.1 text form: `frozen-NNNN`, `spawn-` + 16 hex
+/// characters, or `holding` (§16.2, G-38).
+pub fn placement_text(p: &Placement) -> String {
+    match p {
+        Placement::Frozen(g) | Placement::Spawned(g) => g.to_string(),
+        Placement::Holding => sever_types::GroupId::Holding.to_string(),
+    }
+}
+
 #[cfg(test)]
 mod tests;

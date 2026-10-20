@@ -309,14 +309,21 @@ fn p3_root_a_new_databases_anchors_hold_every_witness_key() {
     let ws = json["witnesses"].as_array().unwrap().clone();
     assert_eq!(ws.len(), 5);
     for (i, w) in ws.iter().enumerate() {
-        assert!(w["0"].is_string(), "witness {i} has its epoch-0 key from creation");
+        assert!(
+            w["0"].is_string(),
+            "witness {i} has its epoch-0 key from creation"
+        );
     }
     assert!(json["operator"]["0"].is_string());
     drop(db);
     disks.restart(CrashPolicy::DropAll);
     let again: serde_json::Value =
         serde_json::from_str(&disks.open().unwrap().anchors().to_json()).unwrap();
-    assert_eq!(again["witnesses"], serde_json::Value::Array(ws), "the same keys after a restart");
+    assert_eq!(
+        again["witnesses"],
+        serde_json::Value::Array(ws),
+        "the same keys after a restart"
+    );
 }
 
 #[test]

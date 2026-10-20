@@ -149,7 +149,7 @@ class Engine:
         req = self.sdk.prepare_insert(self.cid, rid, v.tolist(), self.user)
         p = self.db.insert(self.cid, req).placement or ""
         self.inserted += 1
-        if p == "Holding":
+        if p == "holding":
             self.holding.add(rid)
             self.ood += 1
         elif p.startswith("Spawned"):

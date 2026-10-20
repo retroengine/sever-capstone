@@ -140,7 +140,7 @@ def demo(root: Path, data: str, seed: int, work: Path) -> dict[str, Any]:
         # The account: the one with most records in one group (so its certificates can chain).
         by_acct: dict[str, list[str]] = {}
         for rid, acct in zip(ids, accounts, strict=False):
-            if rid in placed and not placed[rid][1].startswith("Holding"):
+            if rid in placed and placed[rid][1] != "holding":
                 by_acct.setdefault(acct, []).append(rid)
 
         def best_group(a: str) -> int:

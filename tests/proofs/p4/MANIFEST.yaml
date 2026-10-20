@@ -879,3 +879,14 @@
   package: sever-scan
   tests:
   - crates/sever-scan/src/tests.rs::p4_scan_recovers_live_records_from_a_checkpointed_image
+- id: PR4-F01
+  claim: "the final SDK reports the placement in Rust's debug form, not the §5.1 group ID (G-38)"
+  kind: red
+  requirements:
+  - SR-16.2-2
+  patch: PR4-F01.patch
+  runner: pytest
+  tests:
+  - python/sever_db/tests/test_sdk_p4.py::test_p4_sdk_reports_the_placement_as_the_groups_text_form
+  build:
+  - native

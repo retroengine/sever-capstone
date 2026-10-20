@@ -36,7 +36,7 @@ use sever_txn::{Clock, SystemClock, TxnParticipant};
 use sever_types::{CollectionId, Error};
 use sever_vfs::{PosixVfs, Vfs};
 
-pub use sever_p3::{Anchors, Deleted, cid_hex, parse_cid};
+pub use sever_p3::{Anchors, Deleted, cid_hex, parse_cid, placement_text};
 
 /// The final engine.
 pub type FinalEngine = Engine<CommitmentExtension, AeadSealer>;
