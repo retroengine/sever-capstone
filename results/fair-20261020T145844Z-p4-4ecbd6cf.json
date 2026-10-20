@@ -1,0 +1,195 @@
+{
+ "run_id": "20261020T145844Z-p4-4ecbd6cf",
+ "part": 4,
+ "module": null,
+ "commit": "4ecbd6cf551f9f53e95653a94413958bdfd33ba4",
+ "outcome": "FAIL",
+ "config_sha256": "231bb3fb123fee16c62fcc8cfa97b28811a5dbafccced9792d478ac1a49836ca",
+ "seal_digest": "f250da61a8459dd1dcdf1f9b60ada71d80bd09b994a1ef5fb2db9bc65a3b3979",
+ "owned_sha256": "b764310d3b191ffa4a65a5aac0c5b182c1886fafe18b45ee213532e7c5140862",
+ "rows": [
+  {
+   "check": "own suite green on the unpatched build",
+   "value": "True",
+   "ok": true
+  },
+  {
+   "check": "engine bugs (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "spec gaps (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "test gaps (escaped real bugs)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "oracle disagreements",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "planted bugs: cargo-mutants gate PASS in the ledger (DB-75)",
+   "value": "none",
+   "ok": false
+  },
+  {
+   "check": "judge outputs complete",
+   "value": "yes",
+   "ok": true
+  }
+ ],
+ "tests": 149,
+ "failing": 3,
+ "triage": {
+  "test_disk::test_mirror_entry_gone_from_memory_after_delete": {
+   "verdict": "TEST_ERROR",
+   "section": "\u00a712.6",
+   "reason": "The child died with PermissionError opening /proc/self/mem before any deletion happened, so the engine's zeroisation (\u00a712.6, \u00a715.8) was never exercised. Reading process memory through /proc is a property of the sandbox, not something the spec promises. The failure says nothing about the engine."
+  },
+  "test_drop::test_dropped_collection_is_unknown": {
+   "verdict": "TEST_ERROR",
+   "section": "\u00a715.9",
+   "reason": "The tuple (env.db, env.reopen()) is evaluated eagerly. reopen() closes the original Database before the loop body runs, so the first iteration calls collections() on a closed handle and gets 'the engine is closed'. That is a test bug; the spec (\u00a715.9, \u00a717) is not involved."
+  },
+  "test_sdk::test_quantisation_tie_survives_storage": {
+   "verdict": "TEST_ERROR",
+   "section": "\u00a78.1",
+   "reason": "The loop 'for db in (env.db, env.reopen())' builds the tuple before iterating. reopen() closes env.db, so the first search runs on a closed engine and raises 'the engine is closed'. The failure comes from test misuse of the interface and does not show whether tie-to-even quantisation (\u00a74.2) is stored correctly."
+  }
+ },
+ "planted": [],
+ "escapes": {},
+ "oracle": {
+  "pool": 59,
+  "verdicts": {
+   "01.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a712.8",
+    "reason": "The spec defines encrypted swap and hibernation over the entries of /proc/swaps, but not how that file is parsed. It does not say that the header line is skipped, that the kernel's octal escapes such as \\040 are decoded, or that the result is (name, type) pairs. The expected values depend on those parsing choices, which the spec leaves open (G-30 only fixes the classification rule)."
+   },
+   "02.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a712.6, \u00a715.3",
+    "reason": "\u00a712.6 and \u00a715.3 step 7 require the mirror entry to be removed and the old keys and decrypted buffers to be zeroed before acknowledgement. The deleted record must then not be found, and a rotation retires the group key and the bucket key. The test asserts that secret regions were released, that none was released non-zero, and that the record is gone from search. Each assertion follows from those rules and from \u00a712.8's zeroize-on-drop."
+   },
+   "03.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.3, \u00a721 (INV-12)",
+    "reason": "Deleting a record rotates its domain. The new keys can open only the newly sealed accumulator, so the sole accumulator version that opens is the current one. The departed record's bucket key is rotated, so its old envelope cannot be opened. Survivors are re-wrapped or sit in unrotated buckets, so they stay readable. All of this matches \u00a713.3 and INV-12."
+   },
+   "04.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a715.4, \u00a714.7",
+    "reason": "This is crash-table row 4: a torn phase C overwrite. After recovery the record is deleted, the torn slot fails its CRC, is treated as absent and is erased again, and only the v+1 key remains. A retry returns AlreadyAbsent. Each expected value matches \u00a715.4 and \u00a714.7."
+   },
+   "05.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a712.8",
+    "reason": "\u00a712.8 requires every secret type to implement Zeroize and ZeroizeOnDrop. The test checks the trait bounds on Key and BucketKey and that zeroize() leaves all zero bytes, which is what Zeroize means. A freshly generated random key being non-zero is a safe precondition."
+   },
+   "06.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a715.9, \u00a713.4",
+    "reason": "\u00a715.9 requires COLLECTION_DROP to commit first, so no key slot may be erased before the commit. Phase C then erases every slot, and a crash between the two is finished by the recovery rule because the slots belong to no domain. The test checks that all slots are present at the commit step and gone afterwards, with or without a crash, and that the collection list is empty after recovery. That matches the spec."
+   },
+   "07.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a714.7",
+    "reason": "Pair i starts at byte 4096+1024\u00b7i, and a domain's index is its pair position, appended in creation order and never reused. So the appends return 0 to 3, and after erasing a slot the next append returns 4. Slot 1 of pair 2 is at offset 4096+2048+512. Its layout is magic SVKS, then u64be domain_index at bytes 4 to 12, then the key at bytes 20 to 52. The test's byte checks match."
+   },
+   "08.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a712.3, \u00a713.2, \u00a713.1",
+    "reason": "\u00a712.3 and \u00a713.2 limit plaintext on disk to a fixed list: n, C_S, centroids, scrambled IDs, log leaves, certificates, group IDs and key versions. Vectors, r_t, passages and record IDs are ciphertext only, and keys appear in the clear only as group keys in KEYS. The scan for those values and the exemption for live group keys in KEYS follow \u00a713.1 and \u00a713.2, and erased old keys are zeros."
+   },
+   "09.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a712.8",
+    "reason": "The spec says the engine sets RLIMIT_CORE = 0 and PR_SET_DUMPABLE = 0. It does not say whether the hard limit is also set to 0 or only the soft limit. The test requires both current and maximum to be Some(0), which is stricter than the text. The dumpable half is fixed by the spec."
+   },
+   "10.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a720.3, \u00a713.2",
+    "reason": "The spec requires the RFC 8452 AES-256-GCM-SIV vectors to pass and fixes the nonce || ciphertext || tag layout. The expected values live in an external vector file that is not visible here. The count of 26 vectors is not fixed by the spec, so I cannot check the expected values or that count."
+   }
+  },
+  "picked": [
+   [
+    "crates/sever-platform/src/tests.rs",
+    "p4_platform_proc_swaps_is_parsed_with_escaped_names"
+   ],
+   [
+    "crates/sever-db/tests/zeroize_delete.rs",
+    "p4_db_a_deletion_releases_its_old_keys_as_zeros_and_removes_the_mirror_entry"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_rotation_shadow_model_current_keys_open_nothing_from_before_the_departure"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_crash_table_row_4_a_torn_phase_c_overwrite"
+   ],
+   [
+    "crates/sever-platform/tests/zeroize_request.rs",
+    "p4_platform_secret_types_zeroize_on_request"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_drop_collection_erases_every_key_after_its_commit"
+   ],
+   [
+    "crates/sever-keys/src/tests.rs",
+    "p4_keys_a_domain_index_is_its_pair_position_in_creation_order"
+   ],
+   [
+    "crates/sever-db/src/tests.rs",
+    "p4_db_no_forbidden_plaintext_reaches_either_disk"
+   ],
+   [
+    "crates/sever-platform/tests/linux.rs",
+    "p4_platform_linux_probe_turns_core_dumps_off"
+   ],
+   [
+    "crates/sever-seal/src/tests.rs",
+    "p4_seal_aes_256_gcm_siv_matches_every_rfc_8452_vector"
+   ]
+  ]
+ },
+ "findings": [],
+ "sessions": [
+  {
+   "role": "tester",
+   "name": "1-tester",
+   "model": "opus",
+   "rc": 0,
+   "cost_usd": 3.7293819999999998,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T145844Z-p4-4ecbd6cf/logs/1-tester.json"
+  },
+  {
+   "role": "triage",
+   "name": "4-triage",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.076631,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T145844Z-p4-4ecbd6cf/logs/4-triage.json"
+  },
+  {
+   "role": "oracle",
+   "name": "8-oracle",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.3184493,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T145844Z-p4-4ecbd6cf/logs/8-oracle.json"
+  }
+ ]
+}
