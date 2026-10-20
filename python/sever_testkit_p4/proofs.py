@@ -67,13 +67,16 @@ def problems(root: Path, proofs: list[Proof3], audit: Audit) -> list[str]:
 
 @contextmanager
 def _part4_manifest() -> Iterator[None]:
-    """Part 3's runner, reading Part 4's manifest for the duration."""
-    saved = (p3proofs.MANIFEST, p3proofs.load)
-    p3proofs.MANIFEST, p3proofs.load = MANIFEST, load  # type: ignore[misc]
+    """Part 3's runner, reading Part 4's manifest and building Part 4's SDK and CLI (``native``,
+    ``cli``) for the duration."""
+    saved = (p3proofs.MANIFEST, p3proofs.load, p3proofs.SDK_CRATE, p3proofs.CLI_PACKAGE)
+    (p3proofs.MANIFEST, p3proofs.load, p3proofs.SDK_CRATE, p3proofs.CLI_PACKAGE) = (  # type: ignore[misc]
+        MANIFEST, load, "crates/sever-py/Cargo.toml", "sever-db"
+    )  # fmt: skip
     try:
         yield
     finally:
-        p3proofs.MANIFEST, p3proofs.load = saved  # type: ignore[misc]
+        (p3proofs.MANIFEST, p3proofs.load, p3proofs.SDK_CRATE, p3proofs.CLI_PACKAGE) = saved  # type: ignore[misc]
 
 
 def run(root: Path, only: list[str]) -> tuple[str, bool, list[Verdict]]:
