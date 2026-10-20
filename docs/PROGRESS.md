@@ -35,6 +35,18 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
 - **Decisions this round:** DB-94 (interim checks; Part 4's crash windows), DB-95 (an emptied group's
   proof is not context-bound; closes G-34), DB-96 (EX-2 on `fuse2fs` with `allow_unsafe_fs`; the
   evaluation's builds; closes G-35), DB-97 (`demo-engine/`, the final database in use; closes G-36).
+- **Fair-testing bug hunts (20 Oct 2026, DB-98; $11.58):** Part 3 105/115 pass, Part 4 145/146.
+  Three real issues to fix next, by hand following FT-9's steps (owner: low cost), then G-37…G-39
+  and DB-99: (1) a new database's `anchors()` lists no witness keys: `sever-p3/src/witnesses.rs`
+  creates a witness's epoch key only at its first cosignature; fix: in `load`, create and record
+  each witness's epoch-0 key (both parts use this module). (2) `placement` is Rust debug text
+  (`Frozen(GroupId(frozen-0000))`, `Holding`) in `sever-py`, `sever-py-p3`, `sever-db` and
+  `sever-db-p3` (`format!("{p:?}")`); fix: the §5.1 text form (`GroupId` `Display`, `holding`),
+  amend §16.2, update `sever_demo_p3/receipt.py` and `sever_experiments/ex6.py` (they test
+  `"Holding"`). (3) A damaged last COMMIT whose log leaf was already stored opens with 5 leaves
+  and 4 records; fix: at open, check the last log leaf against the engine (an insert leaf's record
+  must be live unless its collection was dropped; a deletion leaf's record must be absent; records
+  carry `insert_leaf_index`), else `IntegrityViolation` (INV-15); amend §12.3/§19.
 - **The engine demo (19 Oct 2026):** `demo-engine/demo.sh tour` (12 chapters on 5,000 NQ passages:
   24 of 24 checks pass), `shell`, `cli`, `erase`, `examples`, `test` (4 offline tests pass).
 - **Working copy:** `~/sever-db` on the WSL ext4 disk (the `C:` copy is a backup).
