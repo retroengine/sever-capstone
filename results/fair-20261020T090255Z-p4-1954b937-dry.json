@@ -1,0 +1,185 @@
+{
+ "run_id": "20261020T090255Z-p4-1954b937-dry",
+ "part": 4,
+ "module": null,
+ "commit": "1954b9375b5735d2b0735583beac63a0927d346a",
+ "outcome": "DRY",
+ "config_sha256": "231bb3fb123fee16c62fcc8cfa97b28811a5dbafccced9792d478ac1a49836ca",
+ "seal_digest": "39ea98b74fee249b44475cace7461aa519b6635c06d6f9a0f62b39b6b005ee72",
+ "owned_sha256": "015735da48201af3d82cdbc7cc6d563be9c6a9b7ed6ee062a01393866e814460",
+ "rows": [
+  {
+   "check": "own suite green on the unpatched build",
+   "value": "True",
+   "ok": true
+  },
+  {
+   "check": "engine bugs (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "spec gaps (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "test gaps (escaped real bugs)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "oracle disagreements",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "planted bugs: cargo-mutants gate PASS in the ledger (DB-75)",
+   "value": "none",
+   "ok": true
+  },
+  {
+   "check": "judge outputs complete",
+   "value": "yes",
+   "ok": true
+  }
+ ],
+ "tests": 2,
+ "failing": 1,
+ "triage": {
+  "test_stub::test_stub_wrong_on_purpose": {
+   "verdict": "TEST_ERROR",
+   "section": "\u00a716.2",
+   "reason": "Stub verdict."
+  }
+ },
+ "planted": [],
+ "escapes": {},
+ "oracle": {
+  "pool": 59,
+  "verdicts": {
+   "01.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "02.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "03.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "04.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "05.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "06.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "07.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "08.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "09.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "10.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   }
+  },
+  "picked": [
+   [
+    "crates/sever-platform/src/tests.rs",
+    "p4_platform_every_overridden_check_is_reported_in_order"
+   ],
+   [
+    "crates/sever-keys/src/tests.rs",
+    "p4_keys_recovery_refuses_a_domain_whose_active_version_is_in_two_slots"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_startup_refuses_a_missing_or_torn_active_key_slot"
+   ],
+   [
+    "crates/sever-seal/src/tests.rs",
+    "p4_seal_joining_a_domain_rotates_nothing"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_a_crash_during_recovery_erasure_is_finished_by_the_next_start"
+   ],
+   [
+    "crates/sever-platform/src/tests.rs",
+    "p4_platform_filesystem_rows_of_the_register_refuse_and_start_as_listed"
+   ],
+   [
+    "crates/sever-platform/src/tests.rs",
+    "p4_platform_a_probe_that_cannot_answer_fails_closed"
+   ],
+   [
+    "crates/sever-keys/src/tests.rs",
+    "p4_keys_the_header_is_written_once_and_checked_at_open"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_the_new_key_is_durable_before_the_commit_and_the_old_one_outlives_it"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_crash_table_row_5_crash_after_phase_c_before_the_acknowledgement"
+   ]
+  ]
+ },
+ "findings": [],
+ "sessions": [
+  {
+   "role": "tester",
+   "name": "1-tester",
+   "model": "stub",
+   "rc": 0,
+   "cost_usd": null,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T090255Z-p4-1954b937-dry/logs/1-tester.json"
+  },
+  {
+   "role": "triage",
+   "name": "4-triage",
+   "model": "stub",
+   "rc": 0,
+   "cost_usd": null,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T090255Z-p4-1954b937-dry/logs/4-triage.json"
+  },
+  {
+   "role": "oracle",
+   "name": "8-oracle",
+   "model": "stub",
+   "rc": 0,
+   "cost_usd": null,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T090255Z-p4-1954b937-dry/logs/8-oracle.json"
+  }
+ ]
+}

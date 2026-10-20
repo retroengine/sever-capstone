@@ -1,0 +1,185 @@
+{
+ "run_id": "20261020T084839Z-p3-bcde0a11-dry",
+ "part": 3,
+ "module": null,
+ "commit": "bcde0a11f7b293faacd5104f24847f69f175672b",
+ "outcome": "DRY",
+ "config_sha256": "231bb3fb123fee16c62fcc8cfa97b28811a5dbafccced9792d478ac1a49836ca",
+ "seal_digest": "39ea98b74fee249b44475cace7461aa519b6635c06d6f9a0f62b39b6b005ee72",
+ "owned_sha256": "fa57a95f8202f122b66dfb0ce7d0fcc9101edbdecde9dcffdd87bcb02516a17c",
+ "rows": [
+  {
+   "check": "own suite green on the unpatched build",
+   "value": "False",
+   "ok": false
+  },
+  {
+   "check": "engine bugs (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "spec gaps (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "test gaps (escaped real bugs)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "oracle disagreements",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "planted bugs: cargo-mutants gate PASS in the ledger (DB-75)",
+   "value": "none",
+   "ok": true
+  },
+  {
+   "check": "judge outputs complete",
+   "value": "yes",
+   "ok": true
+  }
+ ],
+ "tests": 2,
+ "failing": 1,
+ "triage": {
+  "test_stub::test_stub_wrong_on_purpose": {
+   "verdict": "TEST_ERROR",
+   "section": "\u00a716.2",
+   "reason": "Stub verdict."
+  }
+ },
+ "planted": [],
+ "escapes": {},
+ "oracle": {
+  "pool": 88,
+  "verdicts": {
+   "01.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "02.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "03.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "04.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "05.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "06.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "07.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "08.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "09.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "10.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   }
+  },
+  "picked": [
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_challenge_matches_section_9_5_and_golden_vector_3"
+   ],
+   [
+    "crates/sever-commit/src/tests.rs",
+    "p3_commit_stream_matches_the_model_step_by_step"
+   ],
+   [
+    "crates/sever-log/src/tests.rs",
+    "p3_log_delete_leaf_is_0x02_and_the_certificate"
+   ],
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_signatures_are_checked_strictly"
+   ],
+   [
+    "python/sever_db_p3/tests/test_sdk_p3.py",
+    "test_p3_sdk_delete_returns_a_certificate_that_verifies"
+   ],
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_record_and_group_commitments_match_the_model"
+   ],
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_expand_message_xmd_matches_rfc9380_k3"
+   ],
+   [
+    "crates/sever-cert/tests/log_participant.rs",
+    "p3_log_txn_every_leaf_records_its_placement"
+   ],
+   [
+    "crates/sever-log/src/tests.rs",
+    "p3_log_checkpoint_cadence_is_every_10000_leaves"
+   ],
+   [
+    "tests/architecture/test_architecture_p3.py",
+    "test_p3_arch_verifier_shares_no_code_with_the_engine"
+   ]
+  ]
+ },
+ "findings": [],
+ "sessions": [
+  {
+   "role": "tester",
+   "name": "1-tester",
+   "model": "stub",
+   "rc": 0,
+   "cost_usd": null,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T084839Z-p3-bcde0a11-dry/logs/1-tester.json"
+  },
+  {
+   "role": "triage",
+   "name": "4-triage",
+   "model": "stub",
+   "rc": 0,
+   "cost_usd": null,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T084839Z-p3-bcde0a11-dry/logs/4-triage.json"
+  },
+  {
+   "role": "oracle",
+   "name": "8-oracle",
+   "model": "stub",
+   "rc": 0,
+   "cost_usd": null,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T084839Z-p3-bcde0a11-dry/logs/8-oracle.json"
+  }
+ ]
+}
