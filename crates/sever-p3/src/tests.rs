@@ -328,6 +328,39 @@ fn p3_root_a_log_leaf_past_the_committed_wal_is_refused() {
 }
 
 #[test]
+// oracle: A §17 (G-41) "An IntegrityViolation names the check that failed; a failure to read or verify stored data is reported as that failure"; §14.8 a store reference that does not lead to a whole record; §15.3 step 2 "otherwise IntegrityViolation and touch nothing"
+#[spec("SR-17-7")]
+fn p3_root_a_delete_whose_leaf_cannot_be_read_names_the_store_check() {
+    let disks = Disks::new();
+    let user = KeyPair::generate();
+    let (db, cid) = base(&disks, &user);
+    let before = db.engine.stats(cid).unwrap();
+    // The leaf store loses its records while the database is open (another process replaced
+    // the file): the stored insert leaf of `rec-0` cannot be read back.
+    let vfs: &dyn sever_vfs::Vfs = &disks.data;
+    let mut f = vfs
+        .open(
+            "log/leaves/00000000000000000001.store",
+            sever_vfs::OpenMode::Existing,
+        )
+        .unwrap();
+    f.truncate(16).unwrap(); // the 16-byte store header only (§14.8)
+    drop(f);
+    match db.delete(cid, "rec-0") {
+        Err(Error::IntegrityViolation { invariant }) => {
+            assert_eq!(invariant, "§14.8 store reference");
+        }
+        other => panic!("not IntegrityViolation: {other:?}"),
+    }
+    let after = db.engine.stats(cid).unwrap();
+    assert_eq!(
+        (after.big_n, after.holding),
+        (before.big_n, before.holding),
+        "touch nothing"
+    );
+}
+
+#[test]
 // oracle: A §11.3 (G-37) "From the database's creation the anchors list the operator's and every witness's epoch-0 key", unchanged by a restart
 #[spec("SR-11.3-11")]
 fn p3_root_a_new_databases_anchors_hold_every_witness_key() {
