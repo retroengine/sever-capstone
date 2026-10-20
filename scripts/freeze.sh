@@ -27,8 +27,14 @@ case "$part" in
             fuzz-p3/Cargo.lock fuzz-p3/fuzz_targets fuzz-p3/seeds
             python/sever_refmodel_certs python/sever_testkit_p3 python/sever_db_p3 python/sever_demo_p3
             python/sever_db_p3_native.pyi tests/e2e_p3 tests/architecture/test_architecture_p3.py
-            scripts/p3-demo.sh
-            'golden/p3_*' docs/SOUNDNESS.md tests/proofs/p3) ;;  # planned (Build 3-4 §1.4); final list at freeze
+            scripts/p3-demo.sh spikes/p3-proof
+            'golden/p3_*' docs/SOUNDNESS.md tests/proofs/p3) ;;  # Build 3-4 §1.4; final (DB-98)
+  4) owned=(crates/sever-keys crates/sever-seal crates/sever-erasure crates/sever-platform
+            crates/sever-db crates/sever-py crates/sever-scan crates/sever-crashkit-p4 crates/sever-eval
+            python/sever_db python/sever_db_native.pyi python/sever_testkit_p4 python/sever_experiments
+            fuzz-p4/Cargo.toml fuzz-p4/Cargo.lock fuzz-p4/fuzz_targets
+            tests/proofs/p4 tests/architecture/test_key_export.py tests/architecture/test_p4_pins.py
+            scripts/demo-p4.sh) ;;  # Build 3-4 §2.4; final (DB-98)
   *) echo "no ownership list for part $part yet"; exit 2 ;;
 esac
 if [ $list = 1 ]; then

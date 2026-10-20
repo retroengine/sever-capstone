@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-97)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-98)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1042,6 +1042,29 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-98 — Fair testing of Parts 3 and 4: Part 4's scope, the final ownership lists, bug hunts before the VM (20 October 2026)
+
+**Decision.** (1) `configs/fair.yaml` gains Part 4, registered before any Part 4 run (FT-8). Its
+scope is §12.6, §12.8–12.9, §13, §14.5, §14.7, §15.3–15.4, §15.8–15.9 and §16.2–16.3. Its public
+interface is the README's "Use the database" and "Part 4" sections and the final SDK's stub; the
+SDK is `sever_db`, the CLI `sever-db`; its modules are `sever-keys`, `sever-seal`, `sever-erasure`
+and `sever-platform`. (2) A part may carry `environment`: a fact about the machine that runs the
+tests (not about the engine), put into the tester's prompt. Part 4's says that the machine has
+unencrypted swap and cannot lock memory, so §12.8 refuses to open a database there without the
+development override. (3) The tester's prompt names the part's own SDK (it named `sever_db_p2`
+for every part), and every room exports `SEVER_SDK`; the dry-run stub imports that package, so a
+dry run now checks the plumbing of any part. (4) The ownership lists in `scripts/freeze.sh` for
+Part 3 (now with `spikes/p3-proof`) and Part 4 are final; FT-10 hashes them. (5) Runs made before
+the VM's gates are bug hunts. Their verdict cannot be PASS, because DB-75 counts planted bugs only
+once the part's cargo-mutants gate has passed in the ledger. The runs that count for the freeze
+come after the VM run (owner, 20 October 2026). **Why.** Finding an engine bug before the VM run
+costs one fair run; finding it after costs a rerun of the VM's gates. Without (2), every Part 4
+test that opens a database would fail on a correct refusal and the run would measure almost
+nothing. Without (3), the tester of Part 3 or 4 is told the wrong package. **Rejected.** Running
+the cargo-mutants gates on the laptop first (DB-94 keeps the full gates on the VM). Saying nothing
+about the platform. **Consequence.** Parts 3 and 4 each get two fair runs, about $5 each typically
+(the per-session caps bound each at $25; a command stops at $40).
 
 #### DB-97 — `demo-engine/`: the final database used as an application uses it (19 October 2026)
 
@@ -2334,6 +2357,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **20 October 2026 — Fair testing of Parts 3 and 4.** DB-98 (Part 4's pre-registered scope; the
+  machine's platform told to the tester; the tester told the part's own SDK; final ownership lists;
+  bug hunts before the VM). Specification sections touched: none.
 - **19 October 2026 — The engine demo.** DB-97 (`demo-engine/`: the final database used as an
   application uses it; closes G-36). Specification sections touched: §19.2.
 - **19 October 2026 — The evaluation's harness.** DB-96 (EX-2 on `fuse2fs` with `allow_unsafe_fs`;

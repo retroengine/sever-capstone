@@ -14,7 +14,7 @@ its implementation, and you cannot: this sandbox holds only what a stranger may 
 
 ## The engine is sealed
 
-The Python SDK `sever_db_p2` imports, and the CLI `$SEVER_CLI` exists, but every call raises
+The Python SDK `{sdk}` imports, and the CLI `$SEVER_CLI` exists, but every call raises
 `EngineSealed` until your tests are sealed. You cannot learn what the engine does, and you must not
 try. Derive every expected value **by hand from the spec**, and explain the derivation in a comment
 next to the assertion. Never write a test that expects `EngineSealed`. After you finish, your files
@@ -31,6 +31,8 @@ marker `req`). You may use pytest, hypothesis and numpy. For every test:
 4. Isolation: each test makes its own database folders with
    `tempfile.mkdtemp(dir=os.environ["SEVER_SCRATCH"])` (an ext4 folder). `/tmp` is tmpfs.
    Inputs: `os.environ["SEVER_INPUTS"]`. CLI: `os.environ["SEVER_CLI"]`.
+
+{environment}
 
 Test behaviour that matters, through the public interface only: exactness after deletion (compare
 with a twin database where the record never arrived), idempotent retries, all-or-nothing multi-record

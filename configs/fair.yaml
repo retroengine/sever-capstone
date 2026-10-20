@@ -121,6 +121,62 @@ parts:
       sever-log: {sections: ["10"], plant: [crates/sever-log/src]}
       sever-cert: {sections: ["11.1", "11.2"], plant: [crates/sever-cert/src]}
 
+  4:                        # Part 4, The Erasure (Build 3-4 §2); DB-98
+    sections: ["12.6", "12.8", "12.9", "13", "14.5", "14.7", "15.3", "15.4", "15.8", "15.9", "16.2", "16.3"]
+    not_sections: []
+    docs:
+      - docs/SEVER-DB_SPECIFICATION.md
+      - docs/SEVER-DB_PROJECT_OVERVIEW.md
+      - docs/SEVER-DB_BUILD_PLAN_PART_3-4.md
+      - docs/SPEC_GAPS.md
+      - spec/requirements.yaml
+    api_docs:
+      - file: README.md
+        from: "## Use the database"
+        to: "## Quick start"
+        as: USE_THE_DATABASE.md
+      - file: README.md
+        from: "## Part 4: The Erasure"
+        to: "### Part 4 results"
+        as: PART4_API.md
+    api_files:
+      - python/sever_db_native.pyi
+      - python/sever_db/__init__.py
+    inputs:
+      - golden/p1_partition_small.svp
+      - golden/p1_partition_small.json
+      - artefacts/partition-seed42.svp
+      - artefacts/partition-seed42.json
+    sdk:
+      crate: crates/sever-py/Cargo.toml
+      package: python/sever_db
+      native: sever_db_native
+      stub: python/sever_db_native.pyi
+    cli:
+      package: sever-db
+      bins: [sever-db]
+    # A fact about the machine the tests run on, not about the engine (DB-98).
+    environment: >-
+      The machine that runs your tests has unencrypted swap and cannot lock memory, so the startup
+      checks of §12.8 refuse to open a database there unless the development override is given
+      (`allow_unsafe_memory=True` in the SDK, `--allow-unsafe-memory` on the CLI; see /room/api).
+      `SEVER_SCRATCH` is on ext4.
+    own_suite:
+      - ["cargo", "test", "--workspace", "-q"]
+      - ["uv", "run", "--no-sync", "pytest", "-q", "-x", "-m", "not slow", "-p", "no:cacheprovider"]
+    plant_paths:            # used only with planted_bugs: ai
+      - crates/sever-keys/src
+      - crates/sever-seal/src
+      - crates/sever-erasure/src
+      - crates/sever-platform/src
+      - crates/sever-db/src
+      - crates/sever-py/src
+    modules:
+      sever-keys: {sections: ["13.1", "13.4", "14.7"], plant: [crates/sever-keys/src]}
+      sever-seal: {sections: ["13.2", "14.5"], plant: [crates/sever-seal/src]}
+      sever-erasure: {sections: ["13.3", "15.3", "15.8"], plant: [crates/sever-erasure/src]}
+      sever-platform: {sections: ["12.6", "12.8", "12.9"], plant: [crates/sever-platform/src]}
+
 # Cost control (DB-74). These decide when a command stops, never what is tested, so they are not
 # part of the fairness digest (FT-8): models, counts, the pass rule and the scopes above are.
 budget:

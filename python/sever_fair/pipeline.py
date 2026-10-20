@@ -160,6 +160,7 @@ def room_box(
         "SEVER_INPUTS": "/room/inputs",
         "SEVER_SCRATCH": "/scratch",
         "SEVER_CLI": "/room/bin/" + run.part["cli"]["bins"][0],
+        "SEVER_SDK": Path(run.part["sdk"]["package"]).name,
     }
     return b
 
@@ -223,6 +224,8 @@ def write(run: Run) -> None:
         not_sections=", ".join(f"§{s}" for s in sc.not_sections) or "nothing",
         module_line=f"This run covers the module `{sc.module}` only." if sc.module else "",
         min_tests=10 if sc.module else 40,
+        sdk=Path(run.part["sdk"]["package"]).name,
+        environment=str(run.part.get("environment", "")).strip(),
     )
     run.session(
         role="tester",

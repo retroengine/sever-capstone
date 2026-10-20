@@ -16,42 +16,34 @@ def pytest_configure(config):
 """
 
 TESTS = '''"""Stub clean-room tests (dry run): one should pass, one is wrong on purpose."""
+import importlib
 import os
 import tempfile
 from pathlib import Path
 
-import pytest
-
-from sever_db_p2 import Database
+sdk = importlib.import_module(os.environ["SEVER_SDK"])
 
 
-def _dirs():
+def _open():
     root = tempfile.mkdtemp(dir=os.environ["SEVER_SCRATCH"])
-    return Path(root, "data"), Path(root, "keys")
+    data, keys = Path(root, "data"), Path(root, "keys")
+    try:
+        return sdk.Database.open(data, keys)
+    except Exception as e:  # Part 4 refuses this machine (§12.8) without the override
+        if type(e).__name__ != "PlatformUnsafe":
+            raise
+        return sdk.Database.open(data, keys, allow_unsafe_memory=True)
 
 
-def _unit(d, i):
-    v = [0.0] * d
-    v[i % d] = 1.0
-    return v
-
-
-@pytest.mark.req("SR-15.1-1")
-def test_stub_insert_then_delete_leaves_no_member():
-    """§5: deleting the only record leaves every group empty (stub)."""
-    data, keys = _dirs()
-    with Database.open(data, keys) as db:
-        cid = db.create_collection(Path(os.environ["SEVER_INPUTS"], "p1_partition_small.svp"),
-                                   spawn_target=8)
-        db.insert(cid, "a", _unit(16, 0))
-        assert db.delete(cid, "a") == "deleted"
-        assert sum(n for _, n in db.group_sizes(cid)) == 0
+def test_stub_a_new_database_has_no_collections():
+    """§16.2: a new database holds no collection (stub)."""
+    with _open() as db:
+        assert db.collections() == []
 
 
 def test_stub_wrong_on_purpose():
     """A deliberately wrong expectation, so the dry run has a failure to triage."""
-    data, keys = _dirs()
-    with Database.open(data, keys) as db:
+    with _open() as db:
         assert db.collections() == ["no-such-collection"]
 '''
 
