@@ -1,9 +1,11 @@
+diff --git a/crates/sever-log/src/store.rs b/crates/sever-log/src/store.rs
+index 60999d8..6fe244e 100644
 --- a/crates/sever-log/src/store.rs
 +++ b/crates/sever-log/src/store.rs
-@@ -646,6 +646,7 @@
-                 placement,
+@@ -650,6 +650,7 @@ impl LogStore {
                  insert,
              } => {
+                 self.replayed_last = Some(index);
 +                let placement = Placement { flush: None, ..placement };
                  if index < self.tree.size() {
                      let same_type = self
