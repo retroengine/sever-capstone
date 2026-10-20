@@ -300,6 +300,26 @@ fn p3_root_keys_survive_restarts_and_epochs() {
 }
 
 #[test]
+// oracle: A §11.3 (G-37) "From the database's creation the anchors list the operator's and every witness's epoch-0 key", unchanged by a restart
+#[spec("SR-11.3-11")]
+fn p3_root_a_new_databases_anchors_hold_every_witness_key() {
+    let disks = Disks::new();
+    let db = disks.open().unwrap();
+    let json: serde_json::Value = serde_json::from_str(&db.anchors().to_json()).unwrap();
+    let ws = json["witnesses"].as_array().unwrap().clone();
+    assert_eq!(ws.len(), 5);
+    for (i, w) in ws.iter().enumerate() {
+        assert!(w["0"].is_string(), "witness {i} has its epoch-0 key from creation");
+    }
+    assert!(json["operator"]["0"].is_string());
+    drop(db);
+    disks.restart(CrashPolicy::DropAll);
+    let again: serde_json::Value =
+        serde_json::from_str(&disks.open().unwrap().anchors().to_json()).unwrap();
+    assert_eq!(again["witnesses"], serde_json::Value::Array(ws), "the same keys after a restart");
+}
+
+#[test]
 // oracle: A §10.4 "Each witness remembers the last log checkpoint it cosigned … and only then cosigns"
 #[spec("SR-10.4-1")]
 fn p3_root_witnesses_remember_what_they_cosigned_across_restarts() {
