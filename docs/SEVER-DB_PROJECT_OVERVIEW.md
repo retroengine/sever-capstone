@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-98)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-99)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1042,6 +1042,23 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-99 — The fair-testing findings of 20 October: witness keys from creation, placement text, a log leaf past the committed WAL (20 October 2026)
+
+**Decision.** (1) Every witness creates its epoch-0 key when the database is created, as the
+operator does, and records it in `WITNESSES` before use; the anchors list them from creation
+(G-37, §11.3). (2) The SDKs and command-line tools of Parts 3 and 4 report an insert's placement
+as the group's §5.1 text form (`frozen-NNNN`, `spawn-` + 16 hex characters, `holding`), not as a
+debug rendering (G-38, §16.2); Part 2's frozen SDK keeps its own. (3) Recovery refuses to open
+when the log's last leaf has no committed transaction behind it: an insert leaf whose record is
+not live in a collection that still exists, or a deletion leaf whose record is still live
+(`IntegrityViolation`, INV-15; G-39, §12.3). No crash produces that state, since leaves are
+written only after `COMMIT` is durable (§10.5), and the WAL discards only a suffix, so the last
+leaf is the one to check. (4) The owner chose to have these fixed by hand, following FT-9's
+steps (a red regression test committed first, the smallest fix, the gap and spec entries in the
+same commit), instead of `fair.sh fix` sessions, to save cost; the fair runs after the VM are the
+independent re-check. **Why.** The bug-hunt runs of DB-98. **Rejected.** Truncating the log back to
+the WAL (a published log never shrinks, §10.4).
 
 #### DB-98 — Fair testing of Parts 3 and 4: Part 4's scope, the final ownership lists, bug hunts before the VM (20 October 2026)
 
@@ -2357,6 +2374,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **20 October 2026 — The fair-testing findings.** DB-99 (witness keys from creation; placement
+  text; a log leaf past the committed WAL; closes G-37, G-38, G-39). Specification sections
+  touched: §11.3, §12.3, §16.2, §19.
 - **20 October 2026 — Fair testing of Parts 3 and 4.** DB-98 (Part 4's pre-registered scope; the
   machine's platform told to the tester; the tester told the part's own SDK; final ownership lists;
   bug hunts before the VM). Specification sections touched: none.

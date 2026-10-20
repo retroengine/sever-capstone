@@ -1,0 +1,13 @@
+diff --git a/crates/sever-p3/src/witnesses.rs b/crates/sever-p3/src/witnesses.rs
+index 32f8d4d..355b691 100644
+--- a/crates/sever-p3/src/witnesses.rs
++++ b/crates/sever-p3/src/witnesses.rs
+@@ -175,7 +175,7 @@ pub fn load(
+     let mut stored = stored;
+     let mut created = false;
+     for (i, (last, secrets)) in (0..WITNESSES).zip(stored.iter_mut()) {
+-        if !secrets.iter().any(|(e, _)| *e == 0) {
++        if false && !secrets.iter().any(|(e, _)| *e == 0) {
+             let s = os_secret();
+             state
+                 .witnesses

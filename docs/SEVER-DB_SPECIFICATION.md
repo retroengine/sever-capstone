@@ -894,7 +894,9 @@ epoch, witness public keys by epoch, and the generator golden file; DB-79). The 
 keys as a JSON anchors file, `{"d": N, "gdigest": hex, "operator": {"<epoch>": hex key},
 "witnesses": [{"<epoch>": hex key}, …]}` with the witnesses listed by index; the generator golden
 file is compiled into the verifier, which refuses anchors whose `gdigest` differs from its own
-derivation (DB-85).
+derivation (DB-85). From the database's creation the anchors list the operator's and every
+witness's epoch-0 key (each witness creates it when the database is created); a key of a later
+epoch is listed from its first use (G-37).
 
 1. **Parse** strictly (§11.1). Decode every point and scalar canonically. Reject if `C_t` is the
    identity.

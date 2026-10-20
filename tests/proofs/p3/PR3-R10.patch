@@ -1,9 +1,11 @@
+diff --git a/crates/sever-p3/src/witnesses.rs b/crates/sever-p3/src/witnesses.rs
+index 32f8d4d..a5c1ffc 100644
 --- a/crates/sever-p3/src/witnesses.rs
 +++ b/crates/sever-p3/src/witnesses.rs
-@@ -173,7 +173,7 @@
-         keys,
-         state: Mutex::new(state),
-     });
+@@ -195,7 +195,7 @@ pub fn load(
+     if created {
+         file.save(&lock(&file.state))?;
+     }
 -    Ok((0..WITNESSES)
 +    Ok((0..WITNESSES - 1)
          .zip(stored)

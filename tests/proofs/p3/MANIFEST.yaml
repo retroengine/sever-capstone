@@ -1683,3 +1683,13 @@
   runner: pytest
   tests:
   - python/sever_demo_p3/tests/test_receipt_p3.py::test_p3_demo_backend_uses_the_artefacts_encoder
+- id: PR3-F01
+  claim: "a witness has no epoch-0 key until its first cosignature, so a new database's anchors list no witness key (G-37)"
+  kind: red
+  requirements:
+  - SR-11.3-11
+  patch: PR3-F01.patch
+  runner: cargo
+  package: sever-p3
+  tests:
+  - crates/sever-p3/src/tests.rs::p3_root_a_new_databases_anchors_hold_every_witness_key

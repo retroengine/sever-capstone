@@ -168,11 +168,33 @@ pub fn load(
                 })
         })
         .collect();
+    // §11.3 (G-37): every witness has its epoch-0 key from the database's creation, as the
+    // operator does, so the anchors published at creation verify every later certificate. A new
+    // key is recorded in `WITNESSES` before it is used.
+    let mut state = state;
+    let mut stored = stored;
+    let mut created = false;
+    for (i, (last, secrets)) in (0..WITNESSES).zip(stored.iter_mut()) {
+        if !secrets.iter().any(|(e, _)| *e == 0) {
+            let s = os_secret();
+            state
+                .witnesses
+                .entry(i)
+                .or_insert_with(|| (*last, BTreeMap::new()))
+                .1
+                .insert(0, Zeroizing::new(*s));
+            secrets.push((0, *s));
+            created = true;
+        }
+    }
     // One file for all five.
     let file = Arc::new(WitnessFile {
         keys,
         state: Mutex::new(state),
     });
+    if created {
+        file.save(&lock(&file.state))?;
+    }
     Ok((0..WITNESSES)
         .zip(stored)
         .map(|(i, (last, secrets))| {
