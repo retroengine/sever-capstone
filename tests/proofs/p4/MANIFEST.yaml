@@ -890,3 +890,13 @@
   - python/sever_db/tests/test_sdk_p4.py::test_p4_sdk_reports_the_placement_as_the_groups_text_form
   build:
   - native
+- id: PR4-F02
+  claim: "an artefact of another dimension is refused with WrongDimension, not IntegrityViolation naming the check (§6.3)"
+  kind: red
+  requirements:
+  - SR-6.3-3
+  patch: PR4-F02.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/src/tests.rs::p4_db_refuses_an_artefact_of_another_dimension

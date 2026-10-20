@@ -1714,3 +1714,13 @@
   package: sever-p3
   tests:
   - crates/sever-p3/src/tests.rs::p3_root_a_log_leaf_past_the_committed_wal_is_refused
+- id: PR3-F04
+  claim: "an artefact of another dimension is refused with WrongDimension, not IntegrityViolation naming the check (§6.3)"
+  kind: red
+  requirements:
+  - SR-6.3-3
+  patch: PR3-F04.patch
+  runner: cargo
+  package: sever-p3
+  tests:
+  - crates/sever-p3/src/tests.rs::p3_root_refuses_an_artefact_of_another_dimension

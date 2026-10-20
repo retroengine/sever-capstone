@@ -189,7 +189,10 @@ impl Db {
         opts: CollectionOptions,
     ) -> Result<CollectionId, Error> {
         if PartitionArtefact::parse(artefact)?.d != self.d() {
-            return Err(Error::WrongDimension);
+            // §6.3, DB-64: a failed artefact check names the check (WrongDimension is §4.1's).
+            return Err(Error::IntegrityViolation {
+                invariant: "§6.3 artefact d",
+            });
         }
         self.engine.create_collection(artefact, opts)
     }

@@ -1,0 +1,15 @@
+diff --git a/crates/sever-p3/src/lib.rs b/crates/sever-p3/src/lib.rs
+index 4c60b2e..08f1521 100644
+--- a/crates/sever-p3/src/lib.rs
++++ b/crates/sever-p3/src/lib.rs
+@@ -264,9 +264,7 @@ impl Db {
+     ) -> Result<CollectionId, Error> {
+         if PartitionArtefact::parse(artefact)?.d != self.d() {
+             // §6.3, DB-64: a failed artefact check names the check (WrongDimension is §4.1's).
+-            return Err(Error::IntegrityViolation {
+-                invariant: "§6.3 artefact d",
+-            });
++            return Err(Error::WrongDimension);
+         }
+         self.engine.create_collection(artefact, opts)
+     }

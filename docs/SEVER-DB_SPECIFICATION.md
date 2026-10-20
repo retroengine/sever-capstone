@@ -1062,7 +1062,10 @@ Deleting a record overwrites its mirror entry, record ID bytes and any decrypted
 - The key file's filesystem overwrites in place. It is an allow-list: ext4, XFS, and btrfs only when
   `KEYS` carries the no-copy-on-write attribute. Anything else (ZFS, btrfs without it, tmpfs, f2fs,
   overlayfs, a Windows drive under WSL) is refused. Before `KEYS` exists, the key directory's
-  attribute decides, because a new file inherits it (overview DB-93).
+  attribute decides, because a new file inherits it (overview DB-93). The key-file check comes with the key
+  file, in Part 4 (§14.7); the builds of Parts 2 and 3 keep their secrets in plaintext under
+  `PlaintextSealer` and make no confidentiality claim (DB-48), so they check the data directory
+  only (G-40).
 - Both filesystem checks are overridden only by `platform.allow_unsafe_fs = true`, which is for
   development only and is recorded in every run ledger entry (owner decision of 7 October 2026 for the
   data directory; overview DB-90 for the key directory).

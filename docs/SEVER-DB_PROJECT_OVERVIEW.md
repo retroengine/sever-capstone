@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-99)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-100)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1042,6 +1042,16 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-100 — The second Part 3 bug hunt: the artefact's dimension check, and which part checks the key file's filesystem (20 October 2026)
+
+**Decision.** (1) The roots of Parts 3 and 4 refuse an artefact whose dimension differs from the
+database's with `IntegrityViolation` naming the check (`§6.3 artefact d`), as §6.3 and DB-64
+require and as Part 2's engine already did; they had raised `WrongDimension`, which §17 keeps for
+an input vector (§4.1 step 0). (2) §12.9's key-file filesystem check applies from Part 4, which
+brings the key file (G-40). Fixed by hand as in DB-99. **Why.** Fair run 20261020T141334Z (170 of
+172 clean-room tests passed). **Rejected.** Adding the key-directory check to Part 3's build: it
+stores secrets in plaintext by design (DB-48), so the check would protect nothing.
 
 #### DB-99 — The fair-testing findings of 20 October: witness keys from creation, placement text, a log leaf past the committed WAL (20 October 2026)
 
@@ -2374,6 +2384,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **20 October 2026 — The second Part 3 bug hunt.** DB-100 (the artefact's dimension check names
+  the check; the key-file filesystem check is Part 4's; closes G-40). Specification sections
+  touched: §12.9.
 - **20 October 2026 — The fair-testing findings.** DB-99 (witness keys from creation; placement
   text; a log leaf past the committed WAL; closes G-37, G-38, G-39). Specification sections
   touched: §11.3, §12.3, §16.2, §19.
