@@ -19,7 +19,7 @@ and reopen. Red test 4f2f725 (`p4_db_a_checkpoint_after_recovery_keeps_every_rot
 449927f, proofs PR4-E22, PR4-E23; SR-15.7-4; DB-102.
 
 **2. Findings.** See the table under "Findings": BH-5 critical, fixed; BH-1, BH-6, BH-7 medium,
-fixed (BH-7's Part 2 half: erratum E-4 proposed); BH-3, BH-4 low, fixed; BH-2 low, open.
+fixed (BH-7's Part 2 half: erratum E-4 proposed); BH-3, BH-4 low, fixed; BH-2 low, won't fix (frozen EP signature; INV-3 catches it at the next open).
 
 **3. Coverage.** Done: workstream 0 (confirmed the peer's root cause from its evidence); 2
 (G-39's refusal against every legitimate crash point, by reading; real-process SIGKILL loops;
@@ -67,7 +67,7 @@ regression since fa695dd. Fixes: G-41, G-42, DB-101 (commits 42cf9c2 … 0078fc5
 |---|---|---|---|---|
 | BH-5 | **critical** | §15.6 step 4, §15.7 step 3, §13.4 (INV-14) | `crates/sever-erasure/src/participant.rs:376` (`replay`), `:386` (`recover`) | fixed (4f2f725 red, 449927f fix, PR4-E22; G-43, DB-102) |
 | BH-1 | medium | Build §2.2, CLAUDE.md §6.2–6.3 | `python/sever_testkit/spec_trace.py:68` (frozen), `crates/sever-db/src/tests.rs:479`, `scripts/ci.sh` | fixed (05c2da5 red, 1e8e4b7 fix); frozen half: erratum candidate |
-| BH-2 | low | §5 (lockstep), Build §1.1 | `crates/sever-commit/src/lib.rs:237,251` | open (unreachable without a bug) |
+| BH-2 | low | §5 (lockstep), Build §1.1 | `crates/sever-commit/src/lib.rs:237,251` | won't fix: `add`/`remove` implement frozen Part 2's infallible extension point (apply cannot fail, Build §1.1); admission checks the dimension first, and INV-3 at the next open would catch a skipped update (21 Oct 2026) |
 | BH-3 | low | §20.3 check 1 | `scripts/ci.sh:24-27` | fixed (bb4dc26) |
 | BH-4 | low | Build §2.2 | `docs/TRACE_PART_3.md`, `docs/TEST_ORACLES_P4.md` | fixed (1e8e4b7) |
 | BH-6 | medium | F-1, Build §0.3 | `scripts/freeze.sh:28-31` | fixed (96cbc0b) |

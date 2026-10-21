@@ -185,7 +185,11 @@ impl Inner {
             let proof = if last == 0 || last >= size {
                 Vec::new()
             } else {
-                log.tree().consistency_proof(last, size).unwrap_or_default()
+                // 0 < last < size ≤ the tree's size: a missing proof is the tree's own fault
+                // (§10.4), never a witness's refusal.
+                log.tree()
+                    .consistency_proof(last, size)
+                    .ok_or(inv("§10.4 consistency proof"))?
             };
             if let Ok(c) = w.cosign(&checkpoint, &proof, now) {
                 cosignatures.push(c);

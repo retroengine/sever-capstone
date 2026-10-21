@@ -437,7 +437,7 @@ report and the rebuilt artefact identical apart from timing); the freeze manifes
 - **Two small findings (21 Oct 2026, low):** `sever-cert/src/participant.rs:188` turns a failed
   consistency proof of the operator's own tree into an empty proof (seen as a witness refusal);
   `sever-commit/src/lib.rs:237,251` would skip a `C_S` update if `record_commitment` failed
-  (unreachable today: plan rejects that dimension first).
+  (unreachable today: plan rejects that dimension first). 21 Oct: the first now reports `IntegrityViolation` (`§10.4 consistency proof`); the second is the bug hunt's BH-2, won't fix (frozen extension point).
 
 - What overwrote `sciq_reference/passages.parquet` at 19:35 UTC on 27 Sep? Not `build`; the
   writer was pyarrow 25.0.1.
