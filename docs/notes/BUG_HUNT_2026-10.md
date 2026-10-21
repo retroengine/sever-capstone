@@ -7,7 +7,49 @@ overview, SPEC_GAPS, requirements.yaml, tests/proofs). Severity scale and rules:
 
 ## Report
 
-(Filled in at the end.)
+**1. The known bug (workstream 0, owned and fixed by sever-db-37).** Not an engine regression:
+two tours on one work directory; the second wiped the first's open database (details below).
+Fixed on `main` (3de67e9) by G-41, G-42, DB-101. While hunting I found a different critical
+bug of the same kind of symptom, **BH-5**: a crash between a deletion's `COMMIT` and its phase C
+store append, then a clean restart, made the final database refuse every startup (`INV-14`) and
+lost the rotated domains' bucket blocks. Root cause `crates/sever-erasure/src/participant.rs:376`
+(`replay` kept the WAL tail in memory only; §15.7 step 3 was silent, G-43). Present since the
+participant was written (Part 4, module 3); the crash campaigns recover once and never checkpoint
+and reopen. Red test 4f2f725 (`p4_db_a_checkpoint_after_recovery_keeps_every_rotated_key`), fix
+449927f, proofs PR4-E22, PR4-E23; SR-15.7-4; DB-102.
+
+**2. Findings.** See the table under "Findings": BH-5 critical, fixed; BH-1, BH-6, BH-7 medium,
+fixed (BH-7's Part 2 half: erratum E-2 proposed); BH-3, BH-4 low, fixed; BH-2 low, open.
+
+**3. Coverage.** Done: workstream 0 (confirmed the peer's root cause from its evidence); 2
+(G-39's refusal against every legitimate crash point, by reading; real-process SIGKILL loops;
+compaction under crashes); 3 (verifier, auditor and witnesses read as an attacker, §9–§11); 5
+(swallowed-error sweep of every non-frozen crate, §17 error text, lint and types); 6 (SDK edge
+inputs); 8 (trace, oracle and proof checks for Parts 3–4; four new proofs run); 9 (`ci.sh`, freeze
+lists and the F-2 guard, VM scripts read line by line, GitHub workflow). **Not done** (the owner
+should know): workstream 1's section-by-section MUST inventory and the hand-checks of every byte
+layout beyond §11 and §14.7; workstream 4 at scale (`demo.sh erase`, the forensic tests larger than
+default); workstream 6's differential runs against C-18, the metamorphic laws and the fuzz targets;
+workstream 7's CLIs, the other demos and every README command; workstream 8's `proofs run` for whole
+parts, the sabotage builds (`full-checks`) and the flakiness double run; workstream 2's larger
+SimVfs crash campaigns (sever-db-37 ran its own crash windows; see its report).
+
+**4. End state** (bughunt-2026-10 at 3475ae0, worktree `~/sever-db-bh`, its own `.venv`):
+- `scripts/ci.sh fast`: 36 of 36 PASS, exit 0 (run on d8c6064; 3475ae0 adds only
+  `scripts/bughunt/`, ruff-clean).
+- Part 4: `spec_trace check --part 4 --complete` 71/71; `oracle_check` 74/74 labelled tests, 0 on D
+  alone; `proofs check` 92 proofs, 0 labels without one. Part 3: 106/106 traced.
+- `proofs run --only`: PR4-E22, PR4-E23, PR4-E24 PROVEN (every named test went red).
+- The 5,000-row tour (`sever_tour tour --rows 5000 --dev`): 24 of 24.
+- SIGKILL loop on the fixed SDK: seeds 42, 123, 777 × 30 rounds, 0 refusals, 0 mismatches.
+- Fuzzing: none run.
+
+**5. For the owner.** (a) The P4 crash campaign (P4-T3) recovers once per crash point; adding a
+storage checkpoint and a second open after each recovery would have caught BH-5. It changes a
+pre-registered gate's procedure, so it is your call (a DB entry). (b) Errata E-2 and E-3 for
+frozen Parts 1–2 (below). (c) Databases made before the fix that hit BH-5's window cannot be
+repaired (the blocks are gone); the tour's are throwaway. (d) Nothing here blocks the VM run;
+the fair runs for Parts 3 and 4 must run on the new code, since Part 4's owned files changed.
 
 ## Workstream 0: the known critical bug (owned by sever-db-37)
 
