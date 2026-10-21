@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 from .data import DataMissingError, load
+from .session import WorkInUseError, lock_work
 
 ROOT = Path(__file__).resolve().parents[2]
 #: The tour inserts ``--rows`` records and keeps this many more for the crash test.
@@ -36,6 +37,8 @@ def main(argv: list[str]) -> int:
     rows = a.rows if a.rows is not None else default_rows
     work = a.work or ROOT / "demo-engine/work" / f"{a.cmd}-{a.data}"
     try:
+        if a.cmd != "crash-child":
+            lock_work(work)
         if a.cmd == "crash-child":
             from .tour import crash_child
 
@@ -49,6 +52,9 @@ def main(argv: list[str]) -> int:
 
         corpus = load(ROOT, a.data, rows + SPARE)
         return Tour(ROOT, corpus, work, rows, a.dev).run()
+    except WorkInUseError as e:
+        print(f"{e}; wait for it to finish, or use another --work directory")
+        return 2
     except DataMissingError as e:
         print(f"{e}. The data is not in git: see demo-engine/README.md, or use --data synthetic")
         return 2

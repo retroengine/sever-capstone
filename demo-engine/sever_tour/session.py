@@ -6,6 +6,7 @@ deletes, and hands each deletion certificate to the person it belongs to. Everyt
 through the public SDK ``sever_db``; nothing here reaches inside the engine.
 """
 
+import fcntl
 import json
 import os
 import shutil
@@ -17,6 +18,25 @@ from typing import Any
 from sever_db import Database, Deletion, DuplicateRecord, PlatformUnsafe, UserKey, prepare_insert
 
 from .data import Corpus
+
+
+class WorkInUseError(Exception):
+    """Another tour or shell holds the work directory."""
+
+
+def lock_work(work: Path) -> int:
+    """One tour or shell per work directory: an exclusive lock on ``.<name>.lock`` beside it (not
+    inside it, so wiping the directory cannot remove the lock), held until the process exits. A
+    second run would wipe the first one's open database (20 Oct 2026). The crash child does not
+    take it: its parent holds it."""
+    work.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(work.parent / f".{work.name}.lock", os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        os.close(fd)
+        raise WorkInUseError(f"{work} is in use by another tour or shell") from None
+    return fd
 
 
 def say(line: str = "") -> None:
