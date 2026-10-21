@@ -1071,11 +1071,11 @@ Deleting a record overwrites its mirror entry, record ID bytes and any decrypted
   data directory; overview DB-90 for the key directory).
 - `ENGINE.lock` is taken exclusively (one process per data directory). The lock cannot protect a
   directory that another process deletes or replaces while the engine runs. So before each call
-  and before the closing storage checkpoint, the final build (Part 4) checks that
+  and before the closing storage checkpoint, the builds of Parts 3 and 4 check that
   `data/ENGINE.lock` is still the file it locked (same device and inode). If it is not, the call
   fails with `IntegrityViolation` (`§12.9 data directory replaced`), the engine stops serving
   (§17), and nothing more is written to the data directory. This narrows the window in which a
-  replaced directory goes unseen; it cannot close it (G-42).
+  replaced directory goes unseen; it cannot close it (G-42; Part 3 from DB-103).
 - The generator self-check (§9.2) and the configuration and artefact hash checks pass.
 
 ---

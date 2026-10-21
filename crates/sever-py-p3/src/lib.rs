@@ -357,7 +357,8 @@ impl PyEngine {
         // Erratum E-1 (§12.5): the engine mutex is taken only after the GIL is released.
         let out = py.detach(|| {
             let guard = self.inner.lock().unwrap_or_else(|p| p.into_inner());
-            guard.as_ref().map(f)
+            // §17, §12.9 (G-42): every call goes through `Opened::serve`.
+            guard.as_ref().map(|o| o.serve(|_| f(o)))
         });
         match out {
             Some(r) => r.map_err(py_err),
@@ -585,7 +586,7 @@ impl PyEngine {
         // Erratum E-1: the mutex is taken with the GIL released, as in `with`.
         py.detach(|| {
             let taken = self.inner.lock().unwrap_or_else(|p| p.into_inner()).take();
-            taken.map_or(Ok(()), |o| o.db.engine.close())
+            taken.map_or(Ok(()), sever_p3::Opened::close)
         })
         .map_err(py_err)
     }

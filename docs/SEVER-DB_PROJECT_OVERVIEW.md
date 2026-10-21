@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-102)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-103)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1042,6 +1042,27 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-103 — Part 3 stops serving too; the frozen Part 2 fixes wait for v1.1's erratum (21 October 2026)
+
+**Decision.** (1) Part 3's composition root (`sever-p3`'s `Opened::serve` and `close`, used by its
+SDK) takes the same guard as Part 4 (DB-101): no call is served after an `IntegrityViolation`, no
+storage checkpoint is written at close after one, and a data directory whose `ENGINE.lock` is no
+longer the file the process locked is refused (`§12.9 data directory replaced`). SR-17-8 and
+SR-12.9-5 move to Part 3, so Part 4 inherits them. (2) The bug hunt's proposals for the frozen
+parts are numbered after E-3 (the v1.1 layout erratum, already planned) and applied together with
+it after v1.0, not before: **E-4** (`sever_db_p2` lets a record ID with no UTF-8 encoding raise
+`UnicodeEncodeError`, BH-7), **E-5** (the frozen tracer and Part 2's oracle check read
+`#[spec(…)]` one line at a time; `sever_db_p2_native.pyi` is in no freeze list, BH-1), **E-6**
+(Part 2's builds keep serving after an `IntegrityViolation` and checkpoint at close, G-42). Until
+then they are a stated limit (L-28).
+**Why.** (1) Part 3 is not frozen yet, so the guard costs one small change with its proofs
+(PR3-F06, PR3-F07), and the receipt build is then as safe as the final one. (2) Each erratum
+re-freezes Parts 1–2 and re-runs every later exit gate; E-3 does that anyway, and none of E-4 …
+E-6 touches the v1 build (`sever-db`), which already has every fix. The bug hunt's report named
+its proposals E-2 and E-3, which were taken.
+**Rejected.** Three errata now, before the VM run: three re-freezes and gate re-runs for defects
+that only the frozen Part 2 builds (its demo, CLI and SDK) can show.
 
 #### DB-102 — The October bug hunt: participant stores keep what recovery replays; every Part 3 and Part 4 requirement traced in the fast tier (21 October 2026)
 
@@ -2215,6 +2236,10 @@ declared surface.
 - **L-27 Service-held keys.** The operator holds every account's signing key and every `r_t`, so insert
   signatures and deletion authorisation do not constrain a dishonest operator; they record that the
   service acted on an authenticated account.
+- **L-28 Frozen Part 2 builds keep three known defects until erratum E-4 … E-6** (DB-103): its SDK lets a
+  record ID with no UTF-8 encoding raise `UnicodeEncodeError` instead of `InvalidRecordId`; its builds keep
+  serving after an `IntegrityViolation` and checkpoint at close; the frozen tracer misses a split `#[spec]`
+  attribute. The v1 build (`sever-db`) has none of them.
 
 **Scope and method**
 
@@ -2424,6 +2449,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **21 October 2026 — Part 3 stops serving too.** DB-103 (Part 3's root takes Part 4's
+  stop-serving and replaced-directory guard; the frozen Part 2 fixes become errata E-4 … E-6, applied
+  with E-3 after v1.0; adds L-28). Specification sections touched: §12.9.
 - **21 October 2026 — The October bug hunt.** DB-102 (participant stores keep what recovery
   replays; complete traces for Parts 3 and 4 in the fast tier; closes G-43). Specification
   sections touched: §15.7.

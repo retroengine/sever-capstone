@@ -1734,3 +1734,23 @@
   package: sever-p3
   tests:
   - crates/sever-p3/src/tests.rs::p3_root_a_delete_whose_leaf_cannot_be_read_names_the_store_check
+- id: PR3-F06
+  claim: "Part 3's root keeps serving after an IntegrityViolation, and its close writes a checkpoint (§17, G-42, DB-103)"
+  kind: red
+  requirements:
+  - SR-17-8
+  patch: PR3-F06.patch
+  runner: cargo
+  package: sever-p3
+  tests:
+  - crates/sever-p3/src/tests.rs::p3_root_after_an_integrity_violation_the_database_stops_serving
+- id: PR3-F07
+  claim: "Part 3's root does not check that its ENGINE.lock is still the file it locked, and writes into a replaced data directory (§12.9, G-42, DB-103)"
+  kind: red
+  requirements:
+  - SR-12.9-5
+  patch: PR3-F07.patch
+  runner: cargo
+  package: sever-p3
+  tests:
+  - crates/sever-p3/src/tests.rs::p3_root_refuses_to_write_into_a_replaced_data_directory

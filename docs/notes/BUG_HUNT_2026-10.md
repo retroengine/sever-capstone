@@ -19,7 +19,7 @@ and reopen. Red test 4f2f725 (`p4_db_a_checkpoint_after_recovery_keeps_every_rot
 449927f, proofs PR4-E22, PR4-E23; SR-15.7-4; DB-102.
 
 **2. Findings.** See the table under "Findings": BH-5 critical, fixed; BH-1, BH-6, BH-7 medium,
-fixed (BH-7's Part 2 half: erratum E-2 proposed); BH-3, BH-4 low, fixed; BH-2 low, open.
+fixed (BH-7's Part 2 half: erratum E-4 proposed); BH-3, BH-4 low, fixed; BH-2 low, open.
 
 **3. Coverage.** Done: workstream 0 (confirmed the peer's root cause from its evidence); 2
 (G-39's refusal against every legitimate crash point, by reading; real-process SIGKILL loops;
@@ -46,7 +46,7 @@ SimVfs crash campaigns (sever-db-37 ran its own crash windows; see its report).
 
 **5. For the owner.** (a) The P4 crash campaign (P4-T3) recovers once per crash point; adding a
 storage checkpoint and a second open after each recovery would have caught BH-5. It changes a
-pre-registered gate's procedure, so it is your call (a DB entry). (b) Errata E-2 and E-3 for
+pre-registered gate's procedure, so it is your call (a DB entry). (b) Errata E-4 and E-5 for
 frozen Parts 1–2 (below). (c) Databases made before the fix that hit BH-5's window cannot be
 repaired (the blocks are gone); the tour's are throwaway. (d) Nothing here blocks the VM run;
 the fair runs for Parts 3 and 4 must run on the new code, since Part 4's owned files changed.
@@ -71,7 +71,7 @@ regression since fa695dd. Fixes: G-41, G-42, DB-101 (commits 42cf9c2 … 0078fc5
 | BH-3 | low | §20.3 check 1 | `scripts/ci.sh:24-27` | fixed (bb4dc26) |
 | BH-4 | low | Build §2.2 | `docs/TRACE_PART_3.md`, `docs/TEST_ORACLES_P4.md` | fixed (1e8e4b7) |
 | BH-6 | medium | F-1, Build §0.3 | `scripts/freeze.sh:28-31` | fixed (96cbc0b) |
-| BH-7 | medium | §3.2 rule 1, §17 | `python/sever_db/__init__.py:129`, `python/sever_db_p3/__init__.py`; frozen `python/sever_db_p2` | fixed for Parts 3–4 (4245c56, 7b45088 red; e22a495 fix); Part 2: erratum proposed (E-2) |
+| BH-7 | medium | §3.2 rule 1, §17 | `python/sever_db/__init__.py:129`, `python/sever_db_p3/__init__.py`; frozen `python/sever_db_p2` | fixed for Parts 3–4 (4245c56, 7b45088 red; e22a495 fix); Part 2: erratum proposed (E-4) |
 
 ### BH-5: a crash after a deletion's COMMIT, then a clean restart, makes the database unopenable
 
@@ -153,7 +153,7 @@ own `golden/p1_*`, `p2_*`, `p3_*`; Part 4 owned none), so freezing Part 4 would 
 8452 vectors unguarded by F-2. Reproduction: `comm -23 <(git ls-files | sort) <(for n in 1 2 3 4;
 do scripts/freeze.sh list $n | awk '{print $2}'; done | sort -u)` listed it. Fixed: `'golden/p4_*'`
 in Part 4's list (DB-102 item 3). Also unowned, in frozen Part 2: `python/sever_db_p2_native.pyi`
-(the stub of Part 2's SDK); a list change for a frozen part needs an erratum (E-3 below).
+(the stub of Part 2's SDK); a list change for a frozen part needs an erratum (E-5 below).
 
 ### BH-7: a record ID with no UTF-8 encoding raises `UnicodeEncodeError`, which holds the ID
 
@@ -166,7 +166,7 @@ Fixed in the SDKs of Parts 3 and 4 (`_rid` before `prepare_insert`, `delete`, `d
 `test_p4_sdk_a_record_id_that_is_not_utf8_is_invalid_record_id`,
 `test_p3_sdk_a_record_id_that_is_not_utf8_is_invalid_record_id` (red before, green after).
 Part 2's frozen SDK behaves the same (checked: `insert` and `delete` both raise
-`UnicodeEncodeError` quoting the character): erratum E-2.
+`UnicodeEncodeError` quoting the character): erratum E-4.
 
 ### BH-2: `add`/`remove` skip the commitment update when `record_commitment` fails
 
@@ -184,12 +184,14 @@ is not checked for duplicates, only for the pin (`dalek_pinned`).
 
 ## Erratum proposals for the owner (frozen Parts 1–2; Build §6.3 template, not applied)
 
-- **E-2 (Part 2, low).** *Defect:* `sever_db_p2` lets a `str` with no UTF-8 encoding reach the
+Renumbered E-4 and E-5 on 21 Oct 2026 (E-2 and E-3 were taken); with G-42 in Part 2 as E-6, they are applied together with E-3 after v1.0 (DB-103, L-28).
+
+- **E-4 (Part 2, low).** *Defect:* `sever_db_p2` lets a `str` with no UTF-8 encoding reach the
   native module, which raises `UnicodeEncodeError` quoting the character (§3.2 rule 1, §17).
   *Failing test first:* the BH-7 test against `sever_db_p2`. *Smallest fix:* the same `_rid`
   check in `python/sever_db_p2/__init__.py` (`insert`, `delete`, `delete_user`). *Re-run:* Part 2's
   Python suite, then every later exit gate. *Tag:* `part-2-frozen-e2`.
-- **E-3 (Parts 1–2, low, tooling).** *Defect:* the frozen tracer (`sever_testkit/spec_trace.py`)
+- **E-5 (Parts 1–2, low, tooling).** *Defect:* the frozen tracer (`sever_testkit/spec_trace.py`)
   and Part 2's `oracle_check` read `#[spec(…)]` one line at a time, so a split attribute is invisible
   to them (BH-1); three such attributes are in frozen files (`sever-crashkit/tests/small.rs:34`,
   `sever-p1/tests/e2e_idea.rs:200`, `sever_testkit/tests/test_stateful.py:64`), whose labels the
