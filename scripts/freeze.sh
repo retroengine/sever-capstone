@@ -32,7 +32,7 @@ case "$part" in
   4) owned=(crates/sever-keys crates/sever-seal crates/sever-erasure crates/sever-platform
             crates/sever-db crates/sever-py crates/sever-scan crates/sever-crashkit-p4 crates/sever-eval
             python/sever_db python/sever_db_native.pyi python/sever_testkit_p4 python/sever_experiments
-            fuzz-p4/Cargo.toml fuzz-p4/Cargo.lock fuzz-p4/fuzz_targets
+            fuzz-p4/Cargo.toml fuzz-p4/Cargo.lock fuzz-p4/fuzz_targets 'golden/p4_*'
             tests/proofs/p4 tests/architecture/test_key_export.py tests/architecture/test_p4_pins.py
             scripts/demo-p4.sh) ;;  # Build 3-4 §2.4; final (DB-98)
   *) echo "no ownership list for part $part yet"; exit 2 ;;

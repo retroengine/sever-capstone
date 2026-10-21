@@ -1051,7 +1051,8 @@ participant appends to the wrapped-key store each replayed value newer than the 
 as the log participant already appended its replayed leaves. (2) The fast tier runs
 `spec-trace-p3` and `spec-trace-p4` with `--complete`, and both refuse a `#[spec(…)]` or
 `@pytest.mark.spec(…)` split over lines outside frozen files, because the frozen tracer, oracle
-check and proofs check read one line at a time (BH-1).
+check and proofs check read one line at a time (BH-1). (3) Part 4's freeze list owns
+`golden/p4_*` (the RFC 8452 vectors), which no part's list held (BH-6).
 **Why.** (1) A SIGKILL between a deletion's `COMMIT` and its phase C store append, then a clean
 restart, made the database refuse every later startup with `INV-14` and lost the rotated domains'
 bucket blocks (BH-5). (2) rustfmt had split the plaintext test's attribute, so Part 4's INV-11 and
