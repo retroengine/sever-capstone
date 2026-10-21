@@ -20,10 +20,13 @@ step() { # $1 = name, rest = command
   if "$@" >"/tmp/sever-ci-$name.log" 2>&1; then echo "STEP $name: PASS"
   else echo "STEP $name: FAIL (log: /tmp/sever-ci-$name.log)"; tail -20 "/tmp/sever-ci-$name.log"; failed=1; fi
 }
-no_duplicate_crypto_deps() { # spec §20.3 check 1, in the main workspace and (once it exists) verifier/
-  ! cargo tree -d --workspace 2>/dev/null | grep -E "^(rand_core|digest|getrandom|curve25519-dalek) v" || return 1
-  [ ! -e verifier/Cargo.toml ] || ! (cd verifier && cargo tree -d --workspace 2>/dev/null) \
-    | grep -E "^(rand_core|digest|getrandom|curve25519-dalek) v"
+no_duplicate_crypto_deps() { # spec §20.3 check 1, in every workspace; a failing cargo tree fails (BH-3)
+  local ws out
+  for ws in . verifier audit; do
+    [ -e "$ws/Cargo.toml" ] || continue
+    out=$(cd "$ws" && cargo tree -d --workspace) || { echo "$ws: cargo tree failed"; return 1; }
+    ! grep -E "^(rand_core|digest|getrandom|curve25519-dalek) v" <<<"$out" || return 1
+  done
 }
 dalek_pinned() { # spec §20.3 check 2: every lockfile that has curve25519-dalek has exactly 4.1.3
   local lock v
