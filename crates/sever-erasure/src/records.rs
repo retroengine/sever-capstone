@@ -150,6 +150,19 @@ pub struct Durable {
 }
 
 impl Durable {
+    /// Would merging `v` change this state? (Recovery writes back only such WAL values, G-43.)
+    pub fn newer(&self, v: &Value) -> bool {
+        match v {
+            Value::Block(d, version, _) => self.blocks.get(d).is_none_or(|(old, _)| old < version),
+            Value::Envelopes(d, entries) => entries.iter().any(|(sid, bv, _)| {
+                self.envelopes
+                    .get(&(*d, *sid))
+                    .is_none_or(|(old, _)| old < bv)
+            }),
+            Value::Drop(cid) => !self.dropped.contains(cid),
+        }
+    }
+
     /// Merges one value (§14.8: the highest version wins; a drop is final).
     pub fn merge(&mut self, v: Value) {
         match v {

@@ -6,7 +6,7 @@
 //! | `phase_a` | writes every new group key into the key file before the `COMMIT` (§13.4): a new domain's pair is appended, a rotated domain's key goes to its inactive slot; each `fsync`ed |
 //! | `abort` | drops the stage; a pair appended in phase A is remembered, so a retry of the same domain reuses it (its slot is never erased here: the `COMMIT` may have reached the disk, §15.4) |
 //! | `after_commit` | adopts the stage; overwrites each retired key's slot with zeros and `fsync`s it (INV-13: only after the `COMMIT` is durable); for a drop, erases every slot of the collection (G-26); appends the transaction's entries to the wrapped-key store |
-//! | `replay`, `recover` | merges the WAL tail and the store (monotonic rules, §14.8), applies INV-14 to the key file ([`sever_keys::recovery`]), erases what it says, loads the keys and the stored envelopes into the ring |
+//! | `replay`, `recover` | merges the WAL tail and the store (monotonic rules, §14.8) and appends to the store what the tail adds (G-43), applies INV-14 to the key file ([`sever_keys::recovery`]), erases what it says, loads the keys and the stored envelopes into the ring |
 
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::sync::Arc;
@@ -68,6 +68,8 @@ pub struct KeyRotationParticipant {
     /// Pairs appended by a phase A whose transaction aborted, by domain.
     orphans: BTreeMap<Domain, u64>,
     durable: Durable,
+    /// The participant's values replayed from the WAL tail, merged by `recover` (G-43).
+    tail: Vec<Vec<u8>>,
     pending: Pending,
 }
 
@@ -97,6 +99,7 @@ impl KeyRotationParticipant {
             slots: BTreeMap::new(),
             orphans: BTreeMap::new(),
             durable: Durable::default(),
+            tail: Vec::new(),
             pending: Pending::default(),
         }
     }
@@ -379,13 +382,25 @@ impl<E: GroupExtension> TxnParticipant<E> for KeyRotationParticipant {
             RecordType::Extension => record.payload.get(2..).unwrap_or_default().to_vec(),
             _ => return Ok(()),
         };
-        self.durable.merge(records::parse(&value)?);
+        records::parse(&value)?;
+        self.tail.push(value);
         Ok(())
     }
 
     fn recover(&mut self) -> Result<(), Error> {
-        // The WAL tail was merged by `replay`; the store merges into the same state (§14.8).
+        // §15.7 step 3 (G-43): the WAL tail merges into the store's state (§14.8), and what it adds
+        // is appended to the store, durably, before the next storage checkpoint deletes the WAL
+        // segments that hold it.
         self.wrapped()?;
+        let mut missing_from_store = Vec::new();
+        for value in core::mem::take(&mut self.tail) {
+            let v = records::parse(&value)?;
+            if self.durable.newer(&v) {
+                missing_from_store.push(value);
+            }
+            self.durable.merge(v);
+        }
+        self.wrapped()?.append(&missing_from_store)?;
         let (kf, slots) = KeyFile::open(Arc::clone(&self.keys_dir), KEYS_PATH)?;
         self.keys = Some(kf);
         let active: BTreeMap<Domain, u64> = self

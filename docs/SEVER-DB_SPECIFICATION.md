@@ -1482,7 +1482,10 @@ Take the shared lock and run §8.1. Never write.
 1. Take `ENGINE.lock`. Run the platform checks (§12.9) and the memory hygiene setup (§12.8).
 2. Re-derive and check the generators (§9.2); refuse on mismatch.
 3. Read `MANIFEST`; load the storage checkpoint; replay every WAL transaction with a valid `COMMIT`;
-   discard the rest.
+   discard the rest. What a participant replays from the WAL into its own store (the log stores,
+   the wrapped-key store) is made durable in that store before the database serves: the next
+   storage checkpoint deletes the WAL segments that hold it (§15.6 step 4), and a crash between a
+   `COMMIT` and a participant's own phase C store write leaves it only there (G-43).
 4. Apply the key-file recovery rule (§13.4).
 5. Decrypt into memory; rebuild the mirror, locator, counters and log tree.
 6. **Full invariant check** (§21), including, for every group: `n` equals the slot count;

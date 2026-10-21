@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-101)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-102)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1042,6 +1042,25 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-102 — The October bug hunt: participant stores keep what recovery replays; every Part 3 and Part 4 requirement traced in the fast tier (21 October 2026)
+
+**Decision.** (1) Recovery makes what a participant replays from the WAL durable in that
+participant's own store before the database serves (§15.7 step 3, G-43): the key-rotation
+participant appends to the wrapped-key store each replayed value newer than the store's own state,
+as the log participant already appended its replayed leaves. (2) The fast tier runs
+`spec-trace-p3` and `spec-trace-p4` with `--complete`, and both refuse a `#[spec(…)]` or
+`@pytest.mark.spec(…)` split over lines outside frozen files, because the frozen tracer, oracle
+check and proofs check read one line at a time (BH-1).
+**Why.** (1) A SIGKILL between a deletion's `COMMIT` and its phase C store append, then a clean
+restart, made the database refuse every later startup with `INV-14` and lost the rotated domains'
+bucket blocks (BH-5). (2) rustfmt had split the plaintext test's attribute, so Part 4's INV-11 and
+§13.2 requirements counted as untraced (64 of 70) while the fast tier passed.
+**Rejected.** (1) Keeping the WAL segments a participant still needs at a checkpoint: Part 2's
+engine is frozen, and the store write is the participant's own job (the log participant does it).
+Re-appending the whole tail on every startup: duplicates grow the store until compaction. (2)
+Fixing the frozen tracer: an erratum for Parts 1 and 2 (the owner decides); the wrappers' guard
+covers every file that can still change.
 
 #### DB-101 — Two tours on one work directory: errors name their check, the final build stops serving after an integrity violation and refuses a replaced data directory, one session per demo directory (20 October 2026)
 
@@ -2404,6 +2423,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **21 October 2026 — The October bug hunt.** DB-102 (participant stores keep what recovery
+  replays; complete traces for Parts 3 and 4 in the fast tier; closes G-43). Specification
+  sections touched: §15.7.
 - **20 October 2026 — Two tours on one work directory.** DB-101 (an `IntegrityViolation` names
   the check that failed; the final build stops serving after one and refuses a replaced data
   directory; closes G-41, G-42). Specification sections touched: §12.9, §17.
