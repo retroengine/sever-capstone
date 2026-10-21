@@ -47,8 +47,25 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   and 4 records; fix: at open, check the last log leaf against the engine (an insert leaf's record
   must be live unless its collection was dropped; a deletion leaf's record must be absent; records
   carry `insert_leaf_index`), else `IntegrityViolation` (INV-15); amend §12.3/§19.
+- **The 5,000-row tour failure (20–21 Oct 2026; DB-101, G-41, G-42; branch
+  `p4-fix-delete-checkpoint`, pushed, GitHub CI green, not merged).** Not an engine regression: two
+  `demo.sh tour` runs (two windows) shared `demo-engine/work/tour-nq`. The second run's wipe deleted
+  the first run's open database; the first wrote to unlinked files, read the second run's leaf
+  store by path at its delete (the read error was swallowed into `§15.3 insert leaf`), and its
+  `close()` wrote a checkpoint and `MANIFEST` into the second run's directory (`§12.3 WAL shorter
+  than the checkpoint`). Fixed: the store's own check is reported (G-41, Part 3); the final build
+  stops serving after an `IntegrityViolation` and never writes into a replaced data directory
+  (G-42, Part 4, `Opened::serve`/`close`); the demo locks each work directory (`.<name>.lock`
+  beside it); chapter 5's naive copy is raw text (JSON escapes had hidden 4 of 80 windows).
+  Proofs PR3-F05, PR4-F03, PR4-F04 hold; PR3-M09 and PR4-D07 were regenerated. On `0078fc5`:
+  fast tier 36/36, tour 24/24 on 5,000 rows, crash windows from op 17,000 (Part 3: 1,569 points,
+  Part 4: 4,307 points, 0 mismatches), every demo command exits 0. The failing state is kept in
+  `demo-engine/work/evidence-tour-nq`.
+- **Next (the owner):** decide whether to merge `p4-fix-delete-checkpoint` into `main` before the VM
+  run (it changes Parts 3 and 4, so the VM should run on it).
 - **The engine demo (19 Oct 2026):** `demo-engine/demo.sh tour` (12 chapters on 5,000 NQ passages:
-  24 of 24 checks pass), `shell`, `cli`, `erase`, `examples`, `test` (4 offline tests pass).
+  24 of 24 checks pass), `shell`, `cli`, `erase`, `examples`, `test` (6 offline tests pass). Run
+  one tour or shell per work directory: a second one is refused (DB-101).
 - **Working copy:** `~/sever-db` on the WSL ext4 disk (the `C:` copy is a backup).
 - **Git:** Claude commits (conventional messages, no AI attribution) and pushes to `origin` (owner,
   19 Oct 2026). `main` and `p3-gates` are fast-forwarded together once GitHub's fast tier and the
@@ -405,6 +422,14 @@ report and the rebuilt artefact identical apart from timing); the freeze manifes
 
 ## Open questions
 
+- **Stop serving in Parts 2 and 3 (G-42).** Their builds still serve after an `IntegrityViolation`
+  and checkpoint at close (§17 says the engine stops serving). Part 2's engine is frozen: fix it
+  by erratum E-3 or accept it as a stated limit? Part 3's root could take the same guard as Part 4.
+- **Two small findings (21 Oct 2026, low):** `sever-cert/src/participant.rs:188` turns a failed
+  consistency proof of the operator's own tree into an empty proof (seen as a witness refusal);
+  `sever-commit/src/lib.rs:237,251` would skip a `C_S` update if `record_commitment` failed
+  (unreachable today: plan rejects that dimension first).
+
 - What overwrote `sciq_reference/passages.parquet` at 19:35 UTC on 27 Sep? Not `build`; the
   writer was pyarrow 25.0.1.
 - The build plan's Part 2–4 proposals (DB-46, DB-48, DB-51 … DB-54) are not yet in the decision
@@ -417,6 +442,11 @@ report and the rebuilt artefact identical apart from timing); the freeze manifes
 
 ## Session log
 
+- **20–21 Oct 2026**: investigated the 5,000-row tour failure: two tours on one work directory, not a
+  regression (the owner's solo tour at HEAD passed 23/24; no bisect needed). Fixed by hand with
+  red tests first (DB-101, G-41, G-42), branch `p4-fix-delete-checkpoint` pushed. A parallel
+  session (sever-db-54) continues the wider review on branch `bughunt-2026-10` in its own worktree
+  `~/sever-db-bh`.
 - **15 Oct 2026 (evening, grind mode)**: Part 3 modules 2 (certificate model, golden B 6) and 5
   (`sever-cert`, SB-22), step 4c (`LogStore`, `LogParticipant`); erratum E-2 on Part 2 with every
   gate re-run; DB-80 … DB-82, G-21 and G-22 closed; 89 red proofs. Owner asked to stop here; resume
