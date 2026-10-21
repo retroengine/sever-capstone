@@ -900,3 +900,23 @@
   package: sever-db
   tests:
   - crates/sever-db/src/tests.rs::p4_db_refuses_an_artefact_of_another_dimension
+- id: PR4-F03
+  claim: "the final build keeps serving after an IntegrityViolation, and its close writes a checkpoint (§17, G-42)"
+  kind: red
+  requirements:
+  - SR-17-8
+  patch: PR4-F03.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/src/tests.rs::p4_db_after_an_integrity_violation_the_database_stops_serving
+- id: PR4-F04
+  claim: "the final build does not check that its ENGINE.lock is still the file it locked, and writes into a replaced data directory (§12.9, G-42)"
+  kind: red
+  requirements:
+  - SR-12.9-5
+  patch: PR4-F04.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/src/tests.rs::p4_db_refuses_to_write_into_a_replaced_data_directory

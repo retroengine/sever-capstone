@@ -1069,7 +1069,13 @@ Deleting a record overwrites its mirror entry, record ID bytes and any decrypted
 - Both filesystem checks are overridden only by `platform.allow_unsafe_fs = true`, which is for
   development only and is recorded in every run ledger entry (owner decision of 7 October 2026 for the
   data directory; overview DB-90 for the key directory).
-- `ENGINE.lock` is taken exclusively (one process per data directory).
+- `ENGINE.lock` is taken exclusively (one process per data directory). The lock cannot protect a
+  directory that another process deletes or replaces while the engine runs. So before each call
+  and before the closing storage checkpoint, the final build (Part 4) checks that
+  `data/ENGINE.lock` is still the file it locked (same device and inode). If it is not, the call
+  fails with `IntegrityViolation` (`§12.9 data directory replaced`), the engine stops serving
+  (§17), and nothing more is written to the data directory. This narrows the window in which a
+  replaced directory goes unseen; it cannot close it (G-42).
 - The generator self-check (§9.2) and the configuration and artefact hash checks pass.
 
 ---
@@ -1595,6 +1601,9 @@ An `IntegrityViolation` names the check that failed. When stored data cannot be 
 not match what was committed (a store reference that does not lead to a whole record, a leaf that
 does not match its leaf hash), the error MUST name that check; it is never replaced by the name of
 a later check that the missing value would have fed (G-41).
+
+Stopping after an `IntegrityViolation` means that no later call is served and that closing the
+database writes no storage checkpoint over the state the violation was found in (G-42).
 
 | Error | Raised when |
 |---|---|

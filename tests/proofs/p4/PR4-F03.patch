@@ -1,0 +1,13 @@
+diff --git a/crates/sever-db/src/lib.rs b/crates/sever-db/src/lib.rs
+index 8215b71..1f4df42 100644
+--- a/crates/sever-db/src/lib.rs
++++ b/crates/sever-db/src/lib.rs
+@@ -392,7 +392,7 @@ impl Opened {
+     pub fn serve<T>(&self, f: impl FnOnce(&Db) -> Result<T, Error>) -> Result<T, Error> {
+         self.alive()?;
+         let r = f(&self.db);
+-        if matches!(r, Err(Error::IntegrityViolation { .. })) {
++        if matches!(r, Err(Error::IntegrityViolation { .. })) && false {
+             self.stopped.store(true, Ordering::SeqCst);
+         }
+         r

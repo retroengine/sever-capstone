@@ -1,0 +1,13 @@
+diff --git a/crates/sever-db/src/lib.rs b/crates/sever-db/src/lib.rs
+index 8215b71..0664330 100644
+--- a/crates/sever-db/src/lib.rs
++++ b/crates/sever-db/src/lib.rs
+@@ -404,7 +404,7 @@ impl Opened {
+                 invariant: "§17 the engine stopped serving",
+             });
+         }
+-        if file_id(&self.lock_file) != Some(self.lock_id) {
++        if file_id(&self.lock_file) != Some(self.lock_id) && false {
+             self.stopped.store(true, Ordering::SeqCst);
+             return Err(Error::IntegrityViolation {
+                 invariant: "§12.9 data directory replaced",

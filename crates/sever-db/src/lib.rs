@@ -13,6 +13,7 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use sever_cert::Certificate;
 use sever_cert::participant::{LOG_PARTICIPANT_ID, LogHandle, LogParticipant, LogParts};
@@ -372,18 +373,53 @@ pub struct Opened {
     pub overridden: Vec<&'static str>,
     /// Whether the process's memory is locked (§12.8, DB-93).
     pub memory_locked: bool,
+    /// `data/ENGINE.lock` and the (device, inode) of the file this process locked (§12.9, G-42).
+    lock_file: PathBuf,
+    lock_id: (u64, u64),
+    /// Set by the first `IntegrityViolation`: the engine stops serving (§17).
+    stopped: AtomicBool,
+}
+
+fn file_id(path: &std::path::Path) -> Option<(u64, u64)> {
+    use std::os::unix::fs::MetadataExt;
+    std::fs::metadata(path).ok().map(|m| (m.dev(), m.ino()))
 }
 
 impl Opened {
-    /// Runs one call on the open database.
+    /// Runs one call on the open database. After an `IntegrityViolation` no call is served
+    /// (§17); a data directory whose `ENGINE.lock` is no longer the file this process locked
+    /// (another process replaced it) is never written again (§12.9, G-42).
     pub fn serve<T>(&self, f: impl FnOnce(&Db) -> Result<T, Error>) -> Result<T, Error> {
-        f(&self.db)
+        self.alive()?;
+        let r = f(&self.db);
+        if matches!(r, Err(Error::IntegrityViolation { .. })) {
+            self.stopped.store(true, Ordering::SeqCst);
+        }
+        r
     }
 
-    /// A clean shutdown: a storage checkpoint (§12.4), then `ENGINE.lock` is released.
+    fn alive(&self) -> Result<(), Error> {
+        if self.stopped.load(Ordering::SeqCst) {
+            return Err(Error::IntegrityViolation {
+                invariant: "§17 the engine stopped serving",
+            });
+        }
+        if file_id(&self.lock_file) != Some(self.lock_id) {
+            self.stopped.store(true, Ordering::SeqCst);
+            return Err(Error::IntegrityViolation {
+                invariant: "§12.9 data directory replaced",
+            });
+        }
+        Ok(())
+    }
+
+    /// A clean shutdown: a storage checkpoint (§12.4), then `ENGINE.lock` is released. After an
+    /// `IntegrityViolation`, or in a replaced data directory, nothing is written: the lock is
+    /// released and the error returned (§17, §12.9).
     pub fn close(self) -> Result<(), Error> {
+        let alive = self.alive();
         let Self { db, lock, .. } = self;
-        let r = db.engine.close();
+        let r = alive.and_then(|()| db.engine.close());
         drop(lock);
         r
     }
@@ -410,6 +446,10 @@ pub fn open(o: &OpenOptions) -> Result<Opened, Error> {
     std::fs::create_dir_all(&o.key_dir).map_err(io_err("§14.1 key directory"))?;
     // §15.7 steps 1 and 4: ENGINE.lock first, then the platform checks and the memory hygiene.
     let lock = EngineLock::acquire(&o.data_dir)?;
+    let lock_file = o.data_dir.join(sever_engine::platform::LOCK_FILE);
+    let lock_id = file_id(&lock_file).ok_or(Error::PlatformUnsafe {
+        check: "§12.9 ENGINE.lock",
+    })?;
     let report = sever_platform::startup(&LinuxProbe, &o.data_dir, &o.key_dir, o.overrides)?;
     let memory_locked = report.locked.is_some();
     if let Some(locked) = &report.locked {
@@ -456,6 +496,9 @@ pub fn open(o: &OpenOptions) -> Result<Opened, Error> {
         lock,
         overridden: report.overridden,
         memory_locked,
+        lock_file,
+        lock_id,
+        stopped: AtomicBool::new(false),
     })
 }
 

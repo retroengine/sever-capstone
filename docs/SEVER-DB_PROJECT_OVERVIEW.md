@@ -1047,12 +1047,21 @@ a later crate with the same name (two crates in one workspace cannot both produc
 
 **Decision.** (1) An `IntegrityViolation` names the check that failed; a stored leaf that cannot
 be read or verified is reported as that failure, not as `§15.3 insert leaf` (G-41, §17).
+(2) The final build stops serving after an `IntegrityViolation`: no later call, and no storage
+checkpoint at close. Before each call and before its closing checkpoint it also checks that
+`data/ENGINE.lock` is still the file it locked, and refuses (`§12.9 data directory replaced`)
+otherwise, so it never writes into another database (G-42, §12.9, §17). Both live in Part 4's
+composition root (`sever-db`'s `Opened::serve` and `close`, used by the SDK), because Part 2's
+engine is frozen. (3) The demo takes a lock beside each work directory, so a second tour or shell
+on the same directory is refused before it wipes anything.
 **Why.** The 5,000-row engine tour of 20 October failed in chapter 6, and the database then would
 not reopen. Two `demo.sh tour` runs had shared one work directory (two windows): the second run's
 wipe deleted the first run's open database. The first run kept writing to unlinked files, read
 the second run's leaf store by path at its delete, and wrote its closing checkpoint and `MANIFEST`
 into the second run's directory. The swallowed read error made this look like an engine bug.
-**Rejected.** Changing the error type: §17 already makes it an `IntegrityViolation`.
+**Rejected.** Changing the error type: §17 already makes it an `IntegrityViolation`. An erratum to
+Part 2's engine now: the owner decides (G-42 records it). Locking the directory against deletion:
+no POSIX lock does.
 
 #### DB-100 — The second Part 3 bug hunt: the artefact's dimension check, and which part checks the key file's filesystem (20 October 2026)
 
@@ -2396,7 +2405,8 @@ Links checked on 27 September 2026 unless noted.
 ## Changelog
 
 - **20 October 2026 — Two tours on one work directory.** DB-101 (an `IntegrityViolation` names
-  the check that failed; closes G-41). Specification sections touched: §17.
+  the check that failed; the final build stops serving after one and refuses a replaced data
+  directory; closes G-41, G-42). Specification sections touched: §12.9, §17.
 - **20 October 2026 — The second Part 3 bug hunt.** DB-100 (the artefact's dimension check names
   the check; the key-file filesystem check is Part 4's; closes G-40). Specification sections
   touched: §12.9.
