@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-103)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-104)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1042,6 +1042,24 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-104 — P4-T3 closes and reopens after every recovery (21 October 2026)
+
+**Decision.** After each crash point's recovery, P4-T3's campaign also takes a copy of the
+recovered disks, closes the engine on it cleanly (a storage checkpoint, which deletes the WAL
+segments it covers) and opens it again; the state must be the recovered one. A refusal or another
+state counts in a new zero-gated field, `reopen_mismatches` (`sever-crashkit-p4`,
+`sever_testkit_p4.gates.ZERO`, `scripts/ops/p4-interim.sh`). The gate's thresholds are unchanged;
+the procedure gains one check before the gate's first run on the final build.
+**Why.** BH-5 (G-43, DB-102): recovery kept the rotated keys' bucket blocks only in memory, and the
+next checkpoint deleted the WAL copy, so the second start refused (`INV-14`). The campaign
+recovered once per crash point and stopped, so it could not see this. On a 10-operation deletion
+window (seed 42, ops 17,000–17,010) the check counts 0 with the fix and more than 0 with the fix
+switched off by PR4-E22's patch (command and output in `docs/PROGRESS.md`).
+**Rejected.** A separate gate: the campaign already makes every crash point, and the check only
+needs one more open. Sampling every n-th point: the BH-5 window is one VFS step per deletion, and a
+sample could miss it. Adding it to P3-T4: Part 3's log participant already appends what it
+replays, and P3-T4's own result stands; the final build's campaign covers both participants.
 
 #### DB-103 — Part 3 stops serving too; the frozen Part 2 fixes wait for v1.1's erratum (21 October 2026)
 
@@ -2449,6 +2467,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **21 October 2026 — P4-T3 reopens after recovery.** DB-104 (the final build's crash campaign
+  closes and reopens a copy after every recovery, zero-gated as `reopen_mismatches`). Build 3-4
+  §2.10 P4-T3 amended.
 - **21 October 2026 — Part 3 stops serving too.** DB-103 (Part 3's root takes Part 4's
   stop-serving and replaced-directory guard; the frozen Part 2 fixes become errata E-4 … E-6, applied
   with E-3 after v1.0; adds L-28). Specification sections touched: §12.9.

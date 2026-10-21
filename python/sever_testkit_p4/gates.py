@@ -80,6 +80,7 @@ ZERO: Final = (
     "refusals",
     "stale_key_slots",
     "unreadable_records",
+    "reopen_mismatches",
 )
 
 

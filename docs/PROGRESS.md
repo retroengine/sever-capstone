@@ -47,6 +47,15 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   and 4 records; fix: at open, check the last log leaf against the engine (an insert leaf's record
   must be live unless its collection was dropped; a deletion leaf's record must be absent; records
   carry `insert_leaf_index`), else `IntegrityViolation` (INV-15); amend §12.3/§19.
+- **After the bug hunt (21 Oct 2026; DB-103, DB-104).** `bughunt-2026-10` merged (BH-5 and the
+  rest, DB-102). Part 3's root now stops serving after an `IntegrityViolation` and refuses a
+  replaced data directory, as Part 4's does (PR3-F06, PR3-F07 proven). The frozen Part 2 fixes are
+  errata E-4 … E-6, applied with E-3 after v1.0 (L-28). P4-T3 now closes and reopens a copy after
+  every recovery (`reopen_mismatches`, zero-gated). Evidence, seed 42, ops 17,000–17,010:
+  `sever-crashkit-p4 campaign --oracle traces/p2-oracle-nq-10k-seed42.jsonl --seed 42 --method
+  snapshot --crash-from 17000 --limit-ops 17010` gives `reopen_mismatches` 0 (550 points) on the
+  fixed build and 137 with PR4-E22's patch applied (the BH-5 fix switched off), where `refusals`
+  stays 0: the old campaign could not see BH-5.
 - **The 5,000-row tour failure (20–21 Oct 2026; DB-101, G-41, G-42; branch
   `p4-fix-delete-checkpoint`, pushed, GitHub CI green, not merged).** Not an engine regression: two
   `demo.sh tour` runs (two windows) shared `demo-engine/work/tour-nq`. The second run's wipe deleted

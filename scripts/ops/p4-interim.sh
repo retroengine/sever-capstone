@@ -47,7 +47,7 @@ for f in sorted(glob.glob(f"{T}/p4i-smoke.jsonl") + glob.glob(f"{T}/p4i-crash-se
     out[os.path.basename(f)] = s
 bad = ("main_mismatches", "not_oracle_state", "refusals", "bad_retries", "double_mismatches",
        "orphaned_leaves", "rolled_back_certificates", "bad_certificates", "method_mismatches",
-       "stale_key_slots", "unreadable_records")
+       "stale_key_slots", "unreadable_records", "reopen_mismatches")
 ok = len(out) == 16 and all(
     s.get("t") == "summary" and all(s.get(k) == 0 for k in bad)
     and s.get("key_loss_refused") == s.get("key_loss_injected")

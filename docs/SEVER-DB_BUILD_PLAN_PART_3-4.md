@@ -570,7 +570,7 @@ recorded in the ledger, fixed, and the full campaign is re-run as a new entry (f
 |---|---|---|
 | **P4-T1** | 0 findings in the forensic scan, five seeds (overview T-2) | Gate |
 | **P4-T2** | Scanner sensitivity: 100 % of positive controls found; each of SB-24 to SB-30 produces ≥ 1 finding where it applies (overview T-2) | Gate |
-| **P4-T3** | Crash campaign with every participant: 0 exactness violations, 0 lost acknowledged operations, 0 undecryptable live records, 0 stale key slots after recovery; refusal to start in 100 % of injected active-key losses (overview T-1 on the final build) | Gate |
+| **P4-T3** | Crash campaign with every participant: 0 exactness violations, 0 lost acknowledged operations, 0 undecryptable live records, 0 stale key slots after recovery, 0 recoveries after which a clean close and a reopen refuse or change the state (DB-104); refusal to start in 100 % of injected active-key losses (overview T-1 on the final build) | Gate |
 | **P4-T4** | Every row of the spec §15.4 crash table behaves as specified | Gate |
 | **P4-T5** | 0 repeated AEAD nonces under any key, across all suites | Gate |
 | **P4-T6** | 0 forbidden plaintext in any WAL, storage checkpoint or append store (INV-11) | Gate |

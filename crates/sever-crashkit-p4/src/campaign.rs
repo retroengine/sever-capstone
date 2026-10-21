@@ -13,7 +13,10 @@
 //! behaves), and Part 4's:
 //! - **no stale key slot**: every domain of the key file has exactly one valid slot, at the
 //!   version the recovered key ring holds, and no slot names a domain the ring does not hold;
-//! - **every live record readable**: the passages of the operation's records, where live, open.
+//! - **every live record readable**: the passages of the operation's records, where live, open;
+//! - **a second start holds** (DB-104): on a copy of the recovered disks, a clean close (a storage
+//!   checkpoint, which deletes the WAL segments it covers) and a reopen give the recovered state,
+//!   so nothing recovery kept only in memory is lost (BH-5, G-43).
 //!
 //! At the end, **active-key losses**: the active slot of sampled domains is zeroed or torn on a
 //! copy of the final disks, and the engine must refuse to start every time (INV-14).
@@ -93,6 +96,8 @@ pub struct Summary {
     pub stale_key_slots: u64,
     /// Live records whose passage did not open after a recovery.
     pub unreadable_records: u64,
+    /// Recoveries after which a clean close and a reopen refused or gave another state (DB-104).
+    pub reopen_mismatches: u64,
     /// Active-key losses injected at the end (zeroed or torn active slots).
     pub key_loss_injected: u64,
     /// Of which the engine refused to start (INV-14).
@@ -125,6 +130,7 @@ macro_rules! summary_fields {
             keytear,
             stale_key_slots,
             unreadable_records,
+            reopen_mismatches,
             key_loss_injected,
             key_loss_refused,
             seconds
@@ -165,6 +171,7 @@ impl Summary {
             + self.method_mismatches
             + self.stale_key_slots
             + self.unreadable_records
+            + self.reopen_mismatches
             + (self.key_loss_injected - self.key_loss_refused.min(self.key_loss_injected))
     }
 }
@@ -399,6 +406,21 @@ impl Run<'_> {
         }
     }
 
+    /// DB-104 (BH-5, G-43): on a copy of the recovered disks, a clean close (a storage checkpoint)
+    /// and a reopen must give the recovered state.
+    fn check_reopen(&mut self, d: &Disks, cid: CollectionId, want: Option<&[u8; 32]>) {
+        let f = d.fork();
+        let dim = self.world.d();
+        let closed = self.world.open(&f).and_then(|db| db.engine.close()).is_ok();
+        let again = closed
+            .then(|| self.world.open(&f).ok())
+            .flatten()
+            .and_then(|db| Self::digest(&db, cid, dim));
+        if !closed || again.as_ref() != want {
+            self.sum.reopen_mismatches += 1;
+        }
+    }
+
     /// The old way: the disks before operation `i`, reopened, and the operation run with a crash
     /// during its `k`-th mutating VFS operation; `None` if it completed.
     fn replay_point(
@@ -533,6 +555,7 @@ impl Run<'_> {
                 self.phases[3] += t.elapsed().as_secs_f64();
                 self.check_keys(&db, &d);
                 self.check_readable(&db, cid, i);
+                self.check_reopen(&d, cid, st.as_ref());
                 let t = Instant::now();
                 let retry = self.retry_ok(&db, cid, i, committed);
                 self.phases[4] += t.elapsed().as_secs_f64();
