@@ -1,0 +1,13 @@
+diff --git a/crates/sever-erasure/src/store.rs b/crates/sever-erasure/src/store.rs
+index 8b26795..06c029b 100644
+--- a/crates/sever-erasure/src/store.rs
++++ b/crates/sever-erasure/src/store.rs
+@@ -121,7 +121,7 @@ impl WrappedStore {
+     /// an interrupted compaction); returns it and every value in it, in order.
+     pub fn open(vfs: Arc<dyn Vfs>, segment_bytes: u64) -> Result<(Self, Vec<Vec<u8>>), Error> {
+         let v = vfs.as_ref();
+-        if !exists(v, DIR)? && exists(v, NEW)? {
++        if !exists(v, DIR)? && exists(v, NEW)? && false {
+             // The swap was cut after the old store moved away: the new one is complete (it was
+             // synced before the first rename).
+             durable::rename(v, NEW, DIR).map_err(io)?;

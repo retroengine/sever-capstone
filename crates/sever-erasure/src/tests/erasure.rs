@@ -621,3 +621,119 @@ fn p4_erasure_a_crash_during_recovery_erasure_is_finished_by_the_next_start() {
     );
     assert!(!db.collections().is_empty());
 }
+
+/// A copy of both disks.
+fn fork(d: &Disks) -> Disks {
+    Disks {
+        data: d.data.fork(),
+        keys: d.keys.fork(),
+    }
+}
+
+/// The engine over `d` with compaction from 32 KiB (as the compaction test).
+fn open_compacting(d: &Disks) -> Result<Db, Error> {
+    let ring = Arc::new(sever_seal::KeyRing::new());
+    let p: Box<dyn sever_txn::TxnParticipant<sever_index::NoExtension>> = Box::new(
+        crate::KeyRotationParticipant::new(
+            Arc::new(d.data.clone()),
+            Arc::new(d.keys.clone()),
+            Arc::clone(&ring),
+            64 * 1024,
+        )
+        .with_compaction_at(32 * 1024),
+    );
+    sever_engine::Engine::open(
+        Arc::new(d.data.clone()),
+        Arc::new(d.keys.clone()),
+        sever_seal::AeadSealer::new(ring),
+        sever_index::NoExtension,
+        vec![p],
+        cfg(1 << 30),
+    )
+}
+
+fn store_bytes(d: &Disks) -> u64 {
+    crate::store::WrappedStore::open(Arc::new(d.data.fork()), 64 * 1024)
+        .map(|(s, _)| s.bytes())
+        .unwrap()
+}
+
+#[test]
+// oracle: A §14.8 (compaction rewrites the store with its live entries), §15.4 and §15.7 step 3
+// (G-43): a crash anywhere in a deletion that compacts the store, on either disk, recovers; every
+// other record's passage opens; and a storage checkpoint then a clean reopen give the same state
+#[spec("SR-14.8-5", "SR-15.7-4")]
+fn p4_erasure_a_crash_anywhere_in_a_compacting_deletion_recovers_and_reopens() {
+    let disks = Disks::new();
+    let db = open_compacting(&disks).unwrap();
+    let cid = db.create_collection(ARTEFACT, OPTS).unwrap();
+    let vs = vectors();
+    for (i, v) in vs.iter().take(30).enumerate() {
+        insert(&db, cid, &format!("r{i}"), v).unwrap();
+    }
+    // Each round ends with a clean close (a storage checkpoint), so the WAL holds only the
+    // compacting deletion and the store is the only record of the earlier blocks.
+    db.close().unwrap();
+    // Find the first deletion that compacts the store; every round before it runs on `disks`.
+    let mut found = None;
+    for round in 0..60 {
+        let id = format!("r{}", round % 30);
+        let dry = fork(&disks);
+        let before = store_bytes(&dry);
+        let db = open_compacting(&dry).unwrap();
+        dry.data.set_faults(FaultPlan::default());
+        dry.keys.set_faults(FaultPlan::default());
+        db.delete(cid, &id).unwrap();
+        let ops = [dry.data.ops_since_plan(), dry.keys.ops_since_plan()];
+        drop(db);
+        if store_bytes(&dry) < before {
+            found = Some((id, ops));
+            break;
+        }
+        let db = open_compacting(&disks).unwrap();
+        db.delete(cid, &id).unwrap();
+        insert(&db, cid, &id, &vs[round % 30]).unwrap();
+        db.close().unwrap();
+    }
+    let (victim, ops) = found.expect("a deletion compacts the store within 60 rounds");
+    for (disk, n_ops) in [0usize, 1].into_iter().zip(ops) {
+        for k in 1..=n_ops {
+            for p in [CrashPolicy::DropAll, CrashPolicy::KeepAll] {
+                let t = fork(&disks);
+                let db = open_compacting(&t).unwrap();
+                let plan = FaultPlan {
+                    crash_at_op: Some(k),
+                    tear_bytes: 5,
+                    ..FaultPlan::default()
+                };
+                if disk == 0 {
+                    t.data.set_faults(plan);
+                } else {
+                    t.keys.set_faults(plan);
+                }
+                let _ = db.delete(cid, &victim);
+                drop(db);
+                let at = format!("disk {disk} op {k} {p:?}");
+                t.restart(p);
+                let db =
+                    open_compacting(&t).unwrap_or_else(|e| panic!("{at}: recovery refused: {e:?}"));
+                let state = db.canonical_state(cid).unwrap();
+                let gone = db.location(cid, &victim).is_none();
+                db.storage_checkpoint_now().unwrap();
+                drop(db);
+                let db = open_compacting(&t)
+                    .unwrap_or_else(|e| panic!("{at}: refused after the checkpoint: {e:?}"));
+                assert_eq!(db.canonical_state(cid).unwrap(), state, "{at}");
+                for i in 0..30 {
+                    let id = format!("r{i}");
+                    if id != victim || !gone {
+                        assert!(
+                            db.passage(cid, &id).unwrap().is_some(),
+                            "{at}: {id} unreadable"
+                        );
+                    }
+                }
+            }
+        }
+    }
+}

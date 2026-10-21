@@ -545,6 +545,26 @@
   package: sever-db
   tests:
   - crates/sever-db/src/tests.rs::p4_db_a_checkpoint_after_recovery_keeps_every_rotated_key
+- id: PR4-E23
+  claim: "recovery keeps the replayed bucket blocks in memory only: a checkpoint after a crash in a compacting deletion deletes their only copy (§15.7, G-43)"
+  kind: red
+  requirements:
+  - SR-15.7-4
+  patch: PR4-E23.patch
+  runner: cargo
+  package: sever-erasure
+  tests:
+  - crates/sever-erasure/src/tests/erasure.rs::p4_erasure_a_crash_anywhere_in_a_compacting_deletion_recovers_and_reopens
+- id: PR4-E24
+  claim: "an interrupted compaction is not finished at open: a crash after the old store moved away loses the store (§14.8)"
+  kind: red
+  requirements:
+  - SR-14.8-5
+  patch: PR4-E24.patch
+  runner: cargo
+  package: sever-erasure
+  tests:
+  - crates/sever-erasure/src/tests/erasure.rs::p4_erasure_a_crash_anywhere_in_a_compacting_deletion_recovers_and_reopens
 - id: PR4-P01
   claim: 'startup skips the swap check (§12.8: refuse unencrypted swap)'
   kind: red
