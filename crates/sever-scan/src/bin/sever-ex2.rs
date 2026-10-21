@@ -165,12 +165,14 @@ fn open_db(a: &Args) -> Result<sever_db::Opened, Fail> {
         let mut st = sever_db::Settings::new(D);
         st.engine.on_failure = sever_engine::FailurePolicy::Poison;
         let db = sever_db::open_on(v(dir.join("data"))?, v(dir.join("keys"))?, st)?;
-        return Ok(sever_db::Opened {
+        let lock = sever_engine::EngineLock::acquire(&dir.join("data"))?;
+        return Ok(sever_db::Opened::new(
             db,
-            lock: sever_engine::EngineLock::acquire(&dir.join("data"))?,
-            overridden: vec![],
-            memory_locked: false,
-        });
+            lock,
+            &dir.join("data"),
+            vec![],
+            false,
+        )?);
     }
     let dir = a.path("dir")?;
     let mut o = OpenOptions::new(dir.join("data"), dir.join("keys"));

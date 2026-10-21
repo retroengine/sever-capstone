@@ -386,6 +386,30 @@ fn file_id(path: &std::path::Path) -> Option<(u64, u64)> {
 }
 
 impl Opened {
+    /// An open database from its parts: `lock` is held on `data_dir`, whose `ENGINE.lock`
+    /// identity is recorded for [`Opened::serve`] (§12.9, G-42).
+    pub fn new(
+        db: Db,
+        lock: EngineLock,
+        data_dir: &std::path::Path,
+        overridden: Vec<&'static str>,
+        memory_locked: bool,
+    ) -> Result<Self, Error> {
+        let lock_file = data_dir.join(sever_engine::platform::LOCK_FILE);
+        let lock_id = file_id(&lock_file).ok_or(Error::PlatformUnsafe {
+            check: "§12.9 ENGINE.lock",
+        })?;
+        Ok(Self {
+            db,
+            lock,
+            overridden,
+            memory_locked,
+            lock_file,
+            lock_id,
+            stopped: AtomicBool::new(false),
+        })
+    }
+
     /// Runs one call on the open database. After an `IntegrityViolation` no call is served
     /// (§17); a data directory whose `ENGINE.lock` is no longer the file this process locked
     /// (another process replaced it) is never written again (§12.9, G-42).
@@ -446,10 +470,6 @@ pub fn open(o: &OpenOptions) -> Result<Opened, Error> {
     std::fs::create_dir_all(&o.key_dir).map_err(io_err("§14.1 key directory"))?;
     // §15.7 steps 1 and 4: ENGINE.lock first, then the platform checks and the memory hygiene.
     let lock = EngineLock::acquire(&o.data_dir)?;
-    let lock_file = o.data_dir.join(sever_engine::platform::LOCK_FILE);
-    let lock_id = file_id(&lock_file).ok_or(Error::PlatformUnsafe {
-        check: "§12.9 ENGINE.lock",
-    })?;
     let report = sever_platform::startup(&LinuxProbe, &o.data_dir, &o.key_dir, o.overrides)?;
     let memory_locked = report.locked.is_some();
     if let Some(locked) = &report.locked {
@@ -491,15 +511,7 @@ pub fn open(o: &OpenOptions) -> Result<Opened, Error> {
         &o.key_dir.join(sever_platform::KEYS_FILE),
         "§14.1 KEYS permissions",
     )?;
-    Ok(Opened {
-        db,
-        lock,
-        overridden: report.overridden,
-        memory_locked,
-        lock_file,
-        lock_id,
-        stopped: AtomicBool::new(false),
-    })
+    Opened::new(db, lock, &o.data_dir, report.overridden, memory_locked)
 }
 
 #[cfg(test)]
