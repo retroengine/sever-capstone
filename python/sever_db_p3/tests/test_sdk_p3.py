@@ -18,6 +18,7 @@ from sever_db_p3 import (
     BadUserSignature,
     Database,
     DuplicateRecord,
+    InvalidRecordId,
     NotNormalised,
     SeededNonceForbidden,
     UserKey,
@@ -288,3 +289,22 @@ def test_p3_sdk_reports_the_placement_as_the_groups_text_form(db: tuple[Database
     assert all(p in groups or p == "holding" for p in placed)
     assert any(p.startswith("frozen-") for p in placed if p)
     assert "holding" in placed
+
+
+@pytest.mark.oracle("A", "§3.2 rule 1 (a record ID is UTF-8) and §17 (typed, no part of the ID)")
+def test_p3_sdk_a_record_id_that_is_not_utf8_is_invalid_record_id(
+    db: tuple[Database, str],
+) -> None:
+    d, cid = db
+    user = UserKey.generate()
+    bad = "id-\udc80"  # a lone surrogate: no UTF-8 encoding exists
+    calls: list[Callable[[], object]] = [
+        lambda: prepare_insert(cid, bad, rows(1)[0], user),
+        lambda: d.delete(cid, bad),
+        lambda: d.delete_user(cid, ["ok-id", bad]),
+    ]
+    for call in calls:
+        with pytest.raises(InvalidRecordId) as e:
+            call()
+        assert "\udc80" not in str(e.value)
+        assert "id-" not in str(e.value)

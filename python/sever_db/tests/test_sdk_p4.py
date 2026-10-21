@@ -215,7 +215,8 @@ def test_p4_sdk_a_record_id_that_is_not_utf8_is_invalid_record_id(
     for call in calls:
         with pytest.raises(InvalidRecordId) as e:
             call()
-        assert "\udc80" not in str(e.value) and "id-" not in str(e.value)
+        assert "\udc80" not in str(e.value)
+        assert "id-" not in str(e.value)
 
 
 def test_p4_sdk_the_user_key_is_published_with_every_insert(db: tuple[Database, str]) -> None:
