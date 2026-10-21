@@ -78,6 +78,17 @@ __all__ = [
 Outcome = Literal["deleted", "absent"]
 
 
+def _rid(record_id: str) -> str:
+    """§3.2 rule 1: a record ID is UTF-8. A ``str`` with no UTF-8 encoding (a lone surrogate) is
+    ``InvalidRecordId``, and the error holds no part of it (§17); the engine checks the rest."""
+    if isinstance(record_id, str):
+        try:
+            record_id.encode("utf-8")
+        except UnicodeEncodeError:
+            raise InvalidRecordId("invalid record id: not valid UTF-8") from None
+    return record_id
+
+
 def _no_randomness(extra: Sequence[object], named: Mapping[str, object]) -> None:
     """§16.2: no way to pass a random generator, seed or nonce. Any extra argument is one."""
     if extra or named:
@@ -126,7 +137,7 @@ def prepare_insert(
     _no_randomness(randomness, more)
     if not isinstance(user, UserKey):
         raise TypeError("user must be a UserKey")
-    return _native.prepare_insert(collection_id, record_id, list(map(float, vector)), user._k)
+    return _native.prepare_insert(collection_id, _rid(record_id), list(map(float, vector)), user._k)
 
 
 @dataclass(frozen=True)
@@ -242,7 +253,7 @@ class Database:
         """Deletes one record (§15.3); no ``r_t`` argument, and no way to pass randomness into its
         proof (§9.6)."""
         _no_randomness(randomness, more)
-        return _deletion(self._e.delete(collection, record_id))
+        return _deletion(self._e.delete(collection, _rid(record_id)))
 
     def delete_user(
         self, collection: str, record_ids: Sequence[str], *randomness: object, **more: object
@@ -250,7 +261,9 @@ class Database:
         """Deletes every record of a cohort in one transaction, all or nothing (§12.5); the
         certificates of one group chain (§11.3)."""
         _no_randomness(randomness, more)
-        return [_deletion(o) for o in self._e.delete_user(collection, list(record_ids))]
+        return [
+            _deletion(o) for o in self._e.delete_user(collection, [_rid(r) for r in record_ids])
+        ]
 
     def certificate(self, database_lsn: int) -> bytes | None:
         """The certificate of the deletion at ``database_lsn`` (§15.4), or ``None``."""
