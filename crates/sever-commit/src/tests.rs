@@ -25,8 +25,8 @@ impl LeafLog for MemLog {
     fn next_leaf_index(&self) -> u64 {
         self.next.load(Ordering::SeqCst)
     }
-    fn insert_leaf_c_t(&self, index: u64) -> Option<[u8; 32]> {
-        self.leaves.lock().unwrap().get(&index).copied()
+    fn insert_leaf_c_t(&self, index: u64) -> Result<Option<[u8; 32]>, Error> {
+        Ok(self.leaves.lock().unwrap().get(&index).copied())
     }
 }
 

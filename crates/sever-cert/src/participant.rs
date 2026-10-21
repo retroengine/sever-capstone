@@ -127,14 +127,13 @@ impl LeafLog for LogHandle {
         lock(&self.0).log.as_ref().map_or(0, LogStore::next_index)
     }
 
-    fn insert_leaf_c_t(&self, index: u64) -> Option<[u8; 32]> {
+    fn insert_leaf_c_t(&self, index: u64) -> Result<Option<[u8; 32]>, Error> {
+        // §17 (G-41): a leaf that cannot be read or verified is reported as that failure.
         let g = lock(&self.0);
-        g.log
-            .as_ref()?
-            .insert_leaf(index)
-            .ok()
-            .flatten()
-            .map(|l| l.c_t)
+        let Some(log) = g.log.as_ref() else {
+            return Ok(None);
+        };
+        Ok(log.insert_leaf(index)?.map(|l| l.c_t))
     }
 
     fn stage_insert(&self, insert: StagedInsert) {

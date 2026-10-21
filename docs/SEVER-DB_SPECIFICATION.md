@@ -1591,6 +1591,11 @@ transaction: `frozen-NNNN`, `spawn-` followed by 16 lowercase hex characters, or
 Every error is typed. **No error message may contain a record ID, a vector value, a key, `r_t` or
 passage text.** Group sizes MAY appear (they are already visible).
 
+An `IntegrityViolation` names the check that failed. When stored data cannot be read back or does
+not match what was committed (a store reference that does not lead to a whole record, a leaf that
+does not match its leaf hash), the error MUST name that check; it is never replaced by the name of
+a later check that the missing value would have fed (G-41).
+
 | Error | Raised when |
 |---|---|
 | `WrongDimension`, `NonFinite`, `NotNormalised` | §4.1 fails |

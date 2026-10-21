@@ -1,7 +1,7 @@
 --- a/crates/sever-commit/src/lib.rs
 +++ b/crates/sever-commit/src/lib.rs
 @@ -264,9 +264,7 @@
-             .insert_leaf_c_t(record.insert_leaf_index)
+             .insert_leaf_c_t(record.insert_leaf_index)?
              .ok_or(integrity("§15.3 insert leaf"))?;
          let c_t = self.record_commitment(x, &record.r_t)?;
 -        if encode_point(&c_t) != logged {

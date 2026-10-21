@@ -1,0 +1,13 @@
+diff --git a/crates/sever-cert/src/participant.rs b/crates/sever-cert/src/participant.rs
+index 2113a87..d8a8141 100644
+--- a/crates/sever-cert/src/participant.rs
++++ b/crates/sever-cert/src/participant.rs
+@@ -133,7 +133,7 @@ impl LeafLog for LogHandle {
+         let Some(log) = g.log.as_ref() else {
+             return Ok(None);
+         };
+-        Ok(log.insert_leaf(index)?.map(|l| l.c_t))
++        Ok(log.insert_leaf(index).ok().flatten().map(|l| l.c_t))
+     }
+ 
+     fn stage_insert(&self, insert: StagedInsert) {

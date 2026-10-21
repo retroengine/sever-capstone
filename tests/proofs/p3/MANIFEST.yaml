@@ -1724,3 +1724,13 @@
   package: sever-p3
   tests:
   - crates/sever-p3/src/tests.rs::p3_root_refuses_an_artefact_of_another_dimension
+- id: PR3-F05
+  claim: "a delete whose stored insert leaf cannot be read reports §15.3 insert leaf, hiding the store's own check (G-41)"
+  kind: red
+  requirements:
+  - SR-17-7
+  patch: PR3-F05.patch
+  runner: cargo
+  package: sever-p3
+  tests:
+  - crates/sever-p3/src/tests.rs::p3_root_a_delete_whose_leaf_cannot_be_read_names_the_store_check

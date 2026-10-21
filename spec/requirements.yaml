@@ -402,6 +402,7 @@
 - {id: SR-17-3, section: "17", kind: table-row, part: 3, text: "CommitmentMismatch when the supplied C_t differs from the recomputed C_t at insert."}
 - {id: SR-17-4, section: "17", kind: table-row, part: 3, text: "BadUserSignature when the insert signature fails."}
 - {id: SR-17-5, section: "17", kind: table-row, part: 3, text: "SeededNonceForbidden on any attempt to supply randomness to proof generation."}
+- {id: SR-17-7, section: "17", kind: must, part: 3, text: "An IntegrityViolation names the check that failed; stored data that cannot be read back or does not match what was committed is reported as that check, never as a later check it would have fed.", notes: "G-41."}
 - {id: SR-21-3, section: "21", kind: table-row, part: 3, text: "INV-3: C_S = r_agg·H + Σ scalar(S_i)·G_i for every group; checked at startup and in debug builds."}
 - {id: SR-21-10, section: "21", kind: table-row, part: 3, text: "INV-10: the generators equal the golden file; checked at startup."}
 - {id: SR-21-15, section: "21", kind: table-row, part: 3, text: "INV-15: the log root at every log-checkpoint size equals that checkpoint's root (checked at startup), and every live record's insert leaf exists (checked at each deletion, §15.3 step 2; DB-83)."}

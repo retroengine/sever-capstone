@@ -39,8 +39,8 @@ pub trait LeafLog: Send + Sync {
     /// (§12.5), so an insert admitted now gets exactly this index for its insert leaf.
     fn next_leaf_index(&self) -> u64;
     /// The `C_t` field of the insert leaf at `index` (§10.2), or `None` if there is no insert leaf
-    /// there.
-    fn insert_leaf_c_t(&self, index: u64) -> Option<[u8; 32]>;
+    /// there. A stored leaf that cannot be read or verified is that error (§17, G-41).
+    fn insert_leaf_c_t(&self, index: u64) -> Result<Option<[u8; 32]>, Error>;
     /// `admit` accepted an insert: the fields of its insert leaf that the `ChangeSet` does not
     /// carry (§10.2, §15.1 step 6). The log participant builds the leaf from them.
     fn stage_insert(&self, _insert: StagedInsert) {}
@@ -261,7 +261,7 @@ impl GroupExtension for CommitmentExtension {
         }
         let logged = self
             .log
-            .insert_leaf_c_t(record.insert_leaf_index)
+            .insert_leaf_c_t(record.insert_leaf_index)?
             .ok_or(integrity("§15.3 insert leaf"))?;
         let c_t = self.record_commitment(x, &record.r_t)?;
         if encode_point(&c_t) != logged {
