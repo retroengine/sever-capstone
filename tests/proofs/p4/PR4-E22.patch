@@ -1,0 +1,13 @@
+diff --git a/crates/sever-erasure/src/participant.rs b/crates/sever-erasure/src/participant.rs
+index 9054849..3aac44f 100644
+--- a/crates/sever-erasure/src/participant.rs
++++ b/crates/sever-erasure/src/participant.rs
+@@ -395,7 +395,7 @@ impl<E: GroupExtension> TxnParticipant<E> for KeyRotationParticipant {
+         let mut missing_from_store = Vec::new();
+         for value in core::mem::take(&mut self.tail) {
+             let v = records::parse(&value)?;
+-            if self.durable.newer(&v) {
++            if self.durable.newer(&v) && false {
+                 missing_from_store.push(value);
+             }
+             self.durable.merge(v);

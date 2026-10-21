@@ -535,6 +535,16 @@
   package: sever-erasure
   tests:
   - crates/sever-erasure/src/tests/erasure.rs::p4_erasure_a_crash_during_recovery_erasure_is_finished_by_the_next_start
+- id: PR4-E22
+  claim: "recovery merges the replayed bucket blocks into memory only, so a storage checkpoint after a crash between a deletion's COMMIT and its store append deletes their only copy (§15.7, G-43)"
+  kind: red
+  requirements:
+  - SR-15.7-4
+  patch: PR4-E22.patch
+  runner: cargo
+  package: sever-db
+  tests:
+  - crates/sever-db/src/tests.rs::p4_db_a_checkpoint_after_recovery_keeps_every_rotated_key
 - id: PR4-P01
   claim: 'startup skips the swap check (§12.8: refuse unencrypted swap)'
   kind: red
