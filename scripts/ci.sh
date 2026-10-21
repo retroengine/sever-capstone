@@ -60,15 +60,14 @@ fast() {
   step spec-trace-p2 uv run --no-sync python -m sever_testkit_p2.spec_trace check --part 2 --complete
   step oracle-check-p2 uv run --no-sync python -m sever_testkit_p2.oracle_check check
   step proofs-check-p2 uv run --no-sync python -m sever_testkit_p2.proofs check
-  # Part 3 is being built: unknown IDs fail now; --complete joins when its modules are done.
-  step spec-trace-p3 uv run --no-sync python -m sever_testkit_p3.spec_trace check --part 3
+  # Parts 3 and 4 are built: every owned requirement needs a test (BH-1).
+  step spec-trace-p3 uv run --no-sync python -m sever_testkit_p3.spec_trace check --part 3 --complete
   step oracle-check-p3 uv run --no-sync python -m sever_testkit_p3.oracle_check check
   step proofs-check-p3 uv run --no-sync python -m sever_testkit_p3.proofs check
   step registers-p3 uv run --no-sync python -m sever_testkit_p3.registers check
   step rfc-vectors-p3 uv run --no-sync python -m sever_testkit_p3.rfc_vectors check
   step refmodel-golden-p3 uv run --no-sync python -m sever_refmodel_certs.golden check
-  # Part 4 is being prepared (design review, 18 Oct 2026): the checks run on an empty Part 4 so far.
-  step spec-trace-p4 uv run --no-sync python -m sever_testkit_p4.spec_trace check --part 4
+  step spec-trace-p4 uv run --no-sync python -m sever_testkit_p4.spec_trace check --part 4 --complete
   step oracle-check-p4 uv run --no-sync python -m sever_testkit_p4.oracle_check check
   step proofs-check-p4 uv run --no-sync python -m sever_testkit_p4.proofs check
   step registers-p4 uv run --no-sync python -m sever_testkit_p4.registers check

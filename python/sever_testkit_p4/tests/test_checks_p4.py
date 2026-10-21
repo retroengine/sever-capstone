@@ -4,7 +4,7 @@ are looked up in ``tests/proofs/p4/``."""
 
 from pathlib import Path
 
-from sever_testkit_p4 import oracle_check, proofs
+from sever_testkit_p4 import oracle_check, proofs, spec_trace
 
 CATALOGUE = """\
 - id: SR-13.3-1
@@ -109,3 +109,26 @@ def test_p4_proofs_ids_are_part4_ids(tmp_path: Path) -> None:
     root = _repo(tmp_path, {"crates/sever-keys/src/lib.rs": LABELLED}, _entry("PR3-K01", "a.patch"))
     (root / "tests/proofs/p4/a.patch").write_text("", encoding="utf-8")
     assert _proof_problems(root)[0] == ["PR3-K01: a Part 4 proof ID starts with PR4-"]
+
+
+SPLIT = """\
+// oracle: A §14.7 torn slot, by hand
+#[spec(
+    "SR-14.7-3",
+    "SR-13.3-1"
+)]
+fn p4_keys_split_attribute() {}
+"""
+
+
+def test_p4_spec_trace_refuses_a_split_attribute(tmp_path: Path) -> None:
+    # The frozen tracer, oracle check and proofs check read one line at a time (BH-1): a split
+    # attribute's labels are invisible to all three, so the check refuses it outside frozen files.
+    root = _repo(tmp_path, {"crates/sever-keys/src/lib.rs": SPLIT})
+    assert spec_trace.split_attributes(root) == ["crates/sever-keys/src/lib.rs:2"]
+    assert spec_trace.main(["check", "--part", "4", "--root", str(root)]) == 1
+    (root / "freeze").mkdir()
+    (root / "freeze/PART-2.sha256").write_text(
+        "0" * 64 + "  crates/sever-keys/src/lib.rs\n", encoding="utf-8"
+    )
+    assert spec_trace.split_attributes(root) == []  # a frozen file cannot be changed
