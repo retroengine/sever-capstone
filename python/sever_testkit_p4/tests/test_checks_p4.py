@@ -4,6 +4,7 @@ are looked up in ``tests/proofs/p4/``."""
 
 from pathlib import Path
 
+from sever_testkit_p3.spec_trace import split_attributes
 from sever_testkit_p4 import oracle_check, proofs, spec_trace
 
 CATALOGUE = """\
@@ -125,10 +126,10 @@ def test_p4_spec_trace_refuses_a_split_attribute(tmp_path: Path) -> None:
     # The frozen tracer, oracle check and proofs check read one line at a time (BH-1): a split
     # attribute's labels are invisible to all three, so the check refuses it outside frozen files.
     root = _repo(tmp_path, {"crates/sever-keys/src/lib.rs": SPLIT})
-    assert spec_trace.split_attributes(root) == ["crates/sever-keys/src/lib.rs:2"]
+    assert split_attributes(root) == ["crates/sever-keys/src/lib.rs:2"]
     assert spec_trace.main(["check", "--part", "4", "--root", str(root)]) == 1
     (root / "freeze").mkdir()
     (root / "freeze/PART-2.sha256").write_text(
         "0" * 64 + "  crates/sever-keys/src/lib.rs\n", encoding="utf-8"
     )
-    assert spec_trace.split_attributes(root) == []  # a frozen file cannot be changed
+    assert split_attributes(root) == []  # a frozen file cannot be changed
