@@ -749,3 +749,67 @@ fn p4_db_refuses_to_write_into_a_replaced_data_directory() {
     drop(again);
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+// oracle: A §15.6 step 4 and §15.7 step 3 (G-43): a storage checkpoint deletes only the WAL its
+// state covers, so after a crash anywhere in a deletion, a recovery, a storage checkpoint and a
+// clean reopen give the same acknowledged state, every live record readable and one key slot for
+// the record's domain at the version recovery found (INV-14, §13.4)
+#[spec("SR-15.7-4")]
+#[test]
+fn p4_db_a_checkpoint_after_recovery_keeps_every_rotated_key() {
+    let disks = Disks::new();
+    let user = KeyPair::generate();
+    let mut w = Written::default();
+    let (db, cid) = base(&disks, &user, &mut w);
+    let victim = "record-id-03";
+    let d = domain_of(cid, &db.engine.location(cid, victim).unwrap());
+    drop(db);
+    let dry = disks.fork();
+    let db = dry.open().unwrap();
+    dry.data.set_faults(FaultPlan::default());
+    dry.keys.set_faults(FaultPlan::default());
+    db.delete(cid, victim).unwrap();
+    let ops = [dry.data.ops_since_plan(), dry.keys.ops_since_plan()];
+    drop(db);
+    for (disk, n_ops) in [0usize, 1].into_iter().zip(ops) {
+        for k in 1..=n_ops {
+            for p in [CrashPolicy::DropAll, CrashPolicy::KeepAll] {
+                let t = disks.fork();
+                let db = t.open().unwrap();
+                let plan = FaultPlan {
+                    crash_at_op: Some(k),
+                    tear_bytes: 5,
+                    ..FaultPlan::default()
+                };
+                if disk == 0 {
+                    t.data.set_faults(plan);
+                } else {
+                    t.keys.set_faults(plan);
+                }
+                let _ = db.delete(cid, victim);
+                drop(db);
+                let at = format!("disk {disk} op {k} {p:?}");
+                t.restart(p);
+                let db = t
+                    .open()
+                    .unwrap_or_else(|e| panic!("{at}: recovery refused: {e:?}"));
+                let n = db.engine.stats(cid).unwrap().big_n;
+                let version = slots(&t.keys)[&d][0].2;
+                db.engine.storage_checkpoint_now().unwrap();
+                drop(db);
+                let db = t
+                    .open()
+                    .unwrap_or_else(|e| panic!("{at}: refused after the checkpoint: {e:?}"));
+                assert_eq!(db.engine.stats(cid).unwrap().big_n, n, "{at}");
+                let held: Vec<u64> = slots(&t.keys)[&d].iter().map(|s| s.2).collect();
+                assert_eq!(held, [version], "{at}: one slot at the recovered version");
+                for id in w.ids.iter().filter(|id| *id != victim || n == 6) {
+                    assert!(
+                        db.engine.passage(cid, id).unwrap().is_some(),
+                        "{at}: {id} unreadable"
+                    );
+                }
+            }
+        }
+    }
+}
