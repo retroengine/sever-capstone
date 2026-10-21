@@ -7,7 +7,7 @@ Where each labelled test gets its expected value: **A** the spec by hand, **B** 
 independent oracle, **B-shared** an oracle by the same author as the code, **C** Part 1's
 frozen code, **D** the code under test itself. No requirement may rest on D alone.
 
-**72 labelled tests.** A: 69, B: 2, C: 1
+**74 labelled tests.** A: 71, B: 2, C: 1
 
 ## Requirements
 
@@ -26,7 +26,6 @@ frozen code, **D** the code under test itself. No requirement may rest on D alon
 | SR-12.8-6 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-12.9-3 | 3 | 0 | 0 | 0 | 0 | ok |
 | SR-12.9-4 | 2 | 0 | 0 | 0 | 0 | ok |
-| SR-12.9-5 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-13.1-1 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-13.1-2 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-13.1-3 | 1 | 0 | 0 | 0 | 0 | ok |
@@ -58,7 +57,7 @@ frozen code, **D** the code under test itself. No requirement may rest on D alon
 | SR-14.7-6 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-14.8-3 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-14.8-4 | 3 | 0 | 0 | 0 | 0 | ok |
-| SR-14.8-5 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-14.8-5 | 2 | 0 | 0 | 0 | 0 | ok |
 | SR-15.1-7 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-15.2-3 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-15.3-10 | 1 | 0 | 0 | 0 | 0 | ok |
@@ -72,11 +71,11 @@ frozen code, **D** the code under test itself. No requirement may rest on D alon
 | SR-15.4-5 | 2 | 0 | 0 | 0 | 0 | ok |
 | SR-15.4-6 | 2 | 0 | 0 | 0 | 0 | ok |
 | SR-15.7-3 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-15.7-4 | 2 | 0 | 0 | 0 | 0 | ok |
 | SR-15.8-2 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-15.9-2 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-16.3-3 | 3 | 0 | 0 | 0 | 0 | ok |
 | SR-17-6 | 2 | 0 | 0 | 0 | 0 | ok |
-| SR-17-8 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-20.1-1 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-20.3-1 | 0 | 1 | 0 | 0 | 0 | ok |
 | SR-21-11 | 1 | 0 | 0 | 0 | 0 | ok |
@@ -92,6 +91,7 @@ None.
 
 | Test | Requirements | Oracle |
 |---|---|---|
+| `erasure.rs::p4_erasure_a_crash_anywhere_in_a_compacting_deletion_recovers_and_reopens` | SR-14.8-5, SR-15.7-4 | **A** §14.8 (compaction rewrites the store with its live entries), §15.4 and §15.7 step 3 |
 | `erasure.rs::p4_erasure_a_crash_during_recovery_erasure_is_finished_by_the_next_start` | SR-13.4-3, SR-21-13 | **A** §13.4 (KF-6): a crash during recovery's erasure leaves the next start to erase again |
 | `erasure.rs::p4_erasure_a_deletion_rotates_its_domain_and_erases_the_old_key_before_returning` | SR-13.3-1, SR-13.4-2, SR-15.3-10, SR-15.8-2 | **A** §13.3 step 1 and §13.4: a departure moves the domain to version + 1; the new key is in |
 | `erasure.rs::p4_erasure_a_flush_rotates_the_holding_area_and_spawns_fresh_domains` | SR-13.3-1, SR-15.2-3, SR-21-12 | **A** §13.3 (a flush out of the holding area is a departure) and §15.2 (the new group gets |
@@ -113,6 +113,7 @@ None.
 | `records.rs::p4_erasure_store_values_are_the_bytes_of_section_14_8` | SR-14.8-4, SR-14.6-5 | **A** §14.8 wrapped-key store values, kinds 1–3, and §14.6 BUCKET_BLOCK / EXTENSION payloads |
 | `test_p4_pins.py::test_p4_arch_the_aead_crate_is_pinned_with_one_copy_of_each_family` | SR-20.1-1 | **A** §20.1 aes-gcm-siv 0.11.1 (aead 0.5, the rand_core 0.6 family) |
 | `test_sdk_p4.py::test_p4_sdk_reports_the_placement_as_the_groups_text_form` | SR-16.2-2 | **A** §16.2 (G-38) 'the placement is the §5.1 text form of the group'; §5.1 table: frozen-NNNN, spawn- + 16 lowercase hex characters, holding |
+| `tests.rs::p4_db_a_checkpoint_after_recovery_keeps_every_rotated_key` | SR-15.7-4 | **A** §15.6 step 4 and §15.7 step 3 (G-43): a storage checkpoint deletes only the WAL its |
 | `tests.rs::p4_db_a_crash_anywhere_in_a_deletion_on_either_disk_recovers_cleanly` | SR-15.4-3, SR-15.4-4, SR-15.4-5, SR-15.4-6 | **A** §15.4 crash table with every participant (Build 3-4 §2.8 L8): after a crash anywhere |
 | `tests.rs::p4_db_a_deletion_is_one_wal_transaction_with_every_record_of_phase_b` | SR-15.3-8 | **A** §15.3 step 6 (phase B): "one WAL transaction holds the slot move and truncate, the |
 | `tests.rs::p4_db_after_an_integrity_violation_the_database_stops_serving` | SR-17-8 | **A** §17 "IntegrityViolation … the engine stops serving": no later call is served, and closing writes no storage checkpoint over the state the violation was found in |

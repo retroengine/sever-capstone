@@ -76,8 +76,8 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   fast tier 36/36, tour 24/24 on 5,000 rows, crash windows from op 17,000 (Part 3: 1,569 points,
   Part 4: 4,307 points, 0 mismatches), every demo command exits 0. The failing state is kept in
   `demo-engine/work/evidence-tour-nq`.
-- **Next (the owner):** decide whether to merge `p4-fix-delete-checkpoint` into `main` before the VM
-  run (it changes Parts 3 and 4, so the VM should run on it).
+- **Merged (21 Oct 2026):** `p4-fix-delete-checkpoint`, then `bughunt-2026-10`, are on `main`; the
+  VM runs on `main`.
 - **The engine demo (19 Oct 2026):** `demo-engine/demo.sh tour` (12 chapters on 5,000 NQ passages:
   24 of 24 checks pass), `shell`, `cli`, `erase`, `examples`, `test` (6 offline tests pass). Run
   one tour or shell per work directory: a second one is refused (DB-101).
@@ -457,6 +457,14 @@ report and the rebuilt artefact identical apart from timing); the freeze manifes
 
 ## Session log
 
+- **21 Oct 2026**: the owner asked for everything except the VM. Merged `p4-fix-delete-checkpoint`
+  (DB-101) and `bughunt-2026-10` (DB-102, BH-5); Part 3's root takes Part 4's stop-serving guard
+  (DB-103, PR3-F06/F07); errata E-4 … E-6 deferred to E-3 after v1.0 (L-28); P4-T3 reopens after
+  every recovery (DB-104); BH-2 won't fix; `sever-cert`'s impossible consistency proof is an
+  `IntegrityViolation`; TRACE_PART_3/4 and TEST_ORACLES_P3/P4 regenerated (SR-17-8, SR-12.9-5 moved
+  to Part 3). Fast tier 36/36, full-checks 42/42, every demo, fuzz smoke 0 crashes, GitHub CI green.
+  The worktree `~/sever-db-bh` and the branches `bughunt-2026-10`, `p4-fix-delete-checkpoint` are
+  deleted (BH-5's evidence kept in `target/bh/kill-a-evidence`). Next: the owner's VM run.
 - **20–21 Oct 2026**: investigated the 5,000-row tour failure: two tours on one work directory, not a
   regression (the owner's solo tour at HEAD passed 23/24; no bisect needed). Fixed by hand with
   red tests first (DB-101, G-41, G-42), branch `p4-fix-delete-checkpoint` pushed. A parallel

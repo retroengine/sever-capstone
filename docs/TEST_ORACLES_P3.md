@@ -7,112 +7,120 @@ Where each labelled test gets its expected value: **A** the spec by hand, **B** 
 independent oracle, **B-shared** an oracle by the same author as the code, **C** Part 1's
 frozen code, **D** the code under test itself. No requirement may rest on D alone.
 
-**27 labelled tests.** A: 18, B: 3, B-shared: 7
+**122 labelled tests.** A: 95, B: 4, B-shared: 21, C: 3
 
 ## Requirements
 
 | Requirement | A | B | B-shared | C | D | Status |
 |---|---|---|---|---|---|---|
 | SR-A-1 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-A-2 | 0 | 0 | 0 | 0 | 0 | no test |
+| SR-A-2 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-B-1 | 0 | 0 | 1 | 0 | 0 | ok |
 | SR-B-2 | 0 | 0 | 1 | 0 | 0 | ok |
 | SR-B-3 | 1 | 0 | 1 | 0 | 0 | ok |
 | SR-B-4 | 0 | 0 | 1 | 0 | 0 | ok |
-| SR-B-6 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-B-8 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-B-9 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-2.2-2 | 0 | 0 | 0 | 0 | 0 | no test |
+| SR-B-6 | 0 | 0 | 3 | 0 | 0 | ok |
+| SR-B-8 | 0 | 0 | 1 | 0 | 0 | ok |
+| SR-B-9 | 0 | 0 | 1 | 0 | 0 | ok |
+| SR-2.2-2 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-2.3-1 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-3.3-1 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-3.3-2 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-3.3-3 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-4.2-3 | 0 | 0 | 0 | 0 | 0 | no test |
+| SR-3.3-1 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-3.3-2 | 0 | 0 | 1 | 0 | 0 | ok |
+| SR-3.3-3 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-4.2-3 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-4.5-1 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-5.3-2 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-5.4-4 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-5.5-5 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-5.5-6 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-5.5-7 | 0 | 0 | 0 | 0 | 0 | no test |
+| SR-5.3-2 | 0 | 0 | 1 | 1 | 0 | ok |
+| SR-5.4-4 | 1 | 0 | 1 | 0 | 0 | ok |
+| SR-5.5-5 | 0 | 0 | 1 | 0 | 0 | ok |
+| SR-5.5-6 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-5.5-7 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-9.1-1 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-9.2-1 | 1 | 0 | 1 | 0 | 0 | ok |
-| SR-9.2-2 | 0 | 2 | 0 | 0 | 0 | ok |
-| SR-9.2-3 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-9.2-4 | 0 | 0 | 0 | 0 | 0 | no test |
+| SR-9.2-1 | 1 | 1 | 1 | 0 | 0 | ok |
+| SR-9.2-2 | 0 | 3 | 0 | 0 | 0 | ok |
+| SR-9.2-3 | 1 | 1 | 0 | 0 | 0 | ok |
+| SR-9.2-4 | 1 | 1 | 0 | 0 | 0 | ok |
 | SR-9.3-1 | 0 | 0 | 1 | 0 | 0 | ok |
 | SR-9.3-2 | 0 | 0 | 1 | 0 | 0 | ok |
-| SR-9.3-3 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-9.4-1 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-9.4-2 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-9.5-1 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-9.3-3 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-9.4-1 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-9.4-2 | 0 | 0 | 1 | 0 | 0 | ok |
+| SR-9.5-1 | 1 | 0 | 1 | 0 | 0 | ok |
 | SR-9.5-2 | 0 | 0 | 1 | 0 | 0 | ok |
-| SR-9.5-3 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-9.5-4 | 0 | 0 | 1 | 0 | 0 | ok |
+| SR-9.5-3 | 1 | 0 | 1 | 0 | 0 | ok |
+| SR-9.5-4 | 2 | 0 | 1 | 0 | 0 | ok |
 | SR-9.5-5 | 1 | 0 | 1 | 0 | 0 | ok |
-| SR-9.5-6 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-9.5-6 | 3 | 0 | 1 | 0 | 0 | ok |
 | SR-9.6-1 | 1 | 0 | 1 | 0 | 0 | ok |
 | SR-9.6-2 | 2 | 0 | 0 | 0 | 0 | ok |
 | SR-9.6-3 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-9.6-4 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-9.8-1 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-9.8-2 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-9.8-3 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-9.8-4 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-9.8-5 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-9.8-6 | 0 | 0 | 0 | 0 | 0 | no test |
+| SR-9.6-4 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-9.8-1 | 1 | 0 | 2 | 0 | 0 | ok |
+| SR-9.8-2 | 1 | 0 | 1 | 0 | 0 | ok |
+| SR-9.8-3 | 1 | 0 | 1 | 0 | 0 | ok |
+| SR-9.8-4 | 3 | 0 | 2 | 0 | 0 | ok |
+| SR-9.8-5 | 2 | 0 | 0 | 0 | 0 | ok |
+| SR-9.8-6 | 3 | 0 | 0 | 0 | 0 | ok |
 | SR-9.8-7 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-9.8-8 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-9.9-1 | 1 | 1 | 0 | 0 | 0 | ok |
-| SR-9.9-2 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-10.1-1 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-10.1-2 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-10.2-1 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-10.2-2 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-10.2-3 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-10.3-1 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-10.3-2 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-10.3-3 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-10.4-1 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-10.4-2 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-10.5-1 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-10.5-2 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.1-1 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.1-2 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.1-3 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.2-1 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.3-1 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.3-10 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.3-2 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.3-3 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.3-4 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.3-5 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.3-6 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.3-7 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.3-8 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-11.3-9 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-14.4-3 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-14.4-4 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-14.6-4 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-14.8-2 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-15.1-3 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-15.1-4 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-15.1-5 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-15.1-6 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-15.2-2 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-15.3-2 | 0 | 0 | 0 | 0 | 0 | no test |
+| SR-9.8-8 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-9.9-1 | 1 | 1 | 1 | 0 | 0 | ok |
+| SR-9.9-2 | 2 | 0 | 1 | 0 | 0 | ok |
+| SR-10.1-1 | 1 | 0 | 1 | 0 | 0 | ok |
+| SR-10.1-2 | 2 | 0 | 4 | 0 | 0 | ok |
+| SR-10.2-1 | 2 | 0 | 0 | 0 | 0 | ok |
+| SR-10.2-2 | 2 | 0 | 1 | 0 | 0 | ok |
+| SR-10.2-3 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-10.3-1 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-10.3-2 | 2 | 0 | 0 | 0 | 0 | ok |
+| SR-10.3-3 | 3 | 0 | 0 | 0 | 0 | ok |
+| SR-10.3-4 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-10.4-1 | 2 | 0 | 0 | 0 | 0 | ok |
+| SR-10.4-2 | 2 | 0 | 1 | 0 | 0 | ok |
+| SR-10.5-1 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-10.5-2 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-10.5-3 | 3 | 0 | 0 | 1 | 0 | ok |
+| SR-11.1-1 | 1 | 0 | 2 | 0 | 0 | ok |
+| SR-11.1-2 | 2 | 0 | 1 | 0 | 0 | ok |
+| SR-11.1-3 | 5 | 0 | 1 | 0 | 0 | ok |
+| SR-11.2-1 | 2 | 0 | 2 | 0 | 0 | ok |
+| SR-11.3-1 | 0 | 0 | 1 | 0 | 0 | ok |
+| SR-11.3-10 | 3 | 0 | 2 | 0 | 0 | ok |
+| SR-11.3-11 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-11.3-2 | 2 | 0 | 1 | 0 | 0 | ok |
+| SR-11.3-3 | 0 | 0 | 1 | 0 | 0 | ok |
+| SR-11.3-4 | 0 | 0 | 1 | 0 | 0 | ok |
+| SR-11.3-5 | 0 | 0 | 1 | 0 | 0 | ok |
+| SR-11.3-6 | 1 | 0 | 2 | 0 | 0 | ok |
+| SR-11.3-7 | 1 | 0 | 1 | 0 | 0 | ok |
+| SR-11.3-8 | 2 | 0 | 0 | 0 | 0 | ok |
+| SR-11.3-9 | 2 | 0 | 0 | 0 | 0 | ok |
+| SR-12.3-5 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-12.9-5 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-14.4-3 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-14.4-4 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-14.6-4 | 3 | 0 | 0 | 0 | 0 | ok |
+| SR-14.8-2 | 2 | 0 | 0 | 1 | 0 | ok |
+| SR-15.1-3 | 3 | 0 | 0 | 0 | 0 | ok |
+| SR-15.1-4 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-15.1-5 | 2 | 0 | 0 | 0 | 0 | ok |
+| SR-15.1-6 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-15.2-2 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-15.3-2 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-15.3-3 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-15.3-4 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-15.3-5 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-15.3-6 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-16.2-1 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-16.3-1 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-16.3-2 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-17-3 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-17-4 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-17-5 | 0 | 0 | 0 | 0 | 0 | no test |
+| SR-15.3-4 | 3 | 0 | 0 | 0 | 0 | ok |
+| SR-15.3-5 | 3 | 0 | 0 | 1 | 0 | ok |
+| SR-15.3-6 | 2 | 0 | 0 | 0 | 0 | ok |
+| SR-16.2-1 | 0 | 0 | 2 | 0 | 0 | ok |
+| SR-16.2-2 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-16.3-1 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-16.3-2 | 2 | 0 | 0 | 0 | 0 | ok |
+| SR-17-3 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-17-4 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-17-5 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-17-7 | 1 | 0 | 0 | 0 | 0 | ok |
+| SR-17-8 | 1 | 0 | 0 | 0 | 0 | ok |
 | SR-21-10 | 1 | 0 | 0 | 0 | 0 | ok |
-| SR-21-15 | 0 | 0 | 0 | 0 | 0 | no test |
-| SR-21-3 | 0 | 0 | 0 | 0 | 0 | no test |
+| SR-21-15 | 1 | 0 | 1 | 0 | 0 | ok |
+| SR-21-3 | 1 | 0 | 0 | 0 | 0 | ok |
 
 ## B-shared: for the owner to review by hand
 
@@ -127,12 +135,85 @@ hand.
 - `tests.rs::p3_crypto_challenge_matches_section_9_5_and_golden_vector_3` (SR-9.5-3, SR-B-3): **A** §9.5 challenge formula, computed in the test with SHA-512 over the hand-built 231-byte<br>**B-shared** golden/p3_posk.json vector3 (Appendix B vector 3) and its must-fail swap [SR-B-3]
 - `tests.rs::p3_crypto_proof_equals_the_models_for_the_same_nonces` (SR-9.5-2, SR-9.5-4, SR-9.5-5): **B-shared** golden/p3_posk.json proof_d16 (the model's prover with the same fixed nonces)
 - `tests.rs::p3_crypto_scalar_map_matches_golden_vector_4` (SR-B-4): **B-shared** golden/p3_scalar_map.json (Appendix B vector 4, written by sever_refmodel_certs)
+- `tests.rs::p3_commit_stream_matches_the_model_step_by_step` (SR-5.3-2, SR-5.4-4, SR-9.4-2): **B-shared** golden/p3_group_stream.json (the reference model's state after every step of a
+- `tests.rs::p3_commit_full_blob_matches_golden_vector_8` (SR-5.5-5, SR-B-8): **B-shared** golden/p3_full_blob.json (Appendix B vector 8, full form, by the reference model)
+- `tests.rs::p3_log_proofs_match_golden_vector_9_and_verify` (SR-10.1-2, SR-B-9): **B-shared** golden/p3_merkle_7.json (Appendix B vector 9, the model's RFC 9162 definitions)
+- `tests.rs::p3_cert_golden_certificates_encode_and_sign_byte_for_byte` (SR-B-6, SR-11.1-1, SR-11.2-1, SR-9.8-4): **B-shared** golden/p3_certificates.json (Appendix B 6, sever_refmodel_certs with RFC 8032)
+- `tests.rs::p3_cert_golden_intermediate_values_match_the_engine_primitives` (SR-B-6): **B-shared** golden/p3_certificates.json (Appendix B 6): every intermediate value
+- `tests.rs::p3_cert_parse_reads_the_golden_certificates` (SR-B-6): **B-shared** golden/p3_certificates.json (Appendix B 6)
+- `tests.rs::p3_verify_accepts_the_models_honest_certificates` (SR-11.1-1, SR-11.2-1, SR-9.5-1, SR-9.5-3, SR-9.5-6, SR-9.8-1, SR-9.8-2, SR-9.8-3, SR-9.8-4, SR-10.1-2, SR-11.3-6): **B-shared** sever_refmodel_certs golden Appendix B 6 (p3_certificates.json at d = 384) and the d = 16 certificates of p3_attacks.json
+- `tests.rs::p3_verify_rejects_every_attack_at_the_models_step` (SR-11.3-1, SR-11.3-2, SR-11.3-3, SR-11.3-4, SR-11.3-5, SR-11.3-6, SR-11.3-7, SR-11.1-2, SR-11.1-3, SR-9.9-1, SR-9.9-2, SR-10.4-2): **B-shared** golden p3_attacks.json (each variant and the §11.3 step sever_refmodel_certs rejects it at); A the register's allowed steps (spec/registers_p3.yaml, §11.3)
+- `tests.rs::p3_verify_inclusion_matches_rfc9162_vectors` (SR-10.1-1, SR-10.1-2): **B-shared** golden Appendix B 9 (p3_merkle_7.json: RFC 9162 §2.1 inclusion paths of a 7-leaf tree)
+- `tests.rs::p3_audit_an_honest_log_has_no_findings` (SR-11.3-10): **B-shared** golden p3_audit.json: sever_refmodel_certs.audit's honest scripted log (groups, a flush, chained and holding deletions, checkpoints) has no findings
+- `tests.rs::p3_audit_reports_every_injected_fault` (SR-11.3-10, SR-10.2-2, SR-10.1-2, SR-21-15): **B-shared** golden p3_audit.json (each fault's export and the kinds the model reports); A the register's faults AF-1 … AF-5 (spec/registers_p3.yaml; §11.3 "what it does not prove")
+- `test_sdk_p3.py::test_p3_sdk_delete_returns_a_certificate_that_verifies` (SR-16.2-1): **B-shared** sever_refmodel_certs.cert.verify (§11.3 steps 1–8) with the database's published anchors
+- `test_sdk_p3.py::test_p3_sdk_prepare_insert_signs_the_collection_and_commitment` (SR-16.2-1, SR-9.8-1): **B-shared** sever_refmodel_certs (ed25519.verify, insert_message: §9.8 DST_INSERT ‖ collection_id ‖ C_t, 65 bytes)
+- `test_sdk_p3.py::test_p3_sdk_the_user_key_is_published_with_every_insert` (SR-3.3-2): **B-shared** sever_refmodel_certs.cert.parse: the insert leaf (§10.2 bytes 113–145) carries the account's public key; §3.3 'User keys never rotate': a reloaded key is the same key
 
 ## Tests
 
 | Test | Requirements | Oracle |
 |---|---|---|
+| `log_participant.rs::p3_log_txn_a_crash_anywhere_in_a_deletion_is_all_or_nothing` | SR-15.3-5 | **A** §15.3 step 6 and the §15.4 crash table: the delete leaf and the certificate commit with the state change; no certificate for a rolled-back deletion, no orphaned leaf |
+| `log_participant.rs::p3_log_txn_a_deletion_needs_four_witnesses` | SR-10.4-2, SR-10.3-3 | **A** §10.4 "A log checkpoint with at least four valid cosignatures is witnessed"; §15.3 step 3: a deletion needs a witnessed checkpoint |
+| `log_participant.rs::p3_log_txn_a_deletion_returns_a_certificate_section_11_3_accepts` | SR-15.3-4, SR-15.3-6, SR-10.3-3, SR-10.2-2, SR-10.2-3 | **A** §11.3 steps 1–8 written out in the test; §15.3 steps 3–4, 9: a witnessed checkpoint covering the insert leaf, database_lsn = the next leaf index, the certificate acknowledged; §10.2 the delete leaf is 0x02 ‖ certificate |
+| `log_participant.rs::p3_log_txn_a_flush_folds_every_founder_into_the_new_group` | SR-15.2-2 | **A** §15.2 steps 3–4: the flush adds each founder's x̃ and r_t into the new group, C_S = r_agg·H + Σ scalar(S_i)·G_i, which by §9.3 is the sum of the founders' C_t (their insert leaves, §10.2) |
+| `log_participant.rs::p3_log_txn_certificates_survive_restarts_and_storage_checkpoints` | SR-14.8-2 | **A** §14.8 certificates and insert leaves are append-store records; §15.4 "the certificate is retrievable by database_lsn"; §12.4 a storage checkpoint truncates the WAL |
+| `log_participant.rs::p3_log_txn_delete_user_certificates_chain` | SR-15.3-4 | **A** §15.3 "delete_user does steps 1–4 for every record in list order. Each certificate is built on the state left by the previous one, so consecutive certificates chain"; §11.3 step 7 holding-area certificates |
+| `log_participant.rs::p3_log_txn_due_checkpoints_follow_section_10_3` | SR-10.3-2, SR-10.3-3 | **A** §10.3 "whenever tree_size reaches a multiple of 10,000 (both leaf types count), and on demand before a deletion"; DB-80, DB-82 |
+| `log_participant.rs::p3_log_txn_every_insert_appends_its_insert_leaf` | SR-10.2-1, SR-15.1-4, SR-15.1-5 | **A** §10.2 insert leaf layout; §15.1 step 6 every insert appends its leaf; step 9 returns database_lsn, the leaf's index (§10.2) |
+| `log_participant.rs::p3_log_txn_every_leaf_records_its_placement` | SR-10.5-3 | **C** the placement Part 1's frozen routing returns for each insert (§7.3, §15.2 flush at the spawn target); A DB-86: each leaf's placement is the group its record joined or left, and a flush names the group it created |
+| `store_tests.rs::p3_log_store_a_checkpoint_root_that_differs_from_the_tree_is_refused` | SR-21-15 | **A** §21 INV-15 "The log root at every log-checkpoint size equals that checkpoint's root" |
+| `store_tests.rs::p3_log_store_committed_state_survives_a_restart` | SR-14.8-2, SR-10.5-1 | **A** §10.1 (RFC 9162 roots of the leaves), §14.8 (certificates and insert leaves are public store records), §10.5 "Leaf bytes of insert leaves and all leaf hashes are kept in append-only stores", INV-15 |
+| `store_tests.rs::p3_log_store_export_holds_every_leaf_with_its_placement` | SR-10.5-3 | **A** DB-86 (§10.5 as amended): every committed leaf's hash entry carries its placement; the export holds every leaf (insert leaf bytes, or 0x02 ‖ certificate, §10.2), its placement and every checkpoint; committed state only, restored from the WAL after a crash (§12.3) |
+| `store_tests.rs::p3_log_store_passes_the_frozen_ep7_contract` | SR-14.8-2, SR-15.3-5 | **C** Part 2's frozen EP-7 contract (Build §3.4): a crash at every VFS operation of five transactions, three crash policies |
+| `store_tests.rs::p3_log_store_placement_layout_and_strict_parse` | SR-10.5-3, SR-14.6-4 | **A** DB-86 placement layout (§10.5, §14.6 as amended): group (32, zero-padded text, §13.2) ‖ the group a flush created (32, or zeros), written out by hand |
+| `store_tests.rs::p3_log_store_replay_restores_what_phase_c_never_wrote` | SR-14.6-4 | **A** §12.3 recovery replays committed records; §14.6 the WAL carries the log's records verbatim |
+| `store_tests.rs::p3_log_store_uncommitted_bytes_never_join_the_log` | SR-15.3-5 | **A** §14.6 "Unreferenced bytes after a crash are ignored and overwritten"; §15.3 crash table: no certificate for a rolled-back deletion |
+| `store_tests.rs::p3_log_store_wal_records_have_the_section_14_6_layout` | SR-14.6-4 | **A** §14.6 (LOG_LEAF, LOG_CHECKPOINT, CERT_REF payloads; DB-81: the leaf index first), bytes written out by hand |
+| `test_architecture_p3.py::test_p3_arch_auditor_copies_the_verifier_and_depends_on_neither` | SR-11.3-10 | **A** Build 3-4 §1.4 'audit/ (separate crate) … Reuses verifier code by copying it, not by a path dependency'; §11.3 the auditor (C-17) checks what a certificate cannot |
 | `test_architecture_p3.py::test_p3_arch_crypto_uses_only_the_pinned_primitives` | SR-9.1-1 | **A** §9.1 primitive table and §20.1 pinned versions, typed by hand |
+| `test_architecture_p3.py::test_p3_arch_verifier_shares_no_code_with_the_engine` | SR-9.2-4 | **A** §9.2 'The verifier (C-16) performs the same checks with its own code'; Build 3-4 §1.4 'verifier/ (separate workspace) … its own parser, generator derivation, proof check' |
+| `test_p3_e2e.py::test_p3_e2e_3_1_the_verifier_accepts_a_deletion_in_another_process` | SR-16.3-1, SR-11.3-9 | **A** §11.3 inputs: the certificate and the trust anchors, no database access; an honest certificate passes every step; §16.3 sever-verify <certificate> (E2E-3.1) |
+| `test_p3_e2e.py::test_p3_e2e_3_2_a_changed_byte_is_rejected_naming_the_check` | SR-11.3-8 | **A** §11.3 step 8 'Accept only if every step passes'; the rejection names the step (E2E-3.2) |
+| `test_p3_e2e.py::test_p3_e2e_3_3_a_holding_area_deletion_verifies` | SR-11.3-7 | **A** §11.1 tag 12 deletion_kind = 1 from the holding area; §11.3 step 7 (E2E-3.3) |
+| `test_p3_e2e.py::test_p3_e2e_3_4_a_cohort_deletion_chains_and_the_auditor_confirms` | SR-16.3-2, SR-11.3-10 | **A** §15.3 'consecutive certificates chain'; §11.3 the auditor checks deletion leaves, chains and log consistency; §16.3 sever-audit <log export> (E2E-3.4) |
+| `test_p3_e2e.py::test_p3_e2e_3_6_a_missing_deletion_leaf_is_reported` | SR-16.3-2, SR-11.3-10 | **A** §11.3 'that the deletion leaf itself was appended at database_lsn' is the auditor's check; a missing deletion leaf is reported (E2E-3.6, AF-1) |
+| `test_receipt_p3.py::test_p3_demo_backend_uses_the_artefacts_encoder` | SR-3.3-1 | **A** §3.3 'The application backend MUST embed text with the encoder named in the partition artefact's encoder field' |
+| `test_sdk_p3.py::test_p3_sdk_a_request_is_bound_to_its_collection` | SR-15.1-3 | **A** §15.1 step 2: the signature is over DST_INSERT ‖ collection_id ‖ C_t of the collection inserted into; BadUserSignature (§17) |
+| `test_sdk_p3.py::test_p3_sdk_and_engine_quantise_alike` | SR-4.2-3 | **A** §4.2 'The SDK on the application backend and the engine MUST use the same quantiser'; §15.1 step 2 recomputes C_t from the engine's x̃, so any other x̃ is CommitmentMismatch |
+| `test_sdk_p3.py::test_p3_sdk_delete_returns_a_certificate_that_verifies` | SR-16.2-1 | **B-shared** sever_refmodel_certs.cert.verify (§11.3 steps 1–8) with the database's published anchors |
+| `test_sdk_p3.py::test_p3_sdk_delete_takes_no_key_signature_or_r_t` | SR-3.3-3 | **A** §3.3 'The engine performs no authorisation of its own'; §16.2 delete(collection_id, record_id), 'no r_t argument' |
+| `test_sdk_p3.py::test_p3_sdk_draws_a_fresh_r_t_for_every_request` | SR-9.4-1 | **A** §9.4 r_t drawn from the OS 'fresh for every record'; §9.3 C_t is not the identity |
+| `test_sdk_p3.py::test_p3_sdk_prepare_insert_signs_the_collection_and_commitment` | SR-16.2-1, SR-9.8-1 | **B-shared** sever_refmodel_certs (ed25519.verify, insert_message: §9.8 DST_INSERT ‖ collection_id ‖ C_t, 65 bytes) |
+| `test_sdk_p3.py::test_p3_sdk_refuses_every_attempt_to_pass_randomness` | SR-9.6-4, SR-17-5 | **A** §16.2 'The SDK exposes no way to pass a random generator, seed or nonce into proof generation (SeededNonceForbidden)'; §17 row; E2E-3.8 |
+| `test_sdk_p3.py::test_p3_sdk_reports_the_placement_as_the_groups_text_form` | SR-16.2-2 | **A** §16.2 (G-38) 'the placement is the §5.1 text form of the group'; §5.1 table: frozen-NNNN, spawn- + 16 lowercase hex characters, holding |
+| `test_sdk_p3.py::test_p3_sdk_retry_with_the_same_request_is_success` | SR-15.1-6 | **A** §15.1 'a retry fails with DuplicateRecord { same_commitment: true }, which the SDK treats as success'; another C_t for a live ID is same_commitment false (§17) |
+| `test_sdk_p3.py::test_p3_sdk_the_user_key_is_published_with_every_insert` | SR-3.3-2 | **B-shared** sever_refmodel_certs.cert.parse: the insert leaf (§10.2 bytes 113–145) carries the account's public key; §3.3 'User keys never rotate': a reloaded key is the same key |
+| `tests.rs::p3_audit_an_honest_log_has_no_findings` | SR-11.3-10 | **B-shared** golden p3_audit.json: sever_refmodel_certs.audit's honest scripted log (groups, a flush, chained and holding deletions, checkpoints) has no findings |
+| `tests.rs::p3_audit_reports_every_injected_fault` | SR-11.3-10, SR-10.2-2, SR-10.1-2, SR-21-15 | **B-shared** golden p3_audit.json (each fault's export and the kinds the model reports); A the register's faults AF-1 … AF-5 (spec/registers_p3.yaml; §11.3 "what it does not prove") |
+| `tests.rs::p3_cert_builder_holding_area_deletion_has_no_arithmetic_fields` | SR-11.1-3 | **A** §11.1 tags 2–4 empty and tag 12 = 1 for a holding-area deletion; §11.3 step 7 tag 11 = 0 |
+| `tests.rs::p3_cert_builder_marks_the_deletion_that_empties_the_group` | SR-11.1-3, SR-11.3-6, SR-15.3-4 | **A** §11.1 tag 11 "group_emptied_by_this_deletion"; §11.3 step 6: 1 iff C_S_post is the identity (§5.4: an empty group has S = 0, r_agg = 0) |
+| `tests.rs::p3_cert_builder_signs_with_the_epoch_of_issue` | SR-9.8-4, SR-9.8-6 | **A** §9.8 epochs of 90 days from genesis; tag 8 is the epoch that signs; old keys stay resolvable |
+| `tests.rs::p3_cert_golden_certificates_encode_and_sign_byte_for_byte` | SR-B-6, SR-11.1-1, SR-11.2-1, SR-9.8-4 | **B-shared** golden/p3_certificates.json (Appendix B 6, sever_refmodel_certs with RFC 8032) |
+| `tests.rs::p3_cert_golden_intermediate_values_match_the_engine_primitives` | SR-B-6 | **B-shared** golden/p3_certificates.json (Appendix B 6): every intermediate value |
+| `tests.rs::p3_cert_group_deletion_size_matches_appendix_a` | SR-A-2 | **A** Appendix A: a group deletion at d = 384 with a 21-hash path is 14,093 bytes |
+| `tests.rs::p3_cert_layout_matches_section_11_byte_for_byte` | SR-11.1-1, SR-11.1-3, SR-11.2-1 | **A** §11.1 field table and §11.2 layout, bytes written out by hand |
+| `tests.rs::p3_cert_parse_reads_the_golden_certificates` | SR-B-6 | **B-shared** golden/p3_certificates.json (Appendix B 6) |
+| `tests.rs::p3_cert_parser_rejects_a_bad_insert_inclusion` | SR-11.2-1 | **A** §11.2 "u8 version = 1"; §10.2 an insert leaf starts 0x01; path_len × 32 bytes |
+| `tests.rs::p3_cert_parser_rejects_bad_variable_fields_and_flag_values` | SR-11.1-2, SR-11.1-3 | **A** §11.1 tags 2–4 are 32, 32 and 64 + 32·d bytes or empty; tag 7 is u8 count ‖ count × 69; tags 11 and 12 are 0 or 1 (DB-76) |
+| `tests.rs::p3_cert_parser_rejects_kind_and_group_fields_that_disagree` | SR-11.1-3 | **A** §11.3 steps 6–7: group fields all present with kind 0, all empty with kind 1 and tag 11 = 0 |
+| `tests.rs::p3_cert_parser_rejects_malformed_tlv` | SR-11.1-2 | **A** §11.1 "A parser MUST reject: missing, repeated or out-of-order tags; a wrong length for any fixed-size field; and trailing bytes" |
+| `tests.rs::p3_commit_admit_recomputes_c_t_and_checks_the_signature` | SR-9.3-3, SR-15.1-3, SR-17-3, SR-17-4 | **A** §15.1 step 2, §9.3, §9.8, §17 (CommitmentMismatch, BadUserSignature) and DB-78 |
+| `tests.rs::p3_commit_admit_refuses_an_identity_or_non_canonical_credential` | SR-9.9-2 | **A** §9.9 (C_t MUST NOT be the identity; canonical scalars) and DB-78 (a malformed credential |
+| `tests.rs::p3_commit_full_blob_matches_golden_vector_8` | SR-5.5-5, SR-B-8 | **B-shared** golden/p3_full_blob.json (Appendix B vector 8, full form, by the reference model) |
+| `tests.rs::p3_commit_full_form_parser_rejects_what_section_5_5_rejects` | SR-5.5-6 | **A** §5.5 full form: magic SEVERG, extension region C_S ‖ r_agg (64), and the SR-5.5-2 rejections (count ≠ n, unsorted or duplicate, empty ID, trailing bytes, the wrong magic, SEVERC included); B-shared golden vector 8 |
+| `tests.rs::p3_commit_group_check_is_inv_3` | SR-21-3 | **A** §21 INV-3 (C_S = r_agg·H + Σ scalar(S_i)·G_i) |
+| `tests.rs::p3_commit_passes_the_frozen_ep1_contract` | SR-5.3-2 | **C** Part 1's frozen EP-1 contract suite (sever_index::contract::ep1_contract) |
+| `tests.rs::p3_commit_record_secret_has_the_41_byte_layout` | SR-14.4-4, SR-14.4-3 | **A** §14.4 and DB-46 (record secret u64be insert_leaf_index ‖ u8 has_rt ‖ r_t, 41 bytes; |
+| `tests.rs::p3_commit_removal_check_compares_with_the_logged_c_t` | SR-15.3-2 | **A** §15.3 step 2 (the stored x̃ and r_t must reproduce the C_t in the insert leaf, |
+| `tests.rs::p3_commit_state_equivalence_catches_c_s_or_r_agg_alone` | SR-5.5-7 | **A** §5.5 "With commitments, assert_state_equivalent compares all five fields … a corruption of C_S or r_agg alone MUST be caught" |
+| `tests.rs::p3_commit_stream_matches_the_model_step_by_step` | SR-5.3-2, SR-5.4-4, SR-9.4-2 | **B-shared** golden/p3_group_stream.json (the reference model's state after every step of a |
 | `tests.rs::p3_crypto_a_proof_at_d_384_is_12352_bytes_and_verifies` | SR-9.5-5, SR-A-1 | **A** §9.5 proof size 32 + 32 + 32·d and Appendix A (12,352 bytes at d = 384) |
 | `tests.rs::p3_crypto_a_record_commitment_may_not_be_the_identity` | SR-9.9-2 | **A** §9.9 (C_t MUST NOT be the identity; points canonical on parse) |
 | `tests.rs::p3_crypto_challenge_matches_section_9_5_and_golden_vector_3` | SR-9.5-3, SR-B-3 | **A** §9.5 challenge formula, computed in the test with SHA-512 over the hand-built 231-byte<br>**B-shared** golden/p3_posk.json vector3 (Appendix B vector 3) and its must-fail swap [SR-B-3] |
@@ -156,6 +237,42 @@ hand.
 | `tests.rs::p3_crypto_self_check_passes_honestly_and_refuses_any_drift` | SR-9.2-3, SR-21-10 | **A** §9.2 self-check (refuse on any mismatch with the golden file) and §21 INV-10 |
 | `tests.rs::p3_crypto_signatures_are_checked_strictly` | SR-9.8-7 | **A** §9.8 (every check uses verify_strict: small-order keys and non-canonical encodings are |
 | `tests.rs::p3_crypto_signed_messages_have_the_layouts_of_section_9_8` | SR-9.8-1, SR-9.8-2, SR-9.8-3, SR-9.8-4 | **A** §9.8 signer table and §2.3: each message's bytes written by hand in field order |
+| `tests.rs::p3_crypto_soundness_completeness_for_random_states` | SR-9.5-4, SR-9.5-6 | **A** §9.5 algebra (docs/SOUNDNESS.md §2): z_r·H + Σ z_i·G_i = (k_r + c·r)·H + Σ (k_i + c·s_i)·G_i = A + c·C_S_post for every opening, the empty group included (§5.4) |
+| `tests.rs::p3_crypto_soundness_extractor_recovers_the_opening` | SR-9.5-4 | **A** §9.5 "Soundness note. Two accepting transcripts with the same A and different challenges reveal every secret (x = (z_1 − z_2)/(c_1 − c_2) per component)" (docs/SOUNDNESS.md §3) |
+| `tests.rs::p3_crypto_soundness_simulator_transcripts_verify` | SR-9.5-6 | **A** §9.5 verifier equation; docs/SOUNDNESS.md §4: c, z uniform and A = z_r·H + Σ z_i·G_i − c·C_S_post, made with no opening, satisfy it |
 | `tests.rs::p3_crypto_the_empty_group_commits_to_the_identity` | SR-5.4-4 | **A** §5.4 (an empty group has S = 0, r_agg = 0, C_S = identity) and §0.2 (the identity is |
 | `tests.rs::p3_crypto_transition_check_holds_for_a_deletion_and_fails_otherwise` | SR-9.3-2 | **B-shared** golden/p3_commitments.json (C_t, C_S_pre, C_S_post of a three-record group, S and |
 | `tests.rs::p3_crypto_verifier_accepts_the_honest_proof_and_rejects_every_change` | SR-9.5-6 | **A** §9.5 verifier (accept iff z_r·H + Σ z_i·G_i = A + c·C_S_post; canonical decoding) |
+| `tests.rs::p3_log_a_checkpoint_is_witnessed_by_four_distinct_valid_cosignatures` | SR-10.4-2, SR-2.2-2 | **A** §10.4 and §2.2 (five witnesses, threshold four, distinct witnesses, each valid for its |
+| `tests.rs::p3_log_checkpoint_cadence_is_every_10000_leaves` | SR-10.3-2 | **A** §10.3 and §2.2 (a checkpoint whenever tree_size reaches a multiple of 10,000) |
+| `tests.rs::p3_log_checkpoint_is_signed_over_section_9_8_and_encodes_in_116_bytes` | SR-10.3-1 | **A** §10.3 (a checkpoint is (tree_size, root, timestamp_ms, epoch, operator_signature) |
+| `tests.rs::p3_log_delete_leaf_is_0x02_and_the_certificate` | SR-10.2-2 | **A** §10.2 delete leaf (0x02 ‖ certificate bytes) |
+| `tests.rs::p3_log_ep10_contract_passes_for_simulated_and_fails_for_careless_witnesses` | SR-10.4-1 | **A** §10.4 (a witness cosigns only if the consistency proof from its last cosigned checkpoint |
+| `tests.rs::p3_log_genesis_checkpoint_is_the_signed_empty_tree` | SR-10.3-4 | **A** §10.3 and DB-79 (genesis = (0, SHA-256(""), creation time, epoch 0), signed; witnesses |
+| `tests.rs::p3_log_insert_leaf_is_the_209_byte_layout` | SR-10.2-1 | **A** §10.2 insert leaf layout (0x01 ‖ collection_id ‖ scrambled_id ‖ C_t ‖ user_public_key ‖ |
+| `tests.rs::p3_log_old_epoch_keys_stay_resolvable` | SR-9.8-6 | **A** §9.8 (old public keys stay resolvable forever, so a checkpoint signed in an earlier |
+| `tests.rs::p3_log_proofs_cost_logarithmic_work_at_any_size` | SR-10.5-2 | **A** §10.5 (every level of the complete subtrees is kept, so an inclusion proof takes |
+| `tests.rs::p3_log_proofs_match_golden_vector_9_and_verify` | SR-10.1-2, SR-B-9 | **B-shared** golden/p3_merkle_7.json (Appendix B vector 9, the model's RFC 9162 definitions) |
+| `tests.rs::p3_log_tree_matches_the_rfc9162_worked_example` | SR-10.1-1, SR-10.1-2 | **A** RFC 9162 §2.1.5 worked example (spec §10.1): nodes a…l named and combined by hand |
+| `tests.rs::p3_log_verifiers_reject_altered_proofs` | SR-10.1-2 | **A** RFC 9162 §2.1.3.2 and §2.1.4.2 (a proof verifies only its own leaf, index, size and |
+| `tests.rs::p3_root_a_crash_anywhere_in_a_deletion_leaves_no_certificate_alone` | SR-15.3-5 | **A** §15.3 step 6 and the §15.4 crash table: no certificate for a rolled-back deletion, no orphaned leaf; acknowledged certificates are retrievable (SB-21) |
+| `tests.rs::p3_root_a_credential_signed_for_another_collection_is_refused` | SR-15.1-3 | **A** §15.1 steps 1–2: the signature is verified over DST_INSERT ‖ collection_id ‖ C_t of the collection inserted into; one signed for another collection fails (BadUserSignature, §17) |
+| `tests.rs::p3_root_a_delete_whose_leaf_cannot_be_read_names_the_store_check` | SR-17-7 | **A** §17 (G-41) "An IntegrityViolation names the check that failed; a failure to read or verify stored data is reported as that failure"; §14.8 a store reference that does not lead to a whole record; §15.3 step 2 "otherwise IntegrityViolation and touch nothing" |
+| `tests.rs::p3_root_a_log_leaf_past_the_committed_wal_is_refused` | SR-12.3-5 | **A** §12.3 (G-39) "if recovery replays a committed log leaf from the WAL, a leaf the log's stores hold after the last replayed one has no committed transaction: recovery refuses (IntegrityViolation)"; §10.5 a leaf is stored only after COMMIT |
+| `tests.rs::p3_root_a_new_databases_anchors_hold_every_witness_key` | SR-11.3-11 | **A** §11.3 (G-37) "From the database's creation the anchors list the operator's and every witness's epoch-0 key", unchanged by a restart |
+| `tests.rs::p3_root_after_an_integrity_violation_the_database_stops_serving` | SR-17-8 | **A** §17 "Stopping after an IntegrityViolation means that no later call is served and that closing the database writes no storage checkpoint over the state the violation was found in" (G-42, DB-103) |
+| `tests.rs::p3_root_five_simulated_witnesses_with_harness_keys` | SR-9.8-8 | **A** §9.8 "In v1 the five witnesses are simulated by the project, and their keys live in the test harness" (DB-53, DB-83: the key directory's WITNESSES file) |
+| `tests.rs::p3_root_keys_survive_restarts_and_epochs` | SR-9.8-6, SR-9.8-5 | **A** §9.8 "Old public keys stay resolvable forever, so a certificate signed in an earlier epoch keeps verifying after later epochs begin"; 90-day epochs from the creation time |
+| `tests.rs::p3_root_on_real_files_keeps_secrets_private` | SR-14.1-1 | **A** §14.1 "SECRETS … (mode 0600)"; the witnesses' keys beside it (DB-83) |
+| `tests.rs::p3_root_refuses_an_artefact_of_another_dimension` | SR-6.3-3 | **A** §6.3 "create_collection MUST verify … d …; a failed check is rejected with IntegrityViolation naming the check, never a value" (DB-64); WrongDimension is §4.1 step 0's, for an input vector (§17) |
+| `tests.rs::p3_root_refuses_to_write_into_a_replaced_data_directory` | SR-12.9-5 | **A** §12.9 (G-42) "before each call and before the closing storage checkpoint … checks that data/ENGINE.lock is still the file it locked … If it is not, the call fails with IntegrityViolation (§12.9 data directory replaced) … and nothing more is written to the data directory"; §12.3 the directory's own database still recovers |
+| `tests.rs::p3_root_the_log_export_for_an_auditor` | SR-10.5-3 | **A** DB-86 export (§10.5, §11.3 as amended): leaf i is the insert leaf or 0x02 ‖ certificate (§10.2), its placement the group Part 1's frozen routing returned (C), every checkpoint as checkpoint ‖ u8 count ‖ cosignatures (§11.1 tag 7, §11.2) |
+| `tests.rs::p3_root_the_section_16_1_api` | SR-15.1-5, SR-15.3-6 | **A** §16.1 (insert returns database_lsn; delete returns the certificate; certificate, latest_log_checkpoint, inclusion and consistency proofs); §11.3 steps written out |
+| `tests.rs::p3_root_witnesses_remember_what_they_cosigned_across_restarts` | SR-10.4-1 | **A** §10.4 "Each witness remembers the last log checkpoint it cosigned … and only then cosigns" |
+| `tests.rs::p3_verify_accepts_the_models_honest_certificates` | SR-11.1-1, SR-11.2-1, SR-9.5-1, SR-9.5-3, SR-9.5-6, SR-9.8-1, SR-9.8-2, SR-9.8-3, SR-9.8-4, SR-10.1-2, SR-11.3-6 | **B-shared** sever_refmodel_certs golden Appendix B 6 (p3_certificates.json at d = 384) and the d = 16 certificates of p3_attacks.json |
+| `tests.rs::p3_verify_an_older_verifier_rejects_a_later_epoch` | SR-11.3-2 | **A** §11.3 'Forward limit': a verifier whose anchors predate an operator epoch cannot check a certificate signed in it; step 2 'the key for tag 8's epoch MUST be in the anchors' (E2E-3.7, overview L-14) |
+| `tests.rs::p3_verify_inclusion_matches_rfc9162_vectors` | SR-10.1-1, SR-10.1-2 | **B-shared** golden Appendix B 9 (p3_merkle_7.json: RFC 9162 §2.1 inclusion paths of a 7-leaf tree) |
+| `tests.rs::p3_verify_reads_the_published_anchors` | SR-11.3-9 | **A** §11.3 trust anchors (operator keys by epoch, witness keys by epoch) in the published JSON form (DB-85), written by hand |
+| `tests.rs::p3_verify_rejects_every_attack_at_the_models_step` | SR-11.3-1, SR-11.3-2, SR-11.3-3, SR-11.3-4, SR-11.3-5, SR-11.3-6, SR-11.3-7, SR-11.1-2, SR-11.1-3, SR-9.9-1, SR-9.9-2, SR-10.4-2 | **B-shared** golden p3_attacks.json (each variant and the §11.3 step sever_refmodel_certs rejects it at); A the register's allowed steps (spec/registers_p3.yaml, §11.3) |
+| `tests.rs::p3_verify_rejects_every_single_byte_change` | SR-9.8-4, SR-11.3-2, SR-11.3-8 | **A** §11.3 step 8 'Accept only if every step passes'; §9.8 the trailer signs every byte before it |
+| `tests.rs::p3_verify_self_check_with_its_own_code` | SR-9.2-1, SR-9.2-2, SR-9.2-3, SR-9.2-4 | **B** RFC 9380 Appendix K.3 and RFC 9496 Appendix A vectors; B-shared Appendix B 1–2 (p3_generators.json, sever_refmodel_certs) |

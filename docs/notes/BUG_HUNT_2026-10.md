@@ -44,6 +44,12 @@ SimVfs crash campaigns (sever-db-37 ran its own crash windows; see its report).
 - SIGKILL loop on the fixed SDK: seeds 42, 123, 777 × 30 rounds, 0 refusals, 0 mismatches.
 - Fuzzing: none run.
 
+**Follow-up (21 Oct 2026, after the merge).** (a) Done: P4-T3 closes and reopens a copy after every
+recovery (DB-104; `reopen_mismatches` 0 on the fixed build, 137 with PR4-E22's patch, ops
+17,000–17,010 of seed 42). (b) E-4 and E-5, with E-6 (G-42 in Part 2), are applied together with E-3
+after v1.0 (DB-103, L-28). Part 3's root took the G-42 guard (DB-103). BH-2: won't fix. Fuzz smoke
+after the merge: 17 targets, 90 s each, 0 crashes. (c) and (d) below stand.
+
 **5. For the owner.** (a) The P4 crash campaign (P4-T3) recovers once per crash point; adding a
 storage checkpoint and a second open after each recovery would have caught BH-5. It changes a
 pre-registered gate's procedure, so it is your call (a DB entry). (b) Errata E-4 and E-5 for
