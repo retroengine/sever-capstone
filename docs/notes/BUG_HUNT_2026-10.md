@@ -23,9 +23,61 @@ regression since fa695dd. Fixes: G-41, G-42, DB-101 (commits 42cf9c2 … 0078fc5
 
 | ID | Severity | § | Where | Status |
 |---|---|---|---|---|
-| BH-1 | medium | Build §2.2, CLAUDE.md §6.2–6.3 | `python/sever_testkit/spec_trace.py:68` (frozen), `crates/sever-db/src/tests.rs:479`, `scripts/ci.sh` | open |
-| BH-2 | low | §5 (lockstep), Build §1.1 | `crates/sever-commit/src/lib.rs:237,251` | open |
-| BH-3 | low | §20.3 check 1 | `scripts/ci.sh:24-27` | open |
+| BH-5 | **critical** | §15.6 step 4, §15.7 step 3, §13.4 (INV-14) | `crates/sever-erasure/src/participant.rs:376` (`replay`), `:386` (`recover`) | fixed (4f2f725 red, 449927f fix, PR4-E22; G-43, DB-102) |
+| BH-1 | medium | Build §2.2, CLAUDE.md §6.2–6.3 | `python/sever_testkit/spec_trace.py:68` (frozen), `crates/sever-db/src/tests.rs:479`, `scripts/ci.sh` | fixed (05c2da5 red, 1e8e4b7 fix); frozen half: erratum candidate |
+| BH-2 | low | §5 (lockstep), Build §1.1 | `crates/sever-commit/src/lib.rs:237,251` | open (unreachable without a bug) |
+| BH-3 | low | §20.3 check 1 | `scripts/ci.sh:24-27` | fixed (bb4dc26) |
+| BH-4 | low | Build §2.2 | `docs/TRACE_PART_3.md`, `docs/TEST_ORACLES_P4.md` | fixed (1e8e4b7) |
+
+### BH-5: a crash after a deletion's COMMIT, then a clean restart, makes the database unopenable
+
+**Symptom.** `Database.open` refuses with `IntegrityViolation: INV-14` on every startup, and the
+rotated domains' bucket blocks are gone, so their records can never be decrypted again.
+
+**Found by** a real-process SIGKILL loop on the final SDK (scratchpad `killloop.py`: d = 16 golden
+fixture, spawn target 8, inserts, deletes, `delete_user`, checkpoints; the parent SIGKILLs the child
+at random, retries the operation in flight, checks counts). Seed 42, 6 rounds: every round
+recovered, then the final open refused. Evidence kept in `target/bh/kill-a-evidence` (worktree).
+
+**Mechanism** (proved from the evidence, metadata only: `KEYS` slots parsed by hand from §14.7
+with an independent CRC-32C, and the kind-1 records of the wrapped store and the WAL):
+
+| Domain | KEYS slot version | Wrapped store, highest block |
+|---|---|---|
+| holding | 20 | 19 |
+| spawn-a18a3b29b7ef70d1 | 14 | 13 |
+| spawn-20d95fbcb02af92d | 11 | 10 |
+| spawn-0f5903aa7fedeb33 | 8 | 8 |
+
+1. A `delete_user` committed (WAL `COMMIT` durable, key file rotated in phase A); the SIGKILL came
+   before `after_commit` appended the new bucket blocks to the wrapped-key store.
+2. Recovery replayed the WAL tail: `KeyRotationParticipant::replay` merged the blocks into memory
+   only and `recover` never wrote them to the store (`LogStore::replay`, by contrast, appends what it
+   replays to its stores). The database served correctly.
+3. The retry found the records gone (nothing rotated), and `close()` ran a storage checkpoint, which
+   moved the WAL start past those records (§15.6 step 4): their only copy was gone.
+4. Every later startup: store v, key file v+1, `recovery::plan` finds no slot at the active
+   version, `INV-14`.
+
+**Deterministic reproduction** (no real process):
+`cargo test -p sever-db --lib -- p4_db_a_checkpoint_after_recovery_keeps_every_rotated_key`
+on 4f2f725 → `disk 0 op 8 KeepAll: refused after the checkpoint: IntegrityViolation { invariant:
+"INV-14" }`. Shortest sequence: create a collection, insert 6 records, delete one with a crash at
+the data disk's 8th mutating operation (the wrapped-store append), restart, recover, storage
+checkpoint, reopen.
+
+**Why the suite missed it.** The crash test and the crash campaigns recover once and check; none
+runs a storage checkpoint after a recovery and opens again. The fast tier, the P4 smoke and CI were
+green.
+
+**Fix** (449927f): `replay` stashes the participant's WAL values; `recover` loads the store, merges
+each value, and appends to the store, durably, those newer than its own state (`Durable::newer`).
+Spec §15.7 step 3 amended (G-43, SR-15.7-4, DB-102). Red proof PR4-E22.
+
+**Not fixed, recommended:** the P4 crash campaign (`sever-crashkit-p4`) should run a storage
+checkpoint and a second open after each recovery; that changes a pre-registered gate's procedure,
+so it is the owner's call (Overview §3.4 forbids moving a threshold, not adding checks; a DB entry
+would record it).
 
 ### BH-1: a multi-line `#[spec(…)]` is invisible to every trace and proof checker
 
