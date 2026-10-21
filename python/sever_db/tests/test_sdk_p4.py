@@ -19,6 +19,7 @@ from sever_db import (
     BadUserSignature,
     Database,
     DuplicateRecord,
+    InvalidRecordId,
     NotNormalised,
     SeededNonceForbidden,
     UserKey,
@@ -197,6 +198,24 @@ def test_p4_sdk_errors_are_typed(db: tuple[Database, str]) -> None:
         d.insert(cid, prepare_insert(cid, "a", v.tolist(), user))
     with pytest.raises(TypeError):
         prepare_insert(cid, "a", rows(1)[0], user._k)  # type: ignore[arg-type]
+
+
+@pytest.mark.oracle("A", "§3.2 rule 1 (a record ID is UTF-8) and §17 (typed, no part of the ID)")
+def test_p4_sdk_a_record_id_that_is_not_utf8_is_invalid_record_id(
+    db: tuple[Database, str],
+) -> None:
+    d, cid = db
+    user = UserKey.generate()
+    bad = "id-\udc80"  # a lone surrogate: no UTF-8 encoding exists
+    calls: list[Callable[[], object]] = [
+        lambda: prepare_insert(cid, bad, rows(1)[0], user),
+        lambda: d.delete(cid, bad),
+        lambda: d.delete_user(cid, ["ok-id", bad]),
+    ]
+    for call in calls:
+        with pytest.raises(InvalidRecordId) as e:
+            call()
+        assert "\udc80" not in str(e.value) and "id-" not in str(e.value)
 
 
 def test_p4_sdk_the_user_key_is_published_with_every_insert(db: tuple[Database, str]) -> None:
