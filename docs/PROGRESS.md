@@ -55,7 +55,13 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `sever-crashkit-p4 campaign --oracle traces/p2-oracle-nq-10k-seed42.jsonl --seed 42 --method
   snapshot --crash-from 17000 --limit-ops 17010` gives `reopen_mismatches` 0 (550 points) on the
   fixed build and 137 with PR4-E22's patch applied (the BH-5 fix switched off), where `refusals`
-  stays 0: the old campaign could not see BH-5.
+  stays 0: the old campaign could not see BH-5. Laptop checks before the VM run: `scripts/ci.sh
+  full-checks` on `c092727`, 42/42 steps PASS (sabotage SB-1 … SB-30, msrv, deny, docs, ignored
+  and slow tests); every demo exits 0 (demo-engine test, tour 24/24 at 5,000 rows, shell, cli,
+  examples, erase; scripts/p1-demo.sh, p2-demo.sh, p3-demo.sh, demo-p4.sh with 0 findings on the
+  real build; demo/ setup and test); a fuzz smoke of all 17 targets, 90 s each (about 5·10^8 runs,
+  0 crashes, no ledger entry: the gates' 10^8-run campaigns are the VM's). `e5a600e`: GitHub CI
+  green.
 - **The 5,000-row tour failure (20–21 Oct 2026; DB-101, G-41, G-42; branch
   `p4-fix-delete-checkpoint`, pushed, GitHub CI green, not merged).** Not an engine regression: two
   `demo.sh tour` runs (two windows) shared `demo-engine/work/tour-nq`. The second run's wipe deleted
