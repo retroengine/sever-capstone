@@ -476,14 +476,8 @@ fn exported() -> &'static Mutex<Vec<Vec<u8>>> {
 // log leaves and certificates, group IDs and key versions" and §12.3 (no plaintext vectors, record
 // IDs, passage text, r_t or unwrapped keys in the WAL); group keys only in KEYS, bucket and record
 // keys only wrapped (§13.1); with sealer 1 the disk receives only ciphertext for secrets (§12.1)
-#[spec(
-    "SR-12.3-4",
-    "SR-13.2-8",
-    "SR-21-11",
-    "SR-14.8-3",
-    "SR-12.1-1",
-    "SR-13.1-1"
-)]
+#[spec("SR-12.3-4", "SR-13.2-8", "SR-21-11")]
+#[spec("SR-14.8-3", "SR-12.1-1", "SR-13.1-1")]
 #[test]
 fn p4_db_no_forbidden_plaintext_reaches_either_disk() {
     let keys_seen = exported();

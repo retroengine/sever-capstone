@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Final
 
 from sever_testkit import spec_trace as frozen
-from sever_testkit_p3.spec_trace import collect
+from sever_testkit_p3.spec_trace import collect, split_attributes
 
 #: Subsections Part 4 owns (CLAUDE.md §6.1: §12.8–12.9, §13, §14.5, §14.7, §15.3–15.4, §15.8–15.9;
 #: Build 3-4 §2.3 adds §12.1, §12.6, the sealer-1 rows of §14, §14.3–14.4, §14.8, the key steps of
@@ -45,11 +45,14 @@ def main(argv: list[str]) -> int:
     missing = [rid for rid in owned if not tr.tests.get(rid)]
     for rid, test in tr.unknown:
         print(f"unknown requirement ID {rid} in {test}", file=sys.stderr)
+    split = split_attributes(root)
+    for at in split:
+        print(f"{at}: a #[spec(…)] split over lines is invisible to the checks", file=sys.stderr)
     print(
         f"Part {a.part}: {len(owned) - len(missing)}/{len(owned)} requirements traced; "
-        f"untraced: {len(missing)}"
+        f"untraced: {missing}"
     )
-    return 1 if tr.unknown or (a.complete and missing) else 0
+    return 1 if tr.unknown or split or (a.complete and missing) else 0
 
 
 if __name__ == "__main__":

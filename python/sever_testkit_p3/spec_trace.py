@@ -8,6 +8,7 @@ PYTHONPATH=python uv run python -m sever_testkit_p3.spec_trace candidates --part
 """
 
 import argparse
+import re
 import sys
 from pathlib import Path
 from typing import Final
@@ -40,6 +41,43 @@ def collect(root: Path) -> frozen.Trace:
     return tr
 
 
+#: An attribute opened on a line that does not close it (BH-1), by file suffix.
+SPLIT_OPEN: Final = {
+    ".rs": re.compile(r"^\s*#\[(?:sever_spec::)?spec\([^)]*$"),
+    ".py": re.compile(r"^\s*@pytest\.mark\.spec\([^)]*$"),
+}
+
+
+def _frozen_files(root: Path) -> set[str]:
+    out: set[str] = set()
+    for m in sorted((root / "freeze").glob("PART-*.sha256")):
+        for line in m.read_text(encoding="utf-8").splitlines():
+            parts = line.split(maxsplit=1)
+            if len(parts) == 2:
+                out.add(parts[1].lstrip("*"))
+    return out
+
+
+def split_attributes(root: Path) -> list[str]:
+    """``path:line`` of every ``#[spec(`` or ``@pytest.mark.spec(`` that spans lines, outside frozen
+    files. The frozen tracer, oracle check and proofs check read one line at a time, so a split
+    attribute's labels are invisible to all three (BH-1)."""
+    frozen_files = _frozen_files(root)
+    out: list[str] = []
+    for base in ("crates", "python", "tests", *EXTRA_RUST):
+        for p in sorted((root / base).rglob("*")):
+            pattern = SPLIT_OPEN.get(p.suffix)
+            if pattern is None or "target" in p.relative_to(root).parts:
+                continue
+            rel = p.relative_to(root).as_posix()
+            if rel in frozen_files:
+                continue
+            for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+                if pattern.search(line):
+                    out.append(f"{rel}:{n}")
+    return out
+
+
 def main(argv: list[str]) -> int:
     frozen.PART_SECTIONS.setdefault(3, PART3_SECTIONS)
     ap = argparse.ArgumentParser(prog="spec-trace-p3", description=__doc__)
@@ -61,11 +99,14 @@ def main(argv: list[str]) -> int:
     missing = [rid for rid in owned if not tr.tests.get(rid)]
     for rid, test in tr.unknown:
         print(f"unknown requirement ID {rid} in {test}", file=sys.stderr)
+    split = split_attributes(root)
+    for at in split:
+        print(f"{at}: a #[spec(…)] split over lines is invisible to the checks", file=sys.stderr)
     print(
         f"Part {a.part}: {len(owned) - len(missing)}/{len(owned)} requirements traced; "
         f"untraced: {missing}"
     )
-    return 1 if tr.unknown or (a.complete and missing) else 0
+    return 1 if tr.unknown or split or (a.complete and missing) else 0
 
 
 if __name__ == "__main__":
