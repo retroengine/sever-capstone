@@ -173,11 +173,7 @@ class Tour:
         vecs = [self.c.vectors[idx[r]].astype("<f4").tobytes() for r in sample]
         needles = tools.needles_of(sample, texts, vecs)
         naive = self.work / "naive-store"
-        naive.mkdir(exist_ok=True)
-        with (naive / "records.jsonl").open("w", encoding="utf-8") as f:
-            for r, t in zip(sample, texts, strict=True):
-                f.write(json.dumps({"id": r, "text": t}, ensure_ascii=False) + "\n")
-        (naive / "vectors.f32").write_bytes(b"".join(vecs))
+        tools.write_naive(naive, sample, texts, vecs)
         seen = tools.count_hits(tools.files_under([naive]), needles)
         hits = tools.count_hits(files, needles)
         for kind in needles:

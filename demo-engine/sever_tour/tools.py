@@ -5,6 +5,7 @@ no code with the engine (spec §16.3): whoever receives a certificate checks it 
 with no access to the database. ``sever-db`` is the command-line tool of the final build.
 """
 
+import json
 import os
 import subprocess
 from collections.abc import Iterable, Sequence
@@ -58,6 +59,17 @@ def count_hits(files: Sequence[Path], needles: Needles) -> dict[str, tuple[int, 
         kind: (sum(1 for n in found if any(n in b for b in blobs)), len(found))
         for kind, found in needles.items()
     }
+
+
+def write_naive(
+    naive: Path, ids: Sequence[str], texts: Sequence[str], vectors: Sequence[bytes]
+) -> None:
+    """The naive copy: the same records as a usual store keeps them, in the clear."""
+    naive.mkdir(exist_ok=True)
+    with (naive / "records.jsonl").open("w", encoding="utf-8") as f:
+        for r, t in zip(ids, texts, strict=True):
+            f.write(json.dumps({"id": r, "text": t}, ensure_ascii=False) + "\n")
+    (naive / "vectors.f32").write_bytes(b"".join(vectors))
 
 
 def needles_of(ids: Sequence[str], texts: Sequence[str], vectors: Sequence[bytes]) -> Needles:
