@@ -28,6 +28,8 @@ regression since fa695dd. Fixes: G-41, G-42, DB-101 (commits 42cf9c2 … 0078fc5
 | BH-2 | low | §5 (lockstep), Build §1.1 | `crates/sever-commit/src/lib.rs:237,251` | open (unreachable without a bug) |
 | BH-3 | low | §20.3 check 1 | `scripts/ci.sh:24-27` | fixed (bb4dc26) |
 | BH-4 | low | Build §2.2 | `docs/TRACE_PART_3.md`, `docs/TEST_ORACLES_P4.md` | fixed (1e8e4b7) |
+| BH-6 | medium | F-1, Build §0.3 | `scripts/freeze.sh:28-31` | fixed (96cbc0b) |
+| BH-7 | medium | §3.2 rule 1, §17 | `python/sever_db/__init__.py:129`, `python/sever_db_p3/__init__.py`; frozen `python/sever_db_p2` | fixed for Parts 3–4 (4245c56, 7b45088 red; e22a495 fix); Part 2: erratum proposed (E-2) |
 
 ### BH-5: a crash after a deletion's COMMIT, then a clean restart, makes the database unopenable
 
@@ -102,6 +104,28 @@ Three more multi-line attributes sit in frozen parts (`crates/sever-crashkit/tes
 parts pass `--complete` through other tests, but those labels were never checked by the oracle or
 red-proof checks (erratum candidate for the owner, below).
 
+### BH-6: Part 4's golden file was in no part's freeze list
+
+`golden/p4_rfc8452_aes256gcmsiv.json` matched none of the lists in `scripts/freeze.sh` (Parts 1–3
+own `golden/p1_*`, `p2_*`, `p3_*`; Part 4 owned none), so freezing Part 4 would have left its RFC
+8452 vectors unguarded by F-2. Reproduction: `comm -23 <(git ls-files | sort) <(for n in 1 2 3 4;
+do scripts/freeze.sh list $n | awk '{print $2}'; done | sort -u)` listed it. Fixed: `'golden/p4_*'`
+in Part 4's list (DB-102 item 3). Also unowned, in frozen Part 2: `python/sever_db_p2_native.pyi`
+(the stub of Part 2's SDK); a list change for a frozen part needs an erratum (E-3 below).
+
+### BH-7: a record ID with no UTF-8 encoding raises `UnicodeEncodeError`, which holds the ID
+
+A Python `str` with a lone surrogate (`"id-\udc80"`) reached PyO3's `str` conversion and raised
+`UnicodeEncodeError: 'utf-8' codec can't encode character '\udc80' in position 3`, an untyped
+error that quotes part of the record ID (§17: typed, never containing a record ID; §3.2 rule 1: a
+record ID is UTF-8). The engine has `InvalidRecordIdReason::NotUtf8` but the SDK never reached it.
+Fixed in the SDKs of Parts 3 and 4 (`_rid` before `prepare_insert`, `delete`, `delete_user`):
+`InvalidRecordId("invalid record id: not valid UTF-8")`, raised `from None`. Tests:
+`test_p4_sdk_a_record_id_that_is_not_utf8_is_invalid_record_id`,
+`test_p3_sdk_a_record_id_that_is_not_utf8_is_invalid_record_id` (red before, green after).
+Part 2's frozen SDK behaves the same (checked: `insert` and `delete` both raise
+`UnicodeEncodeError` quoting the character): erratum E-2.
+
 ### BH-2: `add`/`remove` skip the commitment update when `record_commitment` fails
 
 `crates/sever-commit/src/lib.rs:237,251` use `if let Ok(c_t) = …`. If `record_commitment` ever
@@ -116,6 +140,23 @@ reachable.
 `cargo tree` prints nothing and the step passes. `audit/` (its own workspace with curve25519-dalek)
 is not checked for duplicates, only for the pin (`dalek_pinned`).
 
+## Erratum proposals for the owner (frozen Parts 1–2; Build §6.3 template, not applied)
+
+- **E-2 (Part 2, low).** *Defect:* `sever_db_p2` lets a `str` with no UTF-8 encoding reach the
+  native module, which raises `UnicodeEncodeError` quoting the character (§3.2 rule 1, §17).
+  *Failing test first:* the BH-7 test against `sever_db_p2`. *Smallest fix:* the same `_rid`
+  check in `python/sever_db_p2/__init__.py` (`insert`, `delete`, `delete_user`). *Re-run:* Part 2's
+  Python suite, then every later exit gate. *Tag:* `part-2-frozen-e2`.
+- **E-3 (Parts 1–2, low, tooling).** *Defect:* the frozen tracer (`sever_testkit/spec_trace.py`)
+  and Part 2's `oracle_check` read `#[spec(…)]` one line at a time, so a split attribute is invisible
+  to them (BH-1); three such attributes are in frozen files (`sever-crashkit/tests/small.rs:34`,
+  `sever-p1/tests/e2e_idea.rs:200`, `sever_testkit/tests/test_stateful.py:64`), whose labels the
+  oracle and proof checks never saw. Also `python/sever_db_p2_native.pyi` is in no freeze list.
+  *Fix:* a multi-line-aware scan (or one-line attributes in those three files) and the stub in
+  Part 2's list. *Re-run:* every part's `oracle_check` and `proofs check`; new red proofs for any
+  label that becomes visible. The guard of DB-102 keeps every file that can still change safe
+  meanwhile.
+
 ## Checked and clean
 
 - Workstream 3, verifier (`verifier/src`): §11.1 parser (tag order, lengths, trailer, trailing
@@ -129,3 +170,22 @@ is not checked for duplicates, only for the pin (`dalek_pinned`).
   WAL, a multi-leaf `delete_user`, and leafless transactions; hashes join only in phase C after a
   durable `COMMIT`, so no legitimate crash leaves `tree.size() > last replayed + 1`.
 - Workstream 5: `ruff check`, `ruff format --check` (root), `mypy python` clean on 3de67e9.
+- Workstream 2, real processes: `killloop.py` (SIGKILL at random moments, retry of the operation in
+  flight, counts against the journal, final delete of every live record) on the fixed SDK: seeds
+  42, 123, 777 × 30 rounds, 0 refusals, 0 mismatches, every final delete `deleted`, store empty.
+- Workstream 8, scale path: wrapped-key store compaction under crashes
+  (`p4_erasure_a_crash_anywhere_in_a_compacting_deletion_recovers_and_reopens`: every operation of
+  a compacting deletion on both disks, DropAll and KeepAll, then a checkpoint and a reopen); green,
+  with red proofs PR4-E23 (G-43) and PR4-E24 (the interrupted-swap rule of `WrappedStore::open`).
+  Note: the test needed a clean close after each setup round, or the WAL masked a broken store.
+- Workstream 3: witness memory persists (`WITNESSES`, written by `durable::replace_file`, so not
+  torn); log checkpoints cover committed leaves only (`pre()` uses the committed tree size), so a
+  rolled-back transaction cannot make a witness see a fork.
+- Workstream 6, SDK edge inputs (`edges.py`): IDs of 1, 256 (also 128 × `é`) and 257 bytes, empty,
+  `123`, `+5`, `-0`, `007` refused; `12a`, ` 12`, `12\n`, `1.5`, `١٢٣` (U+0661…) accepted, as
+  SR-3.2-2's notes say; NaN and inf `NonFinite`; 0.9 and zero vectors `NotNormalised`; d = 17
+  `WrongDimension`; unknown and malformed collection IDs `UnknownCollection`; deleting every record
+  leaves N = 0 and reopens; use after close raises a `SeverError`. Only BH-7 failed.
+- Workstream 9: `scripts/vm/setup.sh` and `run-all.sh` read line by line: data, artefact and trace
+  paths, CLI flags and the resume rule (`rc=0` last line) match the repo; `traces/` is ignored.
+  Freeze guard: PART-1 (81 files) and PART-2 (250 files) verify; Part 2's list equals its manifest.
