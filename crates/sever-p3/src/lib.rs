@@ -447,6 +447,21 @@ pub struct Opened {
     pub platform: PlatformReport,
 }
 
+impl Opened {
+    /// Runs one call on the open database.
+    pub fn serve<T>(&self, f: impl FnOnce(&Db) -> Result<T, Error>) -> Result<T, Error> {
+        f(&self.db)
+    }
+
+    /// A clean shutdown: a storage checkpoint (§12.4), then `ENGINE.lock` is released.
+    pub fn close(self) -> Result<(), Error> {
+        let Self { db, lock, .. } = self;
+        let r = db.engine.close();
+        drop(lock);
+        r
+    }
+}
+
 fn io_err(check: &'static str) -> impl Fn(std::io::Error) -> Error {
     move |_| Error::PlatformUnsafe { check }
 }

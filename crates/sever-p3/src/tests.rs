@@ -617,3 +617,103 @@ fn p3_root_five_simulated_witnesses_with_harness_keys() {
     );
     assert_eq!(held[8 + 2 + 8], 5, "one entry per witness");
 }
+
+/// A fresh real directory under `target/p3-tests` (ext4) for `open`.
+fn real_dir(name: &str) -> std::path::PathBuf {
+    let dir = std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../target/p3-tests"
+    ))
+    .join(format!("{name}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
+fn real_options(dir: &std::path::Path) -> OpenOptions {
+    let mut o = OpenOptions::new(dir.join("data"), dir.join("keys"));
+    o.d = D;
+    o.on_failure = FailurePolicy::Poison;
+    o
+}
+
+/// The bytes a checkpoint leaves: `MANIFEST` and the names under `checkpoint/`.
+fn checkpoint_state(dir: &std::path::Path) -> (Vec<u8>, Vec<std::ffi::OsString>) {
+    let data = dir.join("data");
+    let mut names: Vec<_> = std::fs::read_dir(data.join("checkpoint"))
+        .unwrap()
+        .map(|e| e.unwrap().file_name())
+        .collect();
+    names.sort();
+    (std::fs::read(data.join("MANIFEST")).unwrap(), names)
+}
+
+#[test]
+// oracle: A §17 "Stopping after an IntegrityViolation means that no later call is served and that closing the database writes no storage checkpoint over the state the violation was found in" (G-42, DB-103)
+#[spec("SR-17-8")]
+fn p3_root_after_an_integrity_violation_the_database_stops_serving() {
+    let dir = real_dir("stops-serving");
+    let opened = open(&real_options(&dir)).unwrap();
+    let user = KeyPair::generate();
+    let cid = opened.db.create_collection(ARTEFACT, OPTS).unwrap();
+    for (i, v) in rows().iter().take(3).enumerate() {
+        insert(&opened.db, &user, cid, &format!("rec-{i}"), v);
+    }
+    // The leaf store loses its records under the open database: the delete finds an invariant
+    // broken (§17 IntegrityViolation).
+    let leaves = dir.join("data/log/leaves/00000000000000000001.store");
+    std::fs::OpenOptions::new()
+        .write(true)
+        .open(&leaves)
+        .unwrap()
+        .set_len(16)
+        .unwrap();
+    assert!(matches!(
+        opened.serve(|db| db.delete(cid, "rec-0")),
+        Err(Error::IntegrityViolation { .. })
+    ));
+    let before = checkpoint_state(&dir);
+    assert!(matches!(
+        opened.serve(|db| db.engine.stats(cid)),
+        Err(Error::IntegrityViolation { .. })
+    ));
+    assert!(
+        opened.close().is_err(),
+        "no clean shutdown after a violation"
+    );
+    assert_eq!(checkpoint_state(&dir), before, "closing wrote a checkpoint");
+    std::fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
+// oracle: A §12.9 (G-42) "before each call and before the closing storage checkpoint … checks that data/ENGINE.lock is still the file it locked … If it is not, the call fails with IntegrityViolation (§12.9 data directory replaced) … and nothing more is written to the data directory"; §12.3 the directory's own database still recovers
+#[spec("SR-12.9-5")]
+fn p3_root_refuses_to_write_into_a_replaced_data_directory() {
+    let dir = real_dir("replaced");
+    let first = open(&real_options(&dir)).unwrap();
+    let user = KeyPair::generate();
+    let cid = first.db.create_collection(ARTEFACT, OPTS).unwrap();
+    insert(&first.db, &user, cid, "rec-0", &rows()[0]);
+    // Another process wipes the directory and creates its own database there.
+    std::fs::remove_dir_all(&dir).unwrap();
+    std::fs::create_dir_all(&dir).unwrap();
+    let second = open(&real_options(&dir)).unwrap();
+    let other = second.db.create_collection(ARTEFACT, OPTS).unwrap();
+    second.close().unwrap();
+    let before = checkpoint_state(&dir);
+    match first.serve(|db| db.delete(cid, "rec-0")) {
+        Err(Error::IntegrityViolation { invariant }) => {
+            assert_eq!(invariant, "§12.9 data directory replaced");
+        }
+        other => panic!("not refused: {other:?}"),
+    }
+    assert!(
+        first.close().is_err(),
+        "closing wrote into another database"
+    );
+    assert_eq!(checkpoint_state(&dir), before);
+    let again = open(&real_options(&dir)).unwrap();
+    assert_eq!(again.db.engine.collections(), vec![other]);
+    drop(again);
+    std::fs::remove_dir_all(&dir).unwrap();
+}
