@@ -48,9 +48,10 @@ with Database.open("/home/me/mydb/data", "/home/me/mydb/keys") as db:
     anchors = db.anchors()  # what a verifier needs (JSON)
 ```
 
-**See it working first:** [`demo-engine/`](demo-engine/README.md) is a guided tour of all of this on
-real passages (`demo-engine/demo.sh setup`, then `demo-engine/demo.sh tour`), with a shell to try it
-yourself and example programs for an application backend.
+**See it working first:** [SEVER-DB Studio](studio/README.md) is a desktop app that shows every
+feature on real passages: a map of the groups, your own records, the holding area, deletion with
+receipts checked offline, crashes, the forensic scan and the evidence (`studio/studio.sh setup`,
+`prepare`, then `run`).
 
 Anyone can check a receipt offline, without the database:
 `verifier/target/release/sever-verify deletion.cert --anchors anchors.json` (build it with
@@ -451,8 +452,7 @@ docs/            specification, overview, build plans, gaps, progress, evidence,
 results/         gate and measure results (written by the runners, cited by docs/RUN_LEDGER.jsonl)
 scripts/         CI tiers, demos, fair testing, freeze, job queue, the VM run (scripts/vm/)
 freeze/          hashes of the frozen parts' files (F-1)
-demo/            the 5 Oct 2026 review prototype, self-contained (DB-56)
-demo-engine/     the final database in use: guided tour, shell, CLI story, examples  → demo-engine/README.md
+studio/          SEVER-DB Studio, the desktop demo of every feature (DB-106)  → studio/README.md
 ```
 
 Rust unit tests live next to the code they test (`src/tests.rs`), integration tests in each crate's

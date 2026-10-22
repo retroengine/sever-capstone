@@ -20,10 +20,8 @@ _selftest/
 # Runtime state (databases, key files, certificates) holds ciphertext, keys and the user's
 # secret r_t values — never commit. Golden vectors (spec Appendix B) are committed.
 *.cert
-# Per-session demo receipts (public by design, but tied to one session's keys)
-demo/results/certs/
-# The engine demo's databases, account keys and receipts
-demo-engine/work/
+# Studio's databases, account keys, receipts and the encoder model
+studio/work/
 *.key
 !golden/**
 

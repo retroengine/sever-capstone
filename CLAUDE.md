@@ -123,7 +123,8 @@ recorded in the run ledger, including its proof spikes (Build §3.4). Then it is
   reference model C-18 live together. The reference model is the oracle the engine is tested against
   (Overview DB-4, Build §2.2); a second repository would create two copies that drift apart.
 - **Layout:** spec §19.2, which follows the crate and package map of Build §3.2 (G-5 closed by
-  DB-56). The review prototype lives in `demo/`, self-contained; nothing outside it depends on it.
+  DB-56). The demo of the whole project, SEVER-DB Studio, lives in `studio/` with its own
+  environment; nothing outside it depends on it (DB-106).
 - **Branches:** trunk-based (Build §1.3). `main` is always green. Short-lived branches, one per module
   or change (for example `p1-sever-quant`). Every change goes through a pull request with the
   Build §6.1 checklist, even when working alone.
@@ -357,7 +358,7 @@ they name exists. Python modules under `python/` need `PYTHONPATH=python`.
 | Part 2 proofs (§6.3): static check / run them all | `PYTHONPATH=python uv run python -m sever_testkit_p2.proofs check`; `… proofs run` (writes `docs/PROOFS_P2.md`; `--only <ID>` for one) |
 | P2-T1…T3 crash gate (Full tier; writes the run ledger; ~7 h) | `PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit_p2.gates p2-crash --data nq-10k --all-seeds --jobs 3` |
 | Fair testing (§6.4): check, one run, run + fix cycle, offline plumbing run | `scripts/fair.sh doctor --live`; `scripts/fair.sh run 2` prints the cost estimate, then `scripts/fair.sh --bg run 2 --yes` starts it (also `cycle`, `resume RUN_ID`, `fix RUN_ID`; DB-74); `scripts/fair.sh dry-run 2` (offline; runs in `~/.sever-fair/runs/`) |
-| Review demo (self-contained in `demo/`, own env; DB-56) | `demo/scripts/demo.sh setup\|test\|run\|repl`; container: `demo/scripts/demo.sh docker-build`, then `docker test\|run\|repl` (see `demo/README.md`) |
+| SEVER-DB Studio, the desktop demo of every feature (own env in `studio/`; DB-106) | `studio/studio.sh setup` (once), `studio/studio.sh prepare` (once, ~10 min), `studio/studio.sh run`; tests: `studio/studio.sh test`; offline: add `--data synthetic` (see `studio/README.md`) |
 
 ---
 

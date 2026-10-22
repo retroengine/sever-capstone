@@ -78,9 +78,18 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   `demo-engine/work/evidence-tour-nq`.
 - **Merged (21 Oct 2026):** `p4-fix-delete-checkpoint`, then `bughunt-2026-10`, are on `main`; the
   VM runs on `main`.
-- **The engine demo (19 Oct 2026):** `demo-engine/demo.sh tour` (12 chapters on 5,000 NQ passages:
-  24 of 24 checks pass), `shell`, `cli`, `erase`, `examples`, `test` (6 offline tests pass). Run
-  one tour or shell per work directory: a second one is refused (DB-101).
+- **SEVER-DB Studio (22 Oct 2026; DB-106, G-44; branch `demo-studio`):** one desktop app in
+  `studio/` shows every feature to reviewers. It is a map of 10,000 NQ passages by group; your own
+  records go in through the pinned encoder (ONNX); the holding area is a bucket that flushes; it
+  covers search, delete and forget with receipts checked and tampered offline, the log and audit,
+  the disk search, restart and SIGKILL, each part's proof program, the sabotage lab and the
+  evidence. A 33-row checklist is ticked only by live checks; story mode has 17 chapters.
+  `studio/studio.sh setup | prepare | run | test`. It replaces `demo/` and `demo-engine/` (removed;
+  history in git). `studio.sh test`: ruff, `mypy --strict`, 21 tests pass offline.
+  **Open for the owner:** Part 4's erase program (`sever-demo-p4`, SB-24 build) counts what the scan
+  decrypts but does not print the reconstructed vector next to the original, as Build 3-4 §2.11
+  step 4 says; `sever-scan`'s report keeps no recovered values. This is a Part 4 change, left for
+  you to decide (Part 4 is not frozen).
 - **Working copy:** `~/sever-db` on the WSL ext4 disk (the `C:` copy is a backup).
 - **Git:** Claude commits (conventional messages, no AI attribution) and pushes to `origin` (owner,
   19 Oct 2026). `main` and `p3-gates` are fast-forwarded together once GitHub's fast tier and the

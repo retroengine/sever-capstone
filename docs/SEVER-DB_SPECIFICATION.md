@@ -1842,11 +1842,11 @@ sever-db/
   datasets/MANIFEST.sha256       data files are regenerated, not committed
   tests/                         crash/, forensic/, differential/, attack/, property/
   docs/                          these two documents, RUN_LEDGER.md, SOUNDNESS.md
-  demo/                          the review prototype (Python, 5 Oct 2026): own environment, tests
-                                 and container; not part of any part; nothing above depends on it
-  demo-engine/                   the final database used as an application uses it (SDK, sever-db,
-                                 sever-verify, sever-audit): a consumer only; not part of any part;
-                                 nothing above depends on it (DB-97)
+  studio/                        SEVER-DB Studio, the desktop demo of the whole project: own
+                                 environment and tests; drives the final build through the SDK,
+                                 sever-verify, sever-audit and the parts' own demo programs; a
+                                 consumer only; not part of any part; nothing above depends on it
+                                 (DB-106)
 ```
 
 The optional server (C-14) has no crate in the build plan; it is added, if ever, after Part 4.

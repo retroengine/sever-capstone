@@ -1,6 +1,6 @@
 # SEVER-DB Python environment (development, WSL). Not an installable package: the packages under
 # python/ (C-15 builder, C-18 reference model, test kit; none written yet) are put on the path by
-# pytest. The review demo is separate: demo/ has its own pyproject.toml and uv.lock (DB-56).
+# pytest. The demo is separate: studio/ has its own pyproject.toml and uv.lock (DB-106).
 # Versions follow spec §20.2; exact versions and hashes live in uv.lock. Part 1 packages only —
 # later parts add theirs when they start. The P0 encoder environment is separate (CLAUDE.md §8).
 
@@ -41,7 +41,7 @@ link-mode = "copy"
 pythonpath = ["python"]
 testpaths = ["tests", "python"]
 # Until tests/ exists pytest falls back to the repo root; never collect the demo's own suite or data.
-norecursedirs = [".*", "build", "dist", "venv", "demo", "src", "datasets", "docs"]
+norecursedirs = [".*", "build", "dist", "venv", "studio", "src", "datasets", "docs"]
 addopts = "--strict-markers"
 markers = [
     "mustfail: sabotage test; names the SB item it covers (Build §2.6)",
@@ -58,9 +58,9 @@ source = ["python"]
 line-length = 100
 target-version = "py313"
 src = ["python", "tests"]
-# demo/ is its own project with its own ruff settings; src/ holds practice files;
+# studio/ is its own project with its own ruff settings; src/ holds practice files;
 # scripts/data-preparation/ is the P0 tool, run in the P0 environment and left as it was used.
-extend-exclude = ["demo", "src", "docs", "scripts/data-preparation"]
+extend-exclude = ["studio", "src", "docs", "scripts/data-preparation"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "PT"]

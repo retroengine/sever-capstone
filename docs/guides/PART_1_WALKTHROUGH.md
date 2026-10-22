@@ -186,7 +186,8 @@ later parts can use.
 
 A self-contained prototype in `demo/` (its own environment) to try the ideas: data checks, quantiser,
 index, baselines, and a Part 3 preview with commitments and an offline verifier. It is not part of the
-engine and nothing depends on it (DB-56).
+engine and nothing depends on it (DB-56). It was removed on 22 Oct 2026, when SEVER-DB Studio
+(`studio/`) replaced it (DB-106); it remains in git history.
 
 ### 4 Oct: the core, in one day
 
