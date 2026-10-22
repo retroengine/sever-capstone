@@ -56,11 +56,12 @@ TEXT: dict[str, tuple[str, str]] = {
         "checked against the application's index (§5, §7.6).",
     ),
     "map.about": (
-        "Each dot is a stored passage, coloured by its group.",
-        "Filled dots are frozen groups (fitted once, §6); rings are spawned groups, formed when "
-        "200 "
-        "out-of-distribution records gathered in the holding area (§7.4). The 384 numbers of each "
-        "vector are flattened to two for the picture, so the map is only an approximation.",
+        "Each dot is a stored passage; each group has a colour of its own.",
+        "By group, each group's passages form a disc around its centre. ◆ marks a frozen group "
+        "(fitted once, §6), in the middle; ■ a spawned group, formed when 200 out-of-distribution "
+        "records gathered in the holding area (§7.4), on the rings around them. Where a dot sits "
+        "inside its disc means nothing. By meaning, the 384 numbers of each vector are flattened "
+        "to two instead (t-SNE), so similar passages sit close: an approximation.",
     ),
     "bucket": (
         "Waiting",

@@ -20,8 +20,14 @@ from . import theme
 from .main_window import MainWindow
 from .tour import CHAPTERS
 
-#: Qt messages that say nothing about Studio (WSLg's compositor reports these on every start).
-BENIGN = ("Wayland does not support QWindow::requestActivate", "propagateSizeHints")
+#: Qt messages that say nothing about Studio: WSLg's compositor reports the first two on every
+#: start; the third comes from passages in a script no installed font covers (setup says which
+#: package adds the fonts).
+BENIGN = (
+    "Wayland does not support QWindow::requestActivate",
+    "propagateSizeHints",
+    "OpenType support missing for",
+)
 
 
 def fit(win: MainWindow, app: QApplication) -> None:
@@ -59,7 +65,8 @@ def run(root: Path, data: str, rows: int, work: Path, dev: bool, smoke: bool = F
             and not any(b in msg for b in BENIGN)
         ):
             issues.append(msg)
-        print(msg, file=sys.stderr)
+        if not any(b in msg for b in BENIGN):
+            print(msg, file=sys.stderr)
 
     qInstallMessageHandler(handler)
     app = QApplication.instance() or QApplication(sys.argv)

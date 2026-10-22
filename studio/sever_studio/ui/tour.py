@@ -49,9 +49,10 @@ CHAPTERS = [
         "The data as a map",
         "explore",
         None,
-        "Each dot is a passage, coloured by its group.",
-        "Ten thousand real Wikipedia passages. Filled dots: frozen groups; rings: spawned groups. "
-        "Hover any dot for its text and its 384 numbers.",
+        "Each group a colour; each dot a passage.",
+        "Ten thousand real Wikipedia passages. The frozen groups (◆) sit in the middle; the "
+        "spawned groups (■) ring them. Hover any dot for its text and its 384 numbers; "
+        '"By meaning" lays the same dots out by similarity.',
         ("hover",),
     ),
     Chapter(

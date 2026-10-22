@@ -1,8 +1,8 @@
 """The map: every live record as a dot coloured by its group, and the holding area as a gauge.
 
-Filled dots are frozen groups, rings are spawned groups, white stars are your own records. Records
-in the holding area are not on the map: no search reaches them until the area flushes (§7.4), so
-they sit in the gauge at the map's edge.
+Each group has a colour of its own; by group, its records form a disc around its centre (◆ frozen,
+■ spawned). Stars are your own records. Records in the holding area are not on the map: no search
+reaches them until the area flushes (§7.4), so they sit in the gauge at the map's edge.
 """
 
 from collections.abc import Callable
@@ -33,19 +33,18 @@ EMPTY = np.zeros((0, 2))
 
 
 class Palette:
-    """A stable colour per group: frozen groups by their number, spawned groups by arrival."""
+    """Each group's own colour, as the group map gave it (``layout.GroupMap``)."""
 
-    def __init__(self) -> None:
-        self.spawned: dict[str, int] = {}
+    def __init__(self, studio: Studio) -> None:
+        self.studio = studio
 
     def colour(self, group: str) -> QColor:
-        if group.startswith("frozen-"):
-            return theme.group_colour(int(group.split("-")[1]), spawned=False)
         if group == HOLDING:
             return QColor(theme.HOLDING)
-        if group not in self.spawned:
-            self.spawned[group] = 128 + len(self.spawned)
-        return theme.group_colour(self.spawned[group], spawned=True)
+        colours = self.studio.groups.colours
+        if group not in colours:
+            self.studio.place_groups()
+        return theme.group_colour(colours.get(group, 0))
 
 
 class HoverCard(QFrame):
@@ -100,24 +99,36 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
     def __init__(self, studio: Studio) -> None:
         super().__init__()
         self.studio = studio
-        self.palette = Palette()
+        self.palette = Palette(studio)
         self.setMenuEnabled(False)
         self.hideAxis("left")
         self.hideAxis("bottom")
         self.setAspectLocked(True)
         self.getPlotItem().setContentsMargins(0, 0, 0, 0)
         self.vb = self.getPlotItem().getViewBox()
+        self.vb.setDefaultPadding(0.1)  # room for the floating search, legend and gauge
         self.base = pg.ScatterPlotItem(pxMode=True)
+        self.centres = pg.ScatterPlotItem(pxMode=True)
         self.halo = pg.ScatterPlotItem(pxMode=True)
         self.mine = pg.ScatterPlotItem(pxMode=True)
         self.anim = pg.ScatterPlotItem(pxMode=True)
         self.ring = pg.ScatterPlotItem(pxMode=True)
         self.beam = pg.PlotDataItem(pen=pg.mkPen(theme.ACCENT + "aa", width=1.4), connect="pairs")
         self.star = pg.ScatterPlotItem(pxMode=True)
-        for item in (self.base, self.halo, self.mine, self.beam, self.anim, self.ring, self.star):
+        for item in (
+            self.base,
+            self.centres,
+            self.halo,
+            self.mine,
+            self.beam,
+            self.anim,
+            self.ring,
+            self.star,
+        ):
             self.addItem(item)
         self.labels: list[pg.TextItem] = []
         self.rids: list[str] = []
+        self.dot = 7.0
         self.xy: npt.NDArray[np.float64] = EMPTY
         self.focus_group: str | None = None
         self.selected: str | None = None
@@ -136,9 +147,8 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
             c = self.palette.colour(group)
             if dim:
                 c = QColor(c.red(), c.green(), c.blue(), 35)
-            spawned = group.startswith("spawn-")
-            brush = pg.mkBrush(theme.BG if spawned else c)
-            pen = pg.mkPen(c, width=1.5) if spawned else pg.mkPen(QColor(0, 0, 0, 90), width=0.5)
+            brush = pg.mkBrush(c)
+            pen = pg.mkPen(QColor(0, 0, 0, 30 if dim else 70), width=0.5)
             self._brush[key] = (brush, pen)
         return self._brush[key]  # type: ignore[return-value]
 
@@ -147,7 +157,7 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         rids = [r for r, rec in recs.items() if rec.group != HOLDING]
         self.rids = rids
         self.xy = np.array([self.studio.xy(r) for r in rids], np.float64).reshape(-1, 2)
-        size = 4.6 if len(rids) > 2000 else 7.0
+        size = self.dot = 4.6 if len(rids) > 2000 else 7.0
         brushes, pens = [], []
         mine_xy = []
         for r in rids:
@@ -160,6 +170,7 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
             if rec.mine:
                 mine_xy.append(self.studio.xy(r))
         self.base.setData(pos=self.xy if len(rids) else EMPTY, brush=brushes, pen=pens, size=size)
+        self._centres()
         mx = np.array(mine_xy, np.float64).reshape(-1, 2)
         self.halo.setData(
             pos=mx, size=28, brush=pg.mkBrush(QColor(255, 209, 102, 60)), pen=pg.mkPen(None)
@@ -173,10 +184,32 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         )
         self._ring()
 
+    def _centres(self) -> None:
+        """Each group's centre, in its colour: ◆ frozen, ■ spawned (by group only)."""
+        if not self.studio.by_group:
+            self.centres.setData(pos=EMPTY)
+            return
+        spots = []
+        for g, x, y, _ in self.studio.centres():
+            c = self.palette.colour(g)
+            if self.focus_group is not None and g != self.focus_group:
+                c = QColor(c.red(), c.green(), c.blue(), 50)
+            spots.append(
+                {
+                    "pos": (x, y),
+                    "symbol": "d" if g.startswith("frozen-") else "s",
+                    "size": self.dot + (4 if g.startswith("frozen-") else 6),
+                    "brush": pg.mkBrush(c),
+                    "pen": pg.mkPen(theme.SURFACE, width=1.5),
+                    "data": g,
+                }
+            )
+        self.centres.setData(spots=spots)
+
     def recolour(self) -> None:
         """After the palette changes (the colour-blind-safe switch)."""
         self._brush.clear()
-        self.palette = Palette()
+        self.palette = Palette(self.studio)
         self.refresh()
 
     def _ring(self) -> None:

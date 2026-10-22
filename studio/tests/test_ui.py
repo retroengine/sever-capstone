@@ -275,3 +275,17 @@ def test_ui_smoke_on_the_real_display(report: dict[str, Any]) -> None:
     report["smoke"] = line
     assert p.returncode == 0, p.stdout[-2000:] + p.stderr[-2000:]
     assert "PASS" in line
+
+
+def test_ui_a_search_says_when_your_records_wait_in_the_bucket(win: MainWindow) -> None:
+    s = win.studio
+    rid = s.add_mine("Waiting Wendy", "far from every group").rid
+    assert s.backend.index.records[rid].group == "holding"  # §7.4: close to no group
+    e = win.sections["explore"]
+    win.go("explore")
+    e.query.setText("#0")
+    e.ask()
+    settle(win)
+    lines = [e.res_list.item(i).text() for i in range(e.res_list.count())]
+    assert any("wait in the bucket" in t for t in lines), lines
+    assert rid not in [r for r, _, _ in s.ask(0)[1]]  # and indeed no search reaches it

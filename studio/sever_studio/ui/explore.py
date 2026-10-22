@@ -75,8 +75,8 @@ class Explore(QWidget):
 
         # the legend, top left
         self.legend, ll = floating(vertical=False, margin=8)
-        ll.addWidget(chip("● frozen", theme.ACCENT))
-        ll.addWidget(chip("○ spawned", theme.SPAWNED))
+        ll.addWidget(chip("◆ frozen", theme.ACCENT))
+        ll.addWidget(chip("■ spawned", theme.SPAWNED))
         ll.addWidget(chip("★ yours", theme.WARN if theme.LIGHT else theme.YOURS_RING))
         ll.addWidget(info("map.about"))
 
@@ -142,6 +142,9 @@ class Explore(QWidget):
         # the status, bottom right
         self.status = label("", "small")
         self.replay_btn = button("Replay", "ghost", self.replay, "play", "Replay the preparation")
+        self.b_layout = button(
+            "By meaning", "ghost", self.toggle_layout, "map", "Lay the map out by meaning instead"
+        )
 
         # the welcome card
         self.welcome, wl = floating(margin=18)
@@ -163,6 +166,7 @@ class Explore(QWidget):
             self.add_panel,
             self.sheet,
             self.status,
+            self.b_layout,
             self.replay_btn,
             self.welcome,
         ):
@@ -194,15 +198,23 @@ class Explore(QWidget):
         self.add_panel.setFixedWidth(pw)
         self.add_panel.adjustSize()
         self.add_panel.move(16, h - self.fab.height() - self.add_panel.height() - 26)
-        sheet_w = min(760, w - 2 * (self.fab.width() + 40))
-        self.sheet.setFixedWidth(max(360, sheet_w))
-        self.sheet.adjustSize()
-        self.sheet.move((w - self.sheet.width()) // 2, h - self.sheet.height() - 16)
         self.status.adjustSize()
         self.replay_btn.adjustSize()
-        self.replay_btn.move(w - self.replay_btn.width() - 12, h - self.replay_btn.height() - 12)
-        self.status.move(
-            w - self.status.width() - self.replay_btn.width() - 20, h - self.status.height() - 18
+        self.b_layout.adjustSize()
+        right = w - self.replay_btn.width() - 12
+        self.replay_btn.move(right, h - self.replay_btn.height() - 12)
+        right -= self.b_layout.width() + 6
+        self.b_layout.move(right, h - self.b_layout.height() - 12)
+        self.status.move(right - self.status.width() - 8, h - self.status.height() - 18)
+        # the sheet stays clear of the buttons in both bottom corners
+        side = max(self.fab.width() + 16, w - right) + 16
+        self.sheet.setFixedWidth(max(360, min(760, w - 2 * side)))
+        self.sheet.adjustSize()
+        self.sheet.move((w - self.sheet.width()) // 2, h - self.sheet.height() - 16)
+        self.status.setVisible(
+            not (
+                self.sheet.isVisible() and self.status.geometry().intersects(self.sheet.geometry())
+            )
         )
         self.welcome.adjustSize()
         self.welcome.move((w - self.welcome.width()) // 2, (h - self.welcome.height()) // 2)
@@ -244,6 +256,18 @@ class Explore(QWidget):
         groups = {rec.group for rec in b.index.records.values() if rec.group != HOLDING}
         self.status.setText(f"{len(b.index.records):,} records · {len(groups)} groups")
         self.place()
+
+    def toggle_layout(self) -> None:
+        """By group (each group a disc of its colour) or by meaning (similar passages close)."""
+        s = self.host.studio
+        s.by_group = not s.by_group
+        self.b_layout.setText("By meaning" if s.by_group else "By group")
+        self.b_layout.setToolTip(
+            "Lay the map out by meaning instead" if s.by_group else "Lay the map out by group"
+        )
+        self.map.clear_beam()
+        self.redraw()
+        self.map.autoRange()
 
     def arrive(self, **kw: Any) -> None:
         self.redraw()
@@ -291,6 +315,7 @@ class Explore(QWidget):
         rec = b.index.records.get(rid) if rid else None
         if rec is None or rid is None:
             self.sheet.hide()
+            self.place()
             return
         n = len(b.accounts().get(rec.account, []))
         self.sel.setText(
@@ -533,6 +558,13 @@ class Explore(QWidget):
 
         def done(out: tuple[str, list[tuple[str, float, bool]], tuple[float, float]]) -> None:
             text, hits, origin = out
+            if s.by_group:  # no meaning position on a map by group: the middle of the hits
+                spots = [s.xy(r) for r, _, _ in hits[:10] if r in s.backend.index.records]
+                if spots:
+                    origin = (
+                        sum(x for x, _ in spots) / len(spots),
+                        sum(y for _, y in spots) / len(spots) + 6,
+                    )
             self.map.show_beam(origin, hits)
             self.res_q.setText(text)
             self.res_list.clear()
@@ -547,6 +579,15 @@ class Explore(QWidget):
                 self.res_list.addItem(item)
             if not hits:
                 self.res_list.addItem("Nothing found")
+            waiting = [r for r in s.backend.index.holding if s.backend.index.records[r].mine]
+            if waiting:  # §7.4: stored, deletable, but no search reaches the holding area
+                note = QListWidgetItem(
+                    f"⏳ {len(waiting)} of your records wait in the bucket: no search reaches "
+                    "them until it flushes into a group"
+                )
+                note.setForeground(QColor(theme.WARN))
+                note.setToolTip(copy.long("bucket"))
+                self.res_list.addItem(note)
             self.results.show()
             self.welcome.hide()
             self.place()
@@ -601,7 +642,7 @@ class Explore(QWidget):
                 # only the new dots: redrawing all 10,000 each tick stalls the window; the map's
                 # cached brushes and pens let pyqtgraph reuse each drawn dot
                 styles = [view._style(g, False) for _, g in placed]
-                xy = np.array([self.host.studio.xy(r) for r, _ in placed], np.float64)
+                xy = np.array([self.host.studio.xy(r, g) for r, g in placed], np.float64)
                 view.base.addPoints(
                     pos=xy, brush=[b for b, _ in styles], pen=[p for _, p in styles], size=4.6
                 )
@@ -615,6 +656,7 @@ class Explore(QWidget):
         timer = QTimer(self)
         timer.timeout.connect(tick)
         view.base.setData(pos=np.zeros((0, 2)))
+        view.centres.setData(pos=np.zeros((0, 2)))
         timer.start(30)
         self._replay = timer
 

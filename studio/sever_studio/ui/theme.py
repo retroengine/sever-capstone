@@ -4,10 +4,11 @@ Light by default (``SEVER_STUDIO_THEME=dark`` for the dark palette). Type scale 
 presenter's text size): 22 title, 15 heading, 11 body, 9.5 small.
 """
 
-import colorsys
 import os
 
 from PySide6.QtGui import QColor, QFont
+
+from ..layout import palette_rgb
 
 PALETTES = {
     "light": {
@@ -105,19 +106,12 @@ def rgba(colour: str, alpha: int) -> str:
     return f"rgba({c.red()}, {c.green()}, {c.blue()}, {alpha})"
 
 
-def group_colour(index: int, spawned: bool) -> QColor:
-    """Hues spread by the golden angle, so neighbouring group numbers look different; spawned
-    groups lighter. With the safe palette, the eight Okabe–Ito colours in turn."""
+def group_colour(index: int) -> QColor:
+    """Colour number ``index`` (``layout.palette_rgb``: no two numbers alike). With the safe
+    palette, the eight Okabe–Ito colours in turn."""
     if safe_palette:
-        c = QColor(OKABE_ITO[index % len(OKABE_ITO)])
-        return (c.darker(115) if LIGHT else c.lighter(125)) if spawned else c
-    h = (index * 0.618033988749895) % 1.0
-    if LIGHT:
-        s, v = (0.70, 0.78) if spawned else (0.80, 0.72)
-    else:
-        s, v = (0.55, 0.95) if spawned else (0.70, 0.92)
-    r, g, b = colorsys.hsv_to_rgb(h, s, v)
-    return QColor(int(r * 255), int(g * 255), int(b * 255))
+        return QColor(OKABE_ITO[index % len(OKABE_ITO)])
+    return QColor(*palette_rgb(index, LIGHT))
 
 
 def stylesheet() -> str:

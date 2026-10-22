@@ -35,13 +35,21 @@ case "$cmd" in
   setup)
     (cd "$here" && uv sync --locked)
     # The SDK's native module, built into Studio's environment (uv sync removes it).
-    VIRTUAL_ENV="$here/.venv" "$here/.venv/bin/maturin" develop -q --release --uv \
-      -m crates/sever-py/Cargo.toml
+    # The SDK's native modules, built into Studio's environment (uv sync removes them): Part 4's,
+    # which Studio drives, and Part 3's, which Part 3's own proof program needs.
+    for crate in sever-py sever-py-p3; do
+      VIRTUAL_ENV="$here/.venv" "$here/.venv/bin/maturin" develop -q --release --uv \
+        -m "crates/$crate/Cargo.toml"
+    done
     for ws in verifier audit; do
       (cd "$ws" && CARGO_TARGET_DIR="$root/$ws/target" cargo build -q --release --locked)
     done
     py -c "from pathlib import Path; from sever_studio.encoder import fetch; \
 print('encoder:', fetch(Path('$here/work/models')))"
+    if [ -z "$(fc-list :lang=hi family)" ]; then
+      echo "note: no Devanagari or Bengali font, so a few NQ passages show boxes:"
+      echo "      sudo apt install fonts-noto-core"
+    fi
     if (cd datasets && sha256sum --quiet -c MANIFEST.sha256) 2>/dev/null; then
       [ -f artefacts/partition-seed42.svp ] \
         || uv run --no-sync python -m sever_partition.build --seed 42

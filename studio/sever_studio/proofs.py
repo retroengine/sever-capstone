@@ -74,6 +74,10 @@ def run(root: Path, name: str, data: str, work: Path) -> Proof:
     proof = read(name, report, text, f"live {data}")
     if p.returncode != 0:
         proof.ok = False
+        if not report and name != "erase":  # it stopped before writing its report: say why
+            last = next((ln for ln in reversed(text.splitlines()) if ln.strip()), "no output")
+            hint = " (run studio/studio.sh setup)" if "ModuleNotFoundError" in last else ""
+            proof.checks = [(f"the program stopped: {last.strip()[:160]}{hint}", False)]
         proof.checks.append((f"the program exited {p.returncode}", False))
     return proof
 

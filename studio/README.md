@@ -1,7 +1,7 @@
 # SEVER-DB Studio
 
 **The whole project in one desktop app.** Ten thousand real Wikipedia passages appear as dots on a
-map, coloured by group. You add yourself and watch where the database puts you. You delete yourself
+map, each group a disc of its own colour. You add yourself and watch where the database puts you. You delete yourself
 and the dot disappears, and you get a receipt anyone can check offline. You climb that receipt up
 the public log, try to forge it, kill the database in the middle of a deletion, and watch a float
 average drift while SEVER's integer sum stays exact. Every claim of the project is one click away.
@@ -24,6 +24,8 @@ studio/studio.sh run        # opens the window, sized to your screen
 - **No NQ data?** Without `datasets/` (not in git), add `--data synthetic` to `prepare` and `run`.
   The offline fixture then runs everything: d = 16, 240 vectors plus 2,000 made-up ones, spawn
   size 8.
+- **Boxes instead of letters** in a few NQ passages (Hindi, Bengali): `sudo apt install
+  fonts-noto-core`. `setup` says so when the fonts are missing.
 - **Dark theme:** `SEVER_STUDIO_THEME=dark`.
 - **X11 instead of Wayland:** `--x11` (needs `libxcb-cursor0`).
 - **A busy work directory** is not an error. While a `prepare` runs, `run` says so and names the
@@ -80,7 +82,11 @@ studio/studio.sh run        # opens the window, sized to your screen
 
 ## What it does not claim
 
-- **The map is a picture.** t-SNE flattens 384 dimensions to two.
+- **The map is a picture.** By group (the default), frozen groups (◆) sit in the middle and
+  spawned groups (■) on rings around them; where a dot sits inside its group's disc means nothing.
+  **By meaning** flattens the 384 dimensions to two with t-SNE instead. A spawned group holds the
+  200 records that waited together, whatever they mean (§7.4), so by meaning its colour is spread
+  across the map.
 - **Hover text is not read back from the database.** It comes from the dataset or from what you
   typed; the database stores it encrypted and never hands it back.
 - **Every byte of a receipt is signed.** So the Attack lab reaches steps 1, 2 and 4. Steps 3, 5 and
