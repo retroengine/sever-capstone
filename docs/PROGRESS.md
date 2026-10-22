@@ -85,7 +85,27 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   the disk search, restart and SIGKILL, each part's proof program, the sabotage lab and the
   evidence. A 33-row checklist is ticked only by live checks; story mode has 17 chapters.
   `studio/studio.sh setup | prepare | run | test`. It replaces `demo/` and `demo-engine/` (removed;
-  history in git). `studio.sh test`: ruff, `mypy --strict`, 21 tests pass offline.
+  history in git).
+  **Studio v2 (22 Oct 2026, the owner's review).** Changes:
+  - **The launch crash is fixed.** The window was 1,376 px wide on a 1280 × 800 WSLg screen, and
+    Wayland killed it. It is now sized to the screen, and `studio.sh smoke` checks this on the
+    real display: PASS.
+  - **A light theme by default.**
+  - **A simpler UI:** six sections on an icon rail, every word in `ui/copy.py`, and details behind
+    ⓘ.
+  - **A Live section with four new demos:**
+    - a receipt climbs the RFC 9162 log tree, with Studio's own hashing;
+    - an attack lab of 5 forgeries, all caught;
+    - a deletion killed by SIGKILL five times, never half;
+    - a float mean against the Q24 integer sum.
+
+    The checklist grows to 37 rows.
+  - **Tests:** `studio.sh test` runs 60 tests offline in about 2 minutes, on an emulated
+    1280 × 800 screen at scale 2. `studio.sh test --full` adds the real display, more screen
+    sizes, a 500-operation soak, the NQ data, a freeze watchdog and three live sabotage builds.
+    On 22 Oct the full tier passed all 72 tests in 13.6 minutes, with a worst freeze of 100 ms.
+    Its first run had found a 603 ms freeze in the map replay and a tour bar clipped at 1024 × 640;
+    both are fixed.
   **Open for the owner:** Part 4's erase program (`sever-demo-p4`, SB-24 build) counts what the scan
   decrypts but does not print the reconstructed vector next to the original, as Build 3-4 §2.11
   step 4 says; `sever-scan`'s report keeps no recovered values. This is a Part 4 change, left for
