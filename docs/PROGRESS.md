@@ -437,18 +437,20 @@ report and the rebuilt artefact identical apart from timing); the freeze manifes
 
 ## Open questions
 
-- **Stop serving in Parts 2 and 3 (G-42).** Their builds still serve after an `IntegrityViolation`
-  and checkpoint at close (§17 says the engine stops serving). Part 2's engine is frozen: fix it
-  by erratum E-3 or accept it as a stated limit? Part 3's root could take the same guard as Part 4.
+- **Stop serving (G-42): settled 21 Oct 2026.** Part 3's root took Part 4's guard; Part 2's builds
+  keep the limit until erratum E-6, applied with E-3 after v1.0 (DB-103, L-28). The command-line
+  tools (`sever-db-p3`, `sever-db`) need no guard: each command serves one call right after `open`,
+  and dropping the database writes nothing (no `Drop` impl writes a checkpoint).
 - **Two small findings (21 Oct 2026, low):** `sever-cert/src/participant.rs:188` turns a failed
   consistency proof of the operator's own tree into an empty proof (seen as a witness refusal);
   `sever-commit/src/lib.rs:237,251` would skip a `C_S` update if `record_commitment` failed
   (unreachable today: plan rejects that dimension first). 21 Oct: the first now reports `IntegrityViolation` (`§10.4 consistency proof`); the second is the bug hunt's BH-2, won't fix (frozen extension point).
 
 - What overwrote `sciq_reference/passages.parquet` at 19:35 UTC on 27 Sep? Not `build`; the
-  writer was pyarrow 25.0.1.
-- The build plan's Part 2–4 proposals (DB-46, DB-48, DB-51 … DB-54) are not yet in the decision
-  register; decide them at the start of each part.
+  writer was pyarrow 25.0.1. Left open (it does not affect any result: `datasets/MANIFEST.sha256`
+  verifies the data every run uses).
+- ~~The build plan's Part 2–4 proposals (DB-46, DB-48, DB-51 … DB-54) are not yet in the decision
+  register.~~ Settled: all are in the overview's register (checked 22 Oct 2026).
 - 88 % of nq passages are out of distribution for the SciQ partition (by design: the drift case), so
   most of them live in spawned groups.
 - Two files in `demo/` were renamed outside these sessions (`1 data.py`, `2 quant.py`); left as is.
