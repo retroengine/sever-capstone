@@ -1105,8 +1105,8 @@ be moved to another record, field or key version.
 | Slot payload (record ID, `x̃`, insert leaf index, `r_t`) | `RK_t` | `collection_id ‖ scrambled_id ‖ 0x01` |
 | Passage text | `RK_t` | `collection_id ‖ scrambled_id ‖ 0x02` |
 | Wrapped record key | `BK_{g,b}` | `collection_id ‖ group_id(32, zero-padded) ‖ scrambled_id ‖ u64be bucket_version` |
-| Wrapped bucket key | `GK_g` | `collection_id ‖ group_id ‖ u8 b ‖ u64be group_key_version` |
-| `S ‖ r_agg` | `GK_g` | `collection_id ‖ group_id ‖ u64be group_key_version ‖ u64be n` |
+| Wrapped bucket key | `GK_g` | `collection_id ‖ group_id(32, zero-padded) ‖ u8 b ‖ u64be group_key_version` |
+| `S ‖ r_agg` | `GK_g` | `collection_id ‖ group_id(32, zero-padded) ‖ u64be group_key_version ‖ u64be n` |
 
 Record-level ciphertexts deliberately carry **no** group, position or key version. A slot can therefore
 move within a group, or from the holding area into a new group, without being decrypted, and a key

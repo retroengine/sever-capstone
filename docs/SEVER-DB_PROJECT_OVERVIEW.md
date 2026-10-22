@@ -392,7 +392,7 @@ delete ─► find ─► check stored x̃ and r_t reproduce C_t (integrity) ─
 
 ---
 
-## 6. Decision register (DB-1 … DB-53, DB-55 … DB-104)
+## 6. Decision register (DB-1 … DB-53, DB-55 … DB-105)
 
 Every choice, with the options weighed. A decision is changed only by a new, dated entry that names
 the one it supersedes and says why; nothing is edited silently.
@@ -1042,6 +1042,20 @@ next to the data it scrambles, against §14.1's separation). **Consequence.** Cl
 part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the freeze); one binary in
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
+
+#### DB-105 — Every §13.2 associated data carries the zero-padded group ID (22 October 2026)
+
+**Decision.** In spec §13.2, the wrapped bucket key's and `S ‖ r_agg`'s associated data name
+`group_id(32, zero-padded)`, as the wrapped record key's already did: the group's §5.1 label
+zero-padded to 32 bytes, as stored in §14.3. Closes G-2.
+**Why.** The table gave the width in one row of three and left the other two open, so an
+independent implementation could encode them differently and fail to open the engine's
+ciphertexts. `sever-seal` (`ad.rs`, through `sever_keys::Domain`, whose `group_id` is `[u8; 32]`)
+already pads it in all three rows, as do the `BUCKET_BLOCK` WAL record (§14.6) and the
+wrapped-key store (§14.8).
+**Rejected.** The bare label (variable length): the AD would then need a length prefix to stay
+unambiguous, and every other place that stores a group ID beside a key uses the padded form.
+**Consequence.** No code or stored byte changes; `sever-seal`'s module comment shows the width.
 
 #### DB-104 — P4-T3 closes and reopens after every recovery (21 October 2026)
 
@@ -2467,6 +2481,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **22 October 2026 — The group ID's width in the AD.** DB-105 (§13.2's three group-bound
+  associated data all carry `group_id(32, zero-padded)`; closes G-2). Specification sections
+  touched: §13.2.
 - **21 October 2026 — P4-T3 reopens after recovery.** DB-104 (the final build's crash campaign
   closes and reopens a copy after every recovery, zero-gated as `reopen_mismatches`). Build 3-4
   §2.10 P4-T3 amended.

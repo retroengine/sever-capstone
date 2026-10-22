@@ -6,8 +6,8 @@
 //! | Slot payload | `RK_t` | `collection_id ‖ scrambled_id ‖ 0x01` |
 //! | Passage text | `RK_t` | `collection_id ‖ scrambled_id ‖ 0x02` |
 //! | Wrapped record key | `BK_{g,b}` | `collection_id ‖ group_id(32) ‖ scrambled_id ‖ u64be bucket_version` |
-//! | Wrapped bucket key | `GK_g` | `collection_id ‖ group_id ‖ u8 b ‖ u64be group_key_version` |
-//! | `S ‖ r_agg` | `GK_g` | `collection_id ‖ group_id ‖ u64be group_key_version ‖ u64be n` |
+//! | Wrapped bucket key | `GK_g` | `collection_id ‖ group_id(32) ‖ u8 b ‖ u64be group_key_version` |
+//! | `S ‖ r_agg` | `GK_g` | `collection_id ‖ group_id(32) ‖ u64be group_key_version ‖ u64be n` |
 
 use sever_keys::Domain;
 

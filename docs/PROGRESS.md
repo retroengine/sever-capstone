@@ -36,8 +36,8 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   proof is not context-bound; closes G-34), DB-96 (EX-2 on `fuse2fs` with `allow_unsafe_fs`; the
   evaluation's builds; closes G-35), DB-97 (`demo-engine/`, the final database in use; closes G-36).
 - **Fair-testing bug hunts (20 Oct 2026, DB-98; $11.58):** Part 3 105/115 pass, Part 4 145/146.
-  Three real issues to fix next, by hand following FT-9's steps (owner: low cost), then G-37…G-39
-  and DB-99: (1) a new database's `anchors()` lists no witness keys: `sever-p3/src/witnesses.rs`
+  Three real issues, **fixed on 20 Oct 2026** by hand following FT-9's steps (G-37…G-40, DB-99,
+  DB-100; bug hunt 2: Part 3 170/172, both fixed; Part 4 146/149, 0 findings): (1) a new database's `anchors()` lists no witness keys: `sever-p3/src/witnesses.rs`
   creates a witness's epoch key only at its first cosignature; fix: in `load`, create and record
   each witness's epoch-0 key (both parts use this module). (2) `placement` is Rust debug text
   (`Frozen(GroupId(frozen-0000))`, `Holding`) in `sever-py`, `sever-py-p3`, `sever-db` and
@@ -303,7 +303,7 @@ only, no push). Each is recorded as a DB entry; review them when convenient:
 | 8 | `verifier/` (separate workspace, `sever-verify`, shares no code) | §11.3 | **built** (branch `p3-verifier`): its own `expand_message_xmd`, generators and §9.2 self-check (RFC 9380 K.3, RFC 9496 vectors, golden B 1–2), §11.1/§11.2 strict parser, RFC 9162 inclusion check, §9.5 proof check, `verify_strict`, the eight §11.3 steps naming the failed step; anchors JSON (DB-85, G-24); CLI `sever-verify <cert> --anchors FILE`. 7 tests: the model's honest certificates (d = 384 golden B 6, d = 16) accepted; all 56 attack variants AT-1…AT-20 (`golden/p3_attacks.json`, written by the model with the step it rejects each at) rejected at the model's step; every single-byte change rejected; E2E-3.7. E2E-3.1…3.3 in `tests/e2e_p3/test_p3_e2e.py`: engine certificates made through the SDK verify in a separate process with the database moved away. Architecture test: no engine code. PR3-V01…V28, PR3-E01…E04, PR3-A02 |
 | 9 | `audit/` (`sever-audit`, copies verifier code) | §11.3 | **built** (branch `p3-audit`): DB-86 (closes G-25): each leaf's placement (group joined or left, a flush's new group) beside its hash and in `LOG_LEAF`, recovered like the hashes; `export-log` / `Database.export_log()`; `audit/` (own workspace, nine verifier files copied byte for byte, checked by an architecture test) reports AF-1…AF-5 by replaying placements (each group's `C_S` = Σ members' `C_t`), RFC 9162 consistency, roots, signatures and held certificates. Oracle: the model auditor `sever_refmodel_certs.audit` and `golden/p3_audit.json` (honest log + one export per fault, the kinds the model reports). E2E-3.4 (a cohort `delete_user` audits clean) and E2E-3.6 (a removed deletion leaf is reported) through the SDK and both binaries. Found on the way: a flushed insert's placement must be the new group. PR3-L20, L21, P14, R09, U01…U06, A03, E05, E06; six older patches regenerated after the format change |
 | 10 | `docs/SOUNDNESS.md` (extractor and simulator as tests) | §9 | **built** (branch `p3-soundness`): completeness, special soundness (extractor), honest-verifier zero knowledge (simulator), what the hedged nonces add, limits; each claim backed by a test against the engine's own prover and verifier (`p3_crypto_soundness_*`; the Σ-equation factored out as `posk::equation_holds`); an architecture test checks every cited test exists. PR3-C33…C35; PR3-C21 regenerated |
-| 11 | demo `sever-demo-p3 receipt` (DB-69 pattern), gates P3-T1…T12, measure P3-T13, proof spike | Build 3-4 §1.9–1.11 | **in progress** (branch `p3-gates`): traceability 102/102; demo `scripts/p3-demo.sh` (SDK, `sever-verify --explain` in a separate directory, flipped byte REJECT, chained `delete_user`, `sever-audit`; nq-10k run clean); gate kit `sever-crashkit-p3` (campaign P3-T4, replay P3-T5, attacks P3-T1/T2, measure P3-T13), `gates p3-crash|p3-replay|p3-attacks|p3-measures|p3-fuzz|p3-coverage|p3-checks|p3-spikes`, `sever-verify --batch`, fuzz crates `fuzz-p3`, `verifier/fuzz`, `audit/fuzz`, proof spike `spikes/p3-proof` (AEAD sealer seals r_t and r_agg, a rotation stub beside LogParticipant). DB-87. Gate runs next |
+| 11 | demo `sever-demo-p3 receipt` (DB-69 pattern), gates P3-T1…T12, measure P3-T13, proof spike | Build 3-4 §1.9–1.11 | **built**; interim gate runs on the laptop pass (ledger); the final run of every gate is the VM's (DB-94). Built on `p3-gates` (now merged into `main`): traceability 102/102; demo `scripts/p3-demo.sh` (SDK, `sever-verify --explain` in a separate directory, flipped byte REJECT, chained `delete_user`, `sever-audit`; nq-10k run clean); gate kit `sever-crashkit-p3` (campaign P3-T4, replay P3-T5, attacks P3-T1/T2, measure P3-T13), `gates p3-crash|p3-replay|p3-attacks|p3-measures|p3-fuzz|p3-coverage|p3-checks|p3-spikes`, `sever-verify --batch`, fuzz crates `fuzz-p3`, `verifier/fuzz`, `audit/fuzz`, proof spike `spikes/p3-proof` (AEAD sealer seals r_t and r_agg, a rotation stub beside LogParticipant). DB-87. Gate runs next |
 
 **Testing for Part 3:** CLAUDE.md §6.3 (oracles, proofs) and §6.4 (fair testing). Fair testing per
 module and per part: clean-room tester (Opus) + triage and oracle audit (Sonnet); blind bugs from
@@ -359,19 +359,11 @@ or resumes it), then `p2-measures` (P2-T11, once).
 | `sever-txn` | built | EP-6 `Sealer` + `PlaintextSealer`, EP-7 `TxnParticipant`, EP-9 `Clock` (`SystemClock`, `SimClock`), each with a contract suite that wrong implementations fail; `StoredExtension` (codec beside the frozen EP-1); ChangeSet → after-images (put, move-last, drain/re-wrap, headers incl. holding count, counters, passage refs); decode + synthetic ChangeSet rebuild; the §5.4 protocol with step hooks; SB-15 red |
 | `sever-engine` | built | `Engine<E, S>` + participants: create (MANIFEST last), recovery (checkpoint + WAL replay + participants), index rebuilt through a synthetic ChangeSet, full invariant check (INV-4, 6, 7, 8, §9.7 scrambled IDs, frozen layout, payload refs), insert/delete/delete_user/search/checkpoint/drop/stats, writer mutex + RwLock, Abort/Poison policy, platform (statfs, flock via rustix), test hooks (step hook, canonical state). Crash at every op × 3 policies + double crash vs a model index: PASS. SB-12…SB-15 red through the engine. WAL recovery now refuses a damaged committed record instead of dropping it (SB-11 red there too) |
 | `sever-crashkit`, `sever_refmodel_durable` | built | Python oracle: 20,000-op stream (P1 inserts, cohort `delete_user`s, singles, re-inserts) and a canonical state digest per op; golden small oracle (`golden/p2_oracle_small.jsonl`) matched by the engine byte for byte. Crash kit: generic KV campaign (EX-1 step 1), index campaign (every VFS op of every op, 512-byte tears of sampled WAL writes, random points, double crash), retry checks; `SimVfs` made copy-on-write (fork cost per file, not per byte). nq-10k timing: ~8 ms per op, ~0.15 s per crash point → ~3.5 h per seed |
-| `sever-p2` | built (demo pending) | composition root (platform check, lock, PosixVfs, abort policy, SECRETS 0600), `sever-db-p2` CLI (JSON in/out) |
-| `sever_testkit_p2` | started | `gates p2-crash` (P2-T1 … P2-T3) — **running** since 7 Oct 19:26 UTC on commit 682bfac (5 seeds, 3 jobs, ~7 h) |
+| `sever-p2` | built | composition root (platform check, lock, PosixVfs, abort policy, SECRETS 0600), `sever-db-p2` CLI (JSON in/out) |
+| `sever_testkit_p2` | built | gate runners P2-T1 … P2-T11, `oracle_check`, `proofs` |
 | `sever-demo-p2` | built | synthetic: all four crashes (sim before/after commit, SIGKILL before/after commit) all-or-nothing, survivors check passes |
 | `sever-py-p2` / `sever_db_p2` | built | PyO3 0.29.2 (abi3, cdylib only), typed SDK (`Database`, retry semantics), stub for mypy |
 | E2E-2.1 … 2.8, L13 Part 2 | built | `tests/e2e/test_p2_e2e.py` (2.1 nq-10k marked slow; 2.5 via fsync fault injection, aborts with SIGABRT; 2.6 via mkfs.ext4 -d + debugfs, DB-70); `tests/architecture/test_architecture_p2.py` (Vfs-only I/O, no mmap, freeze guard) |
-| `sever-wal` | | §12.3; SB-11, SB-13 |
-| `sever-appendstore` | | EP-8, §14.8 |
-| `sever-checkpoint` | | §12.4, §15.6; SB-12 |
-| `sever-txn` | | EP-6, EP-7, EP-9, §12.5; SB-14, SB-15 |
-| `sever-engine` | | §12.7, §12.9, §15.7, §16.1 |
-| `sever-crashkit`, `sever_refmodel_durable` | | EX-1 campaign, durable oracle |
-| `sever-p2`, `sever-py-p2` / `sever_db_p2` | | composition root, CLI, SDK |
-| Part 2 `spec_trace` | | the frozen tool knows only Part 1's sections; Part 2 needs a new module that reuses it |
 
 ## Part 1 gates (Build §4.8) — status from the ledger
 
@@ -400,9 +392,9 @@ report and the rebuilt artefact identical apart from timing); the freeze manifes
 | Part | Status | Tag | Notes |
 |---|---|---|---|
 | 1 The Idea | **frozen** 6 Oct 2026 | `part-1-frozen` | All Part 1 gaps closed (G-1, G-5 … G-12) |
-| 2 The Database | next | | Build §5; follow-up from P1-T11: a test with two inserts into one group in one change set |
-| 3 The Receipt | **preview** built in the demo | | Resolve G-3 (DB-51) and G-4 |
-| 4 The Erasure | not started | | Apply G-2 |
+| 2 The Database | **frozen** 8 Oct 2026; errata E-1, E-2 | `part-2-frozen-e1`, `part-2-frozen-e2` | E-3 … E-6 after v1.0 (DB-103, L-28) |
+| 3 The Receipt | **built**; interim gates pass | | Waits for the VM run, a fair-testing PASS (FT-10), `scripts/freeze.sh 3` |
+| 4 The Erasure | **built**; no gate in the ledger yet | | Waits for the VM run, a fair-testing PASS (FT-10), `scripts/freeze.sh 4`; G-2 closed (DB-105) |
 
 ## Part 1 modules (Build §4.4)
 
@@ -459,6 +451,12 @@ report and the rebuilt artefact identical apart from timing); the freeze manifes
 
 ## Session log
 
+- **22 Oct 2026**: review of everything open. Before v1.0, only owner steps are left: the VM run
+  (no P4-T entries in the ledger yet; P3's are interim), the fair-testing PASS runs for Parts 3 and 4
+  (`FAIRNESS_P3/P4.md` are FAIL only for the missing mutants PASS, DB-75), `freeze.sh 3` and `4`,
+  and the tags. Closed the last open gap, G-2 (DB-105, spec §13.2; docs only, the code already
+  padded the group ID). Refreshed the stale tables of this file; deleted the merged remote branches
+  `bughunt-2026-10` and `p4-fix-delete-checkpoint`.
 - **21 Oct 2026**: the owner asked for everything except the VM. Merged `p4-fix-delete-checkpoint`
   (DB-101) and `bughunt-2026-10` (DB-102, BH-5); Part 3's root takes Part 4's stop-serving guard
   (DB-103, PR3-F06/F07); errata E-4 … E-6 deferred to E-3 after v1.0 (L-28); P4-T3 reopens after
