@@ -1043,6 +1043,50 @@ part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the fr
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
 
+#### DB-106 — SEVER-DB Studio: one desktop demo of the whole project replaces `demo/` and `demo-engine/` (22 October 2026)
+
+**Decision.** A top-level `studio/` holds one desktop application, SEVER-DB Studio. It is built
+with PySide6 and pyqtgraph, in its own uv environment with its own tests, and shows every claim of
+the project to a reviewer:
+- the stored NQ passages as a map of their groups;
+- the reviewer's own records, encoded by the pinned MiniLM revision as ONNX (fetched once and
+  checked by SHA-256; cosine > 0.9999 with the dataset's vectors);
+- routing, the holding area drawn as a bucket, and its flush with the §7.5 ID recomputed;
+- search with real questions;
+- delete and forget, with each receipt verified and tampered offline by `sever-verify`;
+- the log and `sever-audit`, the disk search, restart and SIGKILL;
+- each part's own proof program run and read back (`sever-demo idea`, `sever-demo-p2 durable`,
+  `sever_demo_p3.receipt`, `scripts/demo-p4.sh`);
+- the sabotage register (one SB item planted and run live);
+- the generated evidence.
+
+A 33-row checklist is ticked only by live checks, and story mode tells the project in 17 chapters.
+The session report holds verdicts and numbers only. Studio goes only through the public SDK, the
+separate checkers and the parts' programs. It is owned by no part and is in no freeze manifest, and
+nothing depends on it. `demo/` (DB-56) and `demo-engine/` (DB-97) are removed; their history stays
+in git. The per-part demos stay: Parts 1 and 2's are frozen, and Parts 3 and 4's are named by their
+exit gates.
+
+**Why.** The owner asked for one native demo, not a web page, that can show every feature to
+reviewers, built new rather than on the earlier demo code. Two demo folders told overlapping parts
+of the story, and neither showed the per-part proofs or the evidence.
+
+**Rejected.**
+- Keeping `demo-engine/` beside Studio: two tours of one build would drift apart.
+- Studio in the repository's `.venv`: Qt and the encoder are not the engine's dependencies, and
+  `uv sync` there removes the SDK's native module.
+- Folding the per-part programs into Studio: Parts 1 and 2 are frozen, and the exit gates name the
+  programs of Parts 3 and 4.
+- A sentence-transformers install for free text: about 1 GB of torch for one model, against
+  90 MB of ONNX.
+
+**Consequence.** Spec §19.2 lists `studio/` (G-44). CLAUDE.md §5 and §9, README "Layout" and
+`.gitignore` follow, and DB-56 and DB-97 are superseded for their folders. Building Studio found
+one bug in its own backend, not the engine: an insert must save the application's index before
+any reopen reloads it, which its crash test caught. It also found that Part 4's erase program counts
+what the SB-24 scan decrypts but does not print the reconstructed vector next to the original, as
+Build 3-4 §2.11 step 4 describes; this is recorded for the owner in `docs/PROGRESS.md`.
+
 #### DB-105 — Every §13.2 associated data carries the zero-padded group ID (22 October 2026)
 
 **Decision.** In spec §13.2, the wrapped bucket key's and `S ‖ r_agg`'s associated data name
@@ -2481,6 +2525,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **22 October 2026 — SEVER-DB Studio.** DB-106 (one desktop demo of the whole project in
+  `studio/`; `demo/` and `demo-engine/` removed; closes G-44). Specification sections touched:
+  §19.2.
 - **22 October 2026 — The group ID's width in the AD.** DB-105 (§13.2's three group-bound
   associated data all carry `group_id(32, zero-padded)`; closes G-2). Specification sections
   touched: §13.2.

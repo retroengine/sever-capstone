@@ -1,0 +1,37 @@
+SEVER-DB Part 4: the erasure
+
+Inserted 6 records (encrypted, d = 16); the person to forget owns ["note-1", "note-4"].
+
+1. Positive control: the scanner RECOVERS note-1's vector on the image (67 records, 5 key slots carved).
+
+2. delete_user ["note-1", "note-4"]:
+   certificate 1741 bytes, database_lsn 6: operator signature and deletion proof verify (C_S pre → post).
+   certificate 1709 bytes, database_lsn 7: operator signature and deletion proof verify (C_S pre → post).
+
+3. Checkpoint, shut down, scan the image for the deleted records: 0 findings (control note-0 still recovered).
+
+4. The leak, made visible: run `scripts/demo-p4.sh` (it builds the SB-24 variant) to see
+   the same scan decrypt the deleted records when group-key rotation is skipped.
+
+5. Crash during phase C (after COMMIT, acknowledged: false); on restart 3 records remain and
+   recovery erased the old key. New scan: 0 findings.
+
+------------------------------------------------------------------------------------------
+
+SEVER-DB Part 4: the erasure (SB-24 build: group-key rotation skipped)
+
+Inserted 6 records (encrypted, d = 16); the person to forget owns ["note-1", "note-4"].
+
+1. Positive control: the scanner RECOVERS note-1's vector on the image (67 records, 5 key slots carved).
+
+2. delete_user ["note-1", "note-4"]:
+   certificate 1741 bytes, database_lsn 6: operator signature and deletion proof verify (C_S pre → post).
+   certificate 1709 bytes, database_lsn 7: operator signature and deletion proof verify (C_S pre → post).
+
+3. Checkpoint, shut down, scan the image for the deleted records: 7 findings: 2 deleted_payload, 2 deleted_record_key, 3 retired_accumulator (control note-0 still recovered).
+
+4. The leak, made visible: with group-key rotation skipped the live key still opens
+   what the deletion should have destroyed; the deleted vectors are decrypted above.
+
+5. Crash during phase C (after COMMIT, acknowledged: false); on restart 3 records remain and
+   recovery erased the old key. New scan: 11 findings: 3 deleted_payload, 3 deleted_record_key, 5 retired_accumulator.

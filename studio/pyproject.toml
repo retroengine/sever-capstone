@@ -1,0 +1,46 @@
+# SEVER-DB Studio (DB-106): the desktop demo of the whole project, in its own environment so the
+# repository's .venv and uv.lock stay as they are. The SDK's native module is built into this
+# environment by `studio/studio.sh setup` (maturin develop of crates/sever-py); the SDK package
+# itself is python/sever_db, reached through PYTHONPATH.
+[project]
+name = "sever-studio"
+version = "0.1.0"
+requires-python = "==3.13.*"
+dependencies = [
+    "numpy==2.5.*",
+    "scikit-learn==1.9.*",
+    "pyarrow==25.0.*",
+    "pyside6",
+    "pyqtgraph",
+    "onnxruntime",
+    "tokenizers",
+]
+
+[dependency-groups]
+dev = ["pytest", "pytest-qt", "ruff", "mypy", "maturin==1.15.*"]
+
+[tool.uv]
+package = false
+link-mode = "copy"
+
+# The repository's code-quality settings (Build §1.2).
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["work"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "PT"]
+allowed-confusables = ["ℓ", "–", "−", "×"]
+
+[tool.mypy]
+strict = true
+python_version = "3.13"
+mypy_path = "../python:."
+
+[[tool.mypy.overrides]]
+module = ["sklearn.*", "pyarrow.*", "pyqtgraph.*", "onnxruntime.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
