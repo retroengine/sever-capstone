@@ -1,151 +1,84 @@
-"""The window: screens on the left, the checklist on the right, story mode across the top."""
+"""The window: an icon rail on the left, a slim top bar, one section at a time; the checklist slides
+in from the right, the tour sits at the bottom, messages pop up as one-line toasts."""
 
 from collections.abc import Callable
 from functools import partial
 from typing import Any
 
+from PySide6.QtCore import QSize, QTimer
 from PySide6.QtGui import QCloseEvent, QKeySequence, QResizeEvent, QShortcut
 from PySide6.QtWidgets import (
+    QApplication,
     QButtonGroup,
     QFrame,
     QHBoxLayout,
-    QLabel,
     QMainWindow,
     QPushButton,
-    QScrollArea,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from ..actions import Studio
-from ..checklist import BY_KEY, ROWS
+from ..checklist import BY_KEY
 from . import theme
-from .screen_disk import CrashScreen, DiskScreen
-from .screen_map import MapScreen
-from .screen_proofs import EvidenceScreen, ProofsScreen, SabotageScreen
-from .screen_receipt import LogScreen, ReceiptScreen
-from .screen_start import RulesScreen, StartScreen
-from .story import CHAPTERS
-from .widgets import Toast, badge, button, label, tick, tick_colour
+from .drawer import Drawer
+from .explore import Explore
+from .home import Home
+from .hood import Hood
+from .icons import icon
+from .live import Live
+from .proof import ProofSection
+from .receipts import Receipts
+from .tour import Chapter, TourBar
+from .widgets import Spinner, Toast, button, chip, label
 from .worker import Worker
 
-SCREENS = [
-    ("start", "Start"),
-    ("map", "Map"),
-    ("rules", "Refusals"),
-    ("receipt", "Receipt"),
-    ("log", "Log"),
-    ("disk", "Disk"),
-    ("crash", "Crash"),
-    ("proofs", "Proofs"),
-    ("sabotage", "Sabotage lab"),
-    ("evidence", "Evidence"),
+SECTIONS = [
+    ("home", "home", "Home"),
+    ("explore", "map", "Explore the map  ( / to search)"),
+    ("receipts", "receipt", "Receipts"),
+    ("live", "spark", "Live: log tree, attack lab, kill a delete, float vs exact"),
+    ("hood", "engine", "Under the hood: log, disk, crash, bad input"),
+    ("proof", "shield", "Proof: the four parts, sabotage, evidence"),
 ]
-#: checklist screen names -> the window's screen keys
-SCREEN_OF = {
-    "Start": "start",
-    "Map": "map",
-    "Bucket": "map",
-    "Search": "map",
-    "Your details": "map",
-    "Refusals": "rules",
-    "Receipt": "receipt",
-    "Log": "log",
-    "Disk": "disk",
-    "Crash": "crash",
-    "Proofs": "proofs",
-    "Sabotage": "sabotage",
-    "Evidence": "evidence",
+#: checklist row -> (section, tab)
+WHERE = {
+    **dict.fromkeys(("data", "startup", "encoder", "clusters"), ("home", None)),
+    **dict.fromkeys(
+        (
+            "hover",
+            "search",
+            "insert",
+            "freetext",
+            "routing",
+            "unsearchable",
+            "flush",
+            "delete",
+            "absent",
+            "forget",
+        ),
+        ("explore", None),
+    ),
+    **dict.fromkeys(("verify", "tamper", "limits"), ("receipts", None)),
+    **dict.fromkeys(("log", "audit"), ("hood", "log")),
+    "disk": ("hood", "disk"),
+    **dict.fromkeys(("restart", "crash"), ("hood", "crash")),
+    **dict.fromkeys(("refusals", "retry"), ("hood", "rules")),
+    **dict.fromkeys(
+        ("exact", "ghost", "durable", "chain", "shred", "leak", "phasec"), ("proof", "parts")
+    ),
+    "sabotage": ("proof", "sabotage"),
+    "evidence": ("proof", "evidence"),
+    "climb": ("live", "tree"),
+    "attacks": ("live", "attacks"),
+    "crashdelete": ("live", "kill"),
+    "race": ("live", "race"),
 }
-
-
-class ChecklistPanel(QFrame):
-    def __init__(self, window: "MainWindow") -> None:
-        super().__init__()
-        self.setObjectName("card")
-        self.w = window
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(12, 12, 12, 12)
-        self.head = label("", "h3")
-        lay.addWidget(self.head)
-        lay.addWidget(label("Ticked only by a live check in this session.", "muted", wrap=True))
-        inner = QWidget()
-        il = QVBoxLayout(inner)
-        il.setContentsMargins(0, 0, 0, 0)
-        il.setSpacing(2)
-        self.marks: dict[str, QLabel] = {}
-        for r in ROWS:
-            row = QHBoxLayout()
-            m = QLabel("○")
-            m.setFixedWidth(18)
-            self.marks[r.key] = m
-            row.addWidget(m)
-            t = QLabel(f"{r.n}. {r.title}")
-            t.setWordWrap(True)
-            t.setToolTip(f"{r.spec} · screen: {r.screen}")
-            t.setStyleSheet("font-size: 9.5pt;")
-            row.addWidget(t, 1)
-            row.addWidget(button("show", "show", partial(self.w.show_row, r.key)))
-            box = QWidget()
-            box.setLayout(row)
-            il.addWidget(box)
-        il.addStretch(1)
-        scroll = QScrollArea()
-        scroll.setWidget(inner)
-        scroll.setWidgetResizable(True)
-        lay.addWidget(scroll, 1)
-        lay.addWidget(button("Save the session report", "", self.w.save_report))
-        self.setFixedWidth(300)
-        self.refresh()
-
-    def refresh(self) -> None:
-        c = self.w.studio.checklist
-        for key, m in self.marks.items():
-            v = c.verdicts.get(key)
-            ok = v.ok if v else None
-            m.setText(tick(ok))
-            m.setStyleSheet(f"color: {tick_colour(ok)}; font-weight: 700;")
-            if v:
-                m.setToolTip(v.detail)
-        self.head.setText(f"Checklist · {c.passed()} of {len(ROWS)} shown")
-
-
-class StoryBar(QFrame):
-    def __init__(self, window: "MainWindow") -> None:
-        super().__init__()
-        self.setObjectName("story")
-        self.w = window
-        self.i = 0
-        lay = QHBoxLayout(self)
-        lay.setContentsMargins(16, 10, 12, 10)
-        text = QVBoxLayout()
-        self.title = label("", "h3")
-        self.say = label("", wrap=True)
-        self.look = label("", "muted", wrap=True)
-        text.addWidget(self.title)
-        text.addWidget(self.say)
-        text.addWidget(self.look)
-        lay.addLayout(text, 1)
-        lay.addWidget(button("◀", "", lambda: self.step(-1)))
-        lay.addWidget(button("Do it", "primary", self.do))
-        lay.addWidget(button("Next ▶", "", lambda: self.step(1)))
-        self.hide()
-
-    def show_chapter(self) -> None:
-        ch = CHAPTERS[self.i]
-        self.title.setText(f"{self.i + 1} / {len(CHAPTERS)} · {ch.title}")
-        self.say.setText(ch.say)
-        self.look.setText("Look for: " + ch.look)
-        self.w.go(ch.screen)
-
-    def step(self, d: int) -> None:
-        self.i = max(0, min(len(CHAPTERS) - 1, self.i + d))
-        self.show_chapter()
-
-    def do(self) -> None:
-        for key in CHAPTERS[self.i].rows:
-            self.w.show_row(key, story=True)
+SAMPLE = (
+    "Tour visitor",
+    "I am visiting the SEVER-DB demo and would like to be forgotten afterwards.",
+)
 
 
 class MainWindow(QMainWindow):
@@ -154,234 +87,306 @@ class MainWindow(QMainWindow):
         self.studio = studio
         self.worker = Worker()
         self.receipts_of: dict[int, tuple[str, str]] = {}
+        self.errors: list[str] = []
         self.setWindowTitle("SEVER-DB Studio")
-        self.resize(1680, 1000)
         root = QWidget()
         root.setObjectName("root")
         self.setCentralWidget(root)
-        outer = QVBoxLayout(root)
-        outer.setContentsMargins(14, 12, 14, 12)
-        outer.setSpacing(10)
+        outer = QHBoxLayout(root)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
 
-        top = QHBoxLayout()
-        title = label("SEVER-DB Studio", "h2")
-        top.addWidget(title)
-        c = studio.corpus
-        top.addWidget(
-            badge(
-                f"{'Natural Questions' if studio.data == 'nq' else 'offline fixture'} · d = {c.d} ·"
-                f" {len(studio.backend.index.records):,} records",
+        rail = QFrame()
+        rail.setObjectName("rail")
+        rail.setFixedWidth(60)
+        rl = QVBoxLayout(rail)
+        rl.setContentsMargins(8, 12, 8, 12)
+        rl.setSpacing(6)
+        self.nav: dict[str, QPushButton] = {}
+        group = QButtonGroup(self)
+        for key, ico, tip in SECTIONS:
+            b = QPushButton()
+            b.setObjectName("rail")
+            b.setIcon(icon(ico, theme.TEXT, 22))
+            b.setIconSize(QSize(22, 22))
+            b.setToolTip(tip)
+            b.setCheckable(True)
+            b.clicked.connect(partial(self.go, key))
+            group.addButton(b)
+            rl.addWidget(b)
+            self.nav[key] = b
+        rl.addStretch(1)
+        rl.addWidget(button("A−", "ghost", lambda: self.set_scale(-0.1), tip="Smaller text"))
+        rl.addWidget(button("A+", "ghost", lambda: self.set_scale(0.1), tip="Larger text"))
+        rl.addWidget(button("", "ghost", self.toggle_palette, "eye", "Colour-blind-safe colours"))
+        outer.addWidget(rail)
+
+        column = QVBoxLayout()
+        column.setContentsMargins(0, 0, 0, 0)
+        column.setSpacing(0)
+        top = QFrame()
+        top.setObjectName("topbar")
+        tl = QHBoxLayout(top)
+        tl.setContentsMargins(16, 8, 12, 8)
+        tl.setSpacing(10)
+        tl.addWidget(label("SEVER-DB Studio", "strong"))
+        tl.addWidget(
+            chip(
+                f"{'Natural Questions' if studio.data == 'nq' else 'offline fixture'} · "
+                f"{len(studio.backend.index.records):,} records",
                 theme.ACCENT,
             )
         )
         if studio.backend.refused:
-            top.addWidget(badge("development override in use", theme.WARN))
-        top.addStretch(1)
-        self.busy = badge("working…", theme.WARN)
-        self.busy.hide()
-        top.addWidget(self.busy)
-        self.list_btn = button("Checklist", "", self.toggle_list)
-        self.list_btn.setCheckable(True)
-        self.list_btn.setChecked(True)
-        top.addWidget(self.list_btn)
-        self.story_btn = button("Story mode", "", self.toggle_story)
-        self.story_btn.setCheckable(True)
-        top.addWidget(self.story_btn)
-        outer.addLayout(top)
+            dev = chip("development override", theme.WARN)
+            dev.setToolTip(studio.backend.refused)
+            tl.addWidget(dev)
+        tl.addStretch(1)
+        self.spinner = Spinner()
+        tl.addWidget(self.spinner)
+        self.progress = button("", "pill", self.toggle_drawer, "list", "The checklist")
+        tl.addWidget(self.progress)
+        tl.addWidget(button("Tour", "", self.start_tour, "play", "The guided tour"))
+        column.addWidget(top)
 
-        self.story = StoryBar(self)
-        outer.addWidget(self.story)
-
-        body = QHBoxLayout()
-        body.setSpacing(12)
-        nav = QVBoxLayout()
-        nav.setSpacing(2)
-        self.nav_group = QButtonGroup(self)
-        self.nav: dict[str, QPushButton] = {}
-        for key, name in SCREENS:
-            b = button(name, "nav", partial(self.go, key))
-            b.setCheckable(True)
-            self.nav_group.addButton(b)
-            self.nav[key] = b
-            nav.addWidget(b)
-        nav.addStretch(1)
-        nav.addWidget(label("F11: full screen", "muted"))
-        navw = QWidget()
-        navw.setLayout(nav)
-        navw.setFixedWidth(140)
-        body.addWidget(navw)
-
+        self.stage = QWidget()
+        sl = QVBoxLayout(self.stage)
+        sl.setContentsMargins(0, 0, 0, 0)
         self.stack = QStackedWidget()
-        self.screens: dict[str, Any] = {
-            "start": StartScreen(self),
-            "map": MapScreen(self),
-            "rules": RulesScreen(self),
-            "receipt": ReceiptScreen(self),
-            "log": LogScreen(self),
-            "disk": DiskScreen(self),
-            "crash": CrashScreen(self),
-            "proofs": ProofsScreen(self),
-            "sabotage": SabotageScreen(self),
-            "evidence": EvidenceScreen(self),
-        }
-        for key, _ in SCREENS:
-            w = self.screens[key]
-            if key in ("start", "rules", "log", "disk", "crash", "proofs", "evidence"):
-                sc = QScrollArea()
-                sc.setWidget(w)
-                sc.setWidgetResizable(True)
-                self.stack.addWidget(sc)
-                self._wrapped = getattr(self, "_wrapped", {})
-                self._wrapped[key] = sc
-            else:
-                self.stack.addWidget(w)
-        body.addWidget(self.stack, 1)
-        self.panel = ChecklistPanel(self)
-        body.addWidget(self.panel)
-        outer.addLayout(body, 1)
+        sl.addWidget(self.stack)
+        column.addWidget(self.stage, 1)
+        outer.addLayout(column, 1)
 
-        self.toaster = Toast(root)
-        self.worker.busy_changed.connect(self.busy.setVisible)
+        self.sections: dict[str, Any] = {
+            "home": Home(self, self.start_tour),
+            "explore": Explore(self),
+            "receipts": Receipts(self),
+            "live": Live(self),
+            "hood": Hood(self),
+            "proof": ProofSection(self),
+        }
+        for key, _, _ in SECTIONS:
+            self.stack.addWidget(self.sections[key])
+
+        self.toaster = Toast(self.stage)
+        self.tour = TourBar(self.stage, self._tour_go, self._tour_do)
+        self.drawer = Drawer(self.stage, studio.checklist, self.show_row, self.save_report)
+        self.worker.busy_changed.connect(self.spinner.run)
+
         QShortcut(QKeySequence("F11"), self, self.toggle_full)
+        QShortcut(QKeySequence("/"), self, self._slash)
+        QShortcut(QKeySequence("N"), self, self._next_chapter)
+        QShortcut(QKeySequence("Esc"), self, self._escape)
         self.current = ""
-        self.go("start")
+        self.changed()
+        self.go("home")
 
     # -- the Host protocol ------------------------------------------------------------------------
 
     def toast(
         self,
         text: str,
-        colour: str = theme.ACCENT,
+        ok: bool | None = True,
         action: str = "",
         on: Callable[[], None] | None = None,
     ) -> None:
-        self.toaster.pop(text, colour, action, on)
+        self.toaster.pop(text, ok, action, on)
 
     def error(self, message: str) -> None:
-        self.toast(f"Error: {message}", theme.BAD)
+        self.errors.append(message)
+        self.toast(message.split("\n")[0][:160], False)
         self.changed()
 
     def changed(self) -> None:
-        self.panel.refresh()
+        self.drawer.refresh()
+        self.progress.setText(f" {self.studio.checklist.passed()}/{len(BY_KEY)}")
 
-    def go(self, screen: str, **kw: Any) -> None:
-        w = self.screens[screen]
-        holder = getattr(self, "_wrapped", {}).get(screen, w)
-        self.stack.setCurrentWidget(holder)
-        self.nav[screen].setChecked(True)
-        if screen != self.current or kw:
-            w.arrive(**kw)
-        self.current = screen
+    def go(self, section: str, tab: str | None = None, **kw: Any) -> None:
+        w = self.sections[section]
+        self.stack.setCurrentWidget(w)
+        self.nav[section].setChecked(True)
+        if section != self.current or tab or kw:
+            w.arrive(tab=tab, **kw) if section in ("hood", "proof", "live") else w.arrive(**kw)
+        self.current = section
 
     # -- the checklist ----------------------------------------------------------------------------
 
-    def show_row(self, key: str, story: bool = False) -> None:
-        """Goes to the row's screen and runs its live check (or says what to do there)."""
-        row = BY_KEY[key]
-        screen = SCREEN_OF[row.screen]
-        s = self.screens
-        m: MapScreen = s["map"]
-        self.go(screen)
+    def show_row(self, key: str, tour: bool = False) -> None:
+        """Goes to the row's place and runs its live check (or says what to do there)."""
+        section, tab = WHERE[key]
+        self.go(section, tab)
+        s = self.sections
+        e: Explore = s["explore"]
+        hood, proof = s["hood"].tabs, s["proof"].tabs
         actions: dict[str, Callable[[], None]] = {
-            "data": s["start"].verify_data,
-            "startup": s["start"].show_open,
-            "encoder": s["start"].encoder,
-            "clusters": s["start"].clusters if screen == "start" else m.redraw,
-            "insert": lambda: self._focus_form(m),
-            "freetext": lambda: self._focus_form(m),
-            "routing": lambda: self._focus_form(m),
-            "flush": lambda: m.fill("flush"),
-            "unsearchable": lambda: self._waiting(m),
-            "search": lambda: self._search(m),
-            "hover": lambda: self.toast(
-                "Hover any point on the map: its card opens.", theme.ACCENT
-            ),
-            "delete": lambda: self._delete(m),
-            "absent": m.delete_again,
-            "forget": lambda: self._forget(m),
-            "retry": s["rules"].retry,
-            "refusals": s["rules"].refusals,
-            "verify": s["receipt"].verify,
-            "tamper": s["receipt"].tamper,
-            "limits": lambda: s["receipt"].arrive(),
-            "log": s["log"].read,
-            "audit": s["log"].audit,
-            "disk": s["disk"].scan,
-            "restart": s["crash"].restart,
-            "crash": s["crash"].crash,
-            "exact": lambda: s["proofs"].arrive(run="idea", live=None),
-            "ghost": lambda: s["proofs"].arrive(run="idea", live=None),
-            "durable": lambda: s["proofs"].arrive(run="durable", live=None),
-            "chain": lambda: s["proofs"].arrive(run="receipt", live=None),
-            "shred": lambda: s["proofs"].arrive(run="erase", live="synthetic"),
-            "leak": lambda: s["proofs"].arrive(run="erase", live="synthetic"),
-            "phasec": lambda: s["proofs"].arrive(run="erase", live="synthetic"),
-            "sabotage": s["sabotage"].run,
-            "evidence": lambda: s["evidence"].arrive(),
+            "data": s["home"].verify_data,
+            "startup": s["home"].show_startup,
+            "encoder": s["home"].encoder,
+            "clusters": s["home"].clusters,
+            "hover": self._show_any,
+            "search": lambda: self._search(e),
+            "insert": lambda: self._add(e, tour),
+            "freetext": lambda: self._add(e, tour),
+            "routing": lambda: self._add(e, tour),
+            "unsearchable": lambda: self._waiting(e),
+            "flush": lambda: e.fill("flush"),
+            "delete": lambda: self._delete(e),
+            "absent": lambda: self.when_idle(e.delete_again),
+            "forget": lambda: self._forget(e),
+            "verify": s["receipts"].verify,
+            "tamper": s["receipts"].tamper,
+            "limits": lambda: None,
+            "log": hood["log"].arrive,
+            "audit": hood["log"].audit,
+            "disk": hood["disk"].scan,
+            "restart": hood["crash"].restart,
+            "crash": hood["crash"].crash,
+            "refusals": hood["rules"].refusals,
+            "retry": hood["rules"].retry,
+            "exact": lambda: proof["parts"].arrive("idea", None),
+            "ghost": lambda: proof["parts"].arrive("idea", None),
+            "durable": lambda: proof["parts"].arrive("durable", None),
+            "chain": lambda: proof["parts"].arrive("receipt", None),
+            "shred": lambda: proof["parts"].arrive("erase", "synthetic"),
+            "leak": lambda: proof["parts"].arrive("erase", "synthetic"),
+            "phasec": lambda: proof["parts"].arrive("erase", "synthetic"),
+            "sabotage": proof["sabotage"].run,
+            "evidence": lambda: None,
+            "climb": s["live"].tabs["tree"].climb,
+            "attacks": s["live"].tabs["attacks"].run,
+            "crashdelete": s["live"].tabs["kill"].run,
+            "race": s["live"].tabs["race"].run,
         }
-        if story and key in ("ghost", "leak", "phasec"):
-            return  # the chapter's other rows already ran the same program
         actions[key]()
 
-    def _focus_form(self, m: MapScreen) -> None:
-        m.account.setFocus()
-        self.toast("Type your name and a sentence, then Add to the database.", theme.ACCENT)
+    def _show_any(self) -> None:
+        self.sections["explore"].show_any()
 
-    def _waiting(self, m: MapScreen) -> None:
+    def _add(self, e: Explore, tour: bool) -> None:
+        if tour:
+            if not e.account.text():
+                e.account.setText(SAMPLE[0])
+                e.text.setPlainText(SAMPLE[1])
+            e.add_panel.show()
+            e.place()
+            e.add()
+        else:
+            e.add_panel.show()
+            e.place()
+            e.account.setFocus()
+
+    def _waiting(self, e: Explore) -> None:
         if not self.studio.backend.index.holding:
-            m.fill("one")
-        m.search_waiting()
+            e.fill("one")
+        e.search_waiting()
 
-    def _search(self, m: MapScreen) -> None:
-        if not m.query.text().strip():
-            m.query.setText("#12")
-        m.ask()
-        m.quality()
+    def _search(self, e: Explore) -> None:
+        if not e.query.text().strip():
+            e.query.setText("#12")
+        e.ask()
+        e.quality()
 
-    def _delete(self, m: MapScreen) -> None:
+    def _delete(self, e: Explore) -> None:
         mine = [r for r, rec in self.studio.backend.index.records.items() if rec.mine]
-        rid = m.map.selected or (mine[-1] if mine else None)
+        rid = e.map.selected or (mine[-1] if mine else None)
         if rid is None:
-            self.toast("Click a point on the map, then Delete this record.", theme.ACCENT)
+            self.toast("Click a dot first, then Delete.", None)
             return
-        m.delete([rid], "delete")
+        e.delete([rid], "delete")
 
-    def _forget(self, m: MapScreen) -> None:
-        if m.map.selected:
-            m.forget_selected()
+    def _forget(self, e: Explore) -> None:
+        if e.map.selected:
+            e.forget_selected()
             return
         accounts = self.studio.backend.accounts()
-        several = [a for a, ids in accounts.items() if len(ids) >= 3]
+        several = sorted(
+            (a for a, ids in accounts.items() if len(ids) >= 3), key=lambda a: -len(accounts[a])
+        )
         if not several:
-            self.toast("Click a point on the map, then Forget the account.", theme.ACCENT)
+            self.toast("Click a dot first, then Forget.", None)
             return
-        a = sorted(several, key=lambda a: -len(accounts[a]))[0]
-        m.delete(accounts[a], "forget", a)
+        e.delete(accounts[several[0]], "forget", several[0])
+
+    def when_idle(self, fn: Callable[[], None]) -> None:
+        """Runs ``fn`` once the worker and the map's animations are done (a step that needs the
+        result of the one before it)."""
+        e: Explore = self.sections["explore"]
+        if self.worker.pending or e.map._anims:
+            QTimer.singleShot(100, lambda: self.when_idle(fn))
+        else:
+            fn()
+
+    # -- the tour ---------------------------------------------------------------------------------
+
+    def start_tour(self) -> None:
+        self.drawer.close_drawer()
+        self.tour.start()
+
+    def _tour_go(self, ch: Chapter) -> None:
+        self.go(ch.section, ch.tab)
+
+    def _tour_do(self, ch: Chapter) -> None:
+        done = set()
+        for key in ch.rows:
+            run = {
+                "ghost": "exact",
+                "leak": "shred",
+                "phasec": "shred",
+                "freetext": "insert",
+                "routing": "insert",
+            }.get(key, key)
+            if run not in done:
+                done.add(run)
+                self.show_row(run, tour=True)
 
     # -- the rest ---------------------------------------------------------------------------------
 
-    def toggle_story(self) -> None:
-        on = self.story_btn.isChecked()
-        self.story.setVisible(on)
-        if on:
-            self.story.show_chapter()
+    def _next_chapter(self) -> None:
+        if self.tour.isVisible():
+            self.tour.step(1)
 
-    def toggle_list(self) -> None:
-        self.panel.setVisible(self.list_btn.isChecked())
+    def toggle_drawer(self) -> None:
+        self.drawer.toggle()
+
+    def _slash(self) -> None:
+        self.go("explore")
+        self.sections["explore"].focus_search()
+
+    def _escape(self) -> None:
+        self.drawer.close_drawer()
+        if self.current == "explore":
+            e: Explore = self.sections["explore"]
+            e.on_click(None)
+            e.clear_search()
+            e.add_panel.hide()
+
+    def set_scale(self, d: float) -> None:
+        theme.scale = round(max(0.8, min(1.6, theme.scale + d)), 1)
+        app = QApplication.instance()
+        if isinstance(app, QApplication):
+            app.setFont(theme.font())
+            app.setStyleSheet(theme.stylesheet())
+        self.sections["explore"].place()
+
+    def toggle_palette(self) -> None:
+        theme.safe_palette = not theme.safe_palette
+        self.sections["explore"].map.recolour()
+        self.toast("Colour-blind-safe colours " + ("on" if theme.safe_palette else "off"), None)
 
     def toggle_full(self) -> None:
         self.showNormal() if self.isFullScreen() else self.showFullScreen()
 
     def save_report(self) -> None:
         path = self.studio.report()
-        self.toast(f"Session report saved: {path.name} (numbers and verdicts only)", theme.OK)
+        self.toast(f"Report saved: {path.name}", True)
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 (Qt's name)
         super().resizeEvent(event)
+        self.drawer.place()
+        if self.tour.isVisible():
+            self.tour.place()
         if self.toaster.isVisible():
-            self.toaster.move(
-                self.width() - self.toaster.width() - 24, self.height() - self.toaster.height() - 24
-            )
+            self.toaster.place()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 (Qt's name)
         self.worker.wait()

@@ -101,14 +101,29 @@ def load_nq(root: Path, rows: int, seed: int = 42) -> Corpus:
     )
 
 
+#: Made-up records after the fixture's 240, so the live demos never run out of spare records.
+FIXTURE_EXTRA = 2000
+
+
 def load_fixture(root: Path) -> Corpus:
-    """The fixture's 240 unit vectors, seven made-up accounts; question i is record 20·i's own
+    """The fixture's 240 unit vectors, then ``FIXTURE_EXTRA`` made-up ones (synthetic, seed 42):
+    half close to a fixture vector (they join its group), half in random directions (they fit no
+    group, so they fill the holding area). Seven made-up accounts; question i is record 20·i's own
     vector, so its answer is that record."""
     doc = json.loads((root / FIXTURE_VECTORS).read_text("utf-8"))
     raw = b"".join(bytes.fromhex(h) for h in doc["ref"] + doc["live"])
-    vectors = np.frombuffer(raw, dtype="<f4").reshape(-1, 16).astype(np.float32)
-    ids = [f"rec-{i:03d}" for i in range(len(vectors))]
-    picks = list(range(0, len(vectors), 20))
+    base = np.frombuffer(raw, dtype="<f4").reshape(-1, 16).astype(np.float64)
+    rng = np.random.default_rng(42)
+    near = base[rng.integers(0, len(base), FIXTURE_EXTRA // 2)]
+    near = near + rng.normal(0, 0.02, near.shape)
+    far = rng.normal(0, 1, (FIXTURE_EXTRA - len(near), 16))
+    extra = np.concatenate([near, far])
+    extra = extra[rng.permutation(len(extra))]
+    extra /= np.linalg.norm(extra, axis=1, keepdims=True)
+    vectors = np.concatenate([base, extra]).astype(np.float32)
+    ids = [f"rec-{i:03d}" for i in range(len(base))]
+    ids += [f"syn-{i:04d}" for i in range(len(extra))]
+    picks = list(range(0, len(base), 20))
     return Corpus(
         name="synthetic",
         d=16,

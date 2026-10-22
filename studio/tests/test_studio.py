@@ -6,14 +6,11 @@ independent computation in the test, never from the code under test.
 
 import hashlib
 import json
-import os
 from collections.abc import Iterator
 from pathlib import Path
 
 import numpy as np
 import pytest
-
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from sever_studio import evidence, proofs, sabotage
 from sever_studio.actions import Studio
@@ -191,10 +188,12 @@ def test_studio_every_row_can_be_ticked(studio: Studio) -> None:
     shown = {k for k, v in studio.checklist.verdicts.items() if v.ok}
     missing = {r.key for r in ROWS} - shown
     # the erase proof and the sabotage lab build release binaries: covered by their own tests
-    assert missing <= {"shred", "leak", "phasec", "sabotage"}, missing
+    # these build release binaries or run second processes: covered by test_live.py and full tier
+    slow = {"shred", "leak", "phasec", "sabotage", "climb", "attacks", "crashdelete", "race"}
+    assert missing <= slow, missing
     report = studio.report()
     doc = json.loads(report.read_text("utf-8"))
-    assert doc["of"] == len(ROWS) == 33
+    assert doc["of"] == len(ROWS) == 37
 
 
 def test_studio_no_screen_shows_a_secret(studio: Studio) -> None:
@@ -207,10 +206,17 @@ def test_studio_no_screen_shows_a_secret(studio: Studio) -> None:
     assert secrets
     w = MainWindow(studio)
     w.show()
-    for key in w.screens:
-        w.go(key)
+    for section, tab in (
+        [("home", None), ("explore", None), ("receipts", None)]
+        + [("hood", t) for t in ("log", "disk", "crash", "rules")]
+        + [("proof", t) for t in ("parts", "sabotage", "evidence")]
+    ):
+        w.go(section, tab)
         w.worker.wait()
         app.processEvents()
+    w.toggle_drawer()
+    w.start_tour()
+    app.processEvents()
     texts = []
     for widget in w.findChildren(QWidget):
         if isinstance(widget, (QLabel, QAbstractButton)):

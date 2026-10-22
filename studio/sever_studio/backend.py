@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 import shutil
+import time
 from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, field
@@ -54,16 +55,38 @@ def spawn_id(members: Sequence[str]) -> str:
     return "spawn-" + h.hexdigest()[:16]
 
 
-def lock(work: Path) -> int:
-    """One Studio per work directory: an exclusive lock beside it, held until the process exits."""
+def lock(work: Path, what: str = "run") -> int:
+    """One Studio per work directory: an exclusive lock beside it, held until the process exits
+    (the system drops it when the process dies, so a lock is never stale). The lock file says who
+    holds it, so a second Studio can tell the person what to wait for."""
     work.parent.mkdir(parents=True, exist_ok=True)
-    fd = os.open(work.parent / f".{work.name}.lock", os.O_RDWR | os.O_CREAT, 0o600)
+    path = work.parent / f".{work.name}.lock"
+    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
     try:
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         os.close(fd)
-        raise WorkInUseError(f"{work} is in use by another Studio") from None
+        try:
+            who = json.loads(path.read_text("utf-8"))
+        except ValueError:
+            who = {}
+        doing = {"prepare": "preparing the database", "run": "open in a window"}.get(
+            str(who.get("what")), "in use"
+        )
+        note = f", {who['note']}" if who.get("note") else ""
+        raise WorkInUseError(
+            f"{work.name} is busy: another Studio is {doing} (pid {who.get('pid', '?')}, since "
+            f"{who.get('since', '?')}{note}). Wait for it to finish, or close it."
+        ) from None
+    note_lock(fd, what)
     return fd
+
+
+def note_lock(fd: int, what: str, note: str = "") -> None:
+    """Writes who holds the lock (and how far it has got) into the lock file."""
+    doc = {"pid": os.getpid(), "what": what, "since": time.strftime("%H:%M:%S"), "note": note}
+    os.ftruncate(fd, 0)
+    os.pwrite(fd, json.dumps(doc).encode("utf-8"), 0)
 
 
 @dataclass
@@ -179,7 +202,7 @@ class Backend:
         tmp = self.index_file.with_suffix(".tmp")
         fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(doc, f, separators=(",", ":"))
+            f.write(json.dumps(doc, separators=(",", ":")))  # dumps: the C encoder, not dump's
         tmp.replace(self.index_file)
 
     def wipe(self) -> None:

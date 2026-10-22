@@ -106,6 +106,10 @@ ROWS = [
         "Build §2.2, §2.5",
         "Evidence",
     ),
+    Row(34, "climb", "A receipt climbs the log tree to the signed root", "§10, §11.2", "Live"),
+    Row(35, "attacks", "Every forgery of a receipt is caught", "§11.3", "Live"),
+    Row(36, "crashdelete", "A deletion killed part-way: all or nothing", "§12.5", "Live"),
+    Row(37, "race", "Float means drift; integer sums stay identical", "§4.2, §5", "Live"),
 ]
 BY_KEY = {r.key: r for r in ROWS}
 

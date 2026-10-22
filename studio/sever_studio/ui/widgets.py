@@ -1,17 +1,18 @@
-"""Small building blocks shared by the screens."""
+"""Small building blocks shared by every section."""
 
 from collections.abc import Callable, Sequence
 from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRectF, Qt, QTimer
-from PySide6.QtGui import QColor, QPainter, QPaintEvent
+from PySide6.QtCore import QPoint, QRectF, QSize, Qt, QTimer
+from PySide6.QtGui import QColor, QPainter, QPaintEvent, QPen
 from PySide6.QtWidgets import (
     QFrame,
-    QGraphicsOpacityEffect,
+    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QPlainTextEdit,
     QPushButton,
     QSizePolicy,
@@ -19,7 +20,20 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from . import theme
+from . import copy, theme
+from .icons import icon
+
+
+def lift(w: QWidget, blur: int = 28) -> None:
+    """A soft shadow under a floating panel (light theme only: on dark it would not show)."""
+    if theme.LIGHT:
+        shadow = QGraphicsDropShadowEffect(w)
+        shadow.setBlurRadius(blur)
+        shadow.setOffset(0, 4)
+        c = QColor(theme.SHADOW)
+        c.setAlpha(38)
+        shadow.setColor(c)
+        w.setGraphicsEffect(shadow)
 
 
 def label(text: str = "", kind: str = "", wrap: bool = False) -> QLabel:
@@ -27,33 +41,115 @@ def label(text: str = "", kind: str = "", wrap: bool = False) -> QLabel:
     if kind:
         lab.setObjectName(kind)
     lab.setWordWrap(wrap)
-    lab.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
     return lab
 
 
-def button(text: str, kind: str = "", on: Callable[[], None] | None = None) -> QPushButton:
+def button(
+    text: str = "",
+    kind: str = "",
+    on: Callable[[], None] | None = None,
+    ico: str | None = None,
+    tip: str = "",
+) -> QPushButton:
     b = QPushButton(text)
     if kind:
         b.setObjectName(kind)
+    if ico:
+        colour = theme.ON_ACCENT if kind in ("primary", "fab") else theme.TEXT
+        b.setIcon(icon(ico, colour))
+        b.setIconSize(QSize(16, 16))
+    if tip:
+        b.setToolTip(tip)
     b.setCursor(Qt.CursorShape.PointingHandCursor)
     if on is not None:
         b.clicked.connect(lambda: on())
     return b
 
 
-class Card(QFrame):
-    """A rounded panel with an optional title and note; ``body`` takes the content."""
+def clear(layout: QLayout) -> None:
+    while layout.count():
+        item = layout.takeAt(0)
+        w = item.widget() if item is not None else None
+        if w is not None:
+            w.deleteLater()
 
-    def __init__(self, title: str = "", note: str = "", kind: str = "card") -> None:
+
+def chip(text: str, colour: str = theme.ACCENT) -> QLabel:
+    c = QLabel(text)
+    c.setStyleSheet(
+        f"background: {theme.rgba(colour, 34)}; color: {colour}; border: 1px solid"
+        f" {theme.rgba(colour, 110)}; border-radius: 9px; padding: 2px 9px;"
+        f" font-size: {theme.pt(theme.SMALL)}pt; font-weight: 600;"
+    )
+    c.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
+    return c
+
+
+def mark(ok: bool | None) -> tuple[str, str]:
+    """The sign and colour of a verdict: ✓ green, ✗ red, ○ grey (not yet shown)."""
+    if ok is None:
+        return "○", theme.MUTED
+    return ("✓", theme.OK) if ok else ("✗", theme.BAD)
+
+
+class Popover(QFrame):
+    """A small panel of explanation that closes when you click anywhere else."""
+
+    def __init__(self, title: str, text: str) -> None:
+        super().__init__(None, Qt.WindowType.Popup)
+        self.setObjectName("popover")
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(16, 14, 16, 14)
+        lay.addWidget(label(title, "strong"))
+        body = label(text, wrap=True)
+        body.setFixedWidth(340)
+        lay.addWidget(body)
+
+    def show_below(self, anchor: QWidget) -> None:
+        self.adjustSize()
+        p = anchor.mapToGlobal(QPoint(0, anchor.height() + 6))
+        screen = anchor.screen().availableGeometry()
+        x = min(p.x(), screen.right() - self.width() - 8)
+        y = (
+            p.y()
+            if p.y() + self.height() < screen.bottom()
+            else p.y() - self.height() - anchor.height() - 12
+        )
+        self.move(max(screen.left() + 8, x), y)
+        self.show()
+
+
+def info(key: str) -> QPushButton:
+    """ⓘ: the long explanation of ``key`` in a popover."""
+    b = QPushButton()
+    b.setObjectName("ghost")
+    b.setIcon(icon("info", theme.MUTED, 16))
+    b.setIconSize(QSize(16, 16))
+    b.setToolTip("Why?")
+    b.setCursor(Qt.CursorShape.PointingHandCursor)
+    b.setFixedSize(26, 26)
+    b.clicked.connect(lambda: Popover(copy.short(key), copy.long(key)).show_below(b))
+    return b
+
+
+class Card(QFrame):
+    """A rounded panel: a title (with an optional ⓘ) and a body."""
+
+    def __init__(self, title: str = "", why: str = "", kind: str = "card") -> None:
         super().__init__()
         self.setObjectName(kind)
         self.lay = QVBoxLayout(self)
         self.lay.setContentsMargins(16, 14, 16, 14)
         self.lay.setSpacing(8)
-        if title:
-            self.lay.addWidget(label(title, "h3"))
-        if note:
-            self.lay.addWidget(label(note, "muted", wrap=True))
+        if title or why:
+            head = QHBoxLayout()
+            head.setSpacing(4)
+            self.title = label(title, "strong")
+            head.addWidget(self.title, 1)
+            if why:
+                head.addWidget(info(why))
+            self.lay.addLayout(head)
         self.body = QVBoxLayout()
         self.body.setSpacing(8)
         self.lay.addLayout(self.body)
@@ -64,51 +160,76 @@ class Card(QFrame):
         return w
 
 
-def badge(text: str, colour: str = theme.ACCENT) -> QLabel:
-    b = QLabel(text)
-    b.setStyleSheet(
-        f"background: {theme.rgba(colour, 34)}; color: {colour};"
-        f" border: 1px solid {theme.rgba(colour, 110)};"
-        " border-radius: 9px; padding: 2px 9px; font-size: 9.5pt; font-weight: 600;"
-    )
-    b.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
-    return b
-
-
-def tick(ok: bool | None) -> str:
-    return "✓" if ok else ("✗" if ok is False else "○")
-
-
-def tick_colour(ok: bool | None) -> str:
-    return theme.OK if ok else (theme.BAD if ok is False else theme.MUTED)
-
-
 class Tile(QFrame):
-    """A big number with a caption."""
+    """A big number and a caption."""
 
-    def __init__(self, caption: str, value: str = "—", colour: str = theme.TEXT) -> None:
+    def __init__(self, caption: str, value: str = "—") -> None:
         super().__init__()
         self.setObjectName("card2")
         lay = QVBoxLayout(self)
         lay.setContentsMargins(14, 10, 14, 10)
+        lay.setSpacing(2)
         self.value = label(value, "big")
-        self.value.setStyleSheet(f"color: {colour};")
         lay.addWidget(self.value)
-        lay.addWidget(label(caption, "muted", wrap=True))
+        lay.addWidget(label(caption, "small", wrap=True))
 
-    def set(self, value: str, colour: str | None = None) -> None:
+    def set(self, value: str, colour: str = theme.TEXT) -> None:
         self.value.setText(value)
-        if colour:
-            self.value.setStyleSheet(f"color: {colour};")
+        self.value.setStyleSheet(f"color: {colour};")
+
+
+class Verdict(QLabel):
+    """A one-line result: sign, colour, a few words."""
+
+    def __init__(self) -> None:
+        super().__init__("")
+        self.setWordWrap(True)
+
+    def set(self, ok: bool | None, text: str) -> None:
+        sign, colour = mark(ok)
+        self.setText(f"<span style='color:{colour}; font-weight:700'>{sign}</span>&nbsp; {text}")
+
+
+class Spinner(QWidget):
+    """A turning arc while the worker is busy."""
+
+    def __init__(self, size: int = 18) -> None:
+        super().__init__()
+        self.setFixedSize(size, size)
+        self.angle = 0
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._turn)
+        self.hide()
+
+    def run(self, on: bool) -> None:
+        self.setVisible(on)
+        if on:
+            self.timer.start(30)
+        else:
+            self.timer.stop()
+
+    def _turn(self) -> None:
+        self.angle = (self.angle + 12) % 360
+        self.update()
+
+    def paintEvent(self, event: QPaintEvent) -> None:  # noqa: N802 (Qt's name)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        pen = QPen(QColor(theme.ACCENT), 2.4)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
+        r = QRectF(2, 2, self.width() - 4, self.height() - 4)
+        p.drawArc(r, -self.angle * 16, 270 * 16)
+        p.end()
 
 
 class Console(QPlainTextEdit):
-    def __init__(self, height: int = 220) -> None:
+    def __init__(self, height: int = 180) -> None:
         super().__init__()
+        self.setObjectName("console")
         self.setReadOnly(True)
-        self.setFont(theme.font(10, mono=True))
         self.setMinimumHeight(height)
-        self.setMaximumBlockCount(5000)
+        self.setMaximumBlockCount(4000)
 
     def say(self, text: str) -> None:
         self.appendPlainText(text)
@@ -117,18 +238,18 @@ class Console(QPlainTextEdit):
 
 
 class Heatmap(QWidget):
-    """A vector's numbers as a grid of cells: blue below zero, red above, white near zero."""
+    """A vector's numbers as a strip of cells: blue below zero, red above, white near zero."""
 
-    def __init__(self, cols: int = 32) -> None:
+    def __init__(self, cols: int = 48) -> None:
         super().__init__()
         self.cols = cols
         self.values: npt.NDArray[np.float64] = np.zeros(0)
-        self.setMinimumHeight(60)
+        self.setMinimumHeight(24)
 
     def set(self, vector: Sequence[float] | npt.NDArray[np.floating[Any]]) -> None:
         self.values = np.asarray(vector, np.float64)
         rows = max(1, -(-len(self.values) // self.cols))
-        self.setFixedHeight(rows * 9 + 2)
+        self.setFixedHeight(rows * 6 + 2)
         self.update()
 
     def paintEvent(self, event: QPaintEvent) -> None:  # noqa: N802 (Qt's name)
@@ -144,96 +265,95 @@ class Heatmap(QWidget):
             else:
                 c = QColor(int(255 * (1 + t * 0.85)), int(255 * (1 + t * 0.6)), 255)
             r, col = divmod(i, self.cols)
-            p.fillRect(QRectF(1 + col * w, 1 + r * 9, w - 1, 8), c)
+            p.fillRect(QRectF(1 + col * w, 1 + r * 6, w - 0.5, 5), c)
         p.end()
 
 
-class StepList(QWidget):
-    """The verifier's steps, revealed one after another with their verdicts."""
+class StepDots(QWidget):
+    """The verifier's steps as numbered dots, lit one after another: green passed, red failed,
+    grey not reached or not applicable. Each dot's tooltip says what the step checks."""
 
     def __init__(self) -> None:
         super().__init__()
-        self.lay = QVBoxLayout(self)
+        self.lay = QHBoxLayout(self)
         self.lay.setContentsMargins(0, 0, 0, 0)
-        self.lay.setSpacing(4)
+        self.lay.setSpacing(10)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._next)
-        self.queue: list[QWidget] = []
+        self.queue: list[tuple[QLabel, str]] = []
 
-    def show_steps(
-        self, steps: Sequence[tuple[str, str, str]], verdict: str, delay: int = 220
-    ) -> None:
-        """``steps``: (number, what it checks, verdict) rows; ``verdict``: the final line."""
-        while self.lay.count():
-            item = self.lay.takeAt(0)
-            w = item.widget() if item is not None else None
-            if w is not None:
-                w.deleteLater()
+    def show_steps(self, steps: Sequence[tuple[int, str, str]], delay: int = 180) -> None:
+        clear(self.lay)
         self.queue = []
-        for n, checks, v in steps:
-            state = "ok" if v == "ok" else ("fail" if v.startswith("FAILED") else "skip")
-            colour = {"ok": theme.OK, "fail": theme.BAD, "skip": theme.MUTED}[state]
-            mark = {"ok": "✓", "fail": "✗", "skip": "–"}[state]
-            row = QFrame()
-            row.setObjectName("card2")
-            h = QHBoxLayout(row)
-            h.setContentsMargins(10, 6, 10, 6)
-            m = label(mark)
-            m.setStyleSheet(f"color: {colour}; font-size: 14pt; font-weight: 700;")
-            m.setFixedWidth(22)
-            h.addWidget(m)
-            h.addWidget(label(f"step {n}", "muted"))
-            body = label(checks, wrap=True)
-            body.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-            h.addWidget(body, 1)
-            vl = label(v)
-            vl.setStyleSheet(f"color: {colour}; font-weight: 600;")
-            h.addWidget(vl)
-            self.queue.append(row)
-        final = label(verdict, "h2")
-        good = verdict.startswith("ACCEPT")
-        final.setStyleSheet(
-            f"color: {theme.OK if good else theme.BAD}; padding: 8px 4px;"
-            f" border-top: 2px solid {theme.OK if good else theme.BAD};"
-        )
-        self.queue.append(final)
+        for n, checks, verdict in steps:
+            state = (
+                "ok" if verdict == "ok" else ("fail" if verdict.startswith("FAILED") else "skip")
+            )
+            colour = {"ok": theme.OK, "fail": theme.BAD, "skip": theme.LINE}[state]
+            dot = QLabel(str(n))
+            dot.setFixedSize(34, 34)
+            dot.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            dot.setToolTip(f"step {n}: {checks}\n→ {verdict}")
+            dot.setStyleSheet(
+                f"border-radius: 17px; border: 2px solid {theme.LINE}; color: {theme.MUTED};"
+                " font-weight: 700;"
+            )
+            self.lay.addWidget(dot)
+            self.queue.append((dot, colour))
+        self.lay.addStretch(1)
         self.timer.start(delay)
 
     def _next(self) -> None:
         if not self.queue:
             self.timer.stop()
             return
-        w = self.queue.pop(0)
-        effect = QGraphicsOpacityEffect(w)
-        w.setGraphicsEffect(effect)
-        self.lay.addWidget(w)
-        anim = QPropertyAnimation(effect, b"opacity", w)
-        anim.setDuration(260)
-        anim.setStartValue(0.0)
-        anim.setEndValue(1.0)
-        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-        anim.start()
+        dot, colour = self.queue.pop(0)
+        dot.setStyleSheet(
+            f"border-radius: 17px; background: {theme.rgba(colour, 60)}; border: 2px solid "
+            f"{colour};"
+            f" color: {theme.TEXT}; font-weight: 700;"
+        )
+
+
+class Empty(QWidget):
+    """What a section shows before there is anything in it."""
+
+    def __init__(self, ico: str, text: str) -> None:
+        super().__init__()
+        lay = QVBoxLayout(self)
+        lay.addStretch(1)
+        pic = QLabel()
+        pic.setPixmap(icon(ico, theme.MUTED, 40).pixmap(40, 40))
+        pic.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lay.addWidget(pic)
+        t = label(text, "muted", wrap=True)
+        t.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lay.addWidget(t)
+        lay.addStretch(1)
 
 
 class Toast(QFrame):
-    """A message that slides in at the bottom right and leaves by itself."""
+    """One line at the bottom centre, with at most one action; leaves by itself."""
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
-        self.setObjectName("toast")
-        self.lay = QHBoxLayout(self)
-        self.lay.setContentsMargins(14, 10, 10, 10)
-        self.text = label("", wrap=True)
-        self.text.setMaximumWidth(460)
-        self.lay.addWidget(self.text, 1)
-        self.action = button("", "show")
-        self.lay.addWidget(self.action)
+        self.setObjectName("float")
+        lift(self)
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(14, 8, 8, 8)
+        lay.setSpacing(10)
+        self.sign = QLabel()
+        lay.addWidget(self.sign)
+        self.text = label("")
+        lay.addWidget(self.text, 1)
+        self.action = button("", "pill")
+        lay.addWidget(self.action)
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.hide)
-        self.hide()
         self._cb: Callable[[], None] | None = None
         self.action.clicked.connect(self._act)
+        self.hide()
 
     def _act(self) -> None:
         if self._cb:
@@ -243,28 +363,31 @@ class Toast(QFrame):
     def pop(
         self,
         text: str,
-        colour: str = theme.ACCENT,
+        ok: bool | None = True,
         action: str = "",
         on: Callable[[], None] | None = None,
     ) -> None:
+        sign, colour = mark(ok) if ok is not None else ("•", theme.ACCENT)
+        self.sign.setText(f"<span style='color:{colour}; font-weight:800'>{sign}</span>")
         self.text.setText(text)
-        self.setStyleSheet(
-            f"QFrame#toast {{ background: {theme.PANEL_2}; border: 1px solid {colour};"
-            " border-radius: 12px; }"
-        )
         self.action.setVisible(bool(action))
         self.action.setText(action)
         self._cb = on
-        self.adjustSize()
-        parent = self.parentWidget()
-        if parent is not None:
-            self.move(parent.width() - self.width() - 24, parent.height() - self.height() - 24)
+        self.place()
         self.show()
         self.raise_()
-        self.timer.start(7000)
+        self.timer.start(6000 if not action else 9000)
+
+    def place(self) -> None:
+        parent = self.parentWidget()
+        if parent is None:
+            return
+        self.text.setMaximumWidth(min(620, parent.width() - 180))
+        self.adjustSize()
+        self.move((parent.width() - self.width()) // 2, 68)
 
 
-def hex_view(data: bytes, at: int, before: int, width: int = 16, rows: int = 4) -> str:
+def hex_view(data: bytes, at: int, before: int, width: int = 16, rows: int = 3) -> str:
     """Rich text: the bytes around ``at``, the flipped one highlighted with its old value."""
     start = max(0, (at // width - rows // 2) * width)
     lines = []
@@ -274,17 +397,11 @@ def hex_view(data: bytes, at: int, before: int, width: int = 16, rows: int = 4) 
             break
         cells = []
         for i in range(off, min(off + width, len(data))):
-            if i == at:
-                cells.append(
-                    f'<span style="background:{theme.BAD}; color:#000; font-weight:700;">'
-                    f"{data[i]:02x}</span>"
-                )
-            else:
-                cells.append(f"{data[i]:02x}")
+            hot = f'<span style="background:{theme.BAD}; color:#000; font-weight:700;">'
+            cells.append(f"{hot}{data[i]:02x}</span>" if i == at else f"{data[i]:02x}")
         lines.append(f'<span style="color:{theme.MUTED}">{off:06x}</span>  ' + " ".join(cells))
-    note = f"byte {at}: {before:02x} → {data[at]:02x} (one bit flipped)"
     return (
-        f'<pre style="font-family:{theme.MONO}; font-size:10.5pt">'
+        f'<pre style="font-family:{theme.MONO}; font-size:{theme.pt(theme.SMALL)}pt">'
         + "<br>".join(lines)
-        + f'</pre><span style="color:{theme.BAD}">{note}</span>'
+        + f'</pre><span style="color:{theme.BAD}">byte {at}: {before:02x} → {data[at]:02x}</span>'
     )

@@ -1,4 +1,4 @@
-"""What every screen may ask of the window."""
+"""What every section may ask of the window."""
 
 from collections.abc import Callable
 from typing import Any, Protocol
@@ -14,13 +14,17 @@ class Host(Protocol):
     receipts_of: dict[int, tuple[str, str]]
 
     def toast(
-        self, text: str, colour: str = ..., action: str = "", on: Callable[[], None] | None = None
+        self,
+        text: str,
+        ok: bool | None = True,
+        action: str = "",
+        on: Callable[[], None] | None = None,
     ) -> None: ...
 
     def changed(self) -> None:
-        """Something in the database or the checklist changed: refresh what shows it."""
+        """The database or the checklist changed: refresh what shows them."""
 
-    def go(self, screen: str, **kw: Any) -> None:
-        """Switches to a screen; ``kw`` are passed to its ``arrive``."""
+    def go(self, section: str, tab: str | None = None, **kw: Any) -> None:
+        """Switches to a section (and one of its tabs); ``kw`` go to its ``arrive``."""
 
     def error(self, message: str) -> None: ...

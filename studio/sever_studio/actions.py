@@ -29,7 +29,7 @@ from sever_db import (
     prepare_insert,
 )
 
-from . import evidence, layout, proofs, sabotage, tools
+from . import evidence, layout, proofs, sabotage, tools, wow
 from .backend import HOLDING, Backend, Flush, Inserted
 from .checklist import Checklist
 from .corpus import FIXTURE_ENCODER, Corpus, fixture_encode, load
@@ -439,7 +439,12 @@ class Studio:
         b = self.backend
         groups = {b.index.records[r].group for r in rids if r in b.index.records}
         before, total = self._sizes(), b.total()
+        t0 = time.perf_counter()
         out = b.forget_ids(rids)
+        if rids:
+            self.numbers["delete_ms_per_record"] = round(
+                (time.perf_counter() - t0) * 1000 / len(rids), 1
+            )
         after, total_after = self._sizes(), b.total()
         lsns = [d.database_lsn for d in out if d.database_lsn is not None]
         gone = sum(d.outcome == "deleted" for d in out)
@@ -704,6 +709,98 @@ class Studio:
             f"{len(lines)} reports, {len(led)} ledger runs",
         )
         return lines, led, fair
+
+    # -- the live demonstrations (wow.py) --------------------------------------------------------
+
+    def climb(self, lsn: int) -> tuple[wow.Certificate, list[wow.Step], bytes, bool]:
+        """The receipt's insert leaf, hashed up its RFC 9162 path to the signed root (§11.2)."""
+        cert = wow.parse((self.backend.receipts / f"{lsn}.cert").read_bytes())
+        steps, root, valid = wow.climb(cert.leaf, cert.leaf_index, cert.tree_size, cert.path)
+        ok = valid and root == cert.root and cert.witnesses >= 4
+        self.checklist.mark(
+            "climb",
+            ok,
+            f"receipt #{lsn}: {len(steps)} hashes from leaf {cert.leaf_index} to the root of "
+            f"{cert.tree_size} leaves; {'equals' if root == cert.root else 'DIFFERS FROM'} the "
+            f"signed root; {cert.witnesses} witnesses",
+        )
+        return cert, steps, root, ok
+
+    def attack_lab(self, lsn: int) -> list[wow.Attack]:
+        """Forgery attempts on receipt ``lsn``, judged by sever-verify (§11.3)."""
+        mine = (self.backend.receipts / f"{lsn}.cert").read_bytes()
+        key = wow.parse(mine).user_key
+        other = None
+        for n in reversed(self.backend.index.receipts):
+            p = self.backend.receipts / f"{n}.cert"
+            if n != lsn and p.exists() and wow.parse(p.read_bytes()).user_key != key:
+                other = p.read_bytes()
+                break
+        out = wow.attacks(self.root, self.work, mine, self.backend.live.anchors(), key, other)
+        caught = sum(a.caught for a in out)
+        self.checklist.mark(
+            "attacks", caught == len(out) >= 4, f"{caught} of {len(out)} attempts caught"
+        )
+        return out
+
+    def crash_test_person(self, size: int = 0) -> tuple[str, list[str]]:
+        """A person with many records (the next spare passages), for the killed deletion."""
+        b, c = self.backend, self.corpus
+        size = size or (40 if self.data == "nq" else 16)
+        account = f"Crash-test person {len(b.index.receipts) + b.index.loaded}"
+        ids = []
+        for _ in range(size):
+            i = b.index.loaded
+            if i >= len(c.ids):
+                break
+            b.insert(c.ids[i], c.vectors[i], account, save=False)
+            b.index.records[c.ids[i]].account = account
+            b.index.loaded = i + 1
+            ids.append(c.ids[i])
+        b.save()
+        return account, ids
+
+    def crash_delete(self, account: str, fraction: float) -> wow.CrashDelete:
+        """Deletes ``account`` in a second process, killed ``fraction`` of the way through the
+        expected time; all or nothing after recovery (§12.5)."""
+        ids = self.backend.accounts().get(account, [])
+        if "delete_user_ms_per_record" not in self.numbers:
+            # Learn how long one person's deletion takes: time a throwaway one of the same size.
+            _, spare = self.crash_test_person(len(ids))
+            t0 = time.perf_counter()
+            self.backend.forget_ids(spare)
+            took = (time.perf_counter() - t0) * 1000
+            self.numbers["delete_user_ms_per_record"] = round(took / max(1, len(spare)), 2)
+        per = float(self.numbers["delete_user_ms_per_record"])
+        r = wow.crash_delete(self, ids, account, fraction * per * max(1, len(ids)))
+        if r.took_ms is not None:  # learn how long a whole deletion takes, to land inside it
+            self.numbers["delete_user_ms_per_record"] = round(r.took_ms / max(1, len(ids)), 2)
+        if r.outcome in ("none", "all"):
+            ok = r.killed and not self.backend.mismatches()
+            self.checklist.mark(
+                "crashdelete",
+                ok,
+                f"{account}: killed at {r.planned_ms:.0f} ms; {r.outcome} of {r.records} records "
+                "deleted after recovery",
+            )
+        elif r.outcome == "partial":
+            self.checklist.mark(
+                "crashdelete", False, f"{r.deleted} of {r.records} deleted: NOT all or nothing"
+            )
+        return r
+
+    def race(self, cycles: int, report: Callable[..., None] | None = None) -> wow.RaceResult:
+        """§4–5 modelled: remove and re-add members ``cycles`` times; float32 against Q24."""
+        v = self.corpus.vectors[:200]
+        r = wow.race_all(v, cycles, report)
+        diff = r.differing[-1][1] if r.differing else 0
+        self.checklist.mark(
+            "race",
+            r.identical and diff > 0,
+            f"{cycles:,} cycles: the float mean changed in {diff} of {v.shape[1]} numbers; the "
+            f"integer sum is {'bit-identical' if r.identical else 'CHANGED'}",
+        )
+        return r
 
     def report(self) -> Path:
         return self.checklist.save(self.work, self.numbers)

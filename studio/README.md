@@ -1,15 +1,14 @@
 # SEVER-DB Studio
 
-**The whole project in one desktop app.** Ten thousand real Wikipedia passages appear as coloured
-clusters on a map. You type your own details and watch where the database puts them. You delete
-them and watch them disappear, and you get a receipt anyone can check offline. Every other claim
-of the project is one click away: the holding area, search, encryption at rest, crash safety, the
-public log, the forensic scan, the planted bugs, and the evidence files.
+**The whole project in one desktop app.** Ten thousand real Wikipedia passages appear as dots on a
+map, coloured by group. You add yourself and watch where the database puts you. You delete yourself
+and the dot disappears, and you get a receipt anyone can check offline. You climb that receipt up
+the public log, try to forge it, kill the database in the middle of a deletion, and watch a float
+average drift while SEVER's integer sum stays exact. Every claim of the project is one click away.
 
 Studio drives the real engine (Part 4's build) only through its public surfaces: the SDK
 `sever_db`, the separate checkers `sever-verify` and `sever-audit`, and each part's own proof
-program. It reaches inside nothing. It is owned by no part, is in no freeze manifest, and nothing
-depends on it (DB-106).
+program. It reaches inside nothing, is owned by no part, and nothing depends on it (DB-106).
 
 ## Run it
 
@@ -18,71 +17,118 @@ Rust toolchain.
 
 ```bash
 studio/studio.sh setup      # once: Studio's environment, the SDK, the encoder (90 MB, hash-checked), the checkers
-studio/studio.sh prepare    # once: stores 10,000 NQ passages through the SDK (~10 min) and lays out the map
-studio/studio.sh run        # opens the window
-studio/studio.sh test       # Studio's own tests, offline (lint, types, 21 tests)
+studio/studio.sh prepare    # once: stores 10,000 NQ passages through the SDK (~13 min) and lays out the map
+studio/studio.sh run        # opens the window, sized to your screen
 ```
 
-Without the NQ data (`datasets/`, not in git), add `--data synthetic` to `prepare` and `run`. The
-golden fixture (d = 16, 240 vectors, spawn size 8) then runs everything offline.
-
-**Your machine will be refused, and that is a feature.** The database will not start where secrets
-could leak (§12.8–12.9). WSL and most laptops have plain swap, so `studio.sh` passes `--dev`: the
-window shows the refusal, then opens with the development override, which the database reports.
-`SEVER_STRICT=1` leaves the override out.
+- **No NQ data?** Without `datasets/` (not in git), add `--data synthetic` to `prepare` and `run`.
+  The offline fixture then runs everything: d = 16, 240 vectors plus 2,000 made-up ones, spawn
+  size 8.
+- **Dark theme:** `SEVER_STUDIO_THEME=dark`.
+- **X11 instead of Wayland:** `--x11` (needs `libxcb-cursor0`).
+- **A busy work directory** is not an error. While a `prepare` runs, `run` says so and names the
+  process.
+- **Your machine will be refused, and that is a feature.** The database will not start where
+  secrets could leak (§12.8–12.9). `studio.sh` passes `--dev`, so the window shows the refusal,
+  then opens with the development override, which the database reports. `SEVER_STRICT=1` leaves
+  the override out.
 
 ## The window
 
-- **Left:** the screens.
-- **Right:** the checklist of 33 features. A row is ticked only when its live check has passed in
-  this session.
-- **Top:** Story mode, which tells the whole project in 17 chapters with presenter notes. "Do it"
-  runs each chapter's step.
+**Layout:**
+- A rail of six sections on the left.
+- A slim bar at the top, with the checklist pill (✓ 12/37) and **Tour**.
+- Short labels everywhere. Every ⓘ opens the full explanation, with its section of the spec.
 
-Each checklist row has a **show** button that goes to its screen and runs it. **Save the session
-report** writes `studio/work/studio-nq/report-<utc>.json`: every row with its verdict. It holds
-numbers and verdicts only, never a key, `r_t` or passage text. F11 toggles full screen.
+**Controls:**
+- **Tour:** 20 chapters, each with one line on screen, presenter notes behind **Notes**, and
+  **Do it**, which runs the chapter's step for you.
+- **The checklist:** every row is ticked only by a live check. **Save the session report** writes
+  every verdict, with numbers only: no key, `r_t` or passage text.
+- **Shortcuts:** `/` search, `N` next chapter, `Esc` close, `F11` full screen.
+- **Rail buttons:** A− / A+ change the text size; the eye switches to colour-blind-safe colours.
 
-| Screen | What you do | What it proves |
+| Section | What you do | What it proves |
 |---|---|---|
-| **Start** | Re-hash the data, see the startup check, compare the three encoder names, count the groups | The data is pinned (P0). The platform check happens before opening (§12.8). One encoder serves everything (§3.3). The application's index agrees with the database's counts |
-| **Map** | Hover any point: its account, group, passage and its 384 numbers as a heat strip. Click a point to select it and show its group | Records live in frozen groups (filled dots) and spawned groups (rings) (§6–7) |
-| **Map · Add your details** | Type a name and a sentence | It is encoded by the pinned model, signed with your account's key and stored encrypted. It appears as a white star, with a sentence saying why it went where it went (§7.3) |
-| **Map · the bucket** | One record in, then search for it; fill until it flushes | A waiting record is stored but no search finds it (§7.4). At the spawn size all of them leave as one new group, whose ID is recomputed from its members (§7.5) |
-| **Map · Search** | Type a question, or `#12` for a dataset question | A beam to the 10 nearest records, with ✓ on the judged answer. Search quality over every question |
-| **Map · Delete / Forget** | Delete a record, delete it again, forget a whole account | The dot vanishes and the counts stay exact (§5, §15.3). A second delete returns `"absent"` (§5.4). An account goes all or nothing (§12.5), with one certificate per record |
-| **Refusals** | Five invalid inputs, and a retried insert | Errors are typed and hold no secret (§4, §17). A retry is stored once (§15.1) |
-| **Receipt** | Verify a receipt, then flip one byte | `sever-verify` runs in a folder holding only the certificate and the anchors and says ACCEPT. The flipped copy is REJECTed with the failing step named, and the flipped byte is shown. The limits are stated (L-2, L-27) |
-| **Log** | Read the checkpoint; export and audit | The signed log with at least 4 witness cosignatures (§10). `sever-audit` finds 0 findings (§11.3) |
-| **Disk** | Search both disks | A raw byte search finds every ID, text and vector in an ordinary store, and none in SEVER-DB's (§13.2) |
-| **Crash** | Restart; pull the plug | A restart loses nothing. A writer killed with SIGKILL mid-stream loses no acknowledged insert (§12, §15.1) |
-| **Proofs** | Recorded nq-10k run, or run it now | Part 1: each group equals its survivors-only rebuild, and float and soft-delete baselines do not (§5). Part 2: all or nothing at the commit point (§12). Part 3: chained receipts and audit (§11). Part 4: the forensic scanner recovers a live record but nothing deleted, and the SB-24 build leaks (§13) |
-| **Sabotage lab** | Pick one of SB-1 … SB-30 and run it | The real code with one planted bug: a test goes red (Build §2.6) |
-| **Evidence** | Open it | Traceability, proofs, oracles, the run ledger and the fairness runs, read from the generated files (failures included) |
+| **Home** | Read the four claims; re-hash the data; check the encoder | The data is pinned (P0), the machine is checked before opening (§12.8), and one encoder serves everything (§3.3) |
+| **Explore** | Hover a dot; **+ Add yourself**; click a dot, then Delete / Forget; search; fill the bucket | Groups (§6–7); routing of your own text (§7.3); the bucket is stored but unsearchable and flushes at 200 into a group named by a hash of its members (§7.4–7.5); deletion keeps the counts exact (§5) and is idempotent (§5.4); forgetting a person is all or nothing (§12.5) |
+| **Receipts** | Verify; flip one byte | `sever-verify` checks a receipt offline (§11.3), and the flipped copy is rejected at the step that fails |
+| **Live** | **Log tree**, **Attack lab**, **Kill a delete**, **Float vs exact** | See below |
+| **Under the hood** | The log, the disk, crashes, bad input | Signed and witnessed log, with an audit (§10, §11.3); nothing in the clear on disk (§13.2); restart and SIGKILL lose nothing (§12, §15.1); typed refusals (§4, §17); a retry stored once |
+| **Proof** | The four parts' own programs; the sabotage lab; the evidence | Survivors-only state, all or nothing at the commit point, chained receipts, forensic erasure (and the SB-24 leak); a planted bug turns a test red; traceability, proofs, gate runs, fairness runs |
+
+### Live
+
+- **Log tree.** Your receipt carries your insert leaf and the hashes beside it on the way up the
+  public log. Studio hashes them itself (RFC 9162, with its own code), draws the climb level by
+  level, and checks that the top equals the root the operator signed and 4 or more independent
+  witnesses cosigned.
+- **Attack lab.** Five real forgery attempts on a receipt. Each is caught, and the screen says
+  what caught it:
+  - change one byte → step 2;
+  - cut it short → step 1;
+  - trust only 2 witnesses → step 4;
+  - another operator's key → step 2;
+  - someone else's valid receipt → your own key check.
+- **Kill a delete.** One person's records are deleted by a second process, killed with SIGKILL at
+  a random moment, five times. After each recovery the person has all of their records or none,
+  never some. The tiles count none, all, finished first, and half (always 0).
+- **Float vs exact.** 200 real vectors; one is removed and put back 20,000 times, so the members
+  never change. The float32 running mean, as most indexes keep it, changes in almost every
+  number. SEVER's Q24 integer sum stays bit-identical. This is a model of the §4–5 arithmetic in
+  Studio; the engine's own proof is Part 1's (Proof).
 
 ## What it does not claim
 
-- **The map is a picture.** It flattens 384-dimensional vectors to two (t-SNE), so neighbours on
-  the map are only roughly neighbours in the search. New points are placed beside their nearest
-  passages.
-- **Hover text comes from outside the database.** It is read from the dataset, or from what you
-  typed. The database stores passages encrypted and never hands them back.
-- **Part 4's erase program counts what the SB-24 scan decrypts.** That is old accumulator versions
-  and deleted records' keys and payloads. It does not yet print the reconstructed vector next to
-  the original, as Build 3-4 §2.11 step 4 describes.
-- **No certificate proves the operator kept no copy** (overview L-2).
+- **The map is a picture.** t-SNE flattens 384 dimensions to two.
+- **Hover text is not read back from the database.** It comes from the dataset or from what you
+  typed; the database stores it encrypted and never hands it back.
+- **Every byte of a receipt is signed.** So the Attack lab reaches steps 1, 2 and 4. Steps 3, 5 and
+  6 guard against the operator itself and are tested by Part 3's attack gate (P3-T2).
+- **Part 4's erase program counts what the SB-24 scan decrypts.** It does not print the rebuilt
+  vector (Build 3-4 §2.11 step 4).
+- **No receipt proves the operator kept no copy** (L-2).
+
+## Tests
+
+```bash
+studio/studio.sh test          # fast, offline, ~2 min: lint, mypy --strict, 60 tests
+studio/studio.sh test --full   # adds the real display, more screen sizes, a 500-step soak,
+                               # the NQ data, a freeze watchdog and live sabotage (~30 min)
+```
+
+Every Qt test runs on an emulated 1280 × 800 screen at scale 2 (the owner's laptop). Results go to
+`studio/work/test-report.json`. The tests cover:
+
+- **Layout,** on every screen size, in every state: the window fits the screen, nothing is clipped
+  or sticks out of its parent, and nothing scrolls sideways (`tests/layout_probe.py`, with a
+  screenshot of each state).
+- **Click-through:** real clicks, keys and mouse moves, and the whole tour by its buttons.
+- **Edge cases:**
+  - an empty bucket;
+  - deleting from the bucket (§11.3 step 7);
+  - emptying a whole group (tag 11);
+  - Unicode, emoji, 10 kB texts, empty and very long names;
+  - lost answers and crashes;
+  - a busy work directory;
+  - missing data or model;
+  - a report with no secrets.
+- **Independent oracles:** RFC 9162 trees and paths are built by the tests from the definitions,
+  and §7.5 IDs and §4.2 rounding are written out again.
+- **The real display:** `studio.sh smoke` opens on this screen, walks everything and quits (the
+  `--full` tier runs it).
 
 ## Files
 
 | Path | What |
 |---|---|
 | `studio.sh` | the entry point |
-| `sever_studio/backend.py` | the application backend: account key store (0600, never shown), inserts, deletions, receipts, and the application's own index of where each record landed |
-| `sever_studio/actions.py` | every demonstration as a function that runs its live check and ticks its row; the window only draws these |
-| `sever_studio/checklist.py` | the 33 rows and the session report |
-| `sever_studio/encoder.py` | the pinned MiniLM encoder as ONNX (revision and SHA-256 checked; cosine > 0.9999 with the dataset's vectors) |
-| `sever_studio/layout.py` | the map's 2D layout and the placement of new points |
+| `sever_studio/backend.py` | the application backend: account keys (0600, never shown), inserts, deletions, receipts, the index of where each record landed, and the work-directory lock |
+| `sever_studio/actions.py` | every demonstration as a function that runs its live check and ticks its row |
+| `sever_studio/wow.py` | the Live demonstrations: certificate parser, RFC 9162 climb, attacks, killed deletion, the race |
+| `sever_studio/checklist.py` | the 37 rows and the session report |
+| `sever_studio/encoder.py`, `layout.py`, `corpus.py` | the pinned encoder (ONNX), the map layout, the data |
 | `sever_studio/proofs.py`, `sabotage.py`, `evidence.py` | each part's proof program, the sabotage runner, the generated evidence |
-| `sever_studio/ui/` | the window |
-| `tests/` | Studio's tests, offline on the fixture, with the window drawn offscreen |
-| `work/` | the databases, keys, receipts and the model (not in git; `studio.sh clean`) |
+| `sever_studio/ui/` | the window: `copy.py` holds every word on screen; `theme.py` the light and dark palettes |
+| `tests/` | the fast tier and the `full` tier |
+| `work/` | databases, keys, receipts, the model, screenshots, the test report (not in git; `studio.sh clean`) |

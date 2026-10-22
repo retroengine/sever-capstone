@@ -1,9 +1,8 @@
-"""The map: every live record as a point, coloured by its group, and the holding area as a bucket.
+"""The map: every live record as a dot coloured by its group, and the holding area as a gauge.
 
-Points in frozen groups are filled dots, points in spawned groups are rings; your own records are
-white with a gold halo. Records in the holding area are not on the map: they sit in the bucket,
-because no search can reach them until the bucket flushes into a new group (§7.4). Hovering a point
-shows what it is; clicking selects it and its group.
+Filled dots are frozen groups, rings are spawned groups, white stars are your own records. Records
+in the holding area are not on the map: no search reaches them until the area flushes (§7.4), so
+they sit in the gauge at the map's edge.
 """
 
 from collections.abc import Callable
@@ -26,10 +25,11 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from ..actions import Studio
 from ..backend import HOLDING
-from . import theme
-from .widgets import Heatmap, label
+from . import copy, theme
+from .widgets import Heatmap, label, lift
 
 pg.setConfigOptions(antialias=True, background=theme.BG, foreground=theme.MUTED)
+EMPTY = np.zeros((0, 2))
 
 
 class Palette:
@@ -49,55 +49,45 @@ class Palette:
 
 
 class HoverCard(QFrame):
+    """What a dot is: its ID, group, three lines of its text, and its numbers as a strip."""
+
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
-        self.setObjectName("hover")
-        self.setFixedWidth(400)
+        self.setObjectName("float")
+        lift(self)
+        self.setFixedWidth(320)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(14, 12, 14, 12)
+        lay.setContentsMargins(12, 10, 12, 10)
         lay.setSpacing(6)
         top = QHBoxLayout()
-        self.rid = label("", "h3")
+        self.rid = label("", "strong")
         top.addWidget(self.rid, 1)
         self.group = QLabel()
         top.addWidget(self.group)
         lay.addLayout(top)
-        self.account = label("", "muted", wrap=True)
+        self.account = label("", "small")
         lay.addWidget(self.account)
         self.text = label("", wrap=True)
-        self.text.setStyleSheet("font-size: 10.5pt;")
         lay.addWidget(self.text)
-        self.source = label("", "muted", wrap=True)
-        self.source.setStyleSheet("font-size: 9pt;")
-        lay.addWidget(self.source)
-        lay.addWidget(label("its encoding", "muted"))
-        self.heat = Heatmap(cols=32)
+        self.heat = Heatmap(cols=48)
         lay.addWidget(self.heat)
-        self.numbers = label("", "mono", wrap=True)
-        self.numbers.setStyleSheet("font-size: 8.5pt; color: #8c92a6;")
-        lay.addWidget(self.numbers)
+        self.source = label(copy.short("hover.source"), "small")
+        lay.addWidget(self.source)
         self.hide()
 
     def show_for(self, info: dict[str, object], colour: QColor) -> None:
-        self.rid.setText(str(info["rid"]) + ("  (yours)" if info["mine"] else ""))
-        g = str(info["group"])
-        self.group.setText(g)
+        self.rid.setText(str(info["rid"]) + ("  ★" if info["mine"] else ""))
+        c = colour.name()
+        self.group.setText(str(info["group"]))
         self.group.setStyleSheet(
-            f"background: {theme.rgba(colour.name(), 51)}; color: {colour.name()};"
-            f" border: 1px solid {theme.rgba(colour.name(), 136)}; border-radius: 9px;"
-            " padding: 2px 8px; font-size: 9pt;"
+            f"background: {theme.rgba(c, 51)}; color: {c}; border-radius: 8px; padding: 1px 7px;"
+            f" font-size: {theme.pt(theme.SMALL)}pt;"
         )
-        self.account.setText(f"account: {info['account']}")
-        t = str(info["text"])
-        self.text.setText(t if len(t) < 420 else t[:419] + "…")
-        self.source.setText(
-            f"Text shown from {info['source']}. The database stores it encrypted and never "
-            "hands it back (§13.2)."
-        )
-        v = np.asarray(info["vector"], np.float64)
-        self.heat.set(v)
-        head = ", ".join(f"{x:+.4f}" for x in v[:6])
-        self.numbers.setText(f"{len(v)} float32 numbers, unit length: [{head}, …]")
+        self.account.setText(str(info["account"]))
+        t = " ".join(str(info["text"]).split())
+        self.text.setText(t if len(t) <= 170 else t[:169] + "…")
+        self.heat.set(np.asarray(info["vector"], np.float64))
         self.adjustSize()
         self.show()
         self.raise_()
@@ -115,10 +105,9 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         self.hideAxis("left")
         self.hideAxis("bottom")
         self.setAspectLocked(True)
-        self.getPlotItem().setContentsMargins(4, 4, 4, 4)
+        self.getPlotItem().setContentsMargins(0, 0, 0, 0)
         self.vb = self.getPlotItem().getViewBox()
-        self.vb.setMouseEnabled(True, True)
-        self.base = pg.ScatterPlotItem(pxMode=True, hoverable=False)
+        self.base = pg.ScatterPlotItem(pxMode=True)
         self.halo = pg.ScatterPlotItem(pxMode=True)
         self.mine = pg.ScatterPlotItem(pxMode=True)
         self.anim = pg.ScatterPlotItem(pxMode=True)
@@ -129,44 +118,51 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
             self.addItem(item)
         self.labels: list[pg.TextItem] = []
         self.rids: list[str] = []
-        self.xy: npt.NDArray[np.float64] = np.zeros((0, 2))
+        self.xy: npt.NDArray[np.float64] = EMPTY
         self.focus_group: str | None = None
         self.selected: str | None = None
-        self.scene().sigMouseMoved.connect(self._moved)
-        self.scene().sigMouseClicked.connect(self._clicked)
+        self._brush: dict[tuple[str, bool], object] = {}
+        self.scene().sigMouseMoved.connect(lambda pos: self.hovered.emit(self.nearest(pos)))
+        self.scene().sigMouseClicked.connect(
+            lambda ev: self.clicked.emit(self.nearest(ev.scenePos()))
+        )
         self._anims: list[QVariantAnimation] = []
 
     # -- drawing ----------------------------------------------------------------------------------
+
+    def _style(self, group: str, dim: bool) -> tuple[object, object]:
+        key = (group, dim)
+        if key not in self._brush:
+            c = self.palette.colour(group)
+            if dim:
+                c = QColor(c.red(), c.green(), c.blue(), 35)
+            spawned = group.startswith("spawn-")
+            brush = pg.mkBrush(theme.BG if spawned else c)
+            pen = pg.mkPen(c, width=1.5) if spawned else pg.mkPen(QColor(0, 0, 0, 90), width=0.5)
+            self._brush[key] = (brush, pen)
+        return self._brush[key]  # type: ignore[return-value]
 
     def refresh(self) -> None:
         recs = self.studio.backend.index.records
         rids = [r for r, rec in recs.items() if rec.group != HOLDING]
         self.rids = rids
         self.xy = np.array([self.studio.xy(r) for r in rids], np.float64).reshape(-1, 2)
-        brushes, pens, sizes = [], [], []
-        small = len(rids) > 2000
-        mine_xy, mine_b = [], []
+        size = 4.6 if len(rids) > 2000 else 7.0
+        brushes, pens = [], []
+        mine_xy = []
         for r in rids:
             rec = recs[r]
-            c = self.palette.colour(rec.group)
-            dim = self.focus_group is not None and rec.group != self.focus_group
-            if dim:
-                c = QColor(c.red(), c.green(), c.blue(), 40)
-            spawned = rec.group.startswith("spawn-")
+            b, p = self._style(
+                rec.group, self.focus_group is not None and rec.group != self.focus_group
+            )
+            brushes.append(b)
+            pens.append(p)
             if rec.mine:
                 mine_xy.append(self.studio.xy(r))
-                mine_b.append(c)
-            brushes.append(pg.mkBrush(theme.BG if spawned else c))
-            pens.append(
-                pg.mkPen(c, width=1.6) if spawned else pg.mkPen(QColor(0, 0, 0, 90), width=0.6)
-            )
-            sizes.append((5.0 if spawned else 4.6) if small else (7.5 if spawned else 7.0))
-        self.base.setData(
-            pos=self.xy if len(rids) else np.zeros((0, 2)), brush=brushes, pen=pens, size=sizes
-        )
+        self.base.setData(pos=self.xy if len(rids) else EMPTY, brush=brushes, pen=pens, size=size)
         mx = np.array(mine_xy, np.float64).reshape(-1, 2)
         self.halo.setData(
-            pos=mx, size=30, brush=pg.mkBrush(QColor(255, 209, 102, 60)), pen=pg.mkPen(None)
+            pos=mx, size=28, brush=pg.mkBrush(QColor(255, 209, 102, 60)), pen=pg.mkPen(None)
         )
         self.mine.setData(
             pos=mx,
@@ -177,6 +173,12 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         )
         self._ring()
 
+    def recolour(self) -> None:
+        """After the palette changes (the colour-blind-safe switch)."""
+        self._brush.clear()
+        self.palette = Palette()
+        self.refresh()
+
     def _ring(self) -> None:
         if self.selected and self.selected in self.studio.backend.index.records:
             x, y = self.studio.xy(self.selected)
@@ -184,7 +186,7 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
                 pos=[(x, y)], size=24, brush=pg.mkBrush(None), pen=pg.mkPen(theme.ACCENT, width=2.5)
             )
         else:
-            self.ring.setData(pos=np.zeros((0, 2)))
+            self.ring.setData(pos=EMPTY)
 
     def focus(self, group: str | None) -> None:
         self.focus_group = group
@@ -193,6 +195,9 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
     def select(self, rid: str | None) -> None:
         self.selected = rid
         self._ring()
+
+    def to_widget(self, x: float, y: float) -> QPointF:
+        return QPointF(self.mapFromScene(self.vb.mapViewToScene(QPointF(x, y))))
 
     # -- the search beam --------------------------------------------------------------------------
 
@@ -204,27 +209,29 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
                 continue
             x, y = self.studio.xy(rid)
             pts += [origin, (x, y)]
-            t = pg.TextItem(
-                ("✓ " if good else "") + str(rank),
-                color=theme.OK if good else theme.TEXT,
-                anchor=(0.5, 1.4),
-            )
-            t.setPos(x, y)
-            self.addItem(t)
-            self.labels.append(t)
+            if rank <= 5 or good:
+                t = pg.TextItem(
+                    ("✓" if good else "") + str(rank),
+                    color=theme.OK if good else theme.TEXT,
+                    anchor=(0.5, 1.4),
+                )
+                t.setPos(x, y)
+                self.addItem(t)
+                self.labels.append(t)
         arr = np.array(pts, np.float64).reshape(-1, 2)
-        self.beam.setData(arr[:, 0], arr[:, 1]) if len(arr) else self.beam.setData([], [])
+        if len(arr):
+            self.beam.setData(arr[:, 0], arr[:, 1])
         self.star.setData(
             pos=[origin],
             size=22,
             symbol="star",
             brush=pg.mkBrush(theme.ACCENT),
-            pen=pg.mkPen("#ffffff", width=1.2),
+            pen=pg.mkPen(theme.SURFACE, width=1.2),
         )
 
     def clear_beam(self) -> None:
         self.beam.setData([], [])
-        self.star.setData(pos=np.zeros((0, 2)))
+        self.star.setData(pos=EMPTY)
         for t in self.labels:
             self.removeItem(t)
         self.labels = []
@@ -240,76 +247,63 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         a.valueChanged.connect(lambda v: step(float(v)))
 
         def fin() -> None:
-            done()
+            self.anim.setData(pos=EMPTY)
             self._anims.remove(a)
+            done()
 
         a.finished.connect(fin)
         self._anims.append(a)
         a.start()
 
     def vanish(self, points: list[tuple[float, float, QColor]], then: Callable[[], None]) -> None:
-        """Deleted points flash, grow and fade away."""
+        """Deleted dots flash, grow and fade away."""
         if not points:
             then()
             return
         xy = np.array([(x, y) for x, y, _ in points], np.float64)
+        colours = [c for *_, c in points]
+        tint = QColor(theme.ACCENT)
 
         def step(t: float) -> None:
             alpha = int(255 * (1 - t))
             self.anim.setData(
                 pos=xy,
                 size=8 + 34 * t,
-                brush=[pg.mkBrush(QColor(255, 255, 255, int(alpha * 0.25))) for _ in points],
+                brush=pg.mkBrush(tint.red(), tint.green(), tint.blue(), int(alpha * 0.2)),
                 pen=[
                     pg.mkPen(QColor(c.red(), c.green(), c.blue(), alpha), width=2.5)
-                    for *_, c in points
+                    for c in colours
                 ],
             )
 
-        def done() -> None:
-            self.anim.setData(pos=np.zeros((0, 2)))
-            then()
-
-        self._animate(900, step, done)
+        self._animate(900, step, then)
 
     def arrive(self, x: float, y: float, colour: QColor, then: Callable[[], None]) -> None:
-        """A new point drops in with a ripple."""
+        """A new dot drops in with a ripple."""
 
         def step(t: float) -> None:
+            a = int(255 * (1 - t) + 60)
             self.anim.setData(
                 pos=[(x, y)],
                 size=60 * (1 - t) + 12,
                 brush=pg.mkBrush(None),
-                pen=pg.mkPen(
-                    QColor(colour.red(), colour.green(), colour.blue(), int(255 * (1 - t) + 60)),
-                    width=2,
-                ),
+                pen=pg.mkPen(QColor(colour.red(), colour.green(), colour.blue(), a), width=2),
             )
 
-        def done() -> None:
-            self.anim.setData(pos=np.zeros((0, 2)))
-            then()
-
-        self._animate(800, step, done)
+        self._animate(800, step, then)
 
     def fly(self, members: list[str], group: str, then: Callable[[], None]) -> None:
-        """A flush: the bucket's records fly from the bucket's side of the map to their places."""
+        """A flush: the waiting records fly from the gauge's side to their places."""
         r = self.vb.viewRect()
         start = np.array([r.right(), (r.top() + r.bottom()) / 2])
         ends = np.array([self.studio.xy(m) for m in members], np.float64)
-        c = self.palette.colour(group)
+        brush = pg.mkBrush(self.palette.colour(group))
+        pen = pg.mkPen(QColor(theme.SURFACE))
 
         def step(t: float) -> None:
-            pos = start + (ends - start) * t
-            self.anim.setData(
-                pos=pos, size=7, brush=pg.mkBrush(c), pen=pg.mkPen(QColor(255, 255, 255, 120))
-            )
+            self.anim.setData(pos=start + (ends - start) * t, size=6, brush=brush, pen=pen)
 
-        def done() -> None:
-            self.anim.setData(pos=np.zeros((0, 2)))
-            then()
-
-        self._animate(1400, step, done)
+        self._animate(1400, step, then)
 
     # -- the pointer ------------------------------------------------------------------------------
 
@@ -324,17 +318,9 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         i = int(np.argmin(d2))
         return self.rids[i] if d2[i] <= radius * radius else None
 
-    def _moved(self, pos: QPointF) -> None:
-        self.hovered.emit(self.nearest(pos))
-
-    def _clicked(self, ev: object) -> None:
-        pos = ev.scenePos()  # type: ignore[attr-defined]
-        self.clicked.emit(self.nearest(pos))
-
 
 class Bucket(QWidget):
-    """The holding area: records stored but not yet in any group, so not searchable (§7.4).
-    It fills dot by dot and empties all at once when it reaches the spawn size."""
+    """The holding area as a tall, narrow gauge: it fills dot by dot and empties all at once."""
 
     def __init__(self, target: int) -> None:
         super().__init__()
@@ -342,9 +328,10 @@ class Bucket(QWidget):
         self.ids: list[str] = []
         self.mine: set[str] = set()
         self.pulse = 0.0
-        self.setMinimumWidth(190)
+        self.cols = 5 if target >= 50 else 2
+        self.setMinimumSize(92, 180)
         self.setMouseTracking(True)
-        self.cols = 10 if target >= 50 else 4
+        self._a: QVariantAnimation | None = None
 
     def set(self, ids: list[str], mine: set[str]) -> None:
         self.ids = list(ids)
@@ -356,87 +343,66 @@ class Bucket(QWidget):
         a.setDuration(900)
         a.setStartValue(1.0)
         a.setEndValue(0.0)
-        a.valueChanged.connect(lambda v: self._pulse(float(v)))
+        a.valueChanged.connect(self._pulse)
         a.start()
         self._a = a
 
-    def _pulse(self, v: float) -> None:
-        self.pulse = v
+    def _pulse(self, v: object) -> None:
+        self.pulse = float(v)  # type: ignore[arg-type]
         self.update()
 
-    def _geometry(self) -> tuple[QRectF, float]:
-        w, h = self.width(), self.height()
-        top, bottom = 70.0, h - 70.0
-        body = QRectF(18, top, w - 36, max(60.0, bottom - top))
+    def _body(self) -> tuple[QRectF, float]:
+        body = QRectF(14, 8, self.width() - 28, self.height() - 52)
         rows = -(-self.target // self.cols)
-        cell = min((body.width() - 24) / self.cols, (body.height() - 16) / rows)
+        cell = min((body.width() - 12) / self.cols, (body.height() - 10) / rows)
         return body, cell
 
     def paintEvent(self, event: QPaintEvent) -> None:  # noqa: N802 (Qt's name)
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        body, cell = self._geometry()
-        p.setPen(QColor(theme.TEXT))
-        p.setFont(theme.font(12, QFont.Weight.DemiBold))
-        p.drawText(QRectF(0, 8, self.width(), 24), Qt.AlignmentFlag.AlignHCenter, "Holding area")
-        p.setFont(theme.font(9))
-        p.setPen(QColor(theme.MUTED))
-        p.drawText(
-            QRectF(0, 32, self.width(), 34),
-            Qt.AlignmentFlag.AlignHCenter | Qt.TextFlag.TextWordWrap,
-            "stored · deletable at once\nnot searchable until it flushes",
-        )
-        # the bucket: a tapered outline
+        body, cell = self._body()
         path = QPainterPath()
-        inset = 14.0
+        inset = 6.0
         path.moveTo(body.left(), body.top())
         path.lineTo(body.left() + inset, body.bottom())
         path.lineTo(body.right() - inset, body.bottom())
         path.lineTo(body.right(), body.top())
         glow = int(140 * self.pulse)
-        p.setPen(QPen(QColor(124, 156, 255, 110 + glow), 2.2))
-        p.setBrush(QBrush(QColor(124, 156, 255, 18 + glow // 3)))
+        a = QColor(theme.ACCENT)
+        p.setPen(QPen(QColor(a.red(), a.green(), a.blue(), 110 + glow), 2))
+        p.setBrush(QBrush(QColor(a.red(), a.green(), a.blue(), 16 + glow // 3)))
         p.drawPath(path)
-        p.setPen(QPen(QColor(124, 156, 255, 170), 3))
-        p.drawLine(QPointF(body.left() - 6, body.top()), QPointF(body.right() + 6, body.top()))
-        # the records, stacked from the bottom
         x0 = body.left() + (body.width() - cell * self.cols) / 2
         for i, rid in enumerate(self.ids[: self.target]):
             r, c = divmod(i, self.cols)
-            cx = x0 + (c + 0.5) * cell
-            cy = body.bottom() - 8 - (r + 0.5) * cell
+            centre = QPointF(x0 + (c + 0.5) * cell, body.bottom() - 5 - (r + 0.5) * cell)
             mine = rid in self.mine
-            p.setPen(QPen(QColor(theme.YOURS_RING), 1.4) if mine else Qt.PenStyle.NoPen)
+            p.setPen(QPen(QColor(theme.YOURS_RING), 1.2) if mine else Qt.PenStyle.NoPen)
             p.setBrush(QColor(theme.YOURS if mine else theme.HOLDING))
-            rad = cell * (0.42 if mine else 0.34)
-            p.drawEllipse(QPointF(cx, cy), rad, rad)
-        # the gauge
-        n = len(self.ids)
-        p.setFont(theme.font(20))
+            rad = cell * (0.46 if mine else 0.34)
+            p.drawEllipse(centre, rad, rad)
         p.setPen(QColor(theme.TEXT))
+        p.setFont(theme.font(theme.HEADING, QFont.Weight.Bold))
         p.drawText(
-            QRectF(0, self.height() - 64, self.width(), 34),
+            QRectF(0, self.height() - 42, self.width(), 24),
             Qt.AlignmentFlag.AlignHCenter,
-            f"{n} / {self.target}",
+            f"{len(self.ids)}/{self.target}",
         )
-        p.setFont(theme.font(9))
+        p.setFont(theme.font(theme.SMALL))
         p.setPen(QColor(theme.MUTED))
         p.drawText(
-            QRectF(0, self.height() - 32, self.width(), 20),
+            QRectF(0, self.height() - 20, self.width(), 18),
             Qt.AlignmentFlag.AlignHCenter,
-            f"flushes into a new group at {self.target}",
+            copy.short("bucket"),
         )
         p.end()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:  # noqa: N802 (Qt's name)
-        body, cell = self._geometry()
+        body, cell = self._body()
         x0 = body.left() + (body.width() - cell * self.cols) / 2
         pos = event.position()
         c = int((pos.x() - x0) // cell) if cell else -1
-        r = int((body.bottom() - 8 - pos.y()) // cell) if cell else -1
+        r = int((body.bottom() - 5 - pos.y()) // cell) if cell else -1
         i = r * self.cols + c
-        if 0 <= c < self.cols and r >= 0 and 0 <= i < len(self.ids):
-            rid = self.ids[i]
-            self.setToolTip(f"{rid}{'  (yours)' if rid in self.mine else ''}: in the holding area")
-        else:
-            self.setToolTip("")
+        rid = self.ids[i] if 0 <= c < self.cols and r >= 0 and 0 <= i < len(self.ids) else None
+        self.setToolTip(f"{rid}{'  ★ yours' if rid in self.mine else ''}" if rid else "")

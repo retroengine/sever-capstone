@@ -1,0 +1,624 @@
+"""Explore: the map fills the screen; everything else floats on it.
+
+Search at the top, the legend at the top left, the holding area as a gauge on the right, "Add
+yourself" at the bottom left, and a small sheet at the bottom when a dot is selected.
+"""
+
+import json
+from typing import Any
+
+import numpy as np
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QColor, QResizeEvent
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QPlainTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
+from shiboken6 import isValid
+
+from .. import layout
+from ..actions import Added, Deleted
+from ..backend import HOLDING, Inserted
+from . import copy, theme
+from .host import Host
+from .map_view import Bucket, HoverCard, MapView
+from .widgets import Verdict, button, chip, info, label, lift
+
+
+def floating(vertical: bool = True, margin: int = 12) -> tuple[QFrame, QVBoxLayout | QHBoxLayout]:
+    f = QFrame()
+    f.setObjectName("float")
+    lift(f)
+    lay: QVBoxLayout | QHBoxLayout = QVBoxLayout(f) if vertical else QHBoxLayout(f)
+    lay.setContentsMargins(margin, margin - 2, margin, margin - 2)
+    lay.setSpacing(8)
+    return f, lay
+
+
+def route_key(placement: str, flushed: bool) -> str:
+    if flushed:
+        return "route.flush"
+    if placement.startswith("frozen-"):
+        return "route.frozen"
+    if placement.startswith("spawn-"):
+        return "route.spawn"
+    return "route.holding"
+
+
+class Explore(QWidget):
+    def __init__(self, host: Host) -> None:
+        super().__init__()
+        self.host = host
+        s = host.studio
+        self.map = MapView(s)
+        self.map.setParent(self)
+        self.map.hovered.connect(self.on_hover)
+        self.map.clicked.connect(self.on_click)
+
+        # the search, top centre
+        self.search, sl = floating(vertical=False, margin=6)
+        self.query = QLineEdit()
+        self.query.setObjectName("search")
+        self.query.setPlaceholderText(
+            "Ask a question, or #12" if s.data == "nq" else "Pick a question: #0 … #11"
+        )
+        self.query.returnPressed.connect(self.ask)
+        sl.addWidget(self.query, 1)
+        sl.addWidget(button("", "primary", self.ask, "search", "Search"))
+        sl.addWidget(button("", "ghost", self.clear_search, "x", "Clear"))
+
+        # the legend, top left
+        self.legend, ll = floating(vertical=False, margin=8)
+        ll.addWidget(chip("● frozen", theme.ACCENT))
+        ll.addWidget(chip("○ spawned", theme.SPAWNED))
+        ll.addWidget(chip("★ yours", theme.WARN if theme.LIGHT else theme.YOURS_RING))
+        ll.addWidget(info("map.about"))
+
+        # the search results, under the legend
+        self.results, rl = floating()
+        head = QHBoxLayout()
+        self.res_q = label("", "strong", wrap=True)
+        head.addWidget(self.res_q, 1)
+        head.addWidget(button("", "ghost", self.clear_search, "x", "Close"))
+        rl.addLayout(head)
+        self.res_list = QListWidget()
+        self.res_list.setMinimumHeight(150)
+        rl.addWidget(self.res_list)
+        self.res_quality = Verdict()
+        rl.addWidget(self.res_quality)
+        rl.addWidget(button("Check every question", "ghost", self.quality))
+        self.results.hide()
+
+        # the holding area, right
+        self.gauge, gl = floating(margin=8)
+        gl.addWidget(info("bucket"), alignment=Qt.AlignmentFlag.AlignRight)
+        self.bucket = Bucket(s.corpus.spawn_target)
+        gl.addWidget(self.bucket, 1)
+        gl.addWidget(button("", "", lambda: self.fill("one"), "plus", "Put one record into it"))
+        gl.addWidget(
+            button("", "", lambda: self.fill("flush"), "layers", "Fill it until it flushes")
+        )
+        gl.addWidget(button("", "", self.search_waiting, "search", "Search for a waiting record"))
+
+        # add yourself, bottom left
+        self.fab = button(" " + copy.short("add"), "fab", self.toggle_add, "plus")
+        self.add_panel, al = floating()
+        ah = QHBoxLayout()
+        ah.addWidget(label(copy.short("add"), "strong"), 1)
+        ah.addWidget(info("add"))
+        al.addLayout(ah)
+        self.account = QLineEdit()
+        self.account.setPlaceholderText("Your name")
+        self.text = QPlainTextEdit()
+        self.text.setPlaceholderText("Something about you")
+        self.text.setFixedHeight(64)
+        al.addWidget(self.account)
+        al.addWidget(self.text)
+        al.addWidget(button("Add", "primary", self.add))
+        self.add_result = Verdict()
+        al.addWidget(self.add_result)
+        self.add_panel.hide()
+
+        # the selection sheet, bottom centre
+        self.sheet, shl = floating(vertical=False)
+        self.sel = label("", wrap=True)
+        shl.addWidget(self.sel, 1)
+        self.b_delete = button("Delete", "danger", self.delete_selected, "trash")
+        self.b_forget = button("Forget", "danger", self.forget_selected, "forget")
+        self.b_group = button("Group", "", self.toggle_group, "layers", "Show only its group")
+        self.b_receipt = button("Receipt", "primary", self.open_receipt, "receipt")
+        self.b_again = button("Delete again", "", self.delete_again, "refresh")
+        for b in (self.b_delete, self.b_forget, self.b_group, self.b_receipt, self.b_again):
+            shl.addWidget(b)
+        shl.addWidget(button("", "ghost", lambda: self.on_click(None), "x", "Close"))
+        self.sheet.hide()
+
+        # the status, bottom right
+        self.status = label("", "small")
+        self.replay_btn = button("Replay", "ghost", self.replay, "play", "Replay the preparation")
+
+        # the welcome card
+        self.welcome, wl = floating(margin=18)
+        wl.addWidget(label(copy.short("welcome"), "heading"))
+        for n, step in enumerate(
+            ("Hover a dot to read it", "Add yourself with  +", "Click your ★, then Delete"), 1
+        ):
+            wl.addWidget(label(f"<b style='color:{theme.ACCENT}'>{n}</b>&nbsp;&nbsp;{step}"))
+        wl.addWidget(button("Got it", "primary", self.dismiss_welcome))
+        self.welcome.setVisible(not self._ui_state().get("welcomed", False))
+
+        self.card = HoverCard(self)
+        for w in (
+            self.search,
+            self.legend,
+            self.results,
+            self.gauge,
+            self.fab,
+            self.add_panel,
+            self.sheet,
+            self.status,
+            self.replay_btn,
+            self.welcome,
+        ):
+            w.setParent(self)
+        self.last_deleted: str | None = None
+        self.last_lsn: int | None = None
+        self.redraw()
+
+    # -- layout -----------------------------------------------------------------------------------
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 (Qt's name)
+        super().resizeEvent(event)
+        self.place()
+
+    def place(self) -> None:
+        w, h = self.width(), self.height()
+        self.map.setGeometry(0, 0, w, h)
+        sw = min(520, max(260, w - 420))
+        self.search.setGeometry((w - sw) // 2, 12, sw, self.search.sizeHint().height())
+        self.legend.adjustSize()
+        self.legend.move(12, 12)
+        gw = 116
+        gh = max(260, min(int(h * 0.62), h - 140))
+        self.gauge.setGeometry(w - gw - 12, 70, gw, gh)
+        self.results.setGeometry(12, 70, min(320, w // 3), min(360, h - 200))
+        self.fab.adjustSize()
+        self.fab.move(16, h - self.fab.height() - 16)
+        pw = min(320, w - 32)
+        self.add_panel.setFixedWidth(pw)
+        self.add_panel.adjustSize()
+        self.add_panel.move(16, h - self.fab.height() - self.add_panel.height() - 26)
+        sheet_w = min(760, w - 2 * (self.fab.width() + 40))
+        self.sheet.setFixedWidth(max(360, sheet_w))
+        self.sheet.adjustSize()
+        self.sheet.move((w - self.sheet.width()) // 2, h - self.sheet.height() - 16)
+        self.status.adjustSize()
+        self.replay_btn.adjustSize()
+        self.replay_btn.move(w - self.replay_btn.width() - 12, h - self.replay_btn.height() - 12)
+        self.status.move(
+            w - self.status.width() - self.replay_btn.width() - 20, h - self.status.height() - 18
+        )
+        self.welcome.adjustSize()
+        self.welcome.move((w - self.welcome.width()) // 2, (h - self.welcome.height()) // 2)
+        for f in (
+            self.search,
+            self.legend,
+            self.results,
+            self.gauge,
+            self.add_panel,
+            self.sheet,
+            self.welcome,
+        ):
+            f.raise_()
+        self.card.raise_()
+
+    def _ui_state(self) -> dict[str, Any]:
+        path = self.host.studio.work / "ui.json"
+        try:
+            data = json.loads(path.read_text("utf-8")) if path.exists() else {}
+        except ValueError:
+            data = {}
+        return data if isinstance(data, dict) else {}
+
+    def dismiss_welcome(self) -> None:
+        state = self._ui_state()
+        state["welcomed"] = True
+        (self.host.studio.work / "ui.json").write_text(json.dumps(state), "utf-8")
+        self.welcome.hide()
+
+    # -- drawing ----------------------------------------------------------------------------------
+
+    def redraw(self) -> None:
+        b = self.host.studio.backend
+        if isValid(self.card):
+            self.card.hide()
+        self.map.refresh()
+        mine = {r for r, rec in b.index.records.items() if rec.mine}
+        self.bucket.set(b.index.holding, mine)
+        groups = {rec.group for rec in b.index.records.values() if rec.group != HOLDING}
+        self.status.setText(f"{len(b.index.records):,} records · {len(groups)} groups")
+        self.place()
+
+    def arrive(self, **kw: Any) -> None:
+        self.redraw()
+
+    def show_any(self) -> str | None:
+        """Opens the card of the dot nearest the middle of the map (the tour's "Do it")."""
+        if not len(self.map.rids):
+            return None
+        mid = self.map.xy.mean(axis=0)
+        rid = self.map.rids[int(((self.map.xy - mid) ** 2).sum(axis=1).argmin())]
+        self.on_hover(rid)
+        return rid
+
+    def focus_search(self) -> None:
+        self.query.setFocus()
+        self.query.selectAll()
+
+    # -- hover and selection ----------------------------------------------------------------------
+
+    def on_hover(self, rid: str | None) -> None:
+        if rid is None or not isValid(self.card):
+            if isValid(self.card):
+                self.card.hide()
+            return
+        first = "hover" not in self.host.studio.checklist.verdicts
+        info_ = self.host.studio.hover(rid)
+        if not info_:
+            return
+        self.card.show_for(info_, self.map.palette.colour(str(info_["group"])))
+        p = self.map.to_widget(*self.host.studio.xy(rid))
+        x = (
+            p.x() + 16
+            if p.x() + 16 + self.card.width() < self.width() - 130
+            else p.x() - 16 - self.card.width()
+        )
+        y = min(max(64.0, p.y() - 30), self.height() - self.card.height() - 12)
+        self.card.move(int(max(8, x)), int(y))
+        if first:
+            self.host.changed()
+
+    def on_click(self, rid: str | None) -> None:
+        self.map.select(rid)
+        self.welcome.hide()
+        b = self.host.studio.backend
+        rec = b.index.records.get(rid) if rid else None
+        if rec is None or rid is None:
+            self.sheet.hide()
+            return
+        n = len(b.accounts().get(rec.account, []))
+        self.sel.setText(
+            f"<b>{rid}</b>{'  ★' if rec.mine else ''}<br>"
+            f"<span style='color:{theme.MUTED}'>{rec.account} · {rec.group}</span>"
+        )
+        self.b_forget.setText(f"Forget ({n})")
+        self._sheet(mode="selected")
+
+    def _sheet(self, mode: str) -> None:
+        selected = mode == "selected"
+        for b in (self.b_delete, self.b_forget, self.b_group):
+            b.setVisible(selected)
+        for b in (self.b_receipt, self.b_again):
+            b.setVisible(not selected)
+        self.sheet.show()
+        self.place()
+
+    def toggle_group(self) -> None:
+        rid = self.map.selected
+        rec = self.host.studio.backend.index.records.get(rid) if rid else None
+        self.map.focus(None if self.map.focus_group or rec is None else rec.group)
+        self.b_group.setText("All" if self.map.focus_group else "Group")
+
+    # -- adding -----------------------------------------------------------------------------------
+
+    def toggle_add(self) -> None:
+        self.add_panel.setVisible(not self.add_panel.isVisible())
+        self.welcome.hide()
+        if self.add_panel.isVisible():
+            self.place()
+            self.account.setFocus()
+
+    def add(self) -> None:
+        account = self.account.text().strip()
+        text = self.text.toPlainText().strip()
+        if not account or not text:
+            self.add_result.set(False, "Type a name and some text.")
+            return
+        self.add_result.set(None, "Adding…")
+        self.host.worker.submit(
+            lambda: self.host.studio.add_mine(account, text), self.added, self.host.error
+        )
+
+    def added(self, a: Added) -> None:
+        r = a.result
+        key = route_key(r.placement, r.flush is not None)
+        self.add_result.set(True, copy.short(key))
+        self.add_result.setToolTip(copy.long(key))
+        self.text.clear()
+        self.add_panel.hide()
+        if r.flush is not None:
+            self._flushed(r)
+        elif r.placement == HOLDING:
+            self.redraw()
+            self.bucket.flash()
+        else:
+            self.redraw()
+            self.map.arrive(*a.xy, self.map.palette.colour(r.placement), lambda: None)
+            self.on_click(a.rid)
+        self.host.toast(f"{a.rid}: {copy.short(key).lower()}", True)
+        self.host.changed()
+
+    def _flushed(self, r: Inserted) -> None:
+        f = r.flush
+        if f is None:
+            return
+        self.bucket.flash()
+        mine = {m for m, rec in self.host.studio.backend.index.records.items() if rec.mine}
+        self.bucket.set(f.members, mine)
+
+        def landed() -> None:
+            self.redraw()
+            self.host.toast(
+                f"{len(f.members)} records became group {f.group}"
+                + (" · ID checked ✓" if f.id_matches else " · ID DIFFERS"),
+                f.id_matches,
+            )
+
+        def go() -> None:
+            self.bucket.set([], mine)
+            self.map.fly(f.members, f.group, landed)
+
+        QTimer.singleShot(450, go)
+
+    def fill(self, until: str) -> None:
+        s = self.host.studio
+        mine = {m for m, rec in s.backend.index.records.items() if rec.mine}
+
+        def progress(a: tuple[Any, ...]) -> None:
+            self.bucket.set(s.backend.index.holding, mine)
+
+        def done(out: list[Inserted]) -> None:
+            if not out:
+                self.host.toast("No passages left to insert.", False)
+                return
+            last = out[-1]
+            if last.flush is not None:
+                self._flushed(last)
+            else:
+                self.redraw()
+                self.host.toast(
+                    f"{len(out)} inserted · the bucket holds {len(s.backend.index.holding)}", None
+                )
+            self.host.changed()
+
+        self.host.worker.submit(
+            lambda report: s.fill_bucket(until, progress=lambda *a: report(*a)),
+            done,
+            self.host.error,
+            progress,
+        )
+
+    def search_waiting(self) -> None:
+        def done(out: tuple[str | None, bool, bool]) -> None:
+            rid, found, stored = out
+            if rid is None:
+                self.host.toast(
+                    "The bucket is empty: put one record in first.",
+                    False,
+                    "Put one in",
+                    lambda: self.fill("one"),
+                )
+                return
+            ok = stored and not found
+            self.host.toast(
+                f"{rid}: stored, but search can't find it"
+                if ok
+                else f"{rid}: found by search (unexpected)",
+                ok,
+            )
+            self.host.changed()
+
+        self.host.worker.submit(self.host.studio.unsearchable, done, self.host.error)
+
+    # -- deleting ---------------------------------------------------------------------------------
+
+    def _points(self, rids: list[str]) -> list[tuple[float, float, QColor]]:
+        b = self.host.studio.backend
+        out = []
+        for r in rids:
+            rec = b.index.records.get(r)
+            if rec is not None and rec.group != HOLDING:
+                out.append((*self.host.studio.xy(r), self.map.palette.colour(rec.group)))
+        return out
+
+    def delete_selected(self) -> None:
+        if self.map.selected:
+            self.delete([self.map.selected], "delete")
+
+    def forget_selected(self) -> None:
+        rid = self.map.selected
+        rec = self.host.studio.backend.index.records.get(rid) if rid else None
+        if rec is not None:
+            self.delete(self.host.studio.backend.accounts()[rec.account], "forget", rec.account)
+
+    def delete(self, rids: list[str], kind: str, account: str = "") -> None:
+        s = self.host.studio
+        points = self._points(rids)
+        accounts = {
+            r: s.backend.index.records[r].account for r in rids if r in s.backend.index.records
+        }
+
+        def run() -> Deleted:
+            return s.forget(account) if kind == "forget" else s.delete(rids)
+
+        def done(d: Deleted) -> None:
+            for rid, lsn in zip(d.rids, d.lsns, strict=False):
+                self.host.receipts_of[lsn] = (rid, accounts.get(rid, ""))
+            self.last_deleted = d.rids[0] if d.rids else None
+            self.last_lsn = d.lsns[-1] if d.lsns else None
+            self.map.select(None)
+            n = len(d.rids)
+            what = (
+                f"Forgot {account}"
+                if kind == "forget"
+                else f"Deleted {d.rids[0] if d.rids else ''}"
+            )
+            plural = "s" if n != 1 else ""
+            receipts = f"{len(d.lsns)} receipt{'s' if len(d.lsns) != 1 else ''}"
+            self.sel.setText(
+                f"<b>{what}</b><br><span style='color:{theme.MUTED}'>{n} record{plural} · "
+                f"{receipts} · total {d.total_after:,}</span>"
+            )
+            self.b_again.setVisible(kind == "delete")
+
+            def after() -> None:
+                self.redraw()
+                self._sheet(mode="deleted")
+                self.b_again.setVisible(kind == "delete")
+                self.host.toast(
+                    f"{n} deleted · {len(d.lsns)} receipt{'s' if len(d.lsns) != 1 else ''}", d.ok
+                )
+                self.host.changed()
+
+            self.map.vanish(points, after)
+
+        self.host.worker.submit(run, done, self.host.error)
+
+    def open_receipt(self) -> None:
+        self.host.go("receipts", lsn=self.last_lsn)
+
+    def delete_again(self) -> None:
+        rid = self.last_deleted
+        if rid is None:
+            return
+
+        def done(ok: bool) -> None:
+            self.host.toast(
+                'Again: "absent". Nothing changed.' if ok else "Delete again did not say absent", ok
+            )
+            self.host.changed()
+
+        self.host.worker.submit(lambda: self.host.studio.delete_again(rid), done, self.host.error)
+
+    # -- search -----------------------------------------------------------------------------------
+
+    def ask(self) -> None:
+        s = self.host.studio
+        q = self.query.text().strip()
+        if not q:
+            return
+        question: int | str
+        if q.lstrip("#").isdigit():
+            question = int(q.lstrip("#")) % max(1, len(s.corpus.questions))
+        elif s.data == "synthetic":
+            self.host.toast("The offline fixture has no encoder: use #number.", False)
+            return
+        else:
+            question = q
+
+        def run() -> tuple[str, list[tuple[str, float, bool]], tuple[float, float]]:
+            text, hits = s.ask(question)
+            vec = (
+                s.corpus.question_vectors[question]
+                if isinstance(question, int)
+                else s.encode(question)
+            )
+            return text, hits, layout.place(np.asarray(vec, np.float32), s.corpus.vectors, s.coords)
+
+        def done(out: tuple[str, list[tuple[str, float, bool]], tuple[float, float]]) -> None:
+            text, hits, origin = out
+            self.map.show_beam(origin, hits)
+            self.res_q.setText(text)
+            self.res_list.clear()
+            for rank, (rid, _, good) in enumerate(hits[:8], 1):
+                t = " ".join(s.backend.text_of(rid).split())
+                item = QListWidgetItem(
+                    f"{rank}  {'✓ ' if good else ''}{t[:60]}{'…' if len(t) > 60 else ''}"
+                )
+                item.setToolTip(f"{rid}\n{t[:400]}")
+                if good:
+                    item.setForeground(QColor(theme.OK))
+                self.res_list.addItem(item)
+            if not hits:
+                self.res_list.addItem("Nothing found")
+            self.results.show()
+            self.welcome.hide()
+            self.place()
+
+        self.host.worker.submit(run, done, self.host.error)
+
+    def clear_search(self) -> None:
+        self.map.clear_beam()
+        self.results.hide()
+        self.query.clear()
+
+    def quality(self) -> None:
+        def done(out: tuple[int, int, int, float]) -> None:
+            n, at1, at10, _ = out
+            self.res_quality.set(at10 > 0, f"{n:,} questions: first {at1:,}, top 10 {at10:,}")
+            self.host.changed()
+
+        self.res_quality.set(None, "Searching every question…")
+        self.host.worker.submit(self.host.studio.search_quality, done, self.host.error)
+
+    # -- replay -----------------------------------------------------------------------------------
+
+    def replay(self) -> None:
+        """The preparation again, fast: each record appears where its receipt said it landed; the
+        bucket fills and flushes as it did (``prepare-events.jsonl``)."""
+        path = self.host.studio.work / "prepare-events.jsonl"
+        if not path.exists():
+            self.host.toast("No preparation recorded here.", False)
+            return
+        events = [json.loads(ln) for ln in path.read_text("utf-8").splitlines()]
+        corpus = self.host.studio.corpus.position
+        holding: list[str] = []
+        step = max(1, len(events) // 160)
+        state = {"i": 0}
+        view = self.map
+
+        def tick() -> None:
+            i = state["i"]
+            placed: list[tuple[str, str]] = []
+            for e in events[i : i + step]:
+                if "flush" in e:
+                    placed += [(m, e["placement"]) for m in holding]
+                    holding.clear()
+                    self.bucket.flash()
+                if e["placement"] == HOLDING:
+                    holding.append(e["rid"])
+                else:
+                    placed.append((e["rid"], e["placement"]))
+            state["i"] = i + step
+            placed = [(r, g) for r, g in placed if r in corpus]
+            if placed:
+                # only the new dots: redrawing all 10,000 each tick stalls the window; the map's
+                # cached brushes and pens let pyqtgraph reuse each drawn dot
+                styles = [view._style(g, False) for _, g in placed]
+                xy = np.array([self.host.studio.xy(r) for r, _ in placed], np.float64)
+                view.base.addPoints(
+                    pos=xy, brush=[b for b, _ in styles], pen=[p for _, p in styles], size=4.6
+                )
+            self.bucket.set(holding, set())
+            self.status.setText(f"replay {min(state['i'], len(events)):,} / {len(events):,}")
+            self.status.adjustSize()
+            if state["i"] >= len(events):
+                timer.stop()
+                QTimer.singleShot(900, self.redraw)
+
+        timer = QTimer(self)
+        timer.timeout.connect(tick)
+        view.base.setData(pos=np.zeros((0, 2)))
+        timer.start(30)
+        self._replay = timer
+
+    def hideEvent(self, event: Any) -> None:  # noqa: N802 (Qt's name)
+        if isValid(self.card):
+            self.card.hide()
+        super().hideEvent(event)

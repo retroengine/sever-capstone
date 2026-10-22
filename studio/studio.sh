@@ -3,8 +3,10 @@
 #
 #   studio/studio.sh setup                 once: Studio's environment, the SDK, the encoder, the tools
 #   studio/studio.sh prepare [--data nq|synthetic] [--rows N]   build the demo database (~10 min on NQ)
-#   studio/studio.sh run     [--data nq|synthetic]              open the window
-#   studio/studio.sh test                  Studio's own tests, offline (lint, types, tests)
+#   studio/studio.sh run     [--data nq|synthetic] [--x11]      open the window
+#   studio/studio.sh smoke   [--data nq|synthetic]              open it on this screen, walk everything, quit
+#   studio/studio.sh test    [--full]      Studio's tests: offline and fast; --full adds this screen,
+#                                          the NQ data, a soak and live sabotage (~15 min)
 #   studio/studio.sh clean                 delete studio/work/ (databases, keys, receipts, the model)
 #
 # --data nq (the default) needs the pinned NQ data in datasets/ (not in git); --data synthetic runs
@@ -50,13 +52,29 @@ print('encoder:', fetch(Path('$here/work/models')))"
     fi
     ;;
   prepare) need_env; py -m sever_studio prepare "${dev[@]}" "$@" ;;
-  run) need_env; py -m sever_studio run "${dev[@]}" "$@" ;;
+  run|smoke)
+    need_env
+    args=()
+    for a in "$@"; do
+      if [ "$a" = --x11 ]; then
+        if ldconfig -p | grep -q libxcb-cursor.so; then export QT_QPA_PLATFORM=xcb
+        else echo "--x11 needs libxcb-cursor0:  sudo apt install libxcb-cursor0" >&2; exit 2; fi
+      else args+=("$a"); fi
+    done
+    [ "$cmd" = smoke ] && args+=(--smoke)
+    py -m sever_studio run "${dev[@]}" "${args[@]}"
+    ;;
   test)
     need_env
     (cd "$here" && uv run --no-sync ruff check . && uv run --no-sync ruff format --check .)
     (cd "$here" && uv run --no-sync mypy sever_studio tests)
-    (cd "$here" && QT_QPA_PLATFORM=offscreen uv run --no-sync pytest -q -p no:cacheprovider tests "$@")
+    if [ "${1:-}" = --full ]; then
+      shift
+      (cd "$here" && SEVER_STUDIO_FULL=1 uv run --no-sync pytest -q -p no:cacheprovider tests "$@")
+    else
+      (cd "$here" && uv run --no-sync pytest -q -p no:cacheprovider tests "$@")
+    fi
     ;;
   clean) rm -rf "$here/work" ;;
-  *) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
+  *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac
