@@ -266,12 +266,31 @@ class CrashDelete:
     took_ms: float | None = None  # how long the whole deletion took, when it finished first
 
 
+def kill_verdict(outcomes: list[str]) -> tuple[bool | None, str]:
+    """What a series of killed deletions showed (§12.5): only runs the kill landed in count; a
+    half deletion is a failure; "all" needs a kill after the commit point."""
+    killed = [o for o in outcomes if o in ("none", "all", "partial")]
+    if not killed:
+        return None, "no kill landed: every deletion finished first. Run it again."
+    if "partial" in killed:
+        return False, f"{killed.count('partial')} of {len(killed)} kills left a half deletion"
+    n = f"{len(killed)} kill{'s' if len(killed) != 1 else ''}"
+    if "all" not in killed:
+        return True, (
+            f"{n}, each before the commit point: none deleted, never half. A kill after it is "
+            "Part 2's proof (Proof tab)."
+        )
+    if "none" not in killed:
+        return True, f"{n}, each after the commit point: all deleted, never half"
+    return True, f"{n}: before the commit point none, after it all; never half"
+
+
 def crash_delete(studio: Any, ids: list[str], account: str, kill_after_ms: float) -> CrashDelete:
     """A second process deletes ``ids`` in one transaction (``delete_user``) and is killed with
-    SIGKILL ``kill_after_ms`` after it starts. Recovery; then the database's count says how many
-    went: all of them or none (§12.5)."""
+    SIGKILL ``kill_after_ms`` after it starts. Recovery; then the engine's log says, record by
+    record, which of them went: all of them or none (§12.5)."""
     b = studio.backend
-    before = b.total()
+    lsns = {rid: b.index.records[rid].lsn for rid in ids if rid in b.index.records}
     b.close()
     marks = studio.work / "crash-delete"
     shutil.rmtree(marks, ignore_errors=True)
@@ -299,13 +318,14 @@ def crash_delete(studio: Any, ids: list[str], account: str, kill_after_ms: float
     killed = child.wait() == -signal.SIGKILL
     finished = (marks / "done").exists()
     b.open()
-    gone = before - b.total()
-    if gone == len(ids):
-        for rid in ids:
-            rec = b.index.records.pop(rid, None)
-            if rec is not None and rec.group == "holding":
-                b.index.holding.remove(rid)
-        b.save()
+    live = b.replay().groups
+    deleted = [rid for rid, lsn in lsns.items() if lsn not in live]
+    for rid in deleted:
+        rec = b.index.records.pop(rid)
+        if rec.group == "holding":
+            b.index.holding.remove(rid)
+    b.save()
+    gone = len(deleted)
     if finished:
         outcome = "finished first"
     elif gone == 0:

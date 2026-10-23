@@ -296,7 +296,7 @@ class KillTab(QWidget):
             self.t_all.set(str(n["all"]), theme.OK)
             self.t_first.set(str(n["finished first"]), theme.MUTED)
             self.t_half.set(str(n["partial"]), theme.OK if n["partial"] == 0 else theme.BAD)
-            self.verdict.set(n["partial"] == 0, "Never half: all or nothing, every time")
+            self.verdict.set(*wow.kill_verdict([r.outcome for r in out]))
             self.host.changed()
 
         self.host.worker.submit(go, done, self.host.error, one)

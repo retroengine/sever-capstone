@@ -6,6 +6,7 @@ draws what these return; the tests call them directly.
 import hashlib
 import json
 import os
+import random
 import re
 import shutil
 import signal
@@ -811,11 +812,19 @@ class Studio:
         env = {**os.environ, "PYTHONPATH": os.pathsep.join(paths)}
         child = subprocess.Popen(cmd, cwd=self.root, env=env)
         deadline = time.monotonic() + 600
+        first: float | None = None
         while time.monotonic() < deadline and child.poll() is None:
-            if acks.exists() and len(acks.read_text("utf-8").splitlines()) >= count // 2:
+            n = len(acks.read_text("utf-8").splitlines()) if acks.exists() else 0
+            if n and first is None:
+                first = time.monotonic()
+            if n >= count // 2 and first is not None:
+                # M5: at a random moment within one average insert, so the kill can land inside
+                # an insert, before or after its commit, not only between two inserts
+                per = (time.monotonic() - first) / max(1, n - 1)
+                time.sleep(random.uniform(0.0, per))
                 os.kill(child.pid, signal.SIGKILL)
                 break
-            time.sleep(0.005)
+            time.sleep(0.002)
         killed = child.wait() == -signal.SIGKILL
         acked = [
             (f[0], f[1], int(f[2]))
