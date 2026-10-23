@@ -1,0 +1,19 @@
+# Red proofs for the inspect build (DB-107; CLAUDE.md §6.3). Each patch breaks one rule of
+# crates/sever-db/src/inspect.rs; the named test, built with --features inspect, must go red.
+# Run them all: bash tests/proofs/inspect/run.sh (a throwaway worktree of HEAD per patch).
+- id: PRI-1
+  claim: an event copies a group's S (§13.2 keeps S encrypted; only n, C_S and centroids are public)
+  patch: PRI-1.patch
+  test: p4_inspect_events_hold_no_secret
+- id: PRI-2
+  claim: a flush's reported centroid is not the founders' ((f64)S_i / 2^24) / n bit for bit (§7.5)
+  patch: PRI-2.patch
+  test: p4_inspect_a_flush_reports_the_centroid_of_its_founders
+- id: PRI-3
+  claim: a touched group's n after is reported as its n before (§5.3)
+  patch: PRI-3.patch
+  test: p4_inspect_each_change_moves_n_and_the_counters_by_one_record
+- id: PRI-4
+  claim: a touched group's C_S after is reported as its C_S before (§5.3; the engine's snapshot)
+  patch: PRI-4.patch
+  test: p4_inspect_each_change_moves_n_and_the_counters_by_one_record

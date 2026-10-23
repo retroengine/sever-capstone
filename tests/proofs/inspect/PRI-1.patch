@@ -1,0 +1,13 @@
+diff --git a/crates/sever-db/src/inspect.rs b/crates/sever-db/src/inspect.rs
+index 4b0167e..dbf39f3 100644
+--- a/crates/sever-db/src/inspect.rs
++++ b/crates/sever-db/src/inspect.rs
+@@ -150,7 +150,7 @@ fn public_fields(cs: &ChangeSet<CommitmentExtension>) -> Event {
+             .groups
+             .iter()
+             .map(|g| GroupMove {
+-                group: g.group.as_text(),
++                group: format!("{} {:?}", g.group.as_text(), g.after.s),
+                 n_before: g.before.n,
+                 n_after: g.after.n,
+                 c_s_before: encode_point(&g.before.ext_public.0),
