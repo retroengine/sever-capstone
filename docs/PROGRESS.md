@@ -110,6 +110,44 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   decrypts but does not print the reconstructed vector next to the original, as Build 3-4 §2.11
   step 4 says; `sever-scan`'s report keeps no recovered values. This is a Part 4 change, left for
   you to decide (Part 4 is not frozen).
+- **Studio audit and its fixes (23 Oct 2026; G-45, DB-107, DB-108, DB-109; branch `studio-raw`,
+  not merged).** An audit of Studio (`studio/audit/REPORT.md`) found its groups are the engine's, but
+  much around them was Studio's own arithmetic or a recording. The audit listed 4 critical, 8 high
+  and 9 medium findings. All are fixed, each with a test that fails without its fix
+  (`studio/audit/REPORT.md` §8). The engine reports itself through two optional, read-only
+  additions, built only with the `inspect` feature, so the default build is unchanged:
+  - **`InspectParticipant`** (DB-107, `crates/sever-db/src/inspect.rs`, EP-7) publishes the public
+    fields of each committed change, such as a spawned group's centroid, `n` and `C_S`. It has
+    4 Rust tests with red proofs in `tests/proofs/inspect/`.
+  - **`sever-explain`** (DB-108) explains routing and search with the frozen crates' own
+    functions.
+
+  What changed in Studio (DB-109):
+  - Every insert's route is predicted by the engine's code and checked against where the engine
+    put it.
+  - The "By group" map is removed. Each record's group is replayed from the engine's log.
+  - The checklist has 34 checks; nothing ticks from a recording or from opening a screen.
+  - The float race is labelled a model; only Part 1's program ticks its row.
+  - The attack lab adds Part 3's 20 operator forgeries.
+  - A Groups made tab shows C-15's k-means on the reference rows, labelled the offline build step.
+  - Beginner diagrams carry the engine's numbers.
+  - No main-thread pause exceeds 100 ms (the map refresh fell from 250–290 ms to 34–49 ms).
+
+  The full tier found two more Studio bugs, both fixed:
+  - A spawned centre lost with the crash demo's killed child made the engine's correct spillover
+    look like a routing error. It is now counted as unknown.
+  - Spares loaded beyond the map's layout crashed `layout.place`.
+
+  The NQ smoke found that the window raised errors while a demo had the database closed, and that
+  the smoke did not count them; both fixed. The map colours each frozen group (a k-means cluster)
+  in its own colour and leaves spawned groups (batches, not clusters) grey until pointed at; "Colour
+  every group" colours all of them (owner, 23 Oct 2026). `studio/audit/spawn_proof.py` shows on an
+  NQ copy that a spawned group's ID, size and centre are the engine's (§7.5 recomputed, bit for
+  bit). Verified on `7a42e3d`: `studio.sh test --full` 123 passed; NQ and synthetic smokes PASS
+  (33/34, only sabotage not shown); `cargo test --workspace` and the inspect build 552 passed;
+  clippy and fmt clean; `scripts/ci.sh fast` every step PASS. **Next:** a 3-D mode beside the 2-D
+  map and a 384-D cluster-separation chart (owner, 23 Oct 2026). **Open for the owner:** merge
+  `studio-raw` to `main` after the VM gate run.
 - **Working copy:** `~/sever-db` on the WSL ext4 disk (the `C:` copy is a backup).
 - **Git:** Claude commits (conventional messages, no AI attribution) and pushes to `origin` (owner,
   19 Oct 2026). `main` and `p3-gates` are fast-forwarded together once GitHub's fast tier and the
@@ -480,6 +518,9 @@ report and the rebuilt artefact identical apart from timing); the freeze manifes
 
 ## Session log
 
+- **23 Oct 2026**: Studio audited (`studio/audit/REPORT.md`) and every finding fixed on
+  `studio-raw` (G-45, DB-107 … DB-109); see the Studio entry under "Now". `testingkmeans.py` and the
+  stale `studio/work` files deleted.
 - **22 Oct 2026**: review of everything open. Before v1.0, only owner steps are left: the VM run
   (no P4-T entries in the ledger yet; P3's are interim), the fair-testing PASS runs for Parts 3 and 4
   (`FAIRNESS_P3/P4.md` are FAIL only for the missing mutants PASS, DB-75), `freeze.sh 3` and `4`,
