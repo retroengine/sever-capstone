@@ -28,7 +28,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from os import PathLike
 from types import TracebackType
-from typing import Literal, Self
+from typing import Any, Literal, Self
 
 import sever_db_native as _native
 from sever_db_native import (
@@ -281,7 +281,7 @@ class Database:
         """RFC 9162 consistency proof (§10.1), or ``None`` if the sizes are out of range."""
         return self._e.consistency_proof(old_size, new_size)
 
-    def events(self, since: int = 0) -> list[dict[str, object]]:
+    def events(self, since: int = 0) -> list[dict[str, Any]]:
         """Every committed change's public fields since event ``since`` (DB-107, spec §16.1): the
         kind, created groups with the centroid the engine computed, each touched group's ``n`` and
         ``C_S`` before and after, ``N`` and ``k``, arrivals and departures by scrambled ID, and each
@@ -289,7 +289,7 @@ class Database:
         with the cargo feature ``inspect``."""
         if not hasattr(self._e, "events"):
             raise SeverError("this SDK was built without the inspect feature (DB-107)")
-        out: list[dict[str, object]] = self._e.events(since)
+        out: list[dict[str, Any]] = self._e.events(since)
         return out
 
     def export_log(self) -> str:

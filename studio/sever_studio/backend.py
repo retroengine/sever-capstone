@@ -177,6 +177,10 @@ class Backend:
         self.refused: str | None = None
         #: the last replay of the engine's log; dropped by every insert, deletion and reopen
         self._replay: Replay | None = None
+        #: the engine's events (DB-107) already written to ``events.jsonl`` by this process
+        self.events_seen = 0
+        self.events_file = work / "events.jsonl"
+        self._centroids: tuple[int, dict[str, list[float]]] | None = None
 
     # -- opening and state ------------------------------------------------------------------------
 
@@ -186,6 +190,7 @@ class Backend:
         self.work.mkdir(parents=True, exist_ok=True)
         self.receipts.mkdir(exist_ok=True)
         self._replay = None
+        self.events_seen = 0  # a new process's engine numbers its events from 0
         try:
             self.db = Database.open(self.data, self.keys, d=self.corpus.d)
             self.refused = None
@@ -293,6 +298,7 @@ class Backend:
         flush = self.track(
             rid, r.placement or HOLDING, account, mine, text if mine else None, own, r.database_lsn
         )
+        self.record_events()
         if save:
             self.save()
         return Inserted(rid, r.database_lsn, r.placement or HOLDING, False, flush)
@@ -457,6 +463,7 @@ class Backend:
         saved for them with the public anchors."""
         out = self.live.delete_user(self.cid, ids)
         self._replay = None
+        self.record_events()
         for rid, d in zip(ids, out, strict=True):
             if d.outcome == "deleted" and d.certificate is not None and d.database_lsn is not None:
                 (self.receipts / f"{d.database_lsn}.cert").write_bytes(d.certificate)
@@ -469,6 +476,42 @@ class Backend:
         self.save()
         return out
 
+    def record_events(self) -> None:
+        """Appends the engine's new events (DB-107: public fields only) to ``events.jsonl``, bytes
+        as hex, so every process that writes (a killed writer too, up to its last event) leaves
+        the engine's own account of what it did."""
+        new = self.live.events(self.events_seen)
+        if not new:
+            return
+        with self.events_file.open("a", encoding="utf-8") as f:
+            for e in new:
+                doc = {
+                    **e,
+                    "groups": [
+                        {k: (v.hex() if isinstance(v, bytes) else v) for k, v in g.items()}
+                        for g in e["groups"]
+                    ],
+                    "arrivals": [[g, s.hex()] for g, s in e["arrivals"]],
+                    "departures": [[g, s.hex()] for g, s in e["departures"]],
+                }
+                f.write(json.dumps(doc, separators=(",", ":")) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+        self.events_seen = int(new[-1]["seq"]) + 1
+
+    def centroids(self) -> dict[str, list[float]]:
+        """Each spawned group's centre as the engine computed it at the flush (§7.5), from its
+        events. A flush lost with a killed process has none (it is never recomputed here)."""
+        size = self.events_file.stat().st_size if self.events_file.exists() else 0
+        if self._centroids is None or self._centroids[0] != size:
+            out: dict[str, list[float]] = {}
+            if size:
+                for line in self.events_file.read_text("utf-8").splitlines():
+                    for g, mu in json.loads(line)["created"]:
+                        out[g] = mu
+            self._centroids = (size, out)
+        return self._centroids[1]
+
     def receipt_owner(self, lsn: int) -> tuple[str, str] | None:
         """The record and account a receipt of this application belongs to."""
         o = self.index.owners.get(str(lsn))
@@ -477,7 +520,9 @@ class Backend:
     def absent(self, rid: str) -> bool:
         """Deleting a record that is not live changes nothing and says ``absent`` (§5.4)."""
         self._replay = None
-        return self.live.delete(self.cid, rid).outcome == "absent"
+        absent = self.live.delete(self.cid, rid).outcome == "absent"
+        self.record_events()
+        return absent
 
     # -- after a crash ----------------------------------------------------------------------------
 
@@ -506,6 +551,7 @@ class Backend:
                     passage=c.texts[i].encode("utf-8"),
                 )
                 self._replay = None
+                self.record_events()
                 self.track(in_flight, r.placement or HOLDING, c.accounts[i], lsn=r.database_lsn)
             self.index.loaded += 1
         self.adopt(self.replay())

@@ -161,23 +161,6 @@ def test_map_by_meaning_is_still_there(studio: Studio) -> None:
     assert studio.xy(rid) == studio.meaning_xy(rid)
 
 
-def test_map_a_groups_sum_and_count_change_by_exactly_the_deleted_record(studio: Studio) -> None:
-    b = studio.backend
-    group = next(rec.group for rec in b.index.records.values() if rec.group.startswith("frozen-"))
-    members = [r for r, rec in b.index.records.items() if rec.group == group]
-    # §4.2 and §5, written out again: S = Σ round(x · 2^24), ties to even, as integers
-    q = {r: np.rint(b.vector_of(r).astype(np.float64) * 2**24).astype(np.int64) for r in members}
-    n, total, mean = studio.group_stats(group)
-    assert n == len(members)
-    assert np.array_equal(total, sum(q.values()))
-    assert np.allclose(mean, total / n / 2**24)
-    gone = members[0]
-    studio.delete([gone])
-    n2, total2, _ = studio.group_stats(group)
-    assert n2 == n - 1
-    assert np.array_equal(total2, total - q[gone])  # S − x̃: exact
-
-
 def test_map_a_frozen_centre_is_the_partitions_centroid(studio: Studio) -> None:
     from sever_partition.artefact import decode
 

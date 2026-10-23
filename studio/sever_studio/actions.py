@@ -168,9 +168,6 @@ class Studio:
         for g in members:
             if g in self.groups.anchors:
                 continue
-            if not g.startswith("frozen-"):  # §7.5: S / n of the group as first seen, then kept
-                n, total, _ = self.group_stats(g)
-                self.groups.mu[g] = list(total.astype(np.float64) / 2**24 / max(n, 1))
             mu = self.centre(g)
             if mu is not None:
                 centres[g] = layout.place(mu.astype(np.float32), self.corpus.vectors, self.coords)
@@ -178,7 +175,9 @@ class Studio:
 
     def centre(self, group: str) -> npt.NDArray[np.float64] | None:
         """The group's centre μ as the database routes and searches with it: a frozen group's from
-        the partition (§6, fitted once by k-means), a spawned group's S / n at creation (§7.5)."""
+        the partition the engine verified (§6.3), a spawned group's as the engine computed it at the
+        flush and reported it (§7.5, DB-107); ``None`` when that report was lost with a killed
+        process. Studio never computes one."""
         if group.startswith("frozen-"):
             if self._frozen is None:
                 from sever_partition.artefact import decode
@@ -186,7 +185,7 @@ class Studio:
                 self._frozen = decode(self.corpus.artefact.read_bytes()).centroids
             k = int(group.split("-")[1])
             return self._frozen[k] if k < len(self._frozen) else None
-        mu = self.groups.mu.get(group)
+        mu = self.backend.centroids().get(group)
         return np.asarray(mu, np.float64) if mu is not None else None
 
     def distances(self, rid: str) -> tuple[float, float] | None:
@@ -235,22 +234,11 @@ class Studio:
             "mu_source": (
                 "the partition artefact the engine verified (§6.3)"
                 if group.startswith("frozen-")
-                else "computed by Studio from the founding cohort (§7.5)"
+                else "the engine, at the flush that created it (§7.5)"
+                if mu is not None
+                else "unknown: the flush happened in a process that was killed"
             ),
         }
-
-    def group_stats(self, group: str) -> tuple[int, npt.NDArray[np.int64], npt.NDArray[np.float64]]:
-        """A group's count ``n``, exact sum ``S`` of its members' Q24 integers (§4.2, §5) and mean
-        ``S / n`` back in real numbers, from the vectors Studio stored. The database keeps ``S``
-        encrypted; these are recomputed here, not read from it."""
-        b = self.backend
-        rids = [r for r, rec in b.index.records.items() if rec.group == group]
-        d = self.corpus.d
-        if not rids:
-            return 0, np.zeros(d, np.int64), np.zeros(d, np.float64)
-        q = wow.quantise(np.stack([b.vector_of(r) for r in rids]).astype(np.float32))
-        total = q.astype(np.int64).sum(axis=0)
-        return len(rids), total, total.astype(np.float64) / len(rids) / 2**24
 
     def meaning_xy(self, rid: str) -> tuple[float, float]:
         if rid in self.extra_xy:
