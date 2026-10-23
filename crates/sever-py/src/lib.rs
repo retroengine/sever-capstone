@@ -599,6 +599,8 @@ impl PyEngine {
 #[pymodule]
 fn sever_db_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyEngine>()?;
+    #[cfg(feature = "inspect")]
+    m.add_class::<PyExplainer>()?;
     m.add_class::<PyUserKey>()?;
     m.add_class::<PyInsertRequest>()?;
     m.add_function(wrap_pyfunction!(prepare_insert, m)?)?;
@@ -661,4 +663,95 @@ fn event_dict<'py>(py: Python<'py>, e: &sever_db::inspect::Event) -> PyResult<Bo
     d.set_item("departures", side(&e.departures))?;
     d.set_item("outcomes", e.outcomes.clone())?;
     Ok(d)
+}
+
+/// DB-108: route and search explanations in the engine's own arithmetic (the `inspect` build).
+#[cfg(feature = "inspect")]
+#[pyclass(name = "Explainer", module = "sever_db_native", frozen)]
+struct PyExplainer {
+    art: sever_explain::PartitionArtefact,
+}
+
+#[cfg(feature = "inspect")]
+fn group_id(text: &str) -> PyResult<sever_types::GroupId> {
+    sever_types::GroupId::parse(text).ok_or_else(|| SeverError::new_err("not a group ID (§5.1)"))
+}
+
+#[cfg(feature = "inspect")]
+#[pymethods]
+impl PyExplainer {
+    /// Parses and checks the partition artefact (§6.3), as `create_collection` does.
+    #[new]
+    fn new(artefact: &[u8]) -> PyResult<Self> {
+        let art = sever_explain::PartitionArtefact::parse(artefact).map_err(py_err)?;
+        Ok(Self { art })
+    }
+
+    /// §7.1–7.3 for `x`: `spawned` is `[(group, centre, n)]` as the engine reported them, `big_n`
+    /// and `k` the counters before the insert.
+    fn route<'py>(
+        &self,
+        py: Python<'py>,
+        x: Vec<f32>,
+        spawned: Vec<(String, Vec<f64>, u64)>,
+        big_n: u64,
+        k: u64,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        let groups = spawned
+            .into_iter()
+            .map(|(g, centroid, n)| {
+                Ok(sever_explain::Spawned {
+                    id: group_id(&g)?,
+                    centroid,
+                    n,
+                })
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+        let e = sever_explain::explain_route(&self.art, &x, &groups, big_n, k).map_err(py_err)?;
+        let d = PyDict::new(py);
+        d.set_item("x_tilde", e.x_tilde)?;
+        d.set_item("nearest", e.nearest)?;
+        d.set_item("j_star", e.j_star)?;
+        d.set_item("d_m", e.d_m)?;
+        d.set_item("tau", e.tau)?;
+        d.set_item("in_distribution", e.in_distribution)?;
+        let room: Vec<(String, u64, f64)> = e
+            .room
+            .iter()
+            .map(|(g, n, dist)| (g.as_text(), *n, *dist))
+            .collect();
+        d.set_item("room", room)?;
+        d.set_item("destination", e.destination.as_text())?;
+        Ok(d)
+    }
+
+    /// §8.1 steps 1–2 for `query`: `groups` is every frozen and spawned group with its centre.
+    fn search<'py>(
+        &self,
+        py: Python<'py>,
+        query: Vec<f32>,
+        groups: Vec<(String, Vec<f64>)>,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        let groups = groups
+            .into_iter()
+            .map(|(g, mu)| Ok((group_id(&g)?, mu)))
+            .collect::<PyResult<Vec<_>>>()?;
+        let e = sever_explain::explain_search(&query, &groups);
+        let d = PyDict::new(py);
+        let ranked: Vec<(String, f64)> = e
+            .ranked
+            .iter()
+            .map(|(g, dist)| (g.as_text(), *dist))
+            .collect();
+        d.set_item("ranked", ranked)?;
+        d.set_item("probed", e.probed)?;
+        Ok(d)
+    }
+
+    /// The frozen centroids in label order, as the artefact holds them (§6.3).
+    fn frozen_centroids(&self) -> Vec<Vec<f64>> {
+        (0..self.art.k_frozen)
+            .filter_map(|j| self.art.centroid(j).map(<[f64]>::to_vec))
+            .collect()
+    }
 }

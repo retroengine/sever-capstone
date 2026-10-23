@@ -828,6 +828,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "sever-explain"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sever-index",
+ "sever-partition",
+ "sever-quant",
+ "sever-search",
+ "sever-types",
+]
+
+[[package]]
 name = "sever-format"
 version = "0.1.0"
 dependencies = [
@@ -971,6 +983,7 @@ dependencies = [
  "sever-crypto",
  "sever-db",
  "sever-engine",
+ "sever-explain",
  "sever-log",
  "sever-platform",
  "sever-quant",

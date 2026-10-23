@@ -1,0 +1,20 @@
+[package]
+name = "sever-explain"
+version = "0.1.0"
+description = "Why a record went where it did and which groups a search opens, in the engine's own arithmetic (DB-108; the inspect build only)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+sever-types = { path = "../sever-types" }
+sever-quant = { path = "../sever-quant" }
+sever-partition = { path = "../sever-partition" }
+sever-index = { path = "../sever-index" }
+sever-search = { path = "../sever-search" }
+
+[dev-dependencies]
+serde_json = "1"
+
+[lints]
+workspace = true
