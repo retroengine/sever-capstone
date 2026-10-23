@@ -397,7 +397,8 @@ class Studio:
 
     def clusters(self) -> dict[str, int]:
         b = self.backend
-        st = b.live.stats(b.cid)
+        st = dict(b.live.stats(b.cid))
+        st["empty"] = sum(1 for _, n in b.live.group_sizes(b.cid) if n == 0)
         problems = b.mismatches()
         ok = not problems and st["frozen"] > 0
         detail = (
@@ -405,7 +406,7 @@ class Studio:
             f" N {st['N']}, holding {st['holding']}"
         )
         self.checklist.mark("clusters", ok, detail if ok else "; ".join(problems))
-        return dict(st)
+        return st
 
     # -- inserts ----------------------------------------------------------------------------------
 

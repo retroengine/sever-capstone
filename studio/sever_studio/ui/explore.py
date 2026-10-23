@@ -274,9 +274,10 @@ class Explore(QWidget):
         self.map.refresh()
         mine = {r for r, rec in b.index.records.items() if rec.mine}
         self.bucket.set(b.index.holding, mine)
-        groups = {rec.group for rec in b.index.records.values() if rec.group != HOLDING}
+        sizes = b.live.group_sizes(b.cid)
+        empty = sum(1 for _, n in sizes if n == 0)
         self.status.setText(
-            f"{len(b.index.records):,} records · {len(groups)} groups · "
+            f"{len(b.index.records):,} records · {len(sizes)} groups ({empty} empty) · "
             f"{self.host.studio.spares_left():,} spare passages"
         )
         self.place()

@@ -293,8 +293,11 @@ class TourBar(QFrame):
         parent = self.parentWidget()
         if parent is None:
             return
-        w = min(980, parent.width() - 32)
+        # clear of the map's "Add yourself" button at the bottom left
+        left = 200
+        w = min(980, parent.width() - left - 16)
         self.setFixedWidth(w)
         self.adjustSize()
-        self.move((parent.width() - w) // 2, parent.height() - self.height() - 16)
+        x = max(left, (parent.width() - w) // 2)
+        self.move(x, parent.height() - self.height() - 16)
         self.raise_()

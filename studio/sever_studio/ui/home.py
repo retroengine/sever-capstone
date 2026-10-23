@@ -157,7 +157,7 @@ class Home(QWidget):
             self.v["clusters"].set(
                 v.ok if v else None,
                 f"{st['N'] + st['holding']:,} records · {st['frozen']} frozen + {st['spawned']} "
-                f"spawned groups · {st['holding']} waiting",
+                f"spawned groups ({st['empty']} empty, still searched) · {st['holding']} waiting",
             )
             self.host.changed()
 
