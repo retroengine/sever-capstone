@@ -352,12 +352,13 @@ class Explore(QWidget):
         x = b.vector_of(rid).astype(np.float64)
         self.sel_heat.set(x)
         self.sel_heat.show()
-        q = np.rint(x * 2**24).astype(np.int64)
+        why = self.host.studio.why(rid)
+        q = why["x_tilde"] if why is not None else np.rint(x * 2**24).astype(np.int64)
         lines = [
             f"x  = [{', '.join(f'{v:.5f}' for v in x[:3])}, … {len(x)} numbers]",
-            f"x̃ = round(x · 2²⁴) = [{', '.join(f'{v:,}' for v in q[:3])}, …]",
+            f"x̃ = round(x · 2²⁴) = [{', '.join(f'{v:,}' for v in q[:3])}, …]"
+            + ("" if why is not None else "  (Studio's §4.2 arithmetic)"),
         ]
-        why = self.host.studio.why(rid)
         if why is not None:
             j, d = why["nearest"][0]
             inside = why["in_distribution"]
