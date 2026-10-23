@@ -14,7 +14,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -69,7 +69,6 @@ class Added:
     rid: str
     xy: tuple[float, float]
     result: Inserted
-    neighbours: list[str]
 
 
 @dataclass
@@ -110,7 +109,6 @@ class Disk:
     size: int
     naive: dict[str, tuple[int, int]]
     sever: dict[str, tuple[int, int]]
-    biggest: list[tuple[str, int]] = field(default_factory=list)
 
 
 class Studio:
@@ -416,8 +414,6 @@ class Studio:
         res = b.insert(rid, vec, account, text=text, mine=True)
         xy = layout.place(vec, self.corpus.vectors, self.coords)
         self.extra_xy[rid] = xy
-        sims = self.corpus.vectors[: b.index.loaded].astype(np.float64) @ vec.astype(np.float64)
-        near = [self.corpus.ids[i] for i in np.argsort(-sims)[:3]]
         grew = b.total() - before == 1
         self.checklist.mark(
             "insert", res.lsn is not None and grew, f"acknowledged at log position {res.lsn}"
@@ -429,7 +425,7 @@ class Studio:
             f"{len(vec)} numbers from {self.corpus.encoder}, length {norm:.7f}",
         )
         self._routed(res)
-        return Added(rid, xy, res, near)
+        return Added(rid, xy, res)
 
     def _routed(self, res: Inserted) -> None:
         """Ticks routing when every insert so far went where the engine's own routing code said
@@ -794,10 +790,7 @@ class Studio:
             + "; SEVER-DB: "
             + ", ".join(f"{k} {f}/{n}" for k, (f, n) in sever.items()),
         )
-        sizes = sorted(
-            ((str(p.relative_to(self.work)), p.stat().st_size) for p in files), key=lambda x: -x[1]
-        )
-        return Disk(len(files), sum(s for _, s in sizes), naive, sever, sizes[:8])
+        return Disk(len(files), sum(p.stat().st_size for p in files), naive, sever)
 
     # -- restart and crash ------------------------------------------------------------------------
 

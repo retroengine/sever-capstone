@@ -24,6 +24,7 @@ from PySide6.QtWidgets import QApplication, QPushButton, QWidget
 
 from sever_studio.actions import Studio
 from sever_studio.checklist import ROWS
+from sever_studio.ui import theme
 from sever_studio.ui.app import fit
 from sever_studio.ui.main_window import MainWindow
 from sever_studio.ui.tour import CHAPTERS
@@ -306,3 +307,46 @@ def test_ui_a_name_lists_that_persons_records(win: MainWindow) -> None:
     settle(win)
     assert e.map.selected == picked[0]
     assert e.sheet.isVisible()
+
+
+def test_ui_a_refused_machine_is_amber_never_green(win: MainWindow) -> None:
+    # oracle: A §12.8–12.9, a machine refused and opened by an override has not passed (H7)
+    s, home = win.studio, win.sections["home"]
+    was = s.backend.refused
+    try:
+        s.backend.refused = "platform unsafe: §12.8 swap not encrypted"
+        home.show_startup()
+        text = home.v["startup"].text()
+        assert theme.WARN in text
+        assert "⚠" in text
+        assert theme.OK not in text
+        assert "✓" not in text
+        s.backend.refused = None
+        home.show_startup()
+        assert theme.OK in home.v["startup"].text()
+    finally:
+        s.backend.refused = was
+        home.show_startup()
+
+
+def test_ui_home_and_map_give_the_engines_one_group_count(win: MainWindow) -> None:
+    # oracle: E the engine's group_sizes; Home and the map show that one count (Low)
+    s, b = win.studio, win.studio.backend
+    small = min(
+        (g for g, n in b.live.group_sizes(b.cid) if n),
+        key=lambda g: dict(b.live.group_sizes(b.cid))[g],
+    )
+    s.delete([r for r, rec in b.index.records.items() if rec.group == small])  # now empty
+    sizes = b.live.group_sizes(b.cid)
+    assert dict(sizes)[small] == 0
+    frozen = sum(1 for g, _ in sizes if g.startswith("frozen-"))
+    empty = sum(1 for _, n in sizes if n == 0)
+    home, e = win.sections["home"], win.sections["explore"]
+    win.go("home")
+    home.clusters()
+    settle(win)
+    said = home.v["clusters"].text()
+    assert f"{frozen} frozen + {len(sizes) - frozen} spawned groups ({empty} empty" in said, said
+    win.go("explore")
+    e.redraw()
+    assert f"{len(sizes)} groups ({empty} empty)" in e.status.text()

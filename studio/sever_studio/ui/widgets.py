@@ -274,52 +274,6 @@ class Heatmap(QWidget):
         p.end()
 
 
-class StepDots(QWidget):
-    """The verifier's steps as numbered dots, lit one after another: green passed, red failed,
-    grey not reached or not applicable. Each dot's tooltip says what the step checks."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.lay = QHBoxLayout(self)
-        self.lay.setContentsMargins(0, 0, 0, 0)
-        self.lay.setSpacing(10)
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self._next)
-        self.queue: list[tuple[QLabel, str]] = []
-
-    def show_steps(self, steps: Sequence[tuple[int, str, str]], delay: int = 180) -> None:
-        clear(self.lay)
-        self.queue = []
-        for n, checks, verdict in steps:
-            state = (
-                "ok" if verdict == "ok" else ("fail" if verdict.startswith("FAILED") else "skip")
-            )
-            colour = {"ok": theme.OK, "fail": theme.BAD, "skip": theme.LINE}[state]
-            dot = QLabel(str(n))
-            dot.setFixedSize(34, 34)
-            dot.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            dot.setToolTip(f"step {n}: {checks}\n→ {verdict}")
-            dot.setStyleSheet(
-                f"border-radius: 17px; border: 2px solid {theme.LINE}; color: {theme.MUTED};"
-                " font-weight: 700;"
-            )
-            self.lay.addWidget(dot)
-            self.queue.append((dot, colour))
-        self.lay.addStretch(1)
-        self.timer.start(delay)
-
-    def _next(self) -> None:
-        if not self.queue:
-            self.timer.stop()
-            return
-        dot, colour = self.queue.pop(0)
-        dot.setStyleSheet(
-            f"border-radius: 17px; background: {theme.rgba(colour, 60)}; border: 2px solid "
-            f"{colour};"
-            f" color: {theme.TEXT}; font-weight: 700;"
-        )
-
-
 class Flow(QWidget):
     """A diagram as boxes joined by arrows, each a step's title and its real numbers, lit one
     after another (``explain`` builds the steps)."""
