@@ -68,3 +68,20 @@ def test_studio_a_live_engine_check_ticks(studio: Studio) -> None:
     studio.clusters()
     assert studio.checklist.ticked("clusters")
     assert studio.checklist.passed() == before + 1
+
+
+def test_studio_the_race_model_ticks_nothing(studio: Studio) -> None:
+    # C3: the race is Studio's numpy model of §4–5; only the engine's own proof may tick its row
+    before = studio.checklist.verdicts.get("race")
+    studio.race(200)
+    assert studio.checklist.verdicts.get("race") is before
+
+
+def test_studio_part_1_run_live_ticks_the_race_row(studio: Studio) -> None:
+    p = studio.proof("idea", "synthetic")
+    assert p is not None
+    assert p.ok, p.checks
+    v = studio.checklist.verdicts["race"]
+    assert v.source == "live"
+    assert studio.checklist.ticked("race")
+    assert "sever-demo idea" in v.detail

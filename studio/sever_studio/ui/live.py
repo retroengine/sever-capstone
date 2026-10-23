@@ -13,6 +13,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPaintEvent, QPen
 from PySide6.QtWidgets import QComboBox, QGridLayout, QHBoxLayout, QTabWidget, QVBoxLayout, QWidget
 
 from .. import wow
+from ..proofs import Proof
 from . import copy, theme
 from .hood import LEFT, page
 from .host import Host
@@ -309,14 +310,21 @@ class RaceTab(QWidget):
         self.host = host
         w, lay = page(copy.short("live.race"), "live.race")
         QVBoxLayout(self).addWidget(w)
-        lay.addWidget(
-            button(f"Remove and re-add, {self.CYCLES:,} times", "primary", self.run, "play"),
-            0,
-            LEFT,
+        lay.addWidget(label(copy.short("live.race.model"), "muted", wrap=True))
+        row = QHBoxLayout()
+        row.addWidget(
+            button(f"Model: remove and re-add, {self.CYCLES:,} times", "", self.run, "play")
         )
+        row.addWidget(
+            button("Run the engine's proof (Part 1)", "primary", self.engine_proof, "shield")
+        )
+        row.addStretch(1)
+        lay.addLayout(row)
+        self.engine = Verdict()
+        lay.addWidget(self.engine)
         tiles = QHBoxLayout()
-        self.t_float = Tile("numbers of the float mean that changed")
-        self.t_int = Tile("numbers of the integer sum that changed")
+        self.t_float = Tile("model: numbers of the float mean that changed")
+        self.t_int = Tile("model: numbers of the integer sum that changed")
         tiles.addWidget(self.t_float)
         tiles.addWidget(self.t_int)
         lay.addLayout(tiles)
@@ -327,10 +335,10 @@ class RaceTab(QWidget):
         self.plot.setLabel("left", "numbers changed")
         self.plot.addLegend(offset=(-10, -50))
         self.f_line = self.plot.plot(
-            [], [], pen=pg.mkPen(theme.BAD, width=2.5), name="float32 running mean"
+            [], [], pen=pg.mkPen(theme.BAD, width=2.5), name="float32 running mean (model)"
         )
         self.i_line = self.plot.plot(
-            [], [], pen=pg.mkPen(theme.OK, width=2.5), name="SEVER's integer sum"
+            [], [], pen=pg.mkPen(theme.OK, width=2.5), name="integer sum (model)"
         )
         self.plot.setMinimumHeight(240)
         lay.addWidget(self.plot, 1)
@@ -342,6 +350,22 @@ class RaceTab(QWidget):
 
     def arrive(self) -> None:
         pass
+
+    def engine_proof(self) -> None:
+        """The same claim from the engine: Part 1's own program, run now on the fixture."""
+
+        def done(p: Proof | None) -> None:
+            if p is None:
+                return
+            lines = [c for c, _ in p.checks if "SEVER's sum" in c or "float running mean" in c]
+            ok = p.ok and all(dict(p.checks)[c] for c in lines)
+            self.engine.set(ok, "sever-demo idea, run now: " + "; ".join(lines))
+            self.host.changed()
+
+        self.engine.set(None, "running sever-demo idea on the fixture…")
+        self.host.worker.submit(
+            lambda: self.host.studio.proof("idea", "synthetic"), done, self.host.error
+        )
 
     def run(self) -> None:
         self.xs, self.fs, self.ints = [], [], []
@@ -361,8 +385,8 @@ class RaceTab(QWidget):
             diff = r.differing[-1][1] if r.differing else 0
             self.verdict.set(
                 r.identical and diff > 0,
-                f"Same members all along: the float mean drifted in {diff} of {d} numbers; the "
-                "integer sum is bit-identical",
+                f"Model: same members all along, the float mean drifted in {diff} of {d} numbers;"
+                " the integer sum is bit-identical",
             )
             self.host.changed()
 

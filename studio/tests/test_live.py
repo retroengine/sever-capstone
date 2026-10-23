@@ -155,4 +155,5 @@ def test_live_race_keeps_the_integer_sum_identical(studio: Studio) -> None:
     assert r.identical
     assert all(err == 0 for _, err in r.integer_error)
     assert r.differing[-1][1] > 0  # the float mean did drift
-    assert studio.checklist.verdicts["race"].ok
+    # C3, DB-109: the model is Studio's, so it ticks nothing; Part 1's program ticks the row
+    assert not studio.checklist.ticked("race")

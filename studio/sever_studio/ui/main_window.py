@@ -255,7 +255,7 @@ class MainWindow(QMainWindow):
             "climb": s["live"].tabs["tree"].climb,
             "attacks": s["live"].tabs["attacks"].run,
             "crashdelete": s["live"].tabs["kill"].run,
-            "race": s["live"].tabs["race"].run,
+            "race": s["live"].tabs["race"].engine_proof,
         }
         actions[key]()
 

@@ -238,6 +238,11 @@ TEXT: dict[str, tuple[str, str]] = {
         "model "
         "of the arithmetic in Studio; the engine's own proof is Part 1's (Proof tab).",
     ),
+    "live.race.model": (
+        "A model, computed by Studio in numpy, of the arithmetic of §4.2 and §5: not the engine. "
+        "The button beside it runs the engine's own proof of the same claim.",
+        "",
+    ),
     "welcome": (
         "Three things to try",
         "Hover a dot to read it. Add yourself with the + button. Click your star and delete it.",

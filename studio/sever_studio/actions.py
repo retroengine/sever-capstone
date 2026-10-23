@@ -787,6 +787,15 @@ class Studio:
                 "SEVER 0; float ≠; soft delete keeps" + src,
                 how,
             )
+            # the race's claim, shown by the engine's own program (C3): its sum is bit-identical
+            # to the survivors-only sum and the float running mean is not
+            drift = [c for c in checks if "SEVER's sum" in c or "float running mean" in c]
+            self.checklist.mark(
+                "race",
+                bool(drift) and all(checks[c] for c in drift),
+                "sever-demo idea: integer sum bit-identical, float mean not" + src,
+                how,
+            )
         elif name == "durable":
             self.checklist.mark("durable", p.ok, f"{len(p.checks)} checks" + src, how)
         elif name == "receipt":
@@ -894,16 +903,11 @@ class Studio:
         return r
 
     def race(self, cycles: int, report: Callable[..., None] | None = None) -> wow.RaceResult:
-        """§4–5 modelled: remove and re-add members ``cycles`` times; float32 against Q24."""
-        v = self.corpus.vectors[:200]
-        r = wow.race_all(v, cycles, report)
-        diff = r.differing[-1][1] if r.differing else 0
-        self.checklist.mark(
-            "race",
-            r.identical and diff > 0,
-            f"{cycles:,} cycles: the float mean changed in {diff} of {v.shape[1]} numbers; the "
-            f"integer sum is {'bit-identical' if r.identical else 'CHANGED'}",
-        )
+        """Studio's numpy model of §4–5 (not the engine): remove and re-add members ``cycles``
+        times; float32 against Q24. It ticks nothing: the row's check is Part 1's own program
+        (``proof("idea", ...)``)."""
+        r = wow.race_all(self.corpus.vectors[:200], cycles, report)
+        self.numbers["race_model_differing"] = r.differing[-1][1] if r.differing else 0
         return r
 
     def report(self) -> Path:
