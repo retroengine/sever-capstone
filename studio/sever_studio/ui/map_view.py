@@ -1,6 +1,7 @@
 """The map: every live record as a dot where its meaning puts it, and the holding area as a gauge.
 
-A dot's colour is its group's own, its shape the group's kind (● frozen, ■ spawned); each centre μ,
+A frozen group's dots show its own colour; a spawned group's are grey until it is hovered or
+clicked (or every group is coloured); the shape is the kind (● frozen, ■ spawned). Each centre μ,
 as the engine has it, is a ✕ among the passages nearest it. Selecting a group lights up its members
 wherever they lie: a frozen group's are near its centre, a spawned group's are a scattered batch
 (§7.4). Stars are your own records. Records in the holding area are not on the map: no search
@@ -199,7 +200,11 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         self.xy: npt.NDArray[np.float64] = EMPTY
         self.focus_group: str | None = None
         self.selected: str | None = None
-        self._brush: dict[tuple[str, str], object] = {}
+        self._brush: dict[tuple[str, str, bool], object] = {}
+        #: the group whose ✕ the pointer is over: lit like a selected one while it stays there
+        self.hover_group: str | None = None
+        #: every group in its own colour, spawned ones too
+        self.colour_all = False
         self.scene().sigMouseMoved.connect(self._moved)
         self.scene().sigMouseClicked.connect(self._click)
         self._anims: list[QVariantAnimation] = []
@@ -209,11 +214,19 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
     def colour(self, group: str) -> QColor:
         return theme.group_colour(group)
 
+    def _paint(self, group: str, look: str) -> QColor:
+        """A frozen group (a k-means cluster, §6) shows its own colour; a spawned group (a batch of
+        waiting records, §7.4) is grey until it is lit, or when every group is coloured."""
+        if look == "lit" or self.colour_all or group.startswith("frozen-"):
+            return self.colour(group)
+        return QColor(theme.MUTED)
+
     def _style(self, group: str, look: str) -> tuple[object, object]:
-        """``look``: "plain", "dim" (another group is selected) or "lit" (the selected group)."""
-        key = (group, look)
+        """``look``: "plain", "dim" (another group is lit) or "lit" (the hovered or selected
+        group)."""
+        key = (group, look, self.colour_all)
         if key not in self._brush:
-            c = self.colour(group)
+            c = self._paint(group, look)
             if look == "dim":
                 c = QColor(c.red(), c.green(), c.blue(), 30)
             brush = pg.mkBrush(c)
@@ -226,9 +239,10 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         return self._brush[key]  # type: ignore[return-value]
 
     def _look(self, group: str) -> str:
-        if self.focus_group is None:
+        lit = self.hover_group or self.focus_group
+        if lit is None:
             return "plain"
-        return "lit" if group == self.focus_group else "dim"
+        return "lit" if group == lit else "dim"
 
     def refresh(self) -> None:
         recs = self.studio.backend.index.records
@@ -273,8 +287,8 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         """Each group's centre μ as the engine has it (✕), drawn among the passages nearest it."""
         spots, at = [], []
         for g, cx, cy, n in self.studio.centres():
-            c = self.colour(g)
             look = self._look(g)
+            c = self._paint(g, look)
             if look == "dim":
                 c = QColor(c.red(), c.green(), c.blue(), 50)
             at.append((g, cx, cy))
@@ -331,6 +345,15 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
 
     def focus(self, group: str | None) -> None:
         self.focus_group = group
+        self.refresh()
+
+    def hover(self, group: str | None) -> None:
+        if group != self.hover_group:
+            self.hover_group = group
+            self.refresh()
+
+    def set_colour_all(self, on: bool) -> None:
+        self.colour_all = on
         self.refresh()
 
     def select(self, rid: str | None) -> None:

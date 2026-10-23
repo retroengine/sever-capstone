@@ -84,6 +84,9 @@ class Explore(QWidget):
         ll.addWidget(chip("■ spawned group", theme.MUTED))
         ll.addWidget(chip("✕ centre μ", theme.TEXT))
         ll.addWidget(chip("★ yours", theme.WARN if theme.LIGHT else theme.YOURS_RING))
+        self.colour_all = button("Colour every group", "ghost", self.toggle_colours, "layers")
+        self.colour_all.setCheckable(True)
+        ll.addWidget(self.colour_all)
         ll.addWidget(info("map.about"))
 
         # the search results, under the legend
@@ -394,6 +397,7 @@ class Explore(QWidget):
         self.place()
 
     def on_group_hover(self, group: str | None) -> None:
+        self.map.hover(group)
         if group is None or not isValid(self.gcard):
             if isValid(self.gcard):
                 self.gcard.hide()
@@ -408,6 +412,11 @@ class Explore(QWidget):
         gx = p.x() + 18 if right else p.x() - 18 - self.gcard.width()
         gy = min(max(64.0, p.y() - 40), self.height() - self.gcard.height() - 12)
         self.gcard.move(int(max(8, gx)), int(gy))
+
+    def toggle_colours(self) -> None:
+        """Spawned groups in their own colours too: each is a batch of records that waited together
+        (§7.4), so its colour is scattered over the map."""
+        self.map.set_colour_all(self.colour_all.isChecked())
 
     def select_group(self, group: str) -> None:
         """A centre clicked: its members light up wherever they lie (a frozen group's around its

@@ -19,6 +19,7 @@ from typing import Any
 import pytest
 from conftest import WORK, screen_config
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QPushButton, QWidget
 
@@ -375,16 +376,40 @@ def test_ui_the_map_draws_while_a_demo_has_the_database_closed(win: MainWindow) 
         s.backend.open()
 
 
-def test_ui_every_dot_has_its_groups_colour_and_its_kinds_shape(win: MainWindow) -> None:
-    # oracle: D the map's colour is the dot's group (the engine's log), its shape the group's kind
+def test_ui_frozen_groups_are_coloured_spawned_ones_grey_until_lit(win: MainWindow) -> None:
+    # oracle: D the owner's choice (23 Oct 2026): each frozen group (a k-means cluster, §6) its own
+    # colour; a spawned group (a batch, §7.4) grey until hovered or clicked; the shape is the kind
     e = win.sections["explore"]
+    m = e.map
     win.go("explore")
+    if not any(g.startswith("spawn-") for g, _ in win.studio.backend.group_sizes()):
+        win.studio.fill_bucket("flush")
     e.redraw()
     recs = win.studio.backend.index.records
-    for spot, rid in zip(e.map.base.points(), e.map.rids, strict=True):
-        group = recs[rid].group
-        assert spot.brush().color().name() == theme.group_colour(group).name()
-        assert spot.symbol() == ("o" if group.startswith("frozen-") else "s")
+
+    def colours() -> dict[str, list[str]]:
+        out: dict[str, list[str]] = {}
+        for spot, rid in zip(m.base.points(), m.rids, strict=True):
+            out.setdefault(recs[rid].group, []).append(spot.brush().color().name())
+            assert spot.symbol() == ("o" if recs[rid].group.startswith("frozen-") else "s")
+        return out
+
+    plain = colours()
+    spawned = [g for g in plain if g.startswith("spawn-")]
+    assert spawned
+    for g, names in plain.items():
+        want = theme.group_colour(g) if g.startswith("frozen-") else QColor(theme.MUTED)
+        assert set(names) == {want.name()}, g
+    m.hover(spawned[0])
+    assert set(colours()[spawned[0]]) == {theme.group_colour(spawned[0]).name()}
+    m.hover(None)
+    assert colours() == plain
+    m.set_colour_all(True)
+    try:
+        for g, names in colours().items():
+            assert set(names) == {theme.group_colour(g).name()}, g
+    finally:
+        m.set_colour_all(False)
 
 
 def test_ui_the_legend_never_covers_the_search_box(win: MainWindow) -> None:
