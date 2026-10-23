@@ -285,7 +285,7 @@ class Explore(QWidget):
         self.map.refresh()
         mine = {r for r, rec in b.index.records.items() if rec.mine}
         self.bucket.set(b.index.holding, mine)
-        sizes = b.live.group_sizes(b.cid)
+        sizes = b.group_sizes()
         empty = sum(1 for _, n in sizes if n == 0)
         self.status.setText(
             f"{len(b.index.records):,} records · {len(sizes)} groups ({empty} empty) · "
@@ -405,7 +405,7 @@ class Explore(QWidget):
         centre, a spawned group's scattered: a batch, not a cluster, §7.4)."""
         self.map.focus(None if self.map.focus_group == group else group)
         if self.map.focus_group:
-            n = dict(self.host.studio.backend.live.group_sizes(self.host.studio.backend.cid))
+            n = dict(self.host.studio.backend.group_sizes())
             kind = "frozen" if group.startswith("frozen-") else "spawned"
             self.host.toast(f"{group}: its {n.get(group, 0):,} records lit ({kind} group)", None)
 

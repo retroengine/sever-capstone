@@ -158,7 +158,7 @@ class Studio:
         (among the passages nearest it, as a typed text is) and its size from ``group_sizes``."""
         b = self.backend
         out = []
-        for g, n in b.live.group_sizes(b.cid):
+        for g, n in b.group_sizes():
             mu = self.centre(g)
             if mu is None:
                 continue
@@ -178,8 +178,9 @@ class Studio:
         centre μ with where that number comes from. ``S`` stays encrypted in the engine (§13.2) and
         is not shown."""
         b = self.backend
-        n = dict(b.live.group_sizes(b.cid)).get(group, 0)
-        published = b.replay().commitments.get(group)
+        n = dict(b.group_sizes()).get(group, 0)
+        replay = b.replay_if_ready()
+        published = replay.commitments.get(group) if replay else None
         mu = self.centre(group)
         return {
             "group": group,

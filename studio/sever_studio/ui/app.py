@@ -10,6 +10,7 @@ import time
 from collections.abc import Callable, Iterator
 from functools import partial
 from pathlib import Path
+from types import TracebackType
 
 from PySide6.QtCore import QMessageLogContext, QTimer, QtMsgType, qInstallMessageHandler
 from PySide6.QtWidgets import QApplication, QMessageBox
@@ -69,6 +70,13 @@ def run(root: Path, data: str, rows: int, work: Path, dev: bool, smoke: bool = F
             print(msg, file=sys.stderr)
 
     qInstallMessageHandler(handler)
+
+    def uncaught(kind: type[BaseException], value: BaseException, tb: TracebackType | None) -> None:
+        # an exception in a slot is printed by PySide6 and the window carries on: count it
+        issues.append(f"{kind.__name__}: {value}")
+        sys.__excepthook__(kind, value, tb)
+
+    sys.excepthook = uncaught
     app = QApplication.instance() or QApplication(sys.argv)
     assert isinstance(app, QApplication)
     app.setApplicationName("SEVER-DB Studio")

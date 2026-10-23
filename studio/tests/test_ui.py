@@ -355,3 +355,21 @@ def test_ui_home_and_map_give_the_engines_one_group_count(win: MainWindow) -> No
     win.go("explore")
     e.redraw()
     assert f"{len(sizes)} groups ({empty} empty)" in e.status.text()
+
+
+def test_ui_the_map_draws_while_a_demo_has_the_database_closed(win: MainWindow) -> None:
+    # oracle: D the window keeps working while the crash and kill demos close the database on the
+    # worker; what it shows is the engine's last answer
+    s, e = win.studio, win.sections["explore"]
+    win.go("explore")
+    before = s.backend.group_sizes()
+    g = s.centres()[0][0]
+    s.backend.close()
+    try:
+        e.redraw()
+        e.on_group_hover(g)
+        assert e.gcard.isVisible()
+        assert s.backend.group_sizes() == before
+    finally:
+        e.on_group_hover(None)
+        s.backend.open()

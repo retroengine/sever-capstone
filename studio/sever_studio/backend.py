@@ -186,6 +186,7 @@ class Backend:
         self._centroids: tuple[int, dict[str, list[float]]] | None = None
         #: §7.3 by the engine's routing code (set by Studio): vector -> its explanation
         self.predict: Callable[[npt.NDArray[np.float32]], dict[str, Any]] | None = None
+        self._sizes: list[tuple[str, int]] = []
         self.routing_checked = 0
         self.routing_disagreed: list[str] = []
         #: inserts whose route could not be worked out: out of distribution while a spawned group
@@ -217,6 +218,18 @@ class Backend:
         if self.db is not None:
             self.db.close()
             self.db = None
+
+    def group_sizes(self) -> list[tuple[str, int]]:
+        """The engine's group sizes; while a demo has the database closed on the worker (a crash,
+        a killed deletion), the last answer it gave, so the window can still draw."""
+        if self.db is not None:
+            self._sizes = list(self.db.group_sizes(self.cid))
+        return self._sizes
+
+    def replay_if_ready(self) -> "Replay | None":
+        """``replay()`` when it is kept or the database is open; ``None`` while a demo has it
+        closed and nothing is kept."""
+        return self.replay() if self._replay is not None or self.db is not None else None
 
     @property
     def live(self) -> Database:
