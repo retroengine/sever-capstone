@@ -44,6 +44,22 @@ def test_studio_crash_demo_works_after_the_spares_ran_out(studio: Studio) -> Non
     assert studio.spares_left() > 0
 
 
+def test_studio_a_passage_loaded_after_the_layout_is_placed_among_laid_out_ones(
+    studio: Studio,
+) -> None:
+    # oracle: D the demo runs; the map has a position only for the rows it laid out
+    studio.ensure_spares(studio.spares_left() + 10)
+    assert len(studio.corpus.vectors) > len(studio.coords)
+    first, again = studio.retry()  # the retry demo places the corpus's last row
+    assert again.retried
+    for q in range(len(studio.corpus.questions)):
+        studio.ask(q)
+    x, y = studio.xy(first.rid)
+    lo, hi = studio.coords.min(axis=0), studio.coords.max(axis=0)
+    assert lo[0] <= x <= hi[0]
+    assert lo[1] <= y <= hi[1]
+
+
 def test_studio_a_reopened_studio_has_spares_again(studio: Studio) -> None:
     again = Studio(ROOT, "synthetic", studio.work, dev=True, rows=120)
     assert len(again.corpus.ids) - studio.backend.index.loaded >= 1_000

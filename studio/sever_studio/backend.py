@@ -188,6 +188,9 @@ class Backend:
         self.predict: Callable[[npt.NDArray[np.float32]], dict[str, Any]] | None = None
         self.routing_checked = 0
         self.routing_disagreed: list[str] = []
+        #: inserts whose route could not be worked out: out of distribution while a spawned group
+        #: with room had no known centre (its flush was in a killed process, §7.3)
+        self.routing_unknown = 0
 
     # -- opening and state ------------------------------------------------------------------------
 
@@ -307,7 +310,9 @@ class Backend:
             rid, r.placement or HOLDING, account, mine, text if mine else None, own, r.database_lsn
         )
         self.record_events()
-        if predicted is not None:
+        if predicted is not None and not predicted["in_distribution"] and predicted["unknown"]:
+            self.routing_unknown += 1
+        elif predicted is not None:
             # the receipt names the group the record is in after the transaction (§16.2): the
             # new spawned group when its insert flushed the holding area (§7.4)
             got = r.placement or HOLDING

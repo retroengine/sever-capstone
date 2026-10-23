@@ -93,3 +93,34 @@ def test_studio_search_opens_a_quarter_of_the_groups_and_every_hit_is_from_one(
         opened = {g for g, _ in e["ranked"][: e["probed"]]}
         for rid, _, _ in hits:
             assert b.index.records[rid].group in opened
+
+
+def test_studio_a_lost_spawned_centre_makes_a_route_unknown_never_wrong(
+    studio: Studio, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # oracle: A §7.3, an out-of-distribution record goes to the nearest spawned group with room, so
+    # with one such group's centre unknown (its flush was in a killed process) no destination can
+    # be worked out; E the engine's placements
+    b = studio.backend
+
+    def with_room() -> list[str]:
+        st = b.live.stats(b.cid)
+        return [
+            g
+            for g, n in b.live.group_sizes(b.cid)
+            if g.startswith("spawn-") and 2 * st["k"] * n < 3 * st["N"]
+        ]
+
+    while not with_room():
+        studio.fill_bucket("flush")
+    lost = with_room()[0]
+    real = b.centroids
+    monkeypatch.setattr(b, "centroids", lambda: {g: m for g, m in real().items() if g != lost})
+    wrong, unknown = len(b.routing_disagreed), b.routing_unknown
+    studio.ensure_spares(300)
+    for _ in range(300):
+        i = b.index.loaded
+        b.insert(studio.corpus.ids[i], studio.corpus.vectors[i], studio.corpus.accounts[i])
+        b.index.loaded = i + 1
+    assert len(b.routing_disagreed) == wrong
+    assert b.routing_unknown > unknown

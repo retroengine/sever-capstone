@@ -277,9 +277,14 @@ def test_ui_smoke_on_the_real_display(report: dict[str, Any]) -> None:
 
 
 def test_ui_a_search_says_when_your_records_wait_in_the_bucket(win: MainWindow) -> None:
+    # oracle: A §7.3, a record close to no frozen group spills into a spawned group with room
+    # first; once none has room it waits in the holding area (§7.4)
     s = win.studio
-    rid = s.add_mine("Waiting Wendy", "far from every group").rid
-    assert s.backend.index.records[rid].group == "holding"  # §7.4: close to no group
+    for _ in range(500):
+        rid = s.add_mine("Waiting Wendy", "far from every group").rid
+        if s.backend.index.records[rid].group == "holding":
+            break
+    assert s.backend.index.records[rid].group == "holding"
     e = win.sections["explore"]
     win.go("explore")
     e.query.setText("#0")

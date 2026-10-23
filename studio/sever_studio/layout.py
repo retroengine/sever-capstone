@@ -56,8 +56,9 @@ def place(
     coords: Coords,
     k: int = 8,
 ) -> tuple[float, float]:
-    """A new vector's position: its ``k`` most similar corpus rows, weighted by similarity."""
-    sims = vectors.astype(np.float64) @ vector.astype(np.float64)
+    """A new vector's position: its ``k`` most similar corpus rows, weighted by similarity. Only
+    rows the layout placed count: rows loaded after it (more spares) have no position yet."""
+    sims = vectors[: len(coords)].astype(np.float64) @ vector.astype(np.float64)
     near = np.argsort(-sims)[:k]
     w = np.clip(sims[near], 1e-6, None) ** 4
     x, y = (coords[near] * w[:, None]).sum(axis=0) / w.sum()

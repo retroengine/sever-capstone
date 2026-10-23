@@ -233,18 +233,18 @@ class Studio:
 
     def predict(self, vector: npt.NDArray[np.float32]) -> dict[str, Any]:
         """§7.1–7.3 for ``vector`` against the engine's state now: the spawned groups with the
-        centres the engine reported and their sizes, ``N`` and ``k`` from ``stats``."""
+        centres the engine reported and their sizes, ``N`` and ``k`` from ``stats``. ``unknown``
+        lists the spawned groups with room whose centre was lost with a killed process: while it is
+        not empty, an out-of-distribution destination cannot be worked out."""
         b = self.backend
         st = b.live.stats(b.cid)
         centres = b.centroids()
-        spawned = [
-            (g, centres[g], n)
-            for g, n in b.live.group_sizes(b.cid)
-            if g.startswith("spawn-") and g in centres
-        ]
+        sizes = [(g, n) for g, n in b.live.group_sizes(b.cid) if g.startswith("spawn-")]
+        spawned = [(g, centres[g], n) for g, n in sizes if g in centres]
         out: dict[str, Any] = self.explainer().route(
             [float(v) for v in vector], spawned, st["N"], st["k"]
         )
+        out["unknown"] = [g for g, n in sizes if g not in centres and 2 * st["k"] * n < 3 * st["N"]]
         return out
 
     def search_explained(self, query: npt.NDArray[np.float32]) -> dict[str, Any]:
@@ -441,6 +441,12 @@ class Studio:
             not problems and b.routing_checked > 0,
             f"{b.routing_checked:,} inserts, each placed where the engine's routing code said"
             f" (last: {res.rid} → {res.placement})"
+            + (
+                f"; {b.routing_unknown:,} could not be worked out: a spawned centre was lost with"
+                " a killed process"
+                if b.routing_unknown
+                else ""
+            )
             if not problems
             else "; ".join(problems),
         )

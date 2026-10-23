@@ -441,6 +441,13 @@ class Explore(QWidget):
         p = r.predicted
         if p is None:
             self.add_result.set(True, copy.short(key))
+        elif not p["in_distribution"] and p["unknown"]:
+            self.add_result.set(
+                None,
+                f"{copy.short(key)}: the engine put it in {r.placement}; its routing code cannot "
+                f"say where: the centre of {len(p['unknown'])} spawned group(s) was lost with a "
+                "killed process (§7.3)",
+            )
         else:
             want = p["destination"]
             agree = want == r.placement or (want == HOLDING and r.flush is not None)
