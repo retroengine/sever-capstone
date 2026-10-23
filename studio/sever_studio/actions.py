@@ -249,6 +249,22 @@ class Studio:
         )
         return out
 
+    def search_explained(self, query: npt.NDArray[np.float32]) -> dict[str, Any]:
+        """§8.1 steps 1–2 by the engine's search code (DB-108): every frozen and spawned group the
+        engine has, empty ones too, ranked by its centre's distance to the query, and how many are
+        opened. A group whose centre was lost with a killed process is listed in ``unknown``."""
+        b = self.backend
+        groups, unknown = [], []
+        for g, _ in b.live.group_sizes(b.cid):
+            mu = self.centre(g)
+            if mu is None:
+                unknown.append(g)
+            else:
+                groups.append((g, [float(v) for v in mu]))
+        out: dict[str, Any] = self.explainer().search([float(v) for v in query], groups)
+        out["unknown"] = unknown
+        return out
+
     def why(self, rid: str) -> dict[str, Any] | None:
         """For a stored record, the parts of §7.1–7.2 that do not depend on when it arrived: its
         nearest frozen groups, ``j*``, ``d_M`` and ``τ``."""

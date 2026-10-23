@@ -32,6 +32,9 @@ from .host import Host
 from .map_view import Bucket, GroupCard, HoverCard, MapView
 from .widgets import Heatmap, Verdict, button, chip, info, label, lift
 
+#: a search's question, its hits, where it is drawn, and how the engine searched (§8.1)
+Found = tuple[str, list[tuple[str, float, bool]], tuple[float, float], dict[str, Any]]
+
 
 def floating(vertical: bool = True, margin: int = 12) -> tuple[QFrame, QVBoxLayout | QHBoxLayout]:
     f = QFrame()
@@ -616,19 +619,21 @@ class Explore(QWidget):
         else:
             question = q
 
-        def run() -> tuple[str, list[tuple[str, float, bool]], tuple[float, float]]:
+        def run() -> Found:
             if question is None:
-                return q, [], (0.0, 0.0)
+                return q, [], (0.0, 0.0), {}
             text, hits = s.ask(question)
-            vec = (
+            vec = np.asarray(
                 s.corpus.question_vectors[question]
                 if isinstance(question, int)
-                else s.encode(question)
+                else s.encode(question),
+                np.float32,
             )
-            return text, hits, layout.place(np.asarray(vec, np.float32), s.corpus.vectors, s.coords)
+            how = s.search_explained(vec)
+            return text, hits, layout.place(vec, s.corpus.vectors, s.coords), how
 
-        def done(out: tuple[str, list[tuple[str, float, bool]], tuple[float, float]]) -> None:
-            text, hits, origin = out
+        def done(out: Found) -> None:
+            text, hits, origin, how = out
             if hits:
                 self.map.show_beam(origin, hits)
             else:
@@ -653,12 +658,34 @@ class Explore(QWidget):
                     item = QListWidgetItem(f"   {rid} · {where} · {t[:40]}")
                     item.setData(Qt.ItemDataRole.UserRole, rid)
                     self.res_list.addItem(item)
-            for rank, (rid, _, good) in enumerate(hits[:8], 1):
+            if how:
+                opened = {g for g, _ in how["ranked"][: how["probed"]]}
+                inside = all(
+                    s.backend.index.records[r].group in opened
+                    for r, _, _ in hits
+                    if r in s.backend.index.records
+                )
+                head = QListWidgetItem(
+                    f"The engine ranked {len(how['ranked'])} groups by their centre and opened the "
+                    f"nearest {how['probed']} (§8.1)"
+                    + ("; every hit is from one ✓" if inside else "")
+                )
+                head.setForeground(QColor(theme.MUTED))
+                head.setToolTip(
+                    "Groups are ranked by Σ(q − μ)² to their centre; a quarter of them, rounded up "
+                    "and empty ones included, are opened and their records scored. The bucket is "
+                    "never searched."
+                )
+                self.res_list.addItem(head)
+            for rank, (rid, score, good) in enumerate(hits[:8], 1):
                 t = " ".join(s.backend.text_of(rid).split())
                 item = QListWidgetItem(
-                    f"{rank}  {'✓ ' if good else ''}{t[:60]}{'…' if len(t) > 60 else ''}"
+                    f"{rank}  {score:.3f}  {'✓ ' if good else ''}{t[:52]}"
+                    + ("…" if len(t) > 52 else "")
                 )
-                item.setToolTip(f"{rid}\n{t[:400]}")
+                item.setToolTip(
+                    f"{rid}\nscore Σ(q − x̂)² = {score:.5f}, from the engine (§8.2)\n{t[:400]}"
+                )
                 item.setData(Qt.ItemDataRole.UserRole, rid)
                 if good:
                     item.setForeground(QColor(theme.OK))

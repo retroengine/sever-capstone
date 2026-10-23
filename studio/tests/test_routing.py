@@ -76,3 +76,20 @@ def test_studio_why_a_record_is_where_it_is_is_the_specs_arithmetic(studio: Stud
         assert why["d_m"] == dm
         assert why["tau"] == tau
         assert (rec.group.startswith("frozen-")) == (dm <= tau)
+
+
+def test_studio_search_opens_a_quarter_of_the_groups_and_every_hit_is_from_one(
+    studio: Studio,
+) -> None:
+    # oracle: A §8.1 p = ⌈0.25·k⌉ over all frozen and spawned groups, empty ones included; E the
+    # engine's hits, each from a probed group
+    b = studio.backend
+    k = b.live.stats(b.cid)["k"]
+    for q in range(len(studio.corpus.questions)):
+        _, hits = studio.ask(q)
+        e = studio.search_explained(studio.corpus.question_vectors[q])
+        assert e["probed"] == -(-k // 4)
+        assert len(e["ranked"]) == k
+        opened = {g for g, _ in e["ranked"][: e["probed"]]}
+        for rid, _, _ in hits:
+            assert b.index.records[rid].group in opened
