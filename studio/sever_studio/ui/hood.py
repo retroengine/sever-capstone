@@ -6,11 +6,12 @@ from typing import Any
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QSpinBox, QTabWidget, QVBoxLayout, QWidget
 
+from .. import explain
 from ..actions import Crashed, Disk
 from ..backend import Inserted
 from . import copy, theme
 from .host import Host
-from .widgets import Tile, Verdict, button, chip, clear, info, label
+from .widgets import Flow, Tile, Verdict, button, chip, clear, info, label
 
 LEFT = Qt.AlignmentFlag.AlignLeft
 
@@ -105,6 +106,10 @@ class DiskTab(QWidget):
         lay.addLayout(grid)
         self.files = label("", "small")
         lay.addWidget(self.files)
+        lay.addWidget(label(copy.short("disk.keys"), "strong"))
+        keys = Flow(vertical=False)
+        keys.set(explain.KEYS)
+        lay.addWidget(keys)
         lay.addStretch(1)
 
     def arrive(self) -> None:
@@ -148,6 +153,9 @@ class CrashTab(QWidget):
         for t in (self.t_acked, self.t_missing, self.t_flight):
             tiles.addWidget(t)
         lay.addLayout(tiles)
+        flow = Flow(vertical=False)
+        flow.set(explain.COMMIT)
+        lay.addWidget(flow)
         restart = QHBoxLayout()
         restart.addWidget(button("Restart the database", "", self.restart, "refresh"))
         self.r_res = Verdict()

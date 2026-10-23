@@ -151,6 +151,10 @@ TEXT: dict[str, tuple[str, str]] = {
         "(§4.2), in either byte order. First over an ordinary store of the same records, to show "
         "the search can see each form. Only public values are stored in the clear (§13.2).",
     ),
+    "disk.keys": (
+        "Why a deleted record cannot be read back: the keys that opened it are gone.",
+        "",
+    ),
     "crash.about": (
         "Pull the plug mid-write.",
         "A second process inserts records and is killed with SIGKILL half-way, as a power cut "
@@ -235,6 +239,11 @@ TEXT: dict[str, tuple[str, str]] = {
         "records or none, never some (§12.5). Most kills land before the commit point; Part 2's "
         "own "
         "proof shows a crash just after it (Proof tab).",
+    ),
+    "live.kill.timeline": (
+        "Where each kill landed in the deletion's time: blue, none deleted (before its commit "
+        "point); green, all deleted (after it). A half deletion would be red.",
+        "",
     ),
     "live.race": (
         "Floats drift; integers don’t.",

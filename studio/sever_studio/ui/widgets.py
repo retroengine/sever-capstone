@@ -5,7 +5,7 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-from PySide6.QtCore import QPoint, QRectF, QSize, Qt, QTimer
+from PySide6.QtCore import QPoint, QPointF, QRectF, QSize, Qt, QTimer
 from PySide6.QtGui import QColor, QPainter, QPaintEvent, QPen
 from PySide6.QtWidgets import (
     QFrame,
@@ -318,6 +318,117 @@ class StepDots(QWidget):
             f"{colour};"
             f" color: {theme.TEXT}; font-weight: 700;"
         )
+
+
+class Flow(QWidget):
+    """A diagram as boxes joined by arrows, each a step's title and its real numbers, lit one
+    after another (``explain`` builds the steps)."""
+
+    def __init__(self, vertical: bool = True) -> None:
+        super().__init__()
+        self.vertical = vertical
+        self.lay: QVBoxLayout | QHBoxLayout = QVBoxLayout(self) if vertical else QHBoxLayout(self)
+        self.lay.setContentsMargins(0, 0, 0, 0)
+        self.lay.setSpacing(2)
+        self.boxes: list[QFrame] = []
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._next)
+        self.lit = 0
+
+    def set(self, steps: Sequence[tuple[str, str]], delay: int = 0) -> None:
+        clear(self.lay)
+        self.boxes = []
+        for i, (title, body) in enumerate(steps):
+            if i:
+                arrow = label("↓" if self.vertical else "→", "muted")
+                arrow.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.lay.addWidget(arrow)
+            box = QFrame()
+            box.setObjectName("card2")
+            bl = QVBoxLayout(box)
+            bl.setContentsMargins(10, 6, 10, 6)
+            bl.setSpacing(1)
+            bl.addWidget(label(title, "strong", wrap=True))
+            bl.addWidget(label(body, "small", wrap=True))
+            self.lay.addWidget(box, 1)
+            self.boxes.append(box)
+        self.lit = 0
+        if delay:
+            for b in self.boxes:
+                b.setStyleSheet(f"QFrame#card2 {{ border: 1px solid {theme.LINE}; }}")
+            self.timer.start(delay)
+        else:
+            self.lit = len(self.boxes)
+            self._paint()
+
+    def _next(self) -> None:
+        self.lit += 1
+        self._paint()
+        if self.lit >= len(self.boxes):
+            self.timer.stop()
+
+    def _paint(self) -> None:
+        for i, b in enumerate(self.boxes):
+            c = theme.ACCENT if i < self.lit else theme.LINE
+            b.setStyleSheet(f"QFrame#card2 {{ border: 1px solid {c}; }}")
+
+
+class StepList(QWidget):
+    """The verifier's steps (§11.3) as a labelled list: number, what it checks, its verdict."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.lay = QVBoxLayout(self)
+        self.lay.setContentsMargins(0, 0, 0, 0)
+        self.lay.setSpacing(3)
+
+    def show_steps(self, steps: Sequence[tuple[int, str, str]]) -> None:
+        clear(self.lay)
+        for n, checks, verdict in steps:
+            ok = None if not (verdict == "ok" or verdict.startswith("FAILED")) else verdict == "ok"
+            sign, colour = mark(ok)
+            why = "" if ok is not None else f" <span style='color:{theme.MUTED}'>({verdict})</span>"
+            if ok is False:
+                why = f" <span style='color:{theme.BAD}'>{verdict}</span>"
+            self.lay.addWidget(
+                label(
+                    f"<span style='color:{colour}; font-weight:700'>{sign}</span>&nbsp; "
+                    f"<b>{n}</b>&nbsp; {checks}{why}",
+                    wrap=True,
+                )
+            )
+
+
+class Timeline(QWidget):
+    """Kill moments on one deletion's measured duration: each a mark at its share of the time,
+    coloured by what recovery found."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.marks: list[tuple[float, str]] = []
+        self.setMinimumHeight(54)
+
+    def set(self, marks: list[tuple[float, str]]) -> None:
+        self.marks = marks
+        self.update()
+
+    def paintEvent(self, event: QPaintEvent) -> None:  # noqa: N802 (Qt's name)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        left, right, y = 12.0, self.width() - 12.0, self.height() / 2
+        p.setPen(QPen(QColor(theme.LINE), 3))
+        p.drawLine(QPointF(left, y), QPointF(right, y))
+        p.setPen(QColor(theme.MUTED))
+        p.setFont(theme.font(theme.SMALL))
+        p.drawText(QRectF(left, y + 8, 200, 18), Qt.AlignmentFlag.AlignLeft, "deletion starts")
+        p.drawText(QRectF(right - 200, y + 8, 200, 18), Qt.AlignmentFlag.AlignRight, "it ends")
+        colours = {"none": theme.FROZEN, "all": theme.OK, "partial": theme.BAD}
+        for share, outcome in self.marks:
+            x = left + (right - left) * min(1.0, max(0.0, share))
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QColor(colours.get(outcome, theme.MUTED)))
+            p.drawEllipse(QPointF(x, y), 6, 6)
+        p.end()
 
 
 class Empty(QWidget):

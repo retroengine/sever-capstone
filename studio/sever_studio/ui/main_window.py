@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .. import explain
 from ..actions import Studio
 from ..checklist import CHECKS
 from . import theme
@@ -31,7 +32,7 @@ from .live import Live
 from .proof import ProofSection
 from .receipts import Receipts
 from .tour import Chapter, TourBar
-from .widgets import Spinner, Toast, button, chip, label
+from .widgets import Popover, Spinner, Toast, button, chip, label
 from .worker import Worker
 
 SECTIONS = [
@@ -144,6 +145,7 @@ class MainWindow(QMainWindow):
         tl.addWidget(self.spinner)
         self.progress = button("", "pill", self.toggle_drawer, "list", "The checklist")
         tl.addWidget(self.progress)
+        tl.addWidget(button("Words", "ghost", self.glossary, "list", "What the terms mean"))
         tl.addWidget(button("Tour", "", self.start_tour, "play", "The guided tour"))
         column.addWidget(top)
 
@@ -365,6 +367,10 @@ class MainWindow(QMainWindow):
             app.setFont(theme.font())
             app.setStyleSheet(theme.stylesheet())
         self.sections["explore"].place()
+
+    def glossary(self) -> None:
+        text = "<br>".join(f"<b>{term}</b>: {meaning}" for term, meaning in explain.GLOSSARY)
+        Popover("Words used here", text).show_below(self.progress)
 
     def toggle_full(self) -> None:
         self.showNormal() if self.isFullScreen() else self.showFullScreen()

@@ -14,12 +14,12 @@ from PySide6.QtCore import QPointF, QRectF, Qt, QTimer
 from PySide6.QtGui import QColor, QFont, QPainter, QPaintEvent, QPen
 from PySide6.QtWidgets import QComboBox, QGridLayout, QHBoxLayout, QTabWidget, QVBoxLayout, QWidget
 
-from .. import kmeans, wow
+from .. import explain, kmeans, wow
 from ..proofs import Proof
 from . import copy, theme
 from .hood import LEFT, page
 from .host import Host
-from .widgets import Empty, Tile, Verdict, button, clear, label, mark
+from .widgets import Empty, Tile, Timeline, Verdict, button, clear, label, mark
 
 
 def short(b: bytes, n: int = 8) -> str:
@@ -166,8 +166,11 @@ class TreeTab(QWidget):
             cert, steps, root, ok = out
             self.facts.setText(
                 f"Your record's insert leaf #{cert.leaf_index} of {cert.tree_size:,} · "
-                f"{len(steps)} hashes from the receipt · your key {short(cert.user_key)} · "
-                f"{cert.witnesses} witnesses cosigned the root"
+                f"{len(steps)} hashes from the receipt (at most ⌈log₂ {cert.tree_size:,}⌉ = "
+                f"{explain.levels(cert.tree_size)}) · your key {short(cert.user_key)} · "
+                f"{cert.witnesses} witnesses cosigned the root.\n"
+                "Each level: SHA-256(0x01 ‖ left ‖ right); the leaf: SHA-256(0x00 ‖ leaf) "
+                "(RFC 9162 §2.1). Change any byte below and every hash above changes."
             )
             self.tree.play(cert.leaf, steps, root, cert.root)
             QTimer.singleShot(
@@ -286,9 +289,13 @@ class KillTab(QWidget):
         lay.addLayout(tiles)
         self.rows = QVBoxLayout()
         lay.addLayout(self.rows)
+        lay.addWidget(label(copy.short("live.kill.timeline"), "small", wrap=True))
+        self.timeline = Timeline()
+        lay.addWidget(self.timeline)
         self.verdict = Verdict()
         lay.addWidget(self.verdict)
         lay.addStretch(1)
+        self.marks: list[tuple[float, str]] = []
 
     def arrive(self) -> None:
         pass
@@ -296,6 +303,8 @@ class KillTab(QWidget):
     def run(self) -> None:
         s = self.host.studio
         rng = random.Random()
+        self.marks = []
+        self.timeline.set([])
         clear(self.rows)
         self.verdict.set(None, "deleting a person in a second process, and killing it…")
 
@@ -322,6 +331,10 @@ class KillTab(QWidget):
                 f"{r.records} records · killed at {r.planned_ms:.0f} ms · {text}",
             )
             self.rows.addWidget(v)
+            per = float(self.host.studio.numbers.get("delete_user_ms_per_record", 0) or 0)
+            if per and r.outcome != "finished first":
+                self.marks.append((r.planned_ms / (per * max(1, r.records)), r.outcome))
+                self.timeline.set(self.marks)
 
         def done(out: list[wow.CrashDelete]) -> None:
             n = {

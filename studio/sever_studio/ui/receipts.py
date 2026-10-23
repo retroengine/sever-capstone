@@ -13,10 +13,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .. import explain
 from ..actions import Verified
 from . import copy, theme
 from .host import Host
-from .widgets import Card, Empty, StepDots, button, info, label
+from .widgets import Card, Empty, StepList, button, info, label
 
 
 class Receipts(QWidget):
@@ -56,7 +57,7 @@ class Receipts(QWidget):
         row.addWidget(button("Flip one byte", "danger", self.tamper, "zap"))
         row.addStretch(1)
         right.addLayout(row)
-        self.dots = StepDots()
+        self.dots = StepList()
         right.addWidget(self.dots)
         self.verdict = label("", "title")
         right.addWidget(self.verdict)
@@ -135,7 +136,12 @@ class Receipts(QWidget):
         def done(v: Verified) -> None:
             if v.flipped:
                 at, old, _ = v.flipped
-                self.hex.setText(hex_view(v.certificate, at, old))
+                tag, name = explain.cert_field_at(v.certificate, at)
+                self.hex.setText(
+                    hex_view(v.certificate, at, old)
+                    + f"<br>byte {at} is in field {tag}, {name} (§11.1). The operator signed every"
+                    " byte before it, so step 2 fails."
+                )
             self._show(v)
 
         self.host.worker.submit(lambda: self.host.studio.tamper(lsn), done, self.host.error)

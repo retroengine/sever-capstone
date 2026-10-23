@@ -24,13 +24,13 @@ from PySide6.QtWidgets import (
 )
 from shiboken6 import isValid
 
-from .. import layout
+from .. import explain, layout
 from ..actions import Added, Deleted
 from ..backend import HOLDING, Inserted
 from . import copy, theme
 from .host import Host
 from .map_view import Bucket, GroupCard, HoverCard, MapView
-from .widgets import Heatmap, Verdict, button, chip, info, label, lift
+from .widgets import Flow, Heatmap, Verdict, button, chip, info, label, lift
 
 #: a search's question, its hits, where it is drawn, and how the engine searched (§8.1)
 Found = tuple[str, list[tuple[str, float, bool]], tuple[float, float], dict[str, Any]]
@@ -144,16 +144,25 @@ class Explore(QWidget):
         self.sel_text.setWordWrap(True)
         self.sel_text.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.sel_text.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        # the text, its numbers and how it got here (or what its deletion did), scrolled together
+        inside = QWidget()
+        il = QVBoxLayout(inside)
+        il.setContentsMargins(0, 0, 6, 0)
+        il.setSpacing(8)
+        il.addWidget(self.sel_text)
+        self.sel_heat = Heatmap(cols=48)
+        il.addWidget(self.sel_heat)
+        self.sel_nums = label("", "mono", wrap=True)
+        il.addWidget(self.sel_nums)
+        self.flow = Flow(vertical=True)
+        il.addWidget(self.flow)
+        il.addStretch(1)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setWidget(self.sel_text)
+        scroll.setWidget(inside)
         shl.addWidget(scroll, 1)
-        self.sel_heat = Heatmap(cols=48)
-        shl.addWidget(self.sel_heat)
-        self.sel_nums = label("", "mono", wrap=True)
-        shl.addWidget(self.sel_nums)
         self.b_delete = button("Delete", "danger", self.delete_selected, "trash")
         self.b_forget = button("Forget", "danger", self.forget_selected, "forget")
         self.b_group = button("Group", "", self.toggle_group, "layers", "Show only its group")
@@ -342,6 +351,7 @@ class Explore(QWidget):
         self.sel_text.setText(b.text_of(rid))
         x = b.vector_of(rid).astype(np.float64)
         self.sel_heat.set(x)
+        self.sel_heat.show()
         q = np.rint(x * 2**24).astype(np.int64)
         lines = [
             f"x  = [{', '.join(f'{v:.5f}' for v in x[:3])}, … {len(x)} numbers]",
@@ -360,6 +370,7 @@ class Explore(QWidget):
         if rec.group == HOLDING:
             lines.append("waiting in the bucket: in no group yet (§7.4)")
         self.sel_nums.setText("\n".join(lines))
+        self.flow.set(explain.insert_flow(self.host.studio, rid), delay=220)
         self.b_forget.setText(f"Forget ({n})")
         self._sheet(mode="selected")
 
@@ -573,6 +584,10 @@ class Explore(QWidget):
 
             def after() -> None:
                 self.redraw()
+                self.sel_text.setText("")
+                self.sel_nums.setText("")
+                self.sel_heat.hide()
+                self.flow.set(explain.delete_flow(s, d), delay=220)
                 self._sheet(mode="deleted")
                 self.b_again.setVisible(kind == "delete")
                 self.host.toast(
