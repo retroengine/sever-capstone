@@ -15,7 +15,7 @@ from PySide6.QtCore import QMessageLogContext, QTimer, QtMsgType, qInstallMessag
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from ..actions import Studio
-from ..checklist import ROWS
+from ..checklist import CHECKS, ROWS
 from . import theme
 from .main_window import MainWindow
 from .tour import CHAPTERS
@@ -106,7 +106,7 @@ def run(root: Path, data: str, rows: int, work: Path, dev: bool, smoke: bool = F
                 print(
                     f"smoke: {'PASS' if ok else 'FAIL'} in {time.monotonic() - t0:.0f} s; screen "
                     f"{geo.width()}x{geo.height()}, window {frame.width()}x{frame.height()}; "
-                    f"checklist {studio.checklist.passed()}/{len(ROWS)}; "
+                    f"checks {studio.checklist.passed()}/{len(CHECKS)}; "
                     f"{len(issues)} Qt messages; {len(errors)} errors",
                     flush=True,
                 )

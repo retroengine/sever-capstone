@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..actions import Studio
-from ..checklist import BY_KEY
+from ..checklist import CHECKS
 from . import theme
 from .drawer import Drawer
 from .explore import Explore
@@ -199,7 +199,7 @@ class MainWindow(QMainWindow):
 
     def changed(self) -> None:
         self.drawer.refresh()
-        self.progress.setText(f" {self.studio.checklist.passed()}/{len(BY_KEY)}")
+        self.progress.setText(f" {self.studio.checklist.passed()}/{len(CHECKS)}")
 
     def go(self, section: str, tab: str | None = None, **kw: Any) -> None:
         w = self.sections[section]
@@ -243,10 +243,10 @@ class MainWindow(QMainWindow):
             "crash": hood["crash"].crash,
             "refusals": hood["rules"].refusals,
             "retry": hood["rules"].retry,
-            "exact": lambda: proof["parts"].arrive("idea", None),
-            "ghost": lambda: proof["parts"].arrive("idea", None),
-            "durable": lambda: proof["parts"].arrive("durable", None),
-            "chain": lambda: proof["parts"].arrive("receipt", None),
+            "exact": lambda: proof["parts"].arrive("idea", "synthetic"),
+            "ghost": lambda: proof["parts"].arrive("idea", "synthetic"),
+            "durable": lambda: proof["parts"].arrive("durable", "synthetic"),
+            "chain": lambda: proof["parts"].arrive("receipt", "synthetic"),
             "shred": lambda: proof["parts"].arrive("erase", "synthetic"),
             "leak": lambda: proof["parts"].arrive("erase", "synthetic"),
             "phasec": lambda: proof["parts"].arrive("erase", "synthetic"),

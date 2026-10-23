@@ -74,7 +74,7 @@ class PartCard(Card):
     def render_proof(self, p: Proof) -> None:
         passed = sum(ok for _, ok in p.checks)
         self.verdict.set(p.ok, f"{passed} of {len(p.checks)} checks · {p.source.split(' (')[0]}")
-        lines = []
+        lines = [f"<span style='color:{theme.MUTED}'>{p.source}</span>"]
         for c, ok in p.checks:
             sign, colour = mark(ok)
             lines.append(f"<span style='color:{colour}'>{sign}</span> {c}")

@@ -1,8 +1,11 @@
 """The reviewer checklist: every feature of the project, the section that defines it, the screen
 that shows it, and whether it has been shown passing in this session.
 
-A row is ticked only by its live check (``actions.Studio``), never by hand. The session report
-(``report-<utc>.json``) holds the verdicts and numbers only: no key, ``r_t`` or passage text.
+A check row is ticked only by an engine check or a part program run live (``actions.Studio``),
+never by hand (DB-109). A recorded run is kept as a recording (``source="recorded"``, ◐) and never
+ticks. Three rows only show something (a hover, the stated limits, the evidence files): they are
+marked as shown, never counted as checks. The session report (``report-<utc>.json``) holds the
+verdicts and numbers only: no key, ``r_t`` or passage text.
 """
 
 import json
@@ -18,6 +21,8 @@ class Row:
     title: str
     spec: str
     screen: str
+    #: a check (ticked by a live run) or a row that only shows something
+    check: bool = True
 
 
 ROWS = [
@@ -49,7 +54,9 @@ ROWS = [
         "Search",
     ),
     Row(10, "search", "Search with real questions; judged answers found", "§8", "Search"),
-    Row(11, "hover", "Each point: its account, group, passage and encoding", "§3, §4", "Map"),
+    Row(
+        11, "hover", "Each point: its account, group, passage and encoding", "§3, §4", "Map", False
+    ),
     Row(12, "delete", "Delete: the point goes, the counts stay exact", "§5, §15.3", "Map"),
     Row(13, "absent", 'Deleting again changes nothing: "absent"', "§5.4", "Map"),
     Row(14, "retry", "A retried insert is stored once", "§15.1", "Your details"),
@@ -69,7 +76,7 @@ ROWS = [
         "Receipt",
     ),
     Row(18, "tamper", "One flipped byte: rejected, and the failing step named", "§11.3", "Receipt"),
-    Row(19, "limits", "What a certificate does not prove", "overview L-2, L-27", "Receipt"),
+    Row(19, "limits", "What a certificate does not prove", "overview L-2, L-27", "Receipt", False),
     Row(20, "log", "The public log: signed checkpoint and witness cosignatures", "§10", "Log"),
     Row(
         21, "audit", "An auditor checks the whole log and every certificate", "§11.3, §15.4", "Log"
@@ -105,6 +112,7 @@ ROWS = [
         "Traceability, proofs, oracles, gate runs, fairness runs",
         "Build §2.2, §2.5",
         "Evidence",
+        False,
     ),
     Row(34, "climb", "A receipt climbs the log tree to the signed root", "§10, §11.2", "Live"),
     Row(35, "attacks", "Every forgery of a receipt is caught", "§11.3", "Live"),
@@ -112,6 +120,7 @@ ROWS = [
     Row(37, "race", "Float means drift; integer sums stay identical", "§4.2, §5", "Live"),
 ]
 BY_KEY = {r.key: r for r in ROWS}
+CHECKS = [r for r in ROWS if r.check]
 
 
 @dataclass
@@ -119,19 +128,27 @@ class Verdict:
     ok: bool
     detail: str
     utc: str
+    #: "live" (an engine check or a part program run now) or "recorded" (a file written earlier)
+    source: str = "live"
 
 
 @dataclass
 class Checklist:
     verdicts: dict[str, Verdict] = field(default_factory=dict)
 
-    def mark(self, key: str, ok: bool, detail: str = "") -> None:
+    def mark(self, key: str, ok: bool, detail: str = "", source: str = "live") -> None:
         if key not in BY_KEY:
             raise KeyError(key)
-        self.verdicts[key] = Verdict(ok, detail, time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+        utc = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        self.verdicts[key] = Verdict(ok, detail, utc, source)
+
+    def ticked(self, key: str) -> bool:
+        """A check row passed by a live run."""
+        v = self.verdicts.get(key)
+        return BY_KEY[key].check and v is not None and v.ok and v.source == "live"
 
     def passed(self) -> int:
-        return sum(1 for v in self.verdicts.values() if v.ok)
+        return sum(1 for r in CHECKS if self.ticked(r.key))
 
     def save(self, work: Path, numbers: dict[str, object]) -> Path:
         stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
@@ -144,12 +161,19 @@ class Checklist:
                     "n": r.n,
                     "feature": r.title,
                     "spec": r.spec,
+                    "check": r.check,
                     "shown": v is not None,
                     "ok": v.ok if v else None,
+                    "source": v.source if v else "",
                     "detail": v.detail if v else "",
                     "utc": v.utc if v else "",
                 }
             )
-        doc = {"passed": self.passed(), "of": len(ROWS), "rows": rows, "numbers": numbers}
+        doc = {
+            "passed": self.passed(),
+            "of": len(CHECKS),
+            "rows": rows,
+            "numbers": numbers,
+        }
         path.write_text(json.dumps(doc, indent=1), "utf-8")
         return path

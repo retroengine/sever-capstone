@@ -193,7 +193,9 @@ def test_studio_every_row_can_be_ticked(studio: Studio) -> None:
     assert missing <= slow, missing
     report = studio.report()
     doc = json.loads(report.read_text("utf-8"))
-    assert doc["of"] == len(ROWS) == 37
+    # DB-109: the report counts the 34 checks; 3 rows only show something
+    assert len(ROWS) == 37
+    assert doc["of"] == 34
 
 
 def test_studio_no_screen_shows_a_secret(studio: Studio) -> None:

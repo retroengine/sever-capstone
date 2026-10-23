@@ -771,21 +771,26 @@ class Studio:
             return None
         checks = dict(p.checks)
         src = f" ({p.source})"
+        how = "live" if live else "recorded"
         if name == "idea":
             first = [c for c in checks if c.startswith("every touched group")]
             self.checklist.mark(
                 "exact",
                 all(checks[c] for c in first) and checks.get("no untouched group changed", False),
                 (first[0] if first else "") + src,
+                how,
             )
             ghost = [c for c in checks if "SEVER's sum" in c or "float" in c or "soft delete" in c]
             self.checklist.mark(
-                "ghost", all(checks[c] for c in ghost), "SEVER 0; float ≠; soft delete keeps" + src
+                "ghost",
+                all(checks[c] for c in ghost),
+                "SEVER 0; float ≠; soft delete keeps" + src,
+                how,
             )
         elif name == "durable":
-            self.checklist.mark("durable", p.ok, f"{len(p.checks)} checks" + src)
+            self.checklist.mark("durable", p.ok, f"{len(p.checks)} checks" + src, how)
         elif name == "receipt":
-            self.checklist.mark("chain", p.ok, f"{len(p.checks)} checks" + src)
+            self.checklist.mark("chain", p.ok, f"{len(p.checks)} checks" + src, how)
         elif name == "erase":
             ch = list(checks.items())
             self.checklist.mark("shred", all(ok for _, ok in ch[:3]), ch[2][0] + src)

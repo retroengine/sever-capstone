@@ -23,6 +23,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -86,7 +87,10 @@ def load_recorded(root: Path, name: str) -> Proof | None:
     path = recorded(root, name)
     if path is None:
         return None
-    return read(name, json.loads(path.read_text("utf-8")), "", f"recorded nq-10k ({path.name})")
+    written = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(path.stat().st_mtime))
+    where = path.relative_to(root)
+    source = f"recorded nq-10k ({where}, written {written}, commit unknown)"
+    return read(name, json.loads(path.read_text("utf-8")), "", source)
 
 
 def read(name: str, report: dict[str, Any], text: str, source: str) -> Proof:

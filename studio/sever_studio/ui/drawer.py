@@ -1,4 +1,5 @@
-"""The checklist drawer: 33 features in five groups, each ticked only by a live check."""
+"""The checklist drawer: 37 rows in five groups. ✓ only from a live engine check or part program;
+◐ a recording; • a row that only shows something (DB-109)."""
 
 from collections.abc import Callable
 from functools import partial
@@ -14,7 +15,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..checklist import BY_KEY, Checklist
+from ..checklist import BY_KEY, CHECKS, Checklist
 from . import copy, theme
 from .widgets import button, label, lift, mark
 
@@ -41,7 +42,14 @@ class Drawer(QFrame):
         head.addWidget(self.head, 1)
         head.addWidget(button("", "ghost", self.close_drawer, "x", "Close"))
         lay.addLayout(head)
-        lay.addWidget(label("Ticked only by a live check.", "small"))
+        lay.addWidget(
+            label(
+                "✓ checked live by the engine or a part's program · ◐ seen in a recording, not"
+                " checked · • shown, not a check",
+                "small",
+                wrap=True,
+            )
+        )
         inner = QWidget()
         il = QVBoxLayout(inner)
         il.setContentsMargins(0, 0, 0, 0)
@@ -79,6 +87,10 @@ class Drawer(QFrame):
         for key, b in self.rows.items():
             verdict = v.get(key)
             sign, colour = mark(verdict.ok if verdict else None)
+            if verdict and verdict.ok and verdict.source == "recorded":
+                sign, colour = "◐", theme.MUTED
+            elif verdict and not BY_KEY[key].check:
+                sign, colour = "•", theme.MUTED
             b.setText(f"{sign}   {copy.CHECK_SHORT[key]}")
             b.setStyleSheet(
                 f"text-align: left; padding: 5px 6px; color: {colour if verdict else theme.MUTED};"
@@ -86,9 +98,10 @@ class Drawer(QFrame):
             if verdict:
                 b.setToolTip(f"{BY_KEY[key].title} ({BY_KEY[key].spec})\n{verdict.detail}")
         for group, keys, gh in self.group_heads:
-            done = sum(1 for k in keys if v.get(k) and v[k].ok)
-            gh.setText(f"{group}  <span style='color:{theme.MUTED}'>{done}/{len(keys)}</span>")
-        self.head.setText(f"Checklist {self.checklist.passed()}/{len(BY_KEY)}")
+            checks = [k for k in keys if BY_KEY[k].check]
+            done = sum(1 for k in checks if self.checklist.ticked(k))
+            gh.setText(f"{group}  <span style='color:{theme.MUTED}'>{done}/{len(checks)}</span>")
+        self.head.setText(f"Checks {self.checklist.passed()}/{len(CHECKS)}")
 
     def toggle(self) -> None:
         if self.isVisible():
