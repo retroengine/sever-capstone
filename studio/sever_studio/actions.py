@@ -672,7 +672,7 @@ class Studio:
         live = list(b.index.records)
         sample = live[:: max(1, len(live) // 40)][:40]
         texts = [b.text_of(r) for r in sample]
-        vecs = [b.vector_of(r).astype("<f4").tobytes() for r in sample]
+        vecs = [b.vector_of(r) for r in sample]
         needles = tools.needles_of(sample, texts, vecs)
         naive_dir = self.work / "naive-store"
         shutil.rmtree(naive_dir, ignore_errors=True)

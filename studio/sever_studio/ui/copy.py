@@ -139,8 +139,9 @@ TEXT: dict[str, tuple[str, str]] = {
     "disk.about": (
         "What a thief with the disk would find.",
         "A raw byte search of every file for 40 live records: each ID, two windows of its text, "
-        "and its vector. First over an ordinary store of the same records, to show the search can "
-        "see. Only public values are stored in the clear (§13.2).",
+        "its float vector, and the integers x̃ = round(x · 2²⁴) the database actually stores "
+        "(§4.2), in either byte order. First over an ordinary store of the same records, to show "
+        "the search can see each form. Only public values are stored in the clear (§13.2).",
     ),
     "crash.about": (
         "Pull the plug mid-write.",

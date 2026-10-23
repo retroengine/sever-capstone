@@ -95,7 +95,9 @@ class DiskTab(QWidget):
         self.tiles: dict[tuple[str, str], Tile] = {}
         grid.addWidget(label("An ordinary store", "strong"), 0, 0)
         grid.addWidget(label("SEVER-DB", "strong"), 1, 0)
-        for col, kind in enumerate(("record IDs", "passage text", "vectors"), 1):
+        for col, kind in enumerate(
+            ("record IDs", "passage text", "vectors", "x̃ (stored integers)"), 1
+        ):
             for row, side in enumerate(("naive", "sever")):
                 t = Tile(f"{kind} found")
                 self.tiles[(side, kind)] = t
