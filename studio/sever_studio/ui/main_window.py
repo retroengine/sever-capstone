@@ -86,7 +86,6 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.studio = studio
         self.worker = Worker()
-        self.receipts_of: dict[int, tuple[str, str]] = {}
         self.errors: list[str] = []
         self.setWindowTitle("SEVER-DB Studio")
         root = QWidget()

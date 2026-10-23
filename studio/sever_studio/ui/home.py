@@ -110,8 +110,9 @@ class Home(QWidget):
         s = self.host.studio
         overrides = s.numbers.get("startup_overrides", [])
         if s.backend.refused:
-            self.v["startup"].set(
-                True, "Machine checked: refused here, opened with the development override"
+            self.v["startup"].warn(
+                "Machine checked: refused here (" + ", ".join(overrides) + "), opened with the"
+                " development override"
             )
             self.v["startup"].setToolTip(f"{s.backend.refused}\noverrides: {', '.join(overrides)}")
         else:
@@ -143,9 +144,8 @@ class Home(QWidget):
         def done(out: tuple[str, str, str]) -> None:
             art, data, mine = out
             ok = art == data == mine
-            self.v["encoder"].set(
-                ok, "One encoder: " + mine.split("@")[0].split("/")[-1] if ok else "Encoders differ"
-            )
+            v = self.host.studio.checklist.verdicts.get("encoder")
+            self.v["encoder"].set(ok and bool(v and v.ok), v.detail if v else "Encoders differ")
             self.v["encoder"].setToolTip(f"partition: {art}\nvectors: {data}\nyour text: {mine}")
             self.host.changed()
 

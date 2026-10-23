@@ -34,7 +34,7 @@ class ReceiptPicker(QComboBox):
         current = self.currentData()
         self.clear()
         for lsn in reversed(self.host.studio.backend.index.receipts):
-            rid, _ = self.host.receipts_of.get(lsn, ("", ""))
+            rid, _ = self.host.studio.backend.receipt_owner(lsn) or ("", "")
             self.addItem(f"Receipt #{lsn}" + (f"  · {rid}" if rid else ""), lsn)
         if current is not None:
             i = self.findData(current)

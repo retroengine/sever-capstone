@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import random
+import re
 import shutil
 import signal
 import subprocess
@@ -165,6 +166,14 @@ def _verify(root: Path, folder: Path, cert: bytes, anchors: str) -> tuple[int, s
     return code, verdict, out
 
 
+def judged(code: int, verdict: str) -> tuple[bool, int | None]:
+    """sever-verify's answer (§16.3): rejected (exit 1) at a named step of §11.3, and which."""
+    m = re.match(r"REJECT \(step (\d+)", verdict)
+    if code == 1 and m:
+        return True, int(m[1])
+    return False, None
+
+
 def attacks(
     root: Path,
     work: Path,
@@ -180,11 +189,14 @@ def attacks(
     a = json.loads(anchors)
     out: list[Attack] = []
 
-    def run(att: Attack, folder: str, c: bytes, anc: str, step: str) -> None:
+    def run(att: Attack, folder: str, c: bytes, anc: str, expected: str) -> None:
+        """``expected``: the step that should catch it; any named step that rejects it counts."""
         code, verdict, _ = _verify(root, lab / folder, c, anc)
         att.verdict = verdict or f"exit {code}"
-        att.caught = code == 1 and verdict.startswith(f"REJECT (step {step}")
+        att.caught, step = judged(code, verdict)
         att.by = f"sever-verify, step {step}" if att.caught else "not caught"
+        if att.caught and str(step) != expected:
+            att.by += f" (expected step {expected})"
         out.append(att)
 
     flipped = bytearray(cert)

@@ -275,11 +275,7 @@ class Studio:
         if self.data == "synthetic":
             fixed: npt.NDArray[np.float32] = fixture_encode(text, self.corpus.d)[0]
             return fixed
-        if self._encoder is None:
-            from .encoder import Encoder
-
-            self._encoder = Encoder(self.work.parent / "models")
-        row: npt.NDArray[np.float32] = self._encoder.encode([text])[0]
+        row: npt.NDArray[np.float32] = self.encoder_rows([text])[0]
         return row
 
     def spares_left(self) -> int:
@@ -364,16 +360,40 @@ class Studio:
         return ok, bad
 
     def encoder_check(self) -> tuple[str, str, str]:
+        """The partition, the stored vectors and Studio's encoder name the same model, and on NQ
+        Studio's encoder gives the stored vectors back: five stored passages re-encoded, each at
+        cosine ≥ 0.9999 with its stored vector (H6). The fixture has no encoder."""
         art, data = self.corpus.artefact_encoder(), self.corpus.encoder
         if self.data == "synthetic":
             mine = FIXTURE_ENCODER
-        else:
-            from .encoder import NAME
+            ok = art == data == mine
+            self.checklist.mark(
+                "encoder", ok, f"artefact {art}; data {data}; the fixture has no encoder"
+            )
+            return art, data, mine
+        from .encoder import NAME
 
-            mine = NAME
-        ok = art == data == mine
-        self.checklist.mark("encoder", ok, f"artefact {art}; data {data}; typed text {mine}")
+        mine = NAME
+        rows = list(range(5))
+        again = self.encoder_rows([self.corpus.texts[i] for i in rows])
+        stored = self.corpus.vectors[rows].astype(np.float64)
+        cos = (again.astype(np.float64) * stored).sum(axis=1)
+        ok = art == data == mine and bool((cos >= 0.9999).all())
+        self.checklist.mark(
+            "encoder",
+            ok,
+            f"one model named everywhere ({mine.split('@')[0]}); 5 stored passages re-encoded, "
+            f"cosine with their stored vectors {cos.min():.6f} … {cos.max():.6f}",
+        )
         return art, data, mine
+
+    def encoder_rows(self, texts: list[str]) -> npt.NDArray[np.float32]:
+        if self._encoder is None:
+            from .encoder import Encoder
+
+            self._encoder = Encoder(self.work.parent / "models")
+        rows: npt.NDArray[np.float32] = self._encoder.encode(texts)
+        return rows
 
     def clusters(self) -> dict[str, int]:
         b = self.backend

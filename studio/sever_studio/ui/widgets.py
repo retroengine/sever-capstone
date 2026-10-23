@@ -189,6 +189,11 @@ class Verdict(QLabel):
         sign, colour = mark(ok)
         self.setText(f"<span style='color:{colour}; font-weight:700'>{sign}</span>&nbsp; {text}")
 
+    def warn(self, text: str) -> None:
+        """Neither passed nor failed: a check that held only with an override."""
+        c = theme.WARN
+        self.setText(f"<span style='color:{c}; font-weight:700'>⚠</span>&nbsp; {text}")
+
 
 class Spinner(QWidget):
     """A turning arc while the worker is busy."""

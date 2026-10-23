@@ -529,16 +529,11 @@ class Explore(QWidget):
     def delete(self, rids: list[str], kind: str, account: str = "") -> None:
         s = self.host.studio
         points = self._points(rids)
-        accounts = {
-            r: s.backend.index.records[r].account for r in rids if r in s.backend.index.records
-        }
 
         def run() -> Deleted:
             return s.forget(account) if kind == "forget" else s.delete(rids)
 
         def done(d: Deleted) -> None:
-            for rid, lsn in zip(d.rids, d.lsns, strict=False):
-                self.host.receipts_of[lsn] = (rid, accounts.get(rid, ""))
             self.last_deleted = d.rids[0] if d.rids else None
             self.last_lsn = d.lsns[-1] if d.lsns else None
             self.map.select(None)

@@ -191,3 +191,13 @@ def test_full_a_planted_bug_turns_a_test_red(sb: str, report: dict[str, Any]) ->
     report.update(summary=out.summary)
     assert out.compiled
     assert out.caught, out.output[-3000:]
+
+
+@pytest.mark.full
+def test_full_encoder_check_reencodes_stored_passages() -> None:
+    # H6, oracle B: the ONNX encoder against the dataset's own vectors, not three names compared
+    s = Studio(ROOT, "nq", WORK / "studio-nq", dev=True, rows=10_000)
+    s.encoder_check()
+    v = s.checklist.verdicts["encoder"]
+    assert v.ok, v.detail
+    assert "cosine" in v.detail

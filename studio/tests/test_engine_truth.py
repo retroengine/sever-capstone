@@ -105,3 +105,23 @@ def test_studio_group_card_shows_the_engines_n_and_published_commitment(studio: 
     assert card["commitment"] == tag(cert, 3).hex()
     assert card["commitment_lsn"] == d.lsns[0]
     assert "S" not in card
+
+
+def test_studio_a_receipt_keeps_its_record_name_after_a_restart(studio: Studio) -> None:
+    # M6: the receipt list named every receipt "from an earlier session" after a restart
+    b = studio.backend
+    rid = next(r for r, v in b.index.records.items() if v.group != HOLDING)
+    account = b.index.records[rid].account
+    d = studio.delete([rid])
+    studio.restart()
+    assert b.receipt_owner(d.lsns[0]) == (rid, account)
+
+
+def test_studio_attack_lab_counts_a_rejection_at_any_named_step() -> None:
+    # M7: a flip that fails parsing (step 1) is caught, not "not caught"
+    from sever_studio.wow import judged
+
+    assert judged(1, "REJECT (step 1: a value is truncated)") == (True, 1)
+    assert judged(1, "REJECT (step 2: the operator signature does not verify)") == (True, 2)
+    assert judged(0, "ACCEPT") == (False, None)
+    assert judged(3, "") == (False, None)

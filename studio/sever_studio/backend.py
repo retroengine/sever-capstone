@@ -157,6 +157,8 @@ class Index:
     holding: list[str] = field(default_factory=list)
     receipts: list[int] = field(default_factory=list)
     flushes: int = 0
+    #: each receipt's record and account (``database_lsn`` as text -> [ID, account])
+    owners: dict[str, list[str]] = field(default_factory=dict)
 
 
 class Backend:
@@ -460,11 +462,17 @@ class Backend:
                 (self.receipts / f"{d.database_lsn}.cert").write_bytes(d.certificate)
                 self.index.receipts.append(d.database_lsn)
                 rec = self.index.records.pop(rid, None)
+                self.index.owners[str(d.database_lsn)] = [rid, rec.account if rec else ""]
                 if rec is not None and rec.group == HOLDING:
                     self.index.holding.remove(rid)
         (self.receipts / "anchors.json").write_text(self.live.anchors(), "utf-8")
         self.save()
         return out
+
+    def receipt_owner(self, lsn: int) -> tuple[str, str] | None:
+        """The record and account a receipt of this application belongs to."""
+        o = self.index.owners.get(str(lsn))
+        return (o[0], o[1]) if o else None
 
     def absent(self, rid: str) -> bool:
         """Deleting a record that is not live changes nothing and says ``absent`` (§5.4)."""

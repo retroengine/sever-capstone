@@ -11,7 +11,6 @@ class Host(Protocol):
     studio: Studio
     worker: Worker
     #: certificate log position -> (record ID, account), for this session's deletions
-    receipts_of: dict[int, tuple[str, str]]
 
     def toast(
         self,

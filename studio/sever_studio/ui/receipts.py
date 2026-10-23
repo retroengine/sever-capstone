@@ -77,7 +77,7 @@ class Receipts(QWidget):
         b = self.host.studio.backend
         target = kw.get("lsn")
         for lsn in reversed(b.index.receipts):
-            rid, _ = self.host.receipts_of.get(lsn, ("", ""))
+            rid, _ = self.host.studio.backend.receipt_owner(lsn) or ("", "")
             item = QListWidgetItem(f"#{lsn}" + (f"   {rid}" if rid else ""))
             item.setData(Qt.ItemDataRole.UserRole, lsn)
             self.list.addItem(item)
@@ -95,10 +95,10 @@ class Receipts(QWidget):
         self.lsn = int(item.data(Qt.ItemDataRole.UserRole)) if item else None
         if self.lsn is None:
             return
-        rid, acc = self.host.receipts_of.get(self.lsn, ("", ""))
+        rid, acc = self.host.studio.backend.receipt_owner(self.lsn) or ("", "")
         self.picked.setText(f"Receipt #{self.lsn}")
         self.who.setText(
-            f"the deletion of {rid} · {acc}" if rid else "a deletion from an earlier session"
+            f"the deletion of {rid} · {acc}" if rid else "a deletion made outside this application"
         )
         self.dots.show_steps([])
         self.verdict.setText("")
