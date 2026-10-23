@@ -27,6 +27,12 @@
 # Duration: about 20-40 min (cargo installs and the release builds dominate), plus the partition
 # build when artefacts/ is empty. The full gate run that follows takes roughly 1-2 days.
 #
+# Without admin rights (no sudo): NO_SUDO=1 bash scripts/vm/setup.sh. Steps 1-2 then install
+# nothing system-wide: missing commands are listed for the admin (a C compiler, git and curl are
+# required), fuse2fs is unpacked from its .deb into ~/.local without root when it is missing, and
+# the memlock limit is left as it is (the two --locked-memory steps then need the admin, see
+# scripts/vm/HPC_GUIDE.md). Steps 3-8 install into the home directory and need no admin.
+#
 # Never prints or logs keys, r_t or passage text: it only installs tools and checks hashes.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -38,6 +44,33 @@ RUN_USER=${SUDO_USER:-$(id -un)}
 
 # ---- 1. apt packages --------------------------------------------------------------------------
 say "apt packages"
+if [ "${NO_SUDO:-0}" = 1 ]; then
+  # Commands, not packages: the machine may have gcc without the build-essential metapackage.
+  need_missing=(); want_missing=()
+  for c in cc git curl; do command -v "$c" >/dev/null 2>&1 || need_missing+=("$c"); done
+  for c in make pkg-config python3 rsync xz sha256sum mkfs.ext4 debugfs fusermount3; do
+    command -v "$c" >/dev/null 2>&1 || want_missing+=("$c")
+  done
+  export PATH="$HOME/.local/bin:$PATH"
+  if ! command -v fuse2fs >/dev/null 2>&1; then
+    # apt-get download and dpkg -x need no root: unpack the package into ~/.local/opt.
+    opt="$HOME/.local/opt/fuse2fs"
+    mkdir -p "$opt" "$HOME/.local/bin"
+    if (cd "$opt" && apt-get download fuse2fs >/dev/null 2>&1 && dpkg -x fuse2fs_*.deb "$opt/root"); then
+      bin=$(find "$opt/root" -type f -name fuse2fs | head -1)
+      [ -n "$bin" ] && ln -sf "$bin" "$HOME/.local/bin/fuse2fs"
+    fi
+    if command -v fuse2fs >/dev/null 2>&1; then echo "fuse2fs: unpacked into $opt (no root)"
+    else want_missing+=("fuse2fs"); fi
+  fi
+  [ ${#want_missing[@]} -eq 0 ] || echo "ASK THE ADMIN to install (NO_SUDO=1): ${want_missing[*]}"
+  if [ ${#need_missing[@]} -gt 0 ]; then
+    echo "MISSING and required to build anything: ${need_missing[*]}"
+    echo "Ask the admin: sudo apt-get install -y build-essential pkg-config git curl"
+    exit 1
+  fi
+  [ ${#want_missing[@]} -gt 0 ] || echo "all present"
+else
 PKGS=(build-essential pkg-config git e2fsprogs fuse3 fuse2fs curl ca-certificates python3 \
       python3-venv rsync xz-utils)
 missing=()
@@ -48,6 +81,7 @@ if [ ${#missing[@]} -gt 0 ]; then
 else
   echo "all present"
 fi
+fi
 # fuse2fs mounts the forensic disk image (P4-T1/T2) as an unprivileged user: /dev/fuse must be usable.
 [ -e /dev/fuse ] || echo "WARNING: /dev/fuse is missing; the forensics gate needs FUSE (modprobe fuse)"
 
@@ -56,7 +90,9 @@ say "memlock limit for $RUN_USER"
 LIMITS=/etc/security/limits.d/99-sever.conf
 WANT="$RUN_USER soft memlock unlimited
 $RUN_USER hard memlock unlimited"
-if [ "$(cat "$LIMITS" 2>/dev/null || true)" != "$WANT" ]; then
+if [ "${NO_SUDO:-0}" = 1 ]; then
+  echo "skipped (NO_SUDO=1); only the admin can write $LIMITS"
+elif [ "$(cat "$LIMITS" 2>/dev/null || true)" != "$WANT" ]; then
   printf '%s\n' "$WANT" | $SUDO tee "$LIMITS" >/dev/null
   echo "wrote $LIMITS"
 fi
