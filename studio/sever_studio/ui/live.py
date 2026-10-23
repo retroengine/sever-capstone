@@ -4,15 +4,17 @@ The log tree, the attack lab, a deletion killed part-way, and the race between a
 integer sum. The work is in ``wow.py`` and ``actions.Studio``; this only draws it.
 """
 
+import itertools
 import random
 from typing import Any
 
+import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer
 from PySide6.QtGui import QColor, QFont, QPainter, QPaintEvent, QPen
 from PySide6.QtWidgets import QComboBox, QGridLayout, QHBoxLayout, QTabWidget, QVBoxLayout, QWidget
 
-from .. import wow
+from .. import kmeans, wow
 from ..proofs import Proof
 from . import copy, theme
 from .hood import LEFT, page
@@ -396,18 +398,142 @@ class RaceTab(QWidget):
         )
 
 
+class KMeansTab(QWidget):
+    """How the frozen groups were made: C-15's k-means, offline, step by step (§6.2)."""
+
+    def __init__(self, host: Host) -> None:
+        super().__init__()
+        self.host = host
+        self.nq = host.studio.data == "nq"
+        self.k, self.rows = (8, 2_000) if self.nq else (4, 240)
+        w, lay = page(copy.short("live.kmeans"), "live.kmeans")
+        QVBoxLayout(self).addWidget(w)
+        lay.addWidget(label(copy.long("live.kmeans.offline"), "muted", wrap=True))
+        row = QHBoxLayout()
+        row.addWidget(button(f"Start (k = {self.k})", "primary", self.start, "play"))
+        row.addWidget(button("Step", "", self.step, "right"))
+        row.addWidget(button("Run to the end", "", self.run, "layers"))
+        row.addWidget(button("The real partition", "", self.real, "map"))
+        row.addStretch(1)
+        lay.addLayout(row)
+        self.state = Verdict()
+        lay.addWidget(self.state)
+        self.plot = pg.PlotWidget()
+        self.plot.setBackground(theme.SURFACE)
+        self.plot.setMenuEnabled(False)
+        self.plot.setAspectLocked(True)
+        self.plot.hideAxis("left")
+        self.plot.hideAxis("bottom")
+        self.points = pg.ScatterPlotItem(pxMode=True, size=5)
+        self.trails = pg.PlotDataItem(pen=pg.mkPen(theme.MUTED, width=1), connect="pairs")
+        self.marks = pg.ScatterPlotItem(pxMode=True)
+        for item in (self.points, self.trails, self.marks):
+            self.plot.addItem(item)
+        self.plot.setMinimumHeight(320)
+        lay.addWidget(self.plot, 1)
+        self.k_run: Any = None
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._tick)
+
+    def arrive(self) -> None:
+        pass
+
+    def _colours(self, labels: Any) -> list[Any]:
+        palette = theme.OKABE_ITO
+        return [pg.mkBrush(palette[int(j) % len(palette)]) for j in labels]
+
+    def _draw(self, part: Any, trail: list[Any] | None) -> None:
+        self.points.setData(pos=part.xy, brush=self._colours(part.labels), pen=pg.mkPen(None))
+        self.marks.setData(
+            pos=part.centres_xy,
+            symbol="x",
+            size=16,
+            brush=pg.mkBrush(theme.TEXT),
+            pen=pg.mkPen(theme.SURFACE, width=0.8),
+        )
+        if trail and len(trail) > 1:
+            # each centre's path: one segment per step, from where it was to where it moved
+            ends = [pair for a, b in itertools.pairwise(trail) for pair in zip(a, b, strict=True)]
+            arr = np.array([pt for pair in ends for pt in pair], np.float64).reshape(-1, 2)
+            self.trails.setData(arr[:, 0], arr[:, 1])
+        else:
+            self.trails.setData([], [])
+
+    def _show(self) -> None:
+        r = self.k_run
+        self._draw(r, r.trail)
+        self.state.set(
+            True if r.done else None,
+            f"iteration {r.iteration} · Σ‖x̂ − μ‖² = {r.inertia:.3f}"
+            + (" · converged: no row changed centre" if r.done else ""),
+        )
+
+    def start(self) -> None:
+        s = self.host.studio
+
+        def done(r: Any) -> None:
+            self.k_run = r
+            self._show()
+
+        self.timer.stop()
+        self.state.set(None, "quantising the reference rows and choosing k-means++ starts…")
+        self.host.worker.submit(
+            lambda: kmeans.Run(s.root, s.data, self.k, self.rows), done, self.host.error
+        )
+
+    def step(self) -> None:
+        if self.k_run is None:
+            self.start()
+            return
+        if not self.k_run.done:
+            self.k_run.step()
+        self._show()
+
+    def run(self) -> None:
+        if self.k_run is None:
+            self.start()
+        self.timer.start(250)
+
+    def _tick(self) -> None:
+        if self.k_run is None:
+            return
+        if self.k_run.done:
+            self.timer.stop()
+            return
+        self.step()
+
+    def real(self) -> None:
+        s = self.host.studio
+
+        def done(part: Any) -> None:
+            self.timer.stop()
+            self._draw(part, None)
+            self.state.set(
+                True,
+                f"The partition the engine uses: {len(part.centres)} centres fitted once on all "
+                "the reference rows; each row coloured by its nearest centre, by the engine's "
+                "routing code",
+            )
+
+        self.state.set(None, "reading the artefact and routing every reference row…")
+        self.host.worker.submit(
+            lambda: kmeans.real_partition(s.root, s.data, self.rows), done, self.host.error
+        )
+
+
 class Live(QTabWidget):
-    TABS = ("tree", "attacks", "kill", "race")
+    TABS = ("kmeans", "tree", "attacks", "kill", "race")
 
     def __init__(self, host: Host) -> None:
         super().__init__()
         self.tabs: dict[str, Any] = {
+            "kmeans": KMeansTab(host),
             "tree": TreeTab(host),
             "attacks": AttackTab(host),
             "kill": KillTab(host),
             "race": RaceTab(host),
         }
-        names = ("Log tree", "Attack lab", "Kill a delete", "Float vs exact")
+        names = ("Groups made", "Log tree", "Attack lab", "Kill a delete", "Float vs exact")
         for k, name in zip(self.TABS, names, strict=True):
             self.addTab(self.tabs[k], name)
         self.currentChanged.connect(lambda i: self.tabs[self.TABS[i]].arrive())

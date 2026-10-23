@@ -79,6 +79,9 @@ MONO = "Ubuntu Sans Mono"
 
 TITLE, HEADING, BODY, SMALL = 22.0, 15.0, 11.0, 9.5
 
+#: Okabe and Ito's eight colours, distinct for the common colour-vision deficiencies.
+OKABE_ITO = ["#e69f00", "#56b4e9", "#009e73", "#f0e442", "#0072b2", "#d55e00", "#cc79a7", "#000000"]
+
 #: The presenter's text size (A− / A+).
 scale = 1.0
 

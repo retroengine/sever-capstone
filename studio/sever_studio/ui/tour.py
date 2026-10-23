@@ -59,6 +59,17 @@ CHAPTERS = [
         ("hover",),
     ),
     Chapter(
+        "How the groups were made",
+        "live",
+        "kmeans",
+        "k-means, once, offline: not the database.",
+        "The partition builder ran k-means on SciQ science passages: each row joins its nearest "
+        "centre, each centre moves to its rows' mean, until nothing changes. Press Start, then "
+        "Step. The real partition: 128 centres, fixed forever; the engine only measures against "
+        "them.",
+        (),
+    ),
+    Chapter(
         "Add yourself",
         "explore",
         None,

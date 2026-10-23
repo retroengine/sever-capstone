@@ -246,6 +246,20 @@ TEXT: dict[str, tuple[str, str]] = {
         "model "
         "of the arithmetic in Studio; the engine's own proof is Part 1's (Proof tab).",
     ),
+    "live.kmeans": (
+        "How the frozen groups were made.",
+        "k-means, as the partition builder (C-15) runs it: start from k centres chosen by "
+        "k-means++, then repeat two steps until nothing changes. Assignment: each row joins its "
+        "nearest centre, by Σ(x̂ − μ)². Update: each centre moves to the mean of its rows. The real "
+        "partition used k = 128, 10 starts and up to 300 steps on all 13,679 SciQ rows (§6.2).",
+    ),
+    "live.kmeans.offline": (
+        "",
+        "This is the offline build step (§6.2), not the database: the engine never runs k-means. "
+        "Here it runs small enough to watch, on the reference rows the partition was fitted on "
+        "(quantised as §6.2 step 1 says). The picture is one fixed 2-D projection; every distance "
+        "is measured in all the dimensions.",
+    ),
     "live.race.model": (
         "A model, computed by Studio in numpy, of the arithmetic of §4.2 and §5: not the engine. "
         "The button beside it runs the engine's own proof of the same claim.",
