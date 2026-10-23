@@ -8,8 +8,6 @@ import os
 
 from PySide6.QtGui import QColor, QFont
 
-from ..layout import palette_rgb
-
 PALETTES = {
     "light": {
         "BG": "#f5f6fa",
@@ -27,7 +25,8 @@ PALETTES = {
         "YOURS": "#ffb703",
         "YOURS_RING": "#1d2331",
         "HOLDING": "#8a93a6",
-        "SPAWNED": "#7c4dcc",
+        "FROZEN": "#0072b2",
+        "SPAWNED": "#cc79a7",
         "TOUR": "#eef2ff",
         "SHADOW": "#1d2331",
     },
@@ -47,7 +46,8 @@ PALETTES = {
         "YOURS": "#ffffff",
         "YOURS_RING": "#ffd166",
         "HOLDING": "#9aa0b4",
-        "SPAWNED": "#c9a2ff",
+        "FROZEN": "#56b4e9",
+        "SPAWNED": "#cc79a7",
         "TOUR": "#1a2140",
         "SHADOW": "#000000",
     },
@@ -63,10 +63,11 @@ TEXT, MUTED, ACCENT, ACCENT_HOVER, ON_ACCENT = (
     _P["ON_ACCENT"],
 )
 OK, BAD, WARN = _P["OK"], _P["BAD"], _P["WARN"]
-YOURS, YOURS_RING, HOLDING, SPAWNED, TOUR, SHADOW = (
+YOURS, YOURS_RING, HOLDING, FROZEN, SPAWNED, TOUR, SHADOW = (
     _P["YOURS"],
     _P["YOURS_RING"],
     _P["HOLDING"],
+    _P["FROZEN"],
     _P["SPAWNED"],
     _P["TOUR"],
     _P["SHADOW"],
@@ -78,12 +79,8 @@ MONO = "Ubuntu Sans Mono"
 
 TITLE, HEADING, BODY, SMALL = 22.0, 15.0, 11.0, 9.5
 
-#: The presenter's text size (A− / A+), and the colour-blind-safe palette switch.
+#: The presenter's text size (A− / A+).
 scale = 1.0
-safe_palette = False
-
-#: Okabe and Ito's eight colours, which stay distinct for the common colour-vision deficiencies.
-OKABE_ITO = ["#e69f00", "#56b4e9", "#009e73", "#f0e442", "#0072b2", "#d55e00", "#cc79a7", "#000000"]
 
 
 def pt(size: float) -> float:
@@ -106,12 +103,15 @@ def rgba(colour: str, alpha: int) -> str:
     return f"rgba({c.red()}, {c.green()}, {c.blue()}, {alpha})"
 
 
-def group_colour(index: int) -> QColor:
-    """Colour number ``index`` (``layout.palette_rgb``: no two numbers alike). With the safe
-    palette, the eight Okabe–Ito colours in turn."""
-    if safe_palette:
-        return QColor(OKABE_ITO[index % len(OKABE_ITO)])
-    return QColor(*palette_rgb(index, LIGHT))
+def kind_colour(group: str) -> QColor:
+    """A dot's colour says what kind of group holds it (§5.1): frozen or spawned, from Okabe and
+    Ito's palette, which stays distinct for the common colour-vision deficiencies. One colour per
+    group would only invent a picture of 184 clusters."""
+    if group.startswith("frozen-"):
+        return QColor(FROZEN)
+    if group.startswith("spawn-"):
+        return QColor(SPAWNED)
+    return QColor(HOLDING)
 
 
 def stylesheet() -> str:

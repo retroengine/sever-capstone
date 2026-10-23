@@ -77,8 +77,9 @@ class Explore(QWidget):
 
         # the legend, top left
         self.legend, ll = floating(vertical=False, margin=8)
+        ll.addWidget(chip("● frozen group", theme.FROZEN))
+        ll.addWidget(chip("● spawned group", theme.SPAWNED))
         ll.addWidget(chip("✕ centre μ", theme.TEXT))
-        ll.addWidget(chip("┈ group edge", theme.MUTED))
         ll.addWidget(chip("★ yours", theme.WARN if theme.LIGHT else theme.YOURS_RING))
         ll.addWidget(info("map.about"))
 
@@ -165,13 +166,12 @@ class Explore(QWidget):
         # a group's numbers, when its centre is hovered
         self.gcard = GroupCard(self)
         self.map.group_hovered.connect(self.on_group_hover)
+        self.map.group_clicked.connect(self.select_group)
 
         # the status, bottom right
         self.status = label("", "small")
         self.replay_btn = button("Replay", "ghost", self.replay, "play", "Replay the preparation")
-        self.b_layout = button(
-            "By meaning", "ghost", self.toggle_layout, "map", "Lay the map out by meaning instead"
-        )
+        self.caption = label(copy.short("map.caption"), "small")
 
         # the welcome card
         self.welcome, wl = floating(margin=18)
@@ -193,7 +193,7 @@ class Explore(QWidget):
             self.add_panel,
             self.sheet,
             self.status,
-            self.b_layout,
+            self.caption,
             self.replay_btn,
             self.welcome,
         ):
@@ -227,12 +227,11 @@ class Explore(QWidget):
         self.add_panel.move(16, h - self.fab.height() - self.add_panel.height() - 26)
         self.status.adjustSize()
         self.replay_btn.adjustSize()
-        self.b_layout.adjustSize()
+        self.caption.adjustSize()
         right = w - self.replay_btn.width() - 12
         self.replay_btn.move(right, h - self.replay_btn.height() - 12)
-        right -= self.b_layout.width() + 6
-        self.b_layout.move(right, h - self.b_layout.height() - 12)
         self.status.move(right - self.status.width() - 8, h - self.status.height() - 18)
+        self.caption.move(right - self.caption.width() - 8, h - self.status.height() - 36)
         # the selected record's panel: on the right, over the gauge, above the bottom row
         pw = max(300, min(440, int(w * 0.36)))
         self.sheet.setGeometry(w - pw - 12, 70, pw, max(240, h - 70 - 60))
@@ -282,18 +281,6 @@ class Explore(QWidget):
         )
         self.place()
 
-    def toggle_layout(self) -> None:
-        """By group (each group a disc of its colour) or by meaning (similar passages close)."""
-        s = self.host.studio
-        s.by_group = not s.by_group
-        self.b_layout.setText("By meaning" if s.by_group else "By group")
-        self.b_layout.setToolTip(
-            "Lay the map out by meaning instead" if s.by_group else "Lay the map out by group"
-        )
-        self.map.clear_beam()
-        self.redraw()
-        self.map.autoRange()
-
     def arrive(self, **kw: Any) -> None:
         self.redraw()
 
@@ -321,7 +308,7 @@ class Explore(QWidget):
         info_ = self.host.studio.hover(rid)
         if not info_:
             return
-        self.card.show_for(info_, self.map.palette.colour(str(info_["group"])))
+        self.card.show_for(info_, self.map.colour(str(info_["group"])))
         p = self.map.to_widget(*self.host.studio.xy(rid))
         x = (
             p.x() + 16
@@ -343,7 +330,7 @@ class Explore(QWidget):
             self.place()
             return
         n = len(b.accounts().get(rec.account, []))
-        c = self.map.palette.colour(rec.group).name()
+        c = self.map.colour(rec.group).name()
         self.sel.setText(
             f"<b>{rid}</b>{'  ★' if rec.mine else ''}<br>"
             f"<span style='color:{theme.MUTED}'>{rec.account} · </span>"
@@ -388,13 +375,24 @@ class Explore(QWidget):
                 self.gcard.hide()
             return
         s = self.host.studio
-        self.gcard.show_for(s.group_card(group), self.map.palette.colour(group))
-        x, y, _ = s.groups.anchors[group]
-        p = self.map.to_widget(x, y)
+        self.gcard.show_for(s.group_card(group), self.map.colour(group))
+        at = s.centre_xy(group)
+        if at is None:
+            return
+        p = self.map.to_widget(*at)
         right = p.x() + 18 + self.gcard.width() < self.width() - 12
         gx = p.x() + 18 if right else p.x() - 18 - self.gcard.width()
         gy = min(max(64.0, p.y() - 40), self.height() - self.gcard.height() - 12)
         self.gcard.move(int(max(8, gx)), int(gy))
+
+    def select_group(self, group: str) -> None:
+        """A centre clicked: its members light up wherever they lie (a frozen group's around its
+        centre, a spawned group's scattered: a batch, not a cluster, §7.4)."""
+        self.map.focus(None if self.map.focus_group == group else group)
+        if self.map.focus_group:
+            n = dict(self.host.studio.backend.live.group_sizes(self.host.studio.backend.cid))
+            kind = "frozen" if group.startswith("frozen-") else "spawned"
+            self.host.toast(f"{group}: its {n.get(group, 0):,} records lit ({kind} group)", None)
 
     def toggle_group(self) -> None:
         rid = self.map.selected
@@ -447,7 +445,7 @@ class Explore(QWidget):
             self.bucket.flash()
         else:
             self.redraw()
-            self.map.arrive(*a.xy, self.map.palette.colour(r.placement), lambda: None)
+            self.map.arrive(*a.xy, self.map.colour(r.placement), lambda: None)
             self.on_click(a.rid)
         self.host.toast(f"{a.rid}: {copy.short(key).lower()}", True)
         self.host.changed()
@@ -532,7 +530,7 @@ class Explore(QWidget):
         for r in rids:
             rec = b.index.records.get(r)
             if rec is not None and rec.group != HOLDING:
-                out.append((*self.host.studio.xy(r), self.map.palette.colour(rec.group)))
+                out.append((*self.host.studio.xy(r), self.map.colour(rec.group)))
         return out
 
     def delete_selected(self) -> None:
@@ -631,13 +629,6 @@ class Explore(QWidget):
 
         def done(out: tuple[str, list[tuple[str, float, bool]], tuple[float, float]]) -> None:
             text, hits, origin = out
-            if s.by_group:  # no meaning position on a map by group: the middle of the hits
-                spots = [s.xy(r) for r, _, _ in hits[:10] if r in s.backend.index.records]
-                if spots:
-                    origin = (
-                        sum(x for x, _ in spots) / len(spots),
-                        sum(y for _, y in spots) / len(spots) + 6,
-                    )
             if hits:
                 self.map.show_beam(origin, hits)
             else:
@@ -742,8 +733,8 @@ class Explore(QWidget):
             if placed:
                 # only the new dots: redrawing all 10,000 each tick stalls the window; the map's
                 # cached brushes and pens let pyqtgraph reuse each drawn dot
-                styles = [view._style(g, False) for _, g in placed]
-                xy = np.array([self.host.studio.xy(r, g) for r, g in placed], np.float64)
+                styles = [view._style(g, "plain") for _, g in placed]
+                xy = np.array([self.host.studio.xy(r) for r, _ in placed], np.float64)
                 view.base.addPoints(
                     pos=xy, brush=[b for b, _ in styles], pen=[p for _, p in styles], size=4.6
                 )

@@ -517,16 +517,23 @@ class Backend:
 
     def centroids(self) -> dict[str, list[float]]:
         """Each spawned group's centre as the engine computed it at the flush (§7.5), from its
-        events. A flush lost with a killed process has none (it is never recomputed here)."""
+        events, read from where the last call stopped. A flush lost with a killed process has none
+        (it is never recomputed here)."""
         size = self.events_file.stat().st_size if self.events_file.exists() else 0
-        if self._centroids is None or self._centroids[0] != size:
-            out: dict[str, list[float]] = {}
-            if size:
-                for line in self.events_file.read_text("utf-8").splitlines():
-                    for g, mu in json.loads(line)["created"]:
-                        out[g] = mu
-            self._centroids = (size, out)
-        return self._centroids[1]
+        read, out = self._centroids or (0, {})
+        if size < read:  # a new events file (a reset)
+            read, out = 0, {}
+        if size > read:
+            with self.events_file.open("rb") as f:
+                f.seek(read)
+                chunk = f.read(size - read)
+            end = chunk.rfind(b"\n") + 1  # a line still being written is read next time
+            for line in chunk[:end].decode("utf-8").splitlines():
+                for g, mu in json.loads(line)["created"]:
+                    out[g] = mu
+            read += end
+        self._centroids = (read, out)
+        return out
 
     def receipt_owner(self, lsn: int) -> tuple[str, str] | None:
         """The record and account a receipt of this application belongs to."""

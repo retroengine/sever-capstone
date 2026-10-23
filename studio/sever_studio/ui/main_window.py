@@ -117,7 +117,6 @@ class MainWindow(QMainWindow):
         rl.addStretch(1)
         rl.addWidget(button("A−", "ghost", lambda: self.set_scale(-0.1), tip="Smaller text"))
         rl.addWidget(button("A+", "ghost", lambda: self.set_scale(0.1), tip="Larger text"))
-        rl.addWidget(button("", "ghost", self.toggle_palette, "eye", "Colour-blind-safe colours"))
         outer.addWidget(rail)
 
         column = QVBoxLayout()
@@ -366,11 +365,6 @@ class MainWindow(QMainWindow):
             app.setFont(theme.font())
             app.setStyleSheet(theme.stylesheet())
         self.sections["explore"].place()
-
-    def toggle_palette(self) -> None:
-        theme.safe_palette = not theme.safe_palette
-        self.sections["explore"].map.recolour()
-        self.toast("Colour-blind-safe colours " + ("on" if theme.safe_palette else "off"), None)
 
     def toggle_full(self) -> None:
         self.showNormal() if self.isFullScreen() else self.showFullScreen()

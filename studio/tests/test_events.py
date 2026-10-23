@@ -55,7 +55,6 @@ def test_studio_a_spawned_centre_is_the_engines_and_stays_after_spillover(studio
         if spilled >= 2:
             break
     assert spilled >= 2
-    studio.place_groups()
     mu = studio.centre(f.group)
     assert mu is not None
     assert np.array_equal(mu, want)

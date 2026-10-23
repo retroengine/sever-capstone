@@ -125,10 +125,8 @@ class Studio:
         self.numbers: dict[str, Any] = {"data": data, "rows": rows}
         self.coords = layout.fit(self.corpus.vectors, cache=work)
         self.extra_xy: dict[str, tuple[float, float]] = {}
-        #: the map by group (each group a disc of its own colour) or by meaning (t-SNE)
-        self.by_group = True
-        self.groups = layout.GroupMap(work / "group-map.json", self.corpus.spawn_target)
-        self._spot: dict[tuple[str, str], tuple[float, float]] = {}
+        #: where each group's centre is drawn: among the passages nearest it
+        self._centre_xy: dict[str, tuple[float, float]] = {}
         self._frozen: npt.NDArray[np.float64] | None = None
         #: (record ID, its insert's log position) of each deletion this session
         self.deleted_this_session: list[tuple[str, int]] = []
@@ -138,42 +136,9 @@ class Studio:
 
     # -- the map ----------------------------------------------------------------------------------
 
-    def xy(self, rid: str, group: str | None = None) -> tuple[float, float]:
-        """Where a record is drawn: in its group's disc (by group), or by meaning. ``group``
-        overrides the index's (the replay draws records that may since have gone)."""
-        if self.by_group:
-            if group is None:
-                rec = self.backend.index.records.get(rid)
-                group = rec.group if rec is not None else None
-            if group is not None and group != HOLDING:
-                spot = self._spot.get((rid, group))
-                if spot is None:
-                    if group not in self.groups.anchors:
-                        self.place_groups()
-                    if group not in self.groups.anchors:
-                        return self.meaning_xy(rid)
-                    spot = self.groups.point(group, self.meaning_xy(rid))
-                    self._spot[(rid, group)] = spot
-                return spot
+    def xy(self, rid: str) -> tuple[float, float]:
+        """Where a record is drawn: where its meaning puts it (t-SNE), whatever its group."""
         return self.meaning_xy(rid)
-
-    def place_groups(self) -> None:
-        """Gives every group in the index a place and a colour, if it has none yet: where its real
-        centre μ falls on the map by meaning, then pushed clear of the others."""
-        members: dict[str, list[tuple[float, float]]] = {}
-        ids: dict[str, list[str]] = {}
-        for rid, rec in self.backend.index.records.items():
-            if rec.group != HOLDING:
-                members.setdefault(rec.group, []).append(self.meaning_xy(rid))
-                ids.setdefault(rec.group, []).append(rid)
-        centres: dict[str, tuple[float, float]] = {}
-        for g in members:
-            if g in self.groups.anchors:
-                continue
-            mu = self.centre(g)
-            if mu is not None:
-                centres[g] = layout.place(mu.astype(np.float32), self.corpus.vectors, self.coords)
-        self.groups.ensure(members, centres)
 
     def centre(self, group: str) -> npt.NDArray[np.float64] | None:
         """The group's centre μ as the database routes and searches with it: a frozen group's from
@@ -191,15 +156,23 @@ class Studio:
         return np.asarray(mu, np.float64) if mu is not None else None
 
     def centres(self) -> list[tuple[str, float, float, int]]:
-        """Each group with members: where its centre μ is drawn (fixed, as μ is: §6, §7.5) and its
-        size."""
-        sizes: dict[str, int] = {}
-        for rec in self.backend.index.records.values():
-            if rec.group != HOLDING:
-                sizes[rec.group] = sizes.get(rec.group, 0) + 1
-        if any(g not in self.groups.anchors for g in sizes):
-            self.place_groups()
-        return [(g, *self.groups.anchors[g][:2], n) for g, n in sizes.items()]
+        """Every group the engine has whose centre μ is known (§6.3, §7.5), with where it is drawn
+        (among the passages nearest it, as a typed text is) and its size from ``group_sizes``."""
+        b = self.backend
+        out = []
+        for g, n in b.live.group_sizes(b.cid):
+            mu = self.centre(g)
+            if mu is None:
+                continue
+            if g not in self._centre_xy:
+                self._centre_xy[g] = layout.place(
+                    mu.astype(np.float32), self.corpus.vectors[: len(self.coords)], self.coords
+                )
+            out.append((g, *self._centre_xy[g], n))
+        return out
+
+    def centre_xy(self, group: str) -> tuple[float, float] | None:
+        return next(((x, y) for g, x, y, _ in self.centres() if g == group), None)
 
     def group_card(self, group: str) -> dict[str, Any]:
         """What the engine says about a group: its size ``n`` (``group_sizes``), the newest
@@ -315,8 +288,7 @@ class Studio:
         self.corpus = load(self.root, self.data, self.rows + SPARE)
         b.corpus = self.corpus
         self.coords = layout.fit(self.corpus.vectors, cache=self.work)
-        self.groups = layout.GroupMap(self.work / "group-map.json", self.corpus.spawn_target)
-        self._spot.clear()
+        self._centre_xy.clear()
         self.extra_xy.clear()
         self.deleted_this_session = []
         self.open()

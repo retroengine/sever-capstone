@@ -213,17 +213,15 @@ def test_ui_the_whole_tour_by_its_buttons(win: MainWindow, report: dict[str, Any
     assert win.errors == []
 
 
-def test_ui_bigger_text_and_safe_colours_still_fit(win: MainWindow, qapp: QApplication) -> None:
+def test_ui_bigger_text_still_fits(win: MainWindow, qapp: QApplication) -> None:
     geo = qapp.primaryScreen().availableGeometry()
     win.set_scale(0.4)
-    win.toggle_palette()
     for key in ("home", "explore", "receipts", "live", "hood", "proof"):
         win.go(key)
         settle(win)
         assert win.frameGeometry().width() <= geo.width()
         assert win.frameGeometry().height() <= geo.height()
     win.set_scale(-0.4)
-    win.toggle_palette()
     assert win.errors == []
 
 

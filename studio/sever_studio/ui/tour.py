@@ -49,10 +49,13 @@ CHAPTERS = [
         "The data as a map",
         "explore",
         None,
-        "Each group a colour; each dot a passage.",
-        "Ten thousand real Wikipedia passages. The frozen groups (◆) sit in the middle; the "
-        "spawned groups (■) ring them. Hover any dot for its text and its 384 numbers; "
-        '"By meaning" lays the same dots out by similarity.',
+        "Each dot a passage, where its meaning puts it.",
+        "Ten thousand real Wikipedia passages, 384 numbers each, flattened to two for the "
+        "picture. Blue dots are in frozen groups, whose centres were fitted offline by k-means on "
+        "SciQ science questions; pink dots are in spawned groups. Most Wikipedia text is far from "
+        "SciQ's centres, fails the drift test and waits, 200 at a time, to become a spawned group. "
+        "Click a ✕: a frozen group's members gather near it, a spawned group's are scattered "
+        "everywhere, a batch rather than a cluster.",
         ("hover",),
     ),
     Chapter(

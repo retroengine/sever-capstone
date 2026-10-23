@@ -1,8 +1,10 @@
-"""The map: every live record as a dot coloured by its group, and the holding area as a gauge.
+"""The map: every live record as a dot where its meaning puts it, and the holding area as a gauge.
 
-Each group has a colour of its own; by group, its records form a disc around its centre (◆ frozen,
-■ spawned). Stars are your own records. Records in the holding area are not on the map: no search
-reaches them until the area flushes (§7.4), so they sit in the gauge at the map's edge.
+A dot's colour says what kind of group holds it, frozen or spawned (§5.1); each group's centre μ,
+as the engine has it, is a ✕ among the passages nearest it. Selecting a group lights up its members
+wherever they lie: a frozen group's are near its centre, a spawned group's are a scattered batch
+(§7.4). Stars are your own records. Records in the holding area are not on the map: no search
+reaches them until the area flushes, so they sit in the gauge at the map's edge.
 """
 
 from collections.abc import Callable
@@ -31,7 +33,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .. import layout
 from ..actions import Studio
 from ..backend import HOLDING
 from . import copy, theme
@@ -39,21 +40,6 @@ from .widgets import Heatmap, label, lift
 
 pg.setConfigOptions(antialias=True, background=theme.BG, foreground=theme.MUTED)
 EMPTY = np.zeros((0, 2))
-
-
-class Palette:
-    """Each group's own colour, as the group map gave it (``layout.GroupMap``)."""
-
-    def __init__(self, studio: Studio) -> None:
-        self.studio = studio
-
-    def colour(self, group: str) -> QColor:
-        if group == HOLDING:
-            return QColor(theme.HOLDING)
-        colours = self.studio.groups.colours
-        if group not in colours:
-            self.studio.place_groups()
-        return theme.group_colour(colours.get(group, 0))
 
 
 class HoverCard(QFrame):
@@ -171,51 +157,15 @@ class GroupCard(QFrame):
         self.raise_()
 
 
-class Outlines(pg.GraphicsObject):  # type: ignore[misc]  # pyqtgraph has no type hints
-    """Each group's boundary as a dotted line in its colour, all drawn by one item."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.paths: list[tuple[QPainterPath, QColor]] = []
-        self._rect = QRectF()
-
-    def set(self, outlines: list[tuple[npt.NDArray[np.float64], QColor]]) -> None:
-        self.prepareGeometryChange()
-        self.paths = []
-        rect = QRectF()
-        for pts, colour in outlines:
-            if len(pts) < 2:
-                continue
-            path = QPainterPath(QPointF(*pts[0]))
-            for x, y in pts[1:]:
-                path.lineTo(x, y)
-            self.paths.append((path, colour))
-            rect = rect.united(path.boundingRect())
-        self._rect = rect
-        self.update()
-
-    def boundingRect(self) -> QRectF:  # noqa: N802 (Qt's name)
-        return self._rect
-
-    def paint(self, p: QPainter, *args: object) -> None:
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        for path, colour in self.paths:
-            pen = QPen(colour, 1.6, Qt.PenStyle.DotLine)
-            pen.setCosmetic(True)  # in pixels, whatever the zoom
-            p.setPen(pen)
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawPath(path)
-
-
 class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hints
     hovered = Signal(object)
     clicked = Signal(object)
     group_hovered = Signal(object)
+    group_clicked = Signal(object)
 
     def __init__(self, studio: Studio) -> None:
         super().__init__()
         self.studio = studio
-        self.palette = Palette(studio)
         self.setMenuEnabled(False)
         self.hideAxis("left")
         self.hideAxis("bottom")
@@ -225,7 +175,6 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         self.vb.setDefaultPadding(0.1)  # room for the floating search, legend and gauge
         self.base = pg.ScatterPlotItem(pxMode=True)
         self.centres = pg.ScatterPlotItem(pxMode=True)
-        self.outlines = Outlines()
         self.centre_at: list[tuple[str, float, float]] = []
         self.halo = pg.ScatterPlotItem(pxMode=True)
         self.mine = pg.ScatterPlotItem(pxMode=True)
@@ -234,7 +183,6 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         self.beam = pg.PlotDataItem(pen=pg.mkPen(theme.ACCENT + "aa", width=1.4), connect="pairs")
         self.star = pg.ScatterPlotItem(pxMode=True)
         for item in (
-            self.outlines,
             self.base,
             self.centres,
             self.halo,
@@ -251,44 +199,58 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         self.xy: npt.NDArray[np.float64] = EMPTY
         self.focus_group: str | None = None
         self.selected: str | None = None
-        self._brush: dict[tuple[str, bool], object] = {}
+        self._brush: dict[tuple[str, str], object] = {}
         self.scene().sigMouseMoved.connect(self._moved)
-        self.scene().sigMouseClicked.connect(
-            lambda ev: self.clicked.emit(self.nearest(ev.scenePos()))
-        )
+        self.scene().sigMouseClicked.connect(self._click)
         self._anims: list[QVariantAnimation] = []
 
     # -- drawing ----------------------------------------------------------------------------------
 
-    def _style(self, group: str, dim: bool) -> tuple[object, object]:
-        key = (group, dim)
+    def colour(self, group: str) -> QColor:
+        return theme.kind_colour(group)
+
+    def _style(self, group: str, look: str) -> tuple[object, object]:
+        """``look``: "plain", "dim" (another group is selected) or "lit" (the selected group)."""
+        kind = "frozen" if group.startswith("frozen-") else "spawn"
+        key = (kind, look)
         if key not in self._brush:
-            c = self.palette.colour(group)
-            if dim:
-                c = QColor(c.red(), c.green(), c.blue(), 35)
+            c = self.colour(group)
+            if look == "dim":
+                c = QColor(c.red(), c.green(), c.blue(), 30)
             brush = pg.mkBrush(c)
-            pen = pg.mkPen(QColor(0, 0, 0, 30 if dim else 70), width=0.5)
+            pen = (
+                pg.mkPen(QColor(theme.TEXT), width=1.4)
+                if look == "lit"
+                else pg.mkPen(QColor(0, 0, 0, 25 if look == "dim" else 70), width=0.5)
+            )
             self._brush[key] = (brush, pen)
         return self._brush[key]  # type: ignore[return-value]
+
+    def _look(self, group: str) -> str:
+        if self.focus_group is None:
+            return "plain"
+        return "lit" if group == self.focus_group else "dim"
 
     def refresh(self) -> None:
         recs = self.studio.backend.index.records
         rids = [r for r, rec in recs.items() if rec.group != HOLDING]
         self.rids = rids
         self.xy = np.array([self.studio.xy(r) for r in rids], np.float64).reshape(-1, 2)
-        size = self.dot = 4.6 if len(rids) > 2000 else 7.0
-        brushes, pens = [], []
+        self.dot = 4.6 if len(rids) > 2000 else 7.0
+        brushes, pens, sizes = [], [], []
         mine_xy = []
         for r in rids:
             rec = recs[r]
-            b, p = self._style(
-                rec.group, self.focus_group is not None and rec.group != self.focus_group
-            )
+            look = self._look(rec.group)
+            b, p = self._style(rec.group, look)
             brushes.append(b)
             pens.append(p)
+            sizes.append(self.dot * (1.6 if look == "lit" else 1.0))
             if rec.mine:
                 mine_xy.append(self.studio.xy(r))
-        self.base.setData(pos=self.xy if len(rids) else EMPTY, brush=brushes, pen=pens, size=size)
+        self.base.setData(
+            pos=self.xy if len(rids) else EMPTY, brush=brushes, pen=pens, size=sizes or self.dot
+        )
         self._centres()
         mx = np.array(mine_xy, np.float64).reshape(-1, 2)
         self.halo.setData(
@@ -304,39 +266,33 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         self._ring()
 
     def _centres(self) -> None:
-        """Each group's centre μ (✕, fixed as the database keeps it) and its dotted boundary."""
-        if not self.studio.by_group:
-            self.centres.setData(pos=EMPTY)
-            self.outlines.set([])
-            self.centre_at = []
-            return
-        members: dict[str, list[int]] = {}
-        recs = self.studio.backend.index.records
-        for i, rid in enumerate(self.rids):
-            members.setdefault(recs[rid].group, []).append(i)
-        spots, lines, at = [], [], []
-        for g, idx in members.items():
-            c = self.palette.colour(g)
-            if self.focus_group is not None and g != self.focus_group:
+        """Each group's centre μ as the engine has it (✕), drawn among the passages nearest it."""
+        spots, at = [], []
+        for g, cx, cy, n in self.studio.centres():
+            c = self.colour(g)
+            look = self._look(g)
+            if look == "dim":
                 c = QColor(c.red(), c.green(), c.blue(), 50)
-            pts = self.xy[idx]
-            if g not in self.studio.groups.anchors:
-                self.studio.place_groups()
-            cx, cy, r = self.studio.groups.anchors[g]
             at.append((g, cx, cy))
-            lines.append((layout.outline(pts, pad=0.12 * r + 0.8), c))
             spots.append(
                 {
                     "pos": (cx, cy),
                     "symbol": "x",
-                    "size": self.dot + (9 if len(idx) >= 20 else 4),
-                    "brush": pg.mkBrush(c.darker(170)),
+                    "size": (self.dot + (9 if n >= 20 else 4)) * (1.5 if look == "lit" else 1.0),
+                    "brush": pg.mkBrush(c.darker(150)),
                     "pen": pg.mkPen(theme.SURFACE, width=0.8),
                 }
             )
         self.centres.setData(spots=spots)
-        self.outlines.set(lines)
         self.centre_at = at
+
+    def _click(self, ev: object) -> None:
+        pos = ev.scenePos()  # type: ignore[attr-defined]
+        g = self.nearest_centre(pos)
+        if g is not None:
+            self.group_clicked.emit(g)
+        else:
+            self.clicked.emit(self.nearest(pos))
 
     def _moved(self, pos: QPointF) -> None:
         """Over a centre: the group's card; anywhere else: the nearest dot's."""
@@ -359,12 +315,6 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
             if dd <= d2:
                 best, d2 = g, dd
         return best
-
-    def recolour(self) -> None:
-        """After the palette changes (the colour-blind-safe switch)."""
-        self._brush.clear()
-        self.palette = Palette(self.studio)
-        self.refresh()
 
     def _ring(self) -> None:
         if self.selected and self.selected in self.studio.backend.index.records:
@@ -484,7 +434,7 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         r = self.vb.viewRect()
         start = np.array([r.right(), (r.top() + r.bottom()) / 2])
         ends = np.array([self.studio.xy(m) for m in members], np.float64)
-        brush = pg.mkBrush(self.palette.colour(group))
+        brush = pg.mkBrush(self.colour(group))
         pen = pg.mkPen(QColor(theme.SURFACE))
 
         def step(t: float) -> None:

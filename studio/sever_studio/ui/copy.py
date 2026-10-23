@@ -56,15 +56,21 @@ TEXT: dict[str, tuple[str, str]] = {
         "checked against the application's index (§5, §7.6).",
     ),
     "map.about": (
-        "Each colour is a group; ✕ is its centre μ.",
-        "The database keeps each group's centre μ fixed: a frozen group's was fitted once by "
-        "k-means (§6); a spawned group's is the mean of the 200 records that waited together, "
-        "computed when they flushed (§7.5). A new record joins the nearest frozen centre if it is "
-        "close enough, else the bucket (§7.3). Each group is drawn where its centre falls by "
-        "meaning, its members around it; the dotted line is the group's edge. Hover a ✕ for the "
-        "group's count n, exact sum S and mean; click a dot for its full text and numbers. The 384 "
-        'numbers are flattened to two for the picture: "By meaning" shows every dot where t-SNE '
-        "puts it instead.",
+        "Each dot is a passage, where its meaning puts it; its colour, the kind of group.",
+        "The 384 numbers of each passage are flattened to two (t-SNE) for the picture: near dots "
+        "mean similar passages, but distances on the map only approximate the real ones. A frozen"
+        " group's centre μ was fitted once, offline, by k-means on SciQ, a set of science "
+        "questions (§6); Wikipedia passages are mostly far from those centres, so most of them "
+        "fail the drift test (d_M > τ) and go to a spawned group or the bucket (§7.3). A new "
+        "record goes to its nearest frozen centre if it passes the drift test; otherwise to the "
+        "nearest spawned group with room (2·k·n < 3·N), or else the bucket. A spawned group is "
+        "the 200 records that waited together, with no clustering (§7.4): click its ✕ and its "
+        "members light up all over the map. Hover a ✕ for the group's count n and the commitment "
+        "C_S the engine published; click a dot for its text and why it went where it did.",
+    ),
+    "map.caption": (
+        "A 2-D picture of 384-D distances: groups are not drawn, their members are lit on click.",
+        "",
     ),
     "bucket": (
         "Waiting",
@@ -88,7 +94,8 @@ TEXT: dict[str, tuple[str, str]] = {
         "",
     ),
     "group.spawned": (
-        "Spawned group: 200 records that waited together in the bucket, flushed as one (§7.4).",
+        "Spawned group: 200 records that waited together in the bucket, flushed as one, with no "
+        "clustering (§7.4). Its centre is their mean when they flushed, then fixed (§7.5).",
         "",
     ),
     "group.note": (
