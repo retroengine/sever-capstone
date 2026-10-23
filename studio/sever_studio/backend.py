@@ -22,6 +22,7 @@ from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -145,6 +146,8 @@ class Inserted:
     placement: str
     retried: bool
     flush: Flush | None
+    #: §7.1–7.3 for this vector before it was inserted, by the engine's own routing code (DB-108)
+    predicted: dict[str, Any] | None = None
 
 
 @dataclass
@@ -181,6 +184,10 @@ class Backend:
         self.events_seen = 0
         self.events_file = work / "events.jsonl"
         self._centroids: tuple[int, dict[str, list[float]]] | None = None
+        #: §7.3 by the engine's routing code (set by Studio): vector -> its explanation
+        self.predict: Callable[[npt.NDArray[np.float32]], dict[str, Any]] | None = None
+        self.routing_checked = 0
+        self.routing_disagreed: list[str] = []
 
     # -- opening and state ------------------------------------------------------------------------
 
@@ -290,6 +297,7 @@ class Backend:
         writer that is killed never saves: its parent owns the index)."""
         req = request or self.request(rid, vector, account)
         passage = (text or self._dataset_text(rid) or "").encode("utf-8") or None
+        predicted = self.predict(vector) if self.predict and request is None else None
         r: Receipt = self.live.insert(self.cid, req, passage=passage)
         self._replay = None
         if r.retried:
@@ -299,9 +307,17 @@ class Backend:
             rid, r.placement or HOLDING, account, mine, text if mine else None, own, r.database_lsn
         )
         self.record_events()
+        if predicted is not None:
+            # the receipt names the group the record is in after the transaction (§16.2): the
+            # new spawned group when its insert flushed the holding area (§7.4)
+            got = r.placement or HOLDING
+            want = predicted["destination"]
+            self.routing_checked += 1
+            if not (got == want or (want == HOLDING and flush is not None and got == flush.group)):
+                self.routing_disagreed.append(rid)
         if save:
             self.save()
-        return Inserted(rid, r.database_lsn, r.placement or HOLDING, False, flush)
+        return Inserted(rid, r.database_lsn, r.placement or HOLDING, False, flush, predicted)
 
     def track(
         self,

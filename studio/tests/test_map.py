@@ -168,7 +168,3 @@ def test_map_a_frozen_centre_is_the_partitions_centroid(studio: Studio) -> None:
     mu = studio.centre("frozen-0002")
     assert mu is not None
     assert np.array_equal(mu, fitted[2])
-    rid = next(r for r, rec in studio.backend.index.records.items() if rec.group == "frozen-0002")
-    x = studio.backend.vector_of(rid).astype(np.float64)
-    own, _ = studio.distances(rid) or (0.0, 0.0)
-    assert own == pytest.approx(float(np.sqrt(((x - fitted[2]) ** 2).sum())))

@@ -133,6 +133,8 @@ class Studio:
         #: (record ID, its insert's log position) of each deletion this session
         self.deleted_this_session: list[tuple[str, int]] = []
         self._encoder: Any = None
+        self._explainer: Any = None
+        self.backend.predict = self.predict
 
     # -- the map ----------------------------------------------------------------------------------
 
@@ -187,23 +189,6 @@ class Studio:
             return self._frozen[k] if k < len(self._frozen) else None
         mu = self.backend.centroids().get(group)
         return np.asarray(mu, np.float64) if mu is not None else None
-
-    def distances(self, rid: str) -> tuple[float, float] | None:
-        """A record's distance to its own group's centre and to the nearest other centre, in the
-        384 dimensions the database measures (§7.1)."""
-        rec = self.backend.index.records.get(rid)
-        if rec is None or rec.group == HOLDING:
-            return None
-        x = self.backend.vector_of(rid).astype(np.float64)
-        own = self.centre(rec.group)
-        if own is None:
-            return None
-        others = [
-            float(np.sqrt(((x - mu) ** 2).sum()))
-            for g in self.groups.anchors
-            if g != rec.group and (mu := self.centre(g)) is not None
-        ]
-        return float(np.sqrt(((x - own) ** 2).sum())), min(others, default=float("nan"))
 
     def centres(self) -> list[tuple[str, float, float, int]]:
         """Each group with members: where its centre μ is drawn (fixed, as μ is: §6, §7.5) and its
@@ -265,6 +250,38 @@ class Studio:
             return fixed
         row: npt.NDArray[np.float32] = self.encoder_rows([text])[0]
         return row
+
+    # -- routing, as the engine computes it (DB-108) -----------------------------------------------
+
+    def explainer(self) -> Any:
+        if self._explainer is None:
+            from sever_db_native import Explainer
+
+            self._explainer = Explainer(self.corpus.artefact.read_bytes())
+        return self._explainer
+
+    def predict(self, vector: npt.NDArray[np.float32]) -> dict[str, Any]:
+        """§7.1–7.3 for ``vector`` against the engine's state now: the spawned groups with the
+        centres the engine reported and their sizes, ``N`` and ``k`` from ``stats``."""
+        b = self.backend
+        st = b.live.stats(b.cid)
+        centres = b.centroids()
+        spawned = [
+            (g, centres[g], n)
+            for g, n in b.live.group_sizes(b.cid)
+            if g.startswith("spawn-") and g in centres
+        ]
+        out: dict[str, Any] = self.explainer().route(
+            [float(v) for v in vector], spawned, st["N"], st["k"]
+        )
+        return out
+
+    def why(self, rid: str) -> dict[str, Any] | None:
+        """For a stored record, the parts of §7.1–7.2 that do not depend on when it arrived: its
+        nearest frozen groups, ``j*``, ``d_M`` and ``τ``."""
+        if rid not in self.backend.index.records:
+            return None
+        return self.predict(self.backend.vector_of(rid))
 
     def spares_left(self) -> int:
         return len(self.corpus.ids) - self.backend.index.loaded
@@ -427,11 +444,21 @@ class Studio:
         return Added(rid, xy, res, near)
 
     def _routed(self, res: Inserted) -> None:
-        problems = self.backend.mismatches()
+        """Ticks routing when every insert so far went where the engine's own routing code said
+        it would (§7.3, DB-108), and the index agrees with the engine's log."""
+        b = self.backend
+        problems = b.mismatches()
+        if b.routing_disagreed:
+            problems.append(
+                f"placed elsewhere than predicted: {', '.join(b.routing_disagreed[:5])}"
+            )
         self.checklist.mark(
             "routing",
-            not problems,
-            f"{res.rid} → {res.placement}" if not problems else "; ".join(problems),
+            not problems and b.routing_checked > 0,
+            f"{b.routing_checked:,} inserts, each placed where the engine's routing code said"
+            f" (last: {res.rid} → {res.placement})"
+            if not problems
+            else "; ".join(problems),
         )
         if res.flush is not None:
             self._flushed(res.flush)

@@ -357,11 +357,18 @@ class Explore(QWidget):
             f"x  = [{', '.join(f'{v:.5f}' for v in x[:3])}, … {len(x)} numbers]",
             f"x̃ = round(x · 2²⁴) = [{', '.join(f'{v:,}' for v in q[:3])}, …]",
         ]
-        dist = self.host.studio.distances(rid)
-        if dist is not None:
-            lines.append(f"‖x − μ‖ = {dist[0]:.3f} to its centre · {dist[1]:.3f} to the next")
-        elif rec.group == HOLDING:
-            lines.append("waiting in the bucket: in no group yet, so no centre (§7.4)")
+        why = self.host.studio.why(rid)
+        if why is not None:
+            j, d = why["nearest"][0]
+            inside = why["in_distribution"]
+            lines.append(f"nearest frozen centre: frozen-{j:04d}, D = Σ(x̂ − μ)² = {d:.4f}")
+            lines.append(
+                f"d_M = {why['d_m']:.3f} {'≤' if inside else '>'} τ = {why['tau']:.3f}: "
+                + ("in distribution (§7.2)" if inside else "out of distribution (§7.2–7.3)")
+            )
+            lines.append("computed by the engine's own routing code (DB-108)")
+        if rec.group == HOLDING:
+            lines.append("waiting in the bucket: in no group yet (§7.4)")
         self.sel_nums.setText("\n".join(lines))
         self.b_forget.setText(f"Forget ({n})")
         self._sheet(mode="selected")
@@ -418,7 +425,18 @@ class Explore(QWidget):
     def added(self, a: Added) -> None:
         r = a.result
         key = route_key(r.placement, r.flush is not None)
-        self.add_result.set(True, copy.short(key))
+        p = r.predicted
+        if p is None:
+            self.add_result.set(True, copy.short(key))
+        else:
+            want = p["destination"]
+            agree = want == r.placement or (want == HOLDING and r.flush is not None)
+            sign = "≤" if p["in_distribution"] else ">"
+            self.add_result.set(
+                agree,
+                f"{copy.short(key)}: the engine put it in {r.placement}; its routing code said "
+                f"{want} (d_M {p['d_m']:.1f} {sign} τ {p['tau']:.1f})",
+            )
         self.add_result.setToolTip(copy.long(key))
         self.text.clear()
         self.add_panel.hide()
