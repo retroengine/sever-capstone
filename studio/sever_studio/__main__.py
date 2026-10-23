@@ -6,7 +6,6 @@ the map. ``run`` opens the window on it. ``crash-child`` is the writer the crash
 """
 
 import argparse
-import json
 import sys
 import time
 from pathlib import Path
@@ -25,7 +24,6 @@ def prepare(data: str, rows: int, work: Path, dev: bool, held: int) -> int:
     t0 = time.perf_counter()
     shutil.rmtree(work, ignore_errors=True)
     work.mkdir(parents=True)
-    events = work / "prepare-events.jsonl"
     studio = Studio(ROOT, data, work, dev, rows)
     print(f"  map laid out ({time.perf_counter() - t0:.0f} s)")
     studio.open()
@@ -37,13 +35,7 @@ def prepare(data: str, rows: int, work: Path, dev: bool, held: int) -> int:
             print(f"  {done:>6} / {total} inserted ({rate * 1000:.1f} ms each)", flush=True)
             note_lock(held, "prepare", f"{done:,} / {total:,} stored")
 
-    out = studio.backend.insert_next(rows, progress)
-    with events.open("w", encoding="utf-8") as f:
-        for r in out:
-            row = {"rid": r.rid, "placement": r.placement}
-            if r.flush is not None:
-                row["flush"] = r.flush.group
-            f.write(json.dumps(row) + "\n")
+    studio.store_first(progress)
     problems = studio.backend.mismatches()
     st = studio.backend.live.stats(studio.backend.cid)
     studio.backend.close()

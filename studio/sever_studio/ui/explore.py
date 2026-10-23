@@ -275,7 +275,10 @@ class Explore(QWidget):
         mine = {r for r, rec in b.index.records.items() if rec.mine}
         self.bucket.set(b.index.holding, mine)
         groups = {rec.group for rec in b.index.records.values() if rec.group != HOLDING}
-        self.status.setText(f"{len(b.index.records):,} records · {len(groups)} groups")
+        self.status.setText(
+            f"{len(b.index.records):,} records · {len(groups)} groups · "
+            f"{self.host.studio.spares_left():,} spare passages"
+        )
         self.place()
 
     def toggle_layout(self) -> None:

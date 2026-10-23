@@ -4,6 +4,7 @@ draws what these return; the tests call them directly.
 """
 
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -34,8 +35,19 @@ from .backend import HOLDING, Backend, Flush, Inserted
 from .checklist import Checklist
 from .corpus import FIXTURE_ENCODER, Corpus, fixture_encode, load
 
-#: Rows kept unstored after the prepared ones: filling the holding area, the writer that is killed.
+#: Rows kept unstored after the stored ones, for the live demos (filling the holding area, the
+#: writer that is killed, the person deleted part-way). Topped up whenever fewer remain (H2).
 SPARE = 3000
+
+
+def stored_so_far(work: Path) -> int:
+    """How many corpus rows the work directory's index has used, read before the database opens."""
+    try:
+        return int(json.loads((work / "index.json").read_text("utf-8"))["loaded"])
+    except (OSError, ValueError, KeyError):
+        return 0
+
+
 LIMITS = [
     "That the operator kept no copy of the deleted data. No cryptography can prove that "
     "(overview L-2; §11.3).",
@@ -106,7 +118,7 @@ class Studio:
         self.data = data
         self.work = work.resolve()
         self.rows = rows
-        self.corpus: Corpus = load(root, data, rows + SPARE)
+        self.corpus: Corpus = load(root, data, max(rows, stored_so_far(work)) + SPARE)
         self.backend = Backend(self.corpus, self.work, dev)
         self.checklist = Checklist()
         self.numbers: dict[str, Any] = {"data": data, "rows": rows}
@@ -243,8 +255,14 @@ class Studio:
         if rid in self.extra_xy:
             return self.extra_xy[rid]
         i = self.corpus.position.get(rid)
-        if i is not None:
+        if i is not None and i < len(self.coords):
             return float(self.coords[i, 0]), float(self.coords[i, 1])
+        if i is not None:  # loaded after the layout was made: placed beside its nearest passages
+            p = layout.place(
+                self.corpus.vectors[i], self.corpus.vectors[: len(self.coords)], self.coords
+            )
+            self.extra_xy[rid] = p
+            return p
         rec = self.backend.index.records.get(rid)
         if rec is not None and rec.vector is not None:
             p = layout.place(np.asarray(rec.vector, np.float32), self.corpus.vectors, self.coords)
@@ -262,6 +280,45 @@ class Studio:
             self._encoder = Encoder(self.work.parent / "models")
         row: npt.NDArray[np.float32] = self._encoder.encode([text])[0]
         return row
+
+    def spares_left(self) -> int:
+        return len(self.corpus.ids) - self.backend.index.loaded
+
+    def ensure_spares(self, need: int) -> None:
+        """Loads more passages when fewer than ``need`` remain unstored; the rows already loaded
+        stay as they are (``corpus.load`` is prefix-stable)."""
+        if self.spares_left() >= need:
+            return
+        self.corpus = load(self.root, self.data, self.backend.index.loaded + max(need, SPARE))
+        self.backend.corpus = self.corpus
+
+    def store_first(self, progress: Callable[[int, int], None] | None = None) -> list[Inserted]:
+        """Stores the first ``rows`` passages and writes where each landed
+        (``prepare-events.jsonl``, for the replay)."""
+        out = self.backend.insert_next(self.rows, progress)
+        with (self.work / "prepare-events.jsonl").open("w", encoding="utf-8") as f:
+            for r in out:
+                row = {"rid": r.rid, "placement": r.placement}
+                if r.flush is not None:
+                    row["flush"] = r.flush.group
+                f.write(json.dumps(row) + "\n")
+        return out
+
+    def reset(self, progress: Callable[[int, int], None] | None = None) -> None:
+        """A fresh demo database: everything in the work directory is deleted (database, keys,
+        receipts, layout) and the first ``rows`` passages are stored again."""
+        b = self.backend
+        b.wipe()
+        self.work.mkdir(parents=True)
+        self.corpus = load(self.root, self.data, self.rows + SPARE)
+        b.corpus = self.corpus
+        self.coords = layout.fit(self.corpus.vectors, cache=self.work)
+        self.groups = layout.GroupMap(self.work / "group-map.json", self.corpus.spawn_target)
+        self._spot.clear()
+        self.extra_xy.clear()
+        self.deleted_this_session = []
+        self.open()
+        self.store_first(progress)
 
     # -- start ------------------------------------------------------------------------------------
 
@@ -390,6 +447,7 @@ class Studio:
     ) -> list[Inserted]:
         """Inserts the next dataset passages until the holding area flushes (``until="flush"``)
         or holds at least one record (``"one"``), or ``limit`` inserts."""
+        self.ensure_spares(limit)
         b, c = self.backend, self.corpus
         out: list[Inserted] = []
         for _ in range(limit):
@@ -737,6 +795,7 @@ class Studio:
         """Closes the database; a second process inserts the next ``count`` passages, writing each
         acknowledged one down; once half are acknowledged it is killed with SIGKILL. Recovery,
         then every acknowledged insert is looked for."""
+        self.ensure_spares(count)
         b, c = self.backend, self.corpus
         before = b.total()
         b.close()
@@ -745,7 +804,7 @@ class Studio:
         start = b.index.loaded
         count = min(count, len(c.ids) - start)
         cmd = [sys.executable, "-m", "sever_studio", "crash-child", "--data", self.data]
-        cmd += ["--rows", str(self.rows), "--work", str(self.work)]
+        cmd += ["--rows", str(len(c.ids)), "--work", str(self.work)]
         cmd += ["--start", str(start), "--count", str(count)]
         cmd += ["--dev"] if b.dev else []
         paths = [str(self.root / "python"), str(Path(__file__).resolve().parents[1])]
@@ -880,8 +939,9 @@ class Studio:
 
     def crash_test_person(self, size: int = 0) -> tuple[str, list[str]]:
         """A person with many records (the next spare passages), for the killed deletion."""
-        b, c = self.backend, self.corpus
         size = size or (40 if self.data == "nq" else 16)
+        self.ensure_spares(size)
+        b, c = self.backend, self.corpus
         account = f"Crash-test person {len(b.index.receipts) + b.index.loaded}"
         ids = []
         for _ in range(size):
@@ -941,7 +1001,7 @@ def crash_child(
 ) -> int:
     """The process that is killed: inserts and writes down each insert the database acknowledged,
     with where it landed."""
-    corpus = load(root, data, rows + SPARE)
+    corpus = load(root, data, rows)  # the parent passes its own corpus size
     b = Backend(corpus, work, dev)
     b.open()
     with (work / "acks.txt").open("a", encoding="utf-8") as acks:

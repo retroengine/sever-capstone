@@ -6,7 +6,11 @@ with the passages judged to answer them (``qrels``); the first 4,201 passages ar
 ``prepare`` stores ``rows`` of them; the rows after them stay unstored for the live demos (filling
 the holding area, the writer that is killed).
 
-``synthetic``: the golden fixture (``d = 16``, 4 frozen groups, spawn size 8, 240 vectors), offline.
+``synthetic``: the golden fixture (``d = 16``, 4 frozen groups, spawn size 8, 240 vectors), offline,
+then made-up records in seeded blocks.
+
+Both grow without changing what came before (``load(root, data, size)`` with a larger ``size`` keeps
+the first rows identical), so the live demos never run out of passages.
 """
 
 import hashlib
@@ -101,25 +105,31 @@ def load_nq(root: Path, rows: int, seed: int = 42) -> Corpus:
     )
 
 
-#: Made-up records after the fixture's 240, so the live demos never run out of spare records.
+#: Made-up records after the fixture's 240 come in blocks of this many, block k from seed 42 + k.
 FIXTURE_EXTRA = 2000
 
 
-def load_fixture(root: Path) -> Corpus:
-    """The fixture's 240 unit vectors, then ``FIXTURE_EXTRA`` made-up ones (synthetic, seed 42):
-    half close to a fixture vector (they join its group), half in random directions (they fit no
-    group, so they fill the holding area). Seven made-up accounts; question i is record 20·i's own
-    vector, so its answer is that record."""
-    doc = json.loads((root / FIXTURE_VECTORS).read_text("utf-8"))
-    raw = b"".join(bytes.fromhex(h) for h in doc["ref"] + doc["live"])
-    base = np.frombuffer(raw, dtype="<f4").reshape(-1, 16).astype(np.float64)
-    rng = np.random.default_rng(42)
+def _fixture_block(base: npt.NDArray[np.float64], k: int) -> npt.NDArray[np.float64]:
+    rng = np.random.default_rng(42 + k)
     near = base[rng.integers(0, len(base), FIXTURE_EXTRA // 2)]
     near = near + rng.normal(0, 0.02, near.shape)
     far = rng.normal(0, 1, (FIXTURE_EXTRA - len(near), 16))
     extra = np.concatenate([near, far])
     extra = extra[rng.permutation(len(extra))]
-    extra /= np.linalg.norm(extra, axis=1, keepdims=True)
+    out: npt.NDArray[np.float64] = extra / np.linalg.norm(extra, axis=1, keepdims=True)
+    return out
+
+
+def load_fixture(root: Path, size: int = 0) -> Corpus:
+    """The fixture's 240 unit vectors, then made-up ones in blocks of ``FIXTURE_EXTRA`` until there
+    are at least ``size``: half close to a fixture vector (they join its group), half in random
+    directions (they fit no group, so they fill the holding area). Seven made-up accounts; question
+    i is record 20·i's own vector, so its answer is that record."""
+    doc = json.loads((root / FIXTURE_VECTORS).read_text("utf-8"))
+    raw = b"".join(bytes.fromhex(h) for h in doc["ref"] + doc["live"])
+    base = np.frombuffer(raw, dtype="<f4").reshape(-1, 16).astype(np.float64)
+    blocks = max(1, -(-(size - len(base)) // FIXTURE_EXTRA))
+    extra = np.concatenate([_fixture_block(base, k) for k in range(blocks)])
     vectors = np.concatenate([base, extra]).astype(np.float32)
     ids = [f"rec-{i:03d}" for i in range(len(base))]
     ids += [f"syn-{i:04d}" for i in range(len(extra))]
@@ -149,8 +159,9 @@ def fixture_encode(text: str, d: int = 16) -> Vectors:
 
 
 def load(root: Path, data: str, rows: int) -> Corpus:
+    """At least ``rows`` passages (the fixture comes in whole blocks)."""
     if data == "synthetic":
-        return load_fixture(root)
+        return load_fixture(root, rows)
     if data == "nq":
         return load_nq(root, rows)
     raise ValueError(f"unknown data {data!r} (nq or synthetic)")

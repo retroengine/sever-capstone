@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QMessageBox, QVBoxLayout, QWidget
 
 from . import copy, theme
 from .host import Host
@@ -69,8 +69,38 @@ class Home(QWidget):
                 row.addWidget(button("Check", "ghost", act, "refresh"))
             checks.body.addLayout(row)
         lay.addWidget(checks)
+        reset = QHBoxLayout()
+        reset.addWidget(button("Reset demo database", "ghost", self.reset, "refresh"))
+        self.reset_state = Verdict()
+        reset.addWidget(self.reset_state, 1)
+        lay.addLayout(reset)
         lay.addStretch(1)
         lay.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+    def reset(self) -> None:
+        """Deletes the demo database and stores the first passages again (minutes on NQ)."""
+        s = self.host.studio
+        sure = QMessageBox.question(
+            self,
+            "Reset the demo database",
+            f"Delete everything in {s.work.name} (records, keys, receipts) and store the first "
+            f"{s.rows:,} passages again?",
+        )
+        if sure != QMessageBox.StandardButton.Yes:
+            return
+
+        def progress(a: tuple[Any, ...]) -> None:
+            self.reset_state.set(None, f"storing {a[0]:,} / {a[1]:,}…")
+
+        def done(_: object) -> None:
+            self.reset_state.set(True, "a fresh demo database")
+            self.host.go("home")
+            self.host.changed()
+
+        self.reset_state.set(None, "deleting…")
+        self.host.worker.submit(
+            lambda report: s.reset(lambda d, t: report(d, t)), done, self.host.error, progress
+        )
 
     def arrive(self, **kw: Any) -> None:
         self.show_startup()
