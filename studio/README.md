@@ -22,7 +22,7 @@ Rust toolchain.
 
 ```bash
 studio/studio.sh setup      # once: Studio's environment, the SDK, the encoder (90 MB, hash-checked), the checkers
-studio/studio.sh prepare    # once: stores 10,000 NQ passages through the SDK (~10 min) and lays out the map
+studio/studio.sh prepare    # once: stores 10,000 NQ passages through the SDK (~10 min) and lays out the map in 2-D and 3-D
 studio/studio.sh run        # opens the window, sized to your screen
 ```
 
@@ -56,9 +56,14 @@ studio/studio.sh run        # opens the window, sized to your screen
   verdict, with numbers only: no key, `r_t` or passage text.
 - **Shortcuts:** `/` search, `N` next chapter, `Esc` close, `F11` full screen.
 - **Rail buttons:** A− / A+ change the text size.
-- **Colours:** each group has its own colour, the same on the map and in Groups made; the dot's
-  shape says the kind (● frozen, ■ spawned). With 175 or more groups some colours are close, so
-  clicking a ✕ lights exactly that group's members.
+- **Colours:** each frozen group (a k-means cluster) has its own colour, the same on the map and
+  in Groups made; a spawned group (a batch, not a cluster) is grey until you point at or click its
+  ✕. **Colour every group** colours the spawned ones too. The dot's shape says the kind (● frozen,
+  ■ spawned).
+- **2-D and 3-D:** the map has both modes; 2-D is the default. 3-D is t-SNE with three axes, made
+  once (by `prepare`, or the first time 3-D opens) and kept; drag to turn it. It shows the same
+  records, colours and lit group. It needs OpenGL that can draw into a window (WSLg's software
+  renderer does); where it cannot, it says why and 2-D works as before.
 
 | Section | What you do | What it proves |
 |---|---|---|
@@ -97,12 +102,15 @@ studio/studio.sh run        # opens the window, sized to your screen
 - **Groups made.** How the 128 frozen groups were made: the partition builder's k-means (C-15,
   §6.2), stepped one Lloyd iteration at a time on the reference rows, then the real 128 centres
   with each row coloured by the engine's routing code. It is labelled as the offline build step:
-  the database never runs k-means (§6.1).
+  the database never runs k-means (§6.1). **Are they clusters? (384-D)** answers without a
+  picture: for up to 8 records of every group, the distance to its own centre over the distance to
+  the nearest other centre, both from the engine's search code (§8.1). On NQ, 98% of the frozen
+  groups' records are nearer their own centre; 12% of the spawned groups'.
 
 ## What it does not claim
 
-- **The map is a picture.** t-SNE flattens the 384 dimensions to two; distances are measured in
-  384. Groups are not drawn as areas: each centre μ is a ✕ (a frozen one from the partition
+- **The map is a picture.** t-SNE flattens the 384 dimensions to two (or three); distances are
+  measured in 384. Groups are not drawn as areas: each centre μ is a ✕ (a frozen one from the partition
   artefact, a spawned one as the engine reported it at its flush), and clicking it lights its
   members. A spawned group holds the 200 records that waited together, whatever they mean (§7.4),
   so its members are scattered. The frozen groups were fitted on SciQ, not NQ, so most NQ passages

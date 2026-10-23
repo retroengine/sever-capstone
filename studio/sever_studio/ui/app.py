@@ -51,6 +51,13 @@ def smoke_steps(win: MainWindow) -> Iterator[Callable[[], None]]:
             yield partial(win.tour.step, 1)
         if "sabotage" not in ch.rows:
             yield partial(win._tour_do, ch)
+    # the map's 3-D mode and the 384-D measurement, then back to 2-D
+    e = win.sections["explore"]
+    yield partial(win.go, "explore")
+    yield partial(e.set_mode, "3d")
+    yield partial(e.set_mode, "2d")
+    yield partial(win.go, "live", "kmeans")
+    yield win.sections["live"].tabs["kmeans"].clusters
     yield win.toggle_drawer
     yield partial(win.set_scale, 0.2)
     yield partial(win.set_scale, -0.2)
