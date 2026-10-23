@@ -145,9 +145,16 @@ Updated at the end of every session (CLAUDE.md §3.3). Newest session first in t
   NQ copy that a spawned group's ID, size and centre are the engine's (§7.5 recomputed, bit for
   bit). Verified on `7a42e3d`: `studio.sh test --full` 123 passed; NQ and synthetic smokes PASS
   (33/34, only sabotage not shown); `cargo test --workspace` and the inspect build 552 passed;
-  clippy and fmt clean; `scripts/ci.sh fast` every step PASS. **Next:** a 3-D mode beside the 2-D
-  map and a 384-D cluster-separation chart (owner, 23 Oct 2026). **Open for the owner:** merge
-  `studio-raw` to `main` after the VM gate run.
+  clippy and fmt clean; `scripts/ci.sh fast` every step PASS.
+  **2-D and 3-D (owner, 23 Oct 2026):** the map has both modes, 2-D the default; 3-D is t-SNE with
+  three axes (built by `prepare`, kept), the same records, colours and lit group, rendered with
+  OpenGL (WSLg's llvmpipe) and falling back to 2-D with a reason where OpenGL cannot draw. Groups
+  made's **Are they clusters? (384-D)** measures, with the engine's search code (§8.1), each sampled
+  record's own centre against the nearest other: on NQ 98% of frozen groups' records are nearer
+  their own centre, 12% of spawned groups'. Verified on `d3cdbc4`: `studio.sh test --full` 131
+  passed; NQ smoke PASS on the real display (it walks 3-D and the chart). **Open for the owner:**
+  merge `studio-raw` to `main` after the VM gate run; whether to fit the frozen partition on NQ
+  instead of SciQ (most NQ passages are out of distribution today).
 - **Working copy:** `~/sever-db` on the WSL ext4 disk (the `C:` copy is a backup).
 - **Git:** Claude commits (conventional messages, no AI attribution) and pushes to `origin` (owner,
   19 Oct 2026). `main` and `p3-gates` are fast-forwarded together once GitHub's fast tier and the
