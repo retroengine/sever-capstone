@@ -1548,6 +1548,31 @@ engine.stats(cid) -> Result<Stats>          // group counts, sizes, N, k, memory
 engine.group_snapshot(cid, group_id) -> Result<GroupSnapshot>   // S, n, C_S, r_agg, members, canonical blob
 ```
 
+**Inspection (optional; DB-107, DB-108).** A build of the final composition root (`sever-db`) and
+its SDK with the cargo feature `inspect` adds a read-only surface for programs that show the engine
+at work; the default build has none of it, and nothing in the engine depends on it.
+
+```rust
+#[cfg(feature = "inspect")]
+db.events(since: u64) -> Vec<Event>   // every committed change since event `since`, in commit order
+explain_route(artefact, x: &[f32], spawned: &[(GroupId, Vec<f64>, u64)], big_n: u64, k: u64)
+    -> RouteExplanation               // §7.1–7.3 as the engine computes them
+explain_search(query: &[f32], groups: &[(GroupId, Vec<f64>)]) -> SearchExplanation   // §8.1 steps 1–2
+```
+
+- An `Event` holds only values §13.2 allows in plaintext: the transaction kind; each group created by
+  a flush with its centroid `μ` (§7.5); each touched group's `n` and `C_S` before and after; `N` and
+  `k` before and after (§7.6); each arrival and departure as `(group ID, scrambled_id)`; and each
+  request's outcome kind. It never holds `S`, `r_agg`, `x̃`, `r_t`, a record ID or passage text.
+  It is reported by an EP-7 participant from the transaction's change set and published only after
+  `COMMIT` is durable; a transaction that does not commit reports nothing. Events are kept in memory
+  by the process that ran the transaction.
+- `explain_route` and `explain_search` call the frozen crates' own functions (`sever_quant`,
+  `sever_index::route`, `sever_search::rank_groups`, `probe_count`), so their numbers are the
+  engine's bit for bit. A route explanation holds `x̃`, the nearest frozen groups with `D_j`, `j*`,
+  `d_M`, `τ`, the spawned groups with room with their `D`, and the destination; a search explanation
+  holds every group's `D_g` in rank order and the `p` probed.
+
 ### 16.2 Application-backend SDK (Python, C-13)
 
 The SDK runs on the application backend (§3.3), never on the user's device.
@@ -1579,6 +1604,9 @@ any argument beyond its documented ones (DB-84).
 acknowledgement was lost is retried with the same request (§15.1); a new request would carry a new
 `r_t`, hence a new `C_t`. The engine verifies the signature over the collection inserted into
 (§15.1 step 2), whatever collection the request names (DB-84).
+
+An SDK built with `inspect` adds `db.events(since)` and `explain_route` / `explain_search`
+(§16.1, DB-107, DB-108), with the same contents as Python values.
 
 The receipt carries the insert's `database_lsn` and its placement. The SDK and the command-line
 tool report the placement as the §5.1 text form of the group the record is in after the
@@ -1825,6 +1853,7 @@ sever-db/
     Part 3  sever-crypto/  sever-commit/  sever-log/  sever-cert/  sever-py-p3/  sever-p3/
     Part 4  sever-keys/  sever-seal/  sever-erasure/  sever-platform/  sever-scan/  sever-py/
             sever-db/ (final composition root)
+            sever-explain/ (route and search explanations; the `inspect` build only, DB-108)
   verifier/                      separate workspace, own Cargo.lock, no path dependencies on crates/
   audit/                         separate workspace
   python/

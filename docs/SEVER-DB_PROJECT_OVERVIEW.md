@@ -1043,6 +1043,66 @@ part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the fr
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
 
+#### DB-109 — Studio shows the engine's values, or says what else it shows (23 October 2026)
+
+**Decision.** Every number, dot and verdict SEVER-DB Studio shows is the engine's (through the SDK,
+`sever-verify` or `sever-audit`), a part program's output run live, or carries a visible label saying
+what it is (a recording, a model, a projection). A checklist row is ticked only by an engine check or
+a part program run live; a recorded run is shown as a recording (◐), never ticked. Each record's group
+is the engine's log replayed (`export_log`), not the application's own index. The "By group" map,
+which packed each group into a disc of Studio's making, is removed: the map is the records laid out
+by meaning, labelled as a 2-D picture of 384-D distances. Amends DB-106.
+
+**Why.** The 23 October 2026 audit of Studio (`studio/work/audit/REPORT.md`) found the engine real at
+the core but surrounded by Studio's own arithmetic presented as the engine's: recomputed sums and
+centroids (one wrong after spillover), a disk test that could not fail, a float model labelled as
+SEVER, invented clusters, and checklist rows ticked from untracked files.
+
+**Rejected.** Fixing and labelling the "By group" view (it would still show clusters the data does
+not have: spawned groups are cohorts, not clusters, §7.4).
+
+**Consequence.** Studio's checklist gains a third state; the audit's scripts become Studio's tests.
+
+#### DB-108 — `sever-explain`: why a record went where it did, in the engine's own arithmetic (23 October 2026)
+
+**Decision.** A crate `sever-explain` computes route explanations (§7.1–7.3) and search explanations
+(§8.1 steps 1–2) by calling the frozen crates' public functions: `sever_quant::quantise`,
+`sever_partition`'s artefact parser, `sever_index::route::{sq_dist_f64, mahalanobis}` and
+`sever_search::{rank_groups, probe_count}`. It re-implements nothing. It is reachable from Python only
+through an SDK built with `inspect` (DB-107). Closes G-45 with DB-107 and DB-109.
+
+**Why.** The frozen engine decides a route but cannot say why, and cannot gain an accessor (F-3). The
+same functions on the same inputs give the same bits, and the program that shows an explanation
+checks it against the engine's actual placement every time.
+
+**Rejected.** Re-implementing §7 in the demo (a second copy that can drift; the audit found Studio's
+copy summed in another order); editing `sever-index` (frozen).
+
+**Consequence.** Spec §16.1–16.2 and §19.2 list it.
+
+#### DB-107 — An `inspect` build reports each committed change's public fields (23 October 2026)
+
+**Decision.** With the cargo feature `inspect`, `sever-db` registers a third EP-7 participant,
+`InspectParticipant`, after the log and key-rotation participants (Build 3-4 §2.5's order is kept).
+In `prepare` it copies from the transaction's change set only what §13.2 allows in plaintext: groups
+created by a flush with their centroid, each touched group's `n` and `C_S` before and after, `N` and
+`k` before and after, arrivals and departures as `(group ID, scrambled_id)`, and each outcome's kind.
+It publishes them in `after_commit` and drops them in `abort`; they live in memory only. The SDK
+exposes them as `db.events(since)`. The default build compiles none of it.
+
+**Why.** G-45: a demo or monitor otherwise recomputes what the engine already knows. EP-7 is the
+extension point built for taking part in every transaction, and `sever-db` (Part 4) is where the
+participants are registered, so no frozen file changes.
+
+**Rejected.** The `test-hooks` `group_snapshot` (exposes `S` and `r_agg`; never in release builds);
+a participant in the default build (the VM gate run and Part 4's evidence are on the default build,
+which stays byte for byte the same); writing events to disk (§13.2 lists what may be on disk, and a
+demo does not need persistence from the engine).
+
+**Consequence.** Spec §16.1–16.2. Tests: every event of a session searched byte by byte for each
+record's ID, `x̃`, text, `r_t`, `S` and `r_agg` finds nothing; Part 4's suite passes with and
+without the feature.
+
 #### DB-106 — SEVER-DB Studio: one desktop demo of the whole project replaces `demo/` and `demo-engine/` (22 October 2026)
 
 **Decision.** A top-level `studio/` holds one desktop application, SEVER-DB Studio. It is built
@@ -2525,6 +2585,9 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **23 October 2026 — Studio wired to the engine.** DB-107 (an `inspect` build reports each committed
+  change's public fields), DB-108 (`sever-explain`), DB-109 (Studio's provenance rule; the "By group"
+  map removed; amends DB-106); closes G-45. Specification sections touched: §16.1, §16.2, §19.2.
 - **22 October 2026 — SEVER-DB Studio.** DB-106 (one desktop demo of the whole project in
   `studio/`; `demo/` and `demo-engine/` removed; closes G-44). Specification sections touched:
   §19.2.
