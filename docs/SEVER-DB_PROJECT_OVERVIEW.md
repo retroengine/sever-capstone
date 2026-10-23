@@ -1068,15 +1068,20 @@ not have: spawned groups are cohorts, not clusters, §7.4).
 **Decision.** A crate `sever-explain` computes route explanations (§7.1–7.3) and search explanations
 (§8.1 steps 1–2) by calling the frozen crates' public functions: `sever_quant::quantise`,
 `sever_partition`'s artefact parser, `sever_index::route::{sq_dist_f64, mahalanobis}` and
-`sever_search::{rank_groups, probe_count}`. It re-implements nothing. It is reachable from Python only
-through an SDK built with `inspect` (DB-107). Closes G-45 with DB-107 and DB-109.
+`sever_search::{rank_groups, probe_count}`. Every number is computed by those functions; only the few
+lines of decision between them (the order of the nearest groups, the drift test's comparison, the
+room filter of §5.6) are written in the crate, as §7.3 states them, and the program that shows an
+explanation checks its destination against the engine's actual placement on every insert. It is
+reachable from Python only through an SDK built with `inspect` (DB-107). Closes G-45 with DB-107 and
+DB-109.
 
 **Why.** The frozen engine decides a route but cannot say why, and cannot gain an accessor (F-3). The
 same functions on the same inputs give the same bits, and the program that shows an explanation
 checks it against the engine's actual placement every time.
 
-**Rejected.** Re-implementing §7 in the demo (a second copy that can drift; the audit found Studio's
-copy summed in another order); editing `sever-index` (frozen).
+**Rejected.** Re-implementing §7's arithmetic in the demo (a second copy that can drift; the audit
+found Studio's copy summed in another order); editing `sever-index` to expose its private routing
+step (frozen).
 
 **Consequence.** Spec §16.1–16.2 and §19.2 list it.
 
