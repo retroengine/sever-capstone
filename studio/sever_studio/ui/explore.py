@@ -80,8 +80,8 @@ class Explore(QWidget):
 
         # the legend, top left
         self.legend, ll = floating(vertical=False, margin=8)
-        ll.addWidget(chip("● frozen group", theme.FROZEN))
-        ll.addWidget(chip("● spawned group", theme.SPAWNED))
+        ll.addWidget(chip("● frozen group", theme.MUTED))
+        ll.addWidget(chip("■ spawned group", theme.MUTED))
         ll.addWidget(chip("✕ centre μ", theme.TEXT))
         ll.addWidget(chip("★ yours", theme.WARN if theme.LIGHT else theme.YOURS_RING))
         ll.addWidget(info("map.about"))
@@ -224,13 +224,22 @@ class Explore(QWidget):
         w, h = self.width(), self.height()
         self.map.setGeometry(0, 0, w, h)
         sw = min(520, max(260, w - 420))
-        self.search.setGeometry((w - sw) // 2, 12, sw, self.search.sizeHint().height())
+        sh = self.search.sizeHint().height()
         self.legend.adjustSize()
-        self.legend.move(12, 12)
+        # the search beside the legend when there is room, else the legend under it
+        x0 = max((w - sw) // 2, 24 + self.legend.width())
+        if w - 12 - x0 >= 260:
+            self.search.setGeometry(x0, 12, min(sw, w - 12 - x0), sh)
+            self.legend.move(12, 12)
+            top = 70
+        else:
+            self.search.setGeometry((w - sw) // 2, 12, sw, sh)
+            self.legend.move(12, 20 + sh)
+            top = 28 + sh + self.legend.height()
         gw = 116
         gh = max(260, min(int(h * 0.62), h - 140))
         self.gauge.setGeometry(w - gw - 12, 70, gw, gh)
-        self.results.setGeometry(12, 70, min(320, w // 3), min(360, h - 200))
+        self.results.setGeometry(12, top, min(320, w // 3), min(360, h - 140 - top))
         self.fab.adjustSize()
         self.fab.move(16, h - self.fab.height() - 16)
         pw = min(320, w - 32)

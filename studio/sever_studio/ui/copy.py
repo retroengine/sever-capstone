@@ -56,7 +56,8 @@ TEXT: dict[str, tuple[str, str]] = {
         "checked against the application's index (§5, §7.6).",
     ),
     "map.about": (
-        "Each dot is a passage, where its meaning puts it; its colour, the kind of group.",
+        "Each dot is a passage, where its meaning puts it; its colour is its group, its shape the"
+        " kind.",
         "The 384 numbers of each passage are flattened to two (t-SNE) for the picture: near dots "
         "mean similar passages, but distances on the map only approximate the real ones. A frozen"
         " group's centre μ was fitted once, offline, by k-means on SciQ, a set of science "
@@ -69,7 +70,8 @@ TEXT: dict[str, tuple[str, str]] = {
         "C_S the engine published; click a dot for its text and why it went where it did.",
     ),
     "map.caption": (
-        "A 2-D picture of 384-D distances: groups are not drawn, their members are lit on click.",
+        "A 2-D picture of 384-D distances. Each group has its own colour; click a ✕ to light its"
+        " members.",
         "",
     ),
     "bucket": (

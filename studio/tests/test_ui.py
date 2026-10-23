@@ -373,3 +373,28 @@ def test_ui_the_map_draws_while_a_demo_has_the_database_closed(win: MainWindow) 
     finally:
         e.on_group_hover(None)
         s.backend.open()
+
+
+def test_ui_every_dot_has_its_groups_colour_and_its_kinds_shape(win: MainWindow) -> None:
+    # oracle: D the map's colour is the dot's group (the engine's log), its shape the group's kind
+    e = win.sections["explore"]
+    win.go("explore")
+    e.redraw()
+    recs = win.studio.backend.index.records
+    for spot, rid in zip(e.map.base.points(), e.map.rids, strict=True):
+        group = recs[rid].group
+        assert spot.brush().color().name() == theme.group_colour(group).name()
+        assert spot.symbol() == ("o" if group.startswith("frozen-") else "s")
+
+
+def test_ui_the_legend_never_covers_the_search_box(win: MainWindow) -> None:
+    # oracle: D layout: floating panels the probe does not compare (both are children of the map)
+    e = win.sections["explore"]
+    win.go("explore")
+    for width in (win.width(), 900):
+        e.resize(width, e.height())
+        e.place()
+        assert not e.legend.geometry().intersects(e.search.geometry()), width
+        assert not e.legend.geometry().intersects(e.results.geometry()), width
+    e.resize(win.sections["explore"].parentWidget().width(), e.height())
+    e.place()

@@ -80,7 +80,6 @@ MONO = "Ubuntu Sans Mono"
 TITLE, HEADING, BODY, SMALL = 22.0, 15.0, 11.0, 9.5
 
 #: Okabe and Ito's eight colours, distinct for the common colour-vision deficiencies.
-OKABE_ITO = ["#e69f00", "#56b4e9", "#009e73", "#f0e442", "#0072b2", "#d55e00", "#cc79a7", "#000000"]
 
 #: The presenter's text size (A− / A+).
 scale = 1.0
@@ -106,15 +105,21 @@ def rgba(colour: str, alpha: int) -> str:
     return f"rgba({c.red()}, {c.green()}, {c.blue()}, {alpha})"
 
 
-def kind_colour(group: str) -> QColor:
-    """A dot's colour says what kind of group holds it (§5.1): frozen or spawned, from Okabe and
-    Ito's palette, which stays distinct for the common colour-vision deficiencies. One colour per
-    group would only invent a picture of 184 clusters."""
+def group_colour(group: str) -> QColor:
+    """Each group its own colour (the owner's ask, 23 Oct 2026). Hues step by the golden ratio, so
+    neighbouring frozen numbers differ most; a spawned group's step comes from its ID; saturation
+    and brightness take three levels each. With 184 groups some colours are close: clicking a ✕
+    lights exactly its members. The dot's shape says the kind (● frozen, ■ spawned)."""
     if group.startswith("frozen-"):
-        return QColor(FROZEN)
-    if group.startswith("spawn-"):
-        return QColor(SPAWNED)
-    return QColor(HOLDING)
+        i = int(group.split("-")[1])
+    elif group.startswith("spawn-"):
+        i = int(group[6:14], 16)
+    else:
+        return QColor(HOLDING)
+    hue = (i * 0.6180339887498949) % 1.0
+    sat = (0.85, 0.55, 0.95)[i % 3]
+    val = (0.80, 0.95, 0.62)[(i // 3) % 3]
+    return QColor.fromHsvF(hue, sat, val)
 
 
 def stylesheet() -> str:

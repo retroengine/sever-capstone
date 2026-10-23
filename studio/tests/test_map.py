@@ -59,9 +59,11 @@ def test_map_draws_a_centre_for_every_group_the_engine_has(studio: Studio) -> No
     assert any(g.startswith("spawn-") for g in drawn)
 
 
-def test_map_colours_say_the_kind_of_group_not_invent_one_per_group() -> None:
-    # Okabe–Ito blue and reddish purple: distinct for the common colour-vision deficiencies
-    assert theme.kind_colour("frozen-0001").name() == theme.kind_colour("frozen-0042").name()
-    spawned = theme.kind_colour("spawn-0123456789abcdef").name()
-    assert spawned != theme.kind_colour("frozen-0001").name()
-    assert theme.kind_colour(HOLDING).name() == theme.HOLDING
+def test_map_each_group_has_its_own_colour(studio: Studio) -> None:
+    # oracle: D the owner's ask (23 Oct 2026): every group the engine has is told apart by colour;
+    # the bucket keeps its grey
+    b = studio.backend
+    groups = [g for g, _ in b.group_sizes()] + [f"frozen-{j:04d}" for j in range(128)]
+    names = {g: theme.group_colour(g).name() for g in set(groups)}
+    assert len(set(names.values())) == len(names)
+    assert theme.group_colour(HOLDING).name() == theme.HOLDING

@@ -1,6 +1,6 @@
 """The map: every live record as a dot where its meaning puts it, and the holding area as a gauge.
 
-A dot's colour says what kind of group holds it, frozen or spawned (§5.1); each group's centre μ,
+A dot's colour is its group's own, its shape the group's kind (● frozen, ■ spawned); each centre μ,
 as the engine has it, is a ✕ among the passages nearest it. Selecting a group lights up its members
 wherever they lie: a frozen group's are near its centre, a spawned group's are a scattered batch
 (§7.4). Stars are your own records. Records in the holding area are not on the map: no search
@@ -207,12 +207,11 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
     # -- drawing ----------------------------------------------------------------------------------
 
     def colour(self, group: str) -> QColor:
-        return theme.kind_colour(group)
+        return theme.group_colour(group)
 
     def _style(self, group: str, look: str) -> tuple[object, object]:
         """``look``: "plain", "dim" (another group is selected) or "lit" (the selected group)."""
-        kind = "frozen" if group.startswith("frozen-") else "spawn"
-        key = (kind, look)
+        key = (group, look)
         if key not in self._brush:
             c = self.colour(group)
             if look == "dim":
@@ -237,7 +236,7 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         self.rids = rids
         self.xy = np.array([self.studio.xy(r) for r in rids], np.float64).reshape(-1, 2)
         self.dot = 4.6 if len(rids) > 2000 else 7.0
-        brushes, pens, sizes = [], [], []
+        brushes, pens, sizes, symbols = [], [], [], []
         mine_xy = []
         for r in rids:
             rec = recs[r]
@@ -246,10 +245,15 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
             brushes.append(b)
             pens.append(p)
             sizes.append(self.dot * (1.6 if look == "lit" else 1.0))
+            symbols.append("o" if rec.group.startswith("frozen-") else "s")
             if rec.mine:
                 mine_xy.append(self.studio.xy(r))
         self.base.setData(
-            pos=self.xy if len(rids) else EMPTY, brush=brushes, pen=pens, size=sizes or self.dot
+            pos=self.xy if len(rids) else EMPTY,
+            brush=brushes,
+            pen=pens,
+            size=sizes or self.dot,
+            symbol=symbols or "o",
         )
         self._centres()
         mx = np.array(mine_xy, np.float64).reshape(-1, 2)

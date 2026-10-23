@@ -486,8 +486,8 @@ class KMeansTab(QWidget):
         pass
 
     def _colours(self, labels: Any) -> list[Any]:
-        palette = theme.OKABE_ITO
-        return [pg.mkBrush(palette[int(j) % len(palette)]) for j in labels]
+        # the same colour as frozen group j on the map
+        return [pg.mkBrush(theme.group_colour(f"frozen-{int(j):04d}")) for j in labels]
 
     def _draw(self, part: Any, trail: list[Any] | None) -> None:
         self.points.setData(pos=part.xy, brush=self._colours(part.labels), pen=pg.mkPen(None))

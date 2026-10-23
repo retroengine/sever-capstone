@@ -55,8 +55,10 @@ studio/studio.sh run        # opens the window, sized to your screen
   the evidence) only show something and are not counted. **Save the session report** writes every
   verdict, with numbers only: no key, `r_t` or passage text.
 - **Shortcuts:** `/` search, `N` next chapter, `Esc` close, `F11` full screen.
-- **Rail buttons:** A− / A+ change the text size. Frozen and spawned groups are told apart by
-  colour-blind-safe colours (Okabe–Ito).
+- **Rail buttons:** A− / A+ change the text size.
+- **Colours:** each group has its own colour, the same on the map and in Groups made; the dot's
+  shape says the kind (● frozen, ■ spawned). With 175 or more groups some colours are close, so
+  clicking a ✕ lights exactly that group's members.
 
 | Section | What you do | What it proves |
 |---|---|---|
