@@ -13,10 +13,12 @@ from PySide6.QtGui import QColor, QResizeEvent
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QListWidget,
     QListWidgetItem,
     QPlainTextEdit,
+    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
@@ -27,8 +29,8 @@ from ..actions import Added, Deleted
 from ..backend import HOLDING, Inserted
 from . import copy, theme
 from .host import Host
-from .map_view import Bucket, HoverCard, MapView
-from .widgets import Verdict, button, chip, info, label, lift
+from .map_view import Bucket, GroupCard, HoverCard, MapView
+from .widgets import Heatmap, Verdict, button, chip, info, label, lift
 
 
 def floating(vertical: bool = True, margin: int = 12) -> tuple[QFrame, QVBoxLayout | QHBoxLayout]:
@@ -75,8 +77,8 @@ class Explore(QWidget):
 
         # the legend, top left
         self.legend, ll = floating(vertical=False, margin=8)
-        ll.addWidget(chip("◆ frozen", theme.ACCENT))
-        ll.addWidget(chip("■ spawned", theme.SPAWNED))
+        ll.addWidget(chip("✕ centre μ", theme.TEXT))
+        ll.addWidget(chip("┈ group edge", theme.MUTED))
         ll.addWidget(chip("★ yours", theme.WARN if theme.LIGHT else theme.YOURS_RING))
         ll.addWidget(info("map.about"))
 
@@ -126,19 +128,43 @@ class Explore(QWidget):
         al.addWidget(self.add_result)
         self.add_panel.hide()
 
-        # the selection sheet, bottom centre
-        self.sheet, shl = floating(vertical=False)
+        # the selected record, a panel on the right: everything about it, then what to do
+        self.sheet, shl = floating(vertical=True)
+        self.sheet.setObjectName("card")  # opaque: the map must not show through the text
+        head = QHBoxLayout()
         self.sel = label("", wrap=True)
-        shl.addWidget(self.sel, 1)
+        head.addWidget(self.sel, 1)
+        head.addWidget(button("", "ghost", lambda: self.on_click(None), "x", "Close"))
+        shl.addLayout(head)
+        self.sel_text = QLabel()
+        self.sel_text.setWordWrap(True)
+        self.sel_text.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.sel_text.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setWidget(self.sel_text)
+        shl.addWidget(scroll, 1)
+        self.sel_heat = Heatmap(cols=48)
+        shl.addWidget(self.sel_heat)
+        self.sel_nums = label("", "mono", wrap=True)
+        shl.addWidget(self.sel_nums)
         self.b_delete = button("Delete", "danger", self.delete_selected, "trash")
         self.b_forget = button("Forget", "danger", self.forget_selected, "forget")
         self.b_group = button("Group", "", self.toggle_group, "layers", "Show only its group")
         self.b_receipt = button("Receipt", "primary", self.open_receipt, "receipt")
         self.b_again = button("Delete again", "", self.delete_again, "refresh")
+        acts = QHBoxLayout()
         for b in (self.b_delete, self.b_forget, self.b_group, self.b_receipt, self.b_again):
-            shl.addWidget(b)
-        shl.addWidget(button("", "ghost", lambda: self.on_click(None), "x", "Close"))
+            acts.addWidget(b)
+        acts.addStretch(1)
+        shl.addLayout(acts)
         self.sheet.hide()
+
+        # a group's numbers, when its centre is hovered
+        self.gcard = GroupCard(self)
+        self.map.group_hovered.connect(self.on_group_hover)
 
         # the status, bottom right
         self.status = label("", "small")
@@ -207,16 +233,10 @@ class Explore(QWidget):
         right -= self.b_layout.width() + 6
         self.b_layout.move(right, h - self.b_layout.height() - 12)
         self.status.move(right - self.status.width() - 8, h - self.status.height() - 18)
-        # the sheet stays clear of the buttons in both bottom corners
-        side = max(self.fab.width() + 16, w - right) + 16
-        self.sheet.setFixedWidth(max(360, min(760, w - 2 * side)))
-        self.sheet.adjustSize()
-        self.sheet.move((w - self.sheet.width()) // 2, h - self.sheet.height() - 16)
-        self.status.setVisible(
-            not (
-                self.sheet.isVisible() and self.status.geometry().intersects(self.sheet.geometry())
-            )
-        )
+        # the selected record's panel: on the right, over the gauge, above the bottom row
+        pw = max(300, min(440, int(w * 0.36)))
+        self.sheet.setGeometry(w - pw - 12, 70, pw, max(240, h - 70 - 60))
+        self.gauge.setVisible(not self.sheet.isVisible())
         self.welcome.adjustSize()
         self.welcome.move((w - self.welcome.width()) // 2, (h - self.welcome.height()) // 2)
         for f in (
@@ -319,10 +339,26 @@ class Explore(QWidget):
             self.place()
             return
         n = len(b.accounts().get(rec.account, []))
+        c = self.map.palette.colour(rec.group).name()
         self.sel.setText(
             f"<b>{rid}</b>{'  ★' if rec.mine else ''}<br>"
-            f"<span style='color:{theme.MUTED}'>{rec.account} · {rec.group}</span>"
+            f"<span style='color:{theme.MUTED}'>{rec.account} · </span>"
+            f"<span style='color:{c}'>{rec.group}</span>"
         )
+        self.sel_text.setText(b.text_of(rid))
+        x = b.vector_of(rid).astype(np.float64)
+        self.sel_heat.set(x)
+        q = np.rint(x * 2**24).astype(np.int64)
+        lines = [
+            f"x  = [{', '.join(f'{v:.5f}' for v in x[:3])}, … {len(x)} numbers]",
+            f"x̃ = round(x · 2²⁴) = [{', '.join(f'{v:,}' for v in q[:3])}, …]",
+        ]
+        dist = self.host.studio.distances(rid)
+        if dist is not None:
+            lines.append(f"‖x − μ‖ = {dist[0]:.3f} to its centre · {dist[1]:.3f} to the next")
+        elif rec.group == HOLDING:
+            lines.append("waiting in the bucket: in no group yet, so no centre (§7.4)")
+        self.sel_nums.setText("\n".join(lines))
         self.b_forget.setText(f"Forget ({n})")
         self._sheet(mode="selected")
 
@@ -334,6 +370,22 @@ class Explore(QWidget):
             b.setVisible(not selected)
         self.sheet.show()
         self.place()
+
+    def on_group_hover(self, group: str | None) -> None:
+        if group is None or not isValid(self.gcard):
+            if isValid(self.gcard):
+                self.gcard.hide()
+            return
+        s = self.host.studio
+        self.gcard.show_for(
+            group, self.map.palette.colour(group), s.group_stats(group), s.centre(group)
+        )
+        x, y, _ = s.groups.anchors[group]
+        p = self.map.to_widget(x, y)
+        right = p.x() + 18 + self.gcard.width() < self.width() - 12
+        gx = p.x() + 18 if right else p.x() - 18 - self.gcard.width()
+        gy = min(max(64.0, p.y() - 40), self.height() - self.gcard.height() - 12)
+        self.gcard.move(int(max(8, gx)), int(gy))
 
     def toggle_group(self) -> None:
         rid = self.map.selected

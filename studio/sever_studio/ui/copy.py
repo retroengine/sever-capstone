@@ -56,12 +56,15 @@ TEXT: dict[str, tuple[str, str]] = {
         "checked against the application's index (§5, §7.6).",
     ),
     "map.about": (
-        "Each dot is a stored passage; each group has a colour of its own.",
-        "By group, each group's passages form a disc around its centre. ◆ marks a frozen group "
-        "(fitted once, §6), in the middle; ■ a spawned group, formed when 200 out-of-distribution "
-        "records gathered in the holding area (§7.4), on the rings around them. Where a dot sits "
-        "inside its disc means nothing. By meaning, the 384 numbers of each vector are flattened "
-        "to two instead (t-SNE), so similar passages sit close: an approximation.",
+        "Each colour is a group; ✕ is its centre μ.",
+        "The database keeps each group's centre μ fixed: a frozen group's was fitted once by "
+        "k-means (§6); a spawned group's is the mean of the 200 records that waited together, "
+        "computed when they flushed (§7.5). A new record joins the nearest frozen centre if it is "
+        "close enough, else the bucket (§7.3). Each group is drawn where its centre falls by "
+        "meaning, its members around it; the dotted line is the group's edge. Hover a ✕ for the "
+        "group's count n, exact sum S and mean; click a dot for its full text and numbers. The 384 "
+        'numbers are flattened to two for the picture: "By meaning" shows every dot where t-SNE '
+        "puts it instead.",
     ),
     "bucket": (
         "Waiting",
@@ -79,6 +82,21 @@ TEXT: dict[str, tuple[str, str]] = {
         "Text from the dataset; stored encrypted.",
         "The database never hands text back (§13.2): what you read here comes from the dataset, or "
         "from what you typed.",
+    ),
+    "group.frozen": (
+        "Frozen group: its centre was fitted once by k-means and never moves (§6).",
+        "",
+    ),
+    "group.spawned": (
+        "Spawned group: 200 records that waited together in the bucket, flushed as one (§7.4).",
+        "",
+    ),
+    "group.note": (
+        "Insert: S + x̃, n + 1. Delete: S − x̃, n − 1. Whole numbers, so a deletion leaves exactly "
+        "what the group would hold had the record never come (§5). μ never moves: routing and "
+        "search measure against it (§7.1, §8.1). Recomputed by Studio; the database keeps S "
+        "encrypted.",
+        "",
     ),
     "hover.source.mine": (
         "Text you typed; stored encrypted.",

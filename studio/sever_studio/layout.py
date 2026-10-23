@@ -1,10 +1,10 @@
 """The 2D map: every 384-dimensional vector drawn as a point, in two layouts.
 
-**By group** (the default): each group is a disc of its own colour around its centre, so the map
-shows what the database stores. Frozen groups sit in the middle, roughly where their passages sit
-by meaning and pushed apart so none overlap; spawned groups take the next place on rings around
-them, in the order they appear. Each group keeps its place and colour once given (``GroupMap``,
-saved in the work directory), and each record keeps its spot in the disc (a hash of its ID).
+**By group** (the default): each group is a cluster of its own colour, as a k-means picture shows
+it. A group sits where the average of its members' meaning puts it, pushed apart from the others so
+no two overlap; inside, each member keeps where its meaning puts it relative to the group's other
+members, shrunk to the group's size. A group keeps its place, scale and colour once given
+(``GroupMap``, saved in the work directory), so a deletion moves nothing else.
 
 **By meaning**: the corpus is laid out once with t-SNE (cosine distance), which keeps near
 neighbours near. Distances on the map are only an approximation of the real ones; the window says
@@ -103,77 +103,121 @@ def _lab(rgb: tuple[int, int, int]) -> npt.NDArray[np.float64]:
     return np.array([116 * f[1] - 16, 500 * (f[0] - f[1]), 200 * (f[1] - f[2])])
 
 
-def disc_point(rid: str, x: float, y: float, r: float) -> tuple[float, float]:
-    """A record's spot in its group's disc: uniform over the disc, fixed by the ID alone, so it
-    never moves when other records come or go."""
-    h = hashlib.sha256(rid.encode()).digest()
-    u = int.from_bytes(h[:8], "big") / 2**64
-    v = int.from_bytes(h[8:16], "big") / 2**64
-    rr = r * math.sqrt(v)
-    return x + rr * math.cos(2 * math.pi * u), y + rr * math.sin(2 * math.pi * u)
+def hull(points: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    """The convex hull, counter-clockwise (Andrew's monotone chain)."""
+    pts = sorted({(float(x), float(y)) for x, y in points})
+    if len(pts) < 3:
+        return np.array(pts, np.float64).reshape(-1, 2)
+
+    def cross(o: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    lower: list[tuple[float, float]] = []
+    upper: list[tuple[float, float]] = []
+    for pt in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], pt) <= 0:
+            lower.pop()
+        lower.append(pt)
+    for pt in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], pt) <= 0:
+            upper.pop()
+        upper.append(pt)
+    return np.array(lower[:-1] + upper[:-1], np.float64)
+
+
+def outline(points: npt.NDArray[np.float64], pad: float, steps: int = 6) -> npt.NDArray[np.float64]:
+    """A closed boundary ``pad`` outside every point: the hull, its corners rounded."""
+    h = hull(points)
+    if len(h) == 0:
+        return h
+    angles = np.linspace(0, 2 * math.pi, 4 * steps, endpoint=False)
+    ring = np.stack([np.cos(angles), np.sin(angles)], 1) * pad
+    around = (h[:, None, :] + ring[None, :, :]).reshape(-1, 2)  # a circle of radius pad at each
+    out = hull(around)
+    return np.vstack([out, out[:1]])
 
 
 class GroupMap:
-    """Each group's centre, radius and colour number on the map by group, kept once given."""
+    """Each group's cluster on the map by group, kept once given: its centre ``(x, y)``, radius
+    ``r``, and how its members' meaning positions map into it (their mean then ``(mx, my)``, and the
+    shrink factor ``s``); plus its colour number."""
+
+    VERSION = 2
 
     def __init__(self, path: Path, spawn_size: int) -> None:
         self.path = path
-        self.spawn_radius = SPREAD * math.sqrt(spawn_size)
+        self.spawn_size = spawn_size
         self.anchors: dict[str, tuple[float, float, float]] = {}
+        self.inner: dict[str, tuple[float, float, float]] = {}
         self.colours: dict[str, int] = {}
-        self.outer: float | None = None
-        self.scale = 1.0
-        self.spawned = 0
+        #: a spawned group's centre, kept as computed at its creation (§7.5: then frozen)
+        self.mu: dict[str, list[float]] = {}
+        self.scale = 0.0
         if path.exists():
             doc = json.loads(path.read_text("utf-8"))
-            self.anchors = {g: (a[0], a[1], a[2]) for g, a in doc["anchors"].items()}
-            self.colours = dict(doc["colours"])
-            self.outer, self.scale, self.spawned = doc["outer"], doc["scale"], doc["spawned"]
+            if doc.get("version") == self.VERSION:
+                self.anchors = {g: (a[0], a[1], a[2]) for g, a in doc["anchors"].items()}
+                self.inner = {g: (a[0], a[1], a[2]) for g, a in doc["inner"].items()}
+                self.colours = dict(doc["colours"])
+                self.mu = dict(doc["mu"])
+                self.scale = doc["scale"]
 
     def save(self) -> None:
         doc = {
+            "version": self.VERSION,
             "anchors": self.anchors,
+            "inner": self.inner,
             "colours": self.colours,
-            "outer": self.outer,
+            "mu": self.mu,
             "scale": self.scale,
-            "spawned": self.spawned,
         }
         self.path.write_text(json.dumps(doc), "utf-8")
 
-    def ensure(self, members: dict[str, list[tuple[float, float]]]) -> bool:
-        """Places every group of ``members`` (group -> its members' positions by meaning, groups
-        in the order they appeared) that has no place yet. True when something was placed."""
-        new = [g for g in members if g not in self.anchors]
+    def point(self, group: str, meaning: tuple[float, float]) -> tuple[float, float]:
+        """Where a member of ``group`` whose position by meaning is ``meaning`` is drawn: its offset
+        from the group's mean, shrunk, never outside the group's radius."""
+        x, y, r = self.anchors[group]
+        mx, my, s = self.inner[group]
+        dx, dy = (meaning[0] - mx) * s, (meaning[1] - my) * s
+        d = math.hypot(dx, dy)
+        if d > r:
+            dx, dy = dx * r / d, dy * r / d
+        return x + dx, y + dy
+
+    def ensure(
+        self,
+        members: dict[str, list[tuple[float, float]]],
+        centres: dict[str, tuple[float, float]] | None = None,
+    ) -> bool:
+        """Places every group of ``members`` (group -> its members' positions by meaning) that has
+        no place yet, starting from where ``centres`` puts its real centre μ by meaning (else its
+        members' mean). True when something was placed."""
+        new = sorted(g for g in members if g not in self.anchors and members[g])
         if not new:
             return False
-        frozen = sorted(g for g in new if g.startswith("frozen-"))
-        if frozen:
-            self._place_frozen(frozen, members)
-        if self.outer is None:
-            self.outer = max((math.hypot(x, y) + r for x, y, r in self.anchors.values()), default=0)
+        radii, means = [], []
         for g in new:
-            if not g.startswith("frozen-"):
-                self.anchors[g] = self._ring_slot(self.spawned)
-                self.spawned += 1
-        self._colour(new)
-        self.save()
-        return True
-
-    def _place_frozen(self, new: list[str], members: dict[str, list[tuple[float, float]]]) -> None:
-        radii = np.array([SPREAD * math.sqrt(max(len(members[g]), 3)) for g in new])
-        start = np.array([np.mean(members[g], axis=0) for g in new], np.float64).reshape(-1, 2)
-        fixed = [a for g, a in self.anchors.items() if g.startswith("frozen-")]
-        if not fixed:
-            packed = math.sqrt(float((radii**2).sum()) / PACKING)
+            pts = np.array(members[g], np.float64).reshape(-1, 2)
+            r = SPREAD * math.sqrt(max(len(pts), 3))
+            m = pts.mean(axis=0)
+            far = float(np.sqrt(((pts - m) ** 2).sum(1)).max())
+            self.inner[g] = (float(m[0]), float(m[1]), r / far if far > 1e-9 else 1.0)
+            radii.append(r)
+            means.append(np.array((centres or {}).get(g, (m[0], m[1])), np.float64))
+        rad_new = np.array(radii)
+        start = np.array(means, np.float64).reshape(-1, 2)
+        if not self.anchors:  # the first groups set how far meaning spreads the clusters
+            packed = math.sqrt(float((rad_new**2).sum()) / PACKING)
             self.scale = packed / max(float(np.abs(start).max()), 1e-9)
         start *= self.scale
+        fixed = list(self.anchors.values())
         pos = np.vstack([np.array([a[:2] for a in fixed]).reshape(-1, 2), start])
-        rad = np.concatenate([np.array([a[2] for a in fixed]), radii])
+        rad = np.concatenate([np.array([a[2] for a in fixed]), rad_new])
         moves = np.arange(len(pos)) >= len(fixed)
-        # a deterministic nudge, so discs that start on the same spot can be told apart
-        pos[moves] += np.stack([np.cos(np.arange(moves.sum())), np.sin(np.arange(moves.sum()))], 1)
-        pos[moves] *= 1 + 1e-3
-        for _ in range(400):
+        # a deterministic nudge, so clusters that start on the same spot can be told apart
+        k = np.arange(int(moves.sum()))
+        pos[moves] += np.stack([np.cos(k), np.sin(k)], 1) * 0.5
+        for _ in range(600):
             d = pos[:, None, :] - pos[None, :, :]
             dist = np.sqrt((d**2).sum(-1)) + np.eye(len(pos))
             overlap = np.clip(rad[:, None] + rad[None, :] + GAP - dist, 0, None)
@@ -182,22 +226,11 @@ class GroupMap:
                 break
             push = (d / dist[..., None] * overlap[..., None] / 2).sum(1)
             pos[moves] += push[moves]
-        for g, (x, y), r in zip(new, pos[moves], radii, strict=True):
+        for g, (x, y), r in zip(new, pos[moves], rad_new, strict=True):
             self.anchors[g] = (float(x), float(y), float(r))
-
-    def _ring_slot(self, k: int) -> tuple[float, float, float]:
-        """Spawned group number ``k``: rings around the frozen groups, filled clockwise from the
-        top."""
-        rs = self.spawn_radius
-        pitch = 2 * rs + GAP
-        radius = (self.outer or 0) + rs + 2 * GAP
-        while True:
-            n = max(1, int(2 * math.pi * radius / pitch))
-            if k < n:
-                a = math.pi / 2 - 2 * math.pi * k / n
-                return radius * math.cos(a), radius * math.sin(a), rs
-            k -= n
-            radius += pitch
+        self._colour(new)
+        self.save()
+        return True
 
     def _colour(self, new: list[str]) -> None:
         """A colour number per new group, never one already used, chosen to differ most from the

@@ -116,6 +116,7 @@ class Studio:
         self.by_group = True
         self.groups = layout.GroupMap(work / "group-map.json", self.corpus.spawn_target)
         self._spot: dict[tuple[str, str], tuple[float, float]] = {}
+        self._frozen: npt.NDArray[np.float64] | None = None
         self.deleted_this_session: list[str] = []
         self._encoder: Any = None
 
@@ -133,23 +134,67 @@ class Studio:
                 if spot is None:
                     if group not in self.groups.anchors:
                         self.place_groups()
-                    a = self.groups.anchors.get(group)
-                    if a is None:
+                    if group not in self.groups.anchors:
                         return self.meaning_xy(rid)
-                    spot = self._spot[(rid, group)] = layout.disc_point(rid, *a)
+                    spot = self.groups.point(group, self.meaning_xy(rid))
+                    self._spot[(rid, group)] = spot
                 return spot
         return self.meaning_xy(rid)
 
     def place_groups(self) -> None:
-        """Gives every group in the index a place and a colour, if it has none yet."""
+        """Gives every group in the index a place and a colour, if it has none yet: where its real
+        centre μ falls on the map by meaning, then pushed clear of the others."""
         members: dict[str, list[tuple[float, float]]] = {}
+        ids: dict[str, list[str]] = {}
         for rid, rec in self.backend.index.records.items():
             if rec.group != HOLDING:
                 members.setdefault(rec.group, []).append(self.meaning_xy(rid))
-        self.groups.ensure(members)
+                ids.setdefault(rec.group, []).append(rid)
+        centres: dict[str, tuple[float, float]] = {}
+        for g in members:
+            if g in self.groups.anchors:
+                continue
+            if not g.startswith("frozen-"):  # §7.5: S / n of the group as first seen, then kept
+                n, total, _ = self.group_stats(g)
+                self.groups.mu[g] = list(total.astype(np.float64) / 2**24 / max(n, 1))
+            mu = self.centre(g)
+            if mu is not None:
+                centres[g] = layout.place(mu.astype(np.float32), self.corpus.vectors, self.coords)
+        self.groups.ensure(members, centres)
+
+    def centre(self, group: str) -> npt.NDArray[np.float64] | None:
+        """The group's centre μ as the database routes and searches with it: a frozen group's from
+        the partition (§6, fitted once by k-means), a spawned group's S / n at creation (§7.5)."""
+        if group.startswith("frozen-"):
+            if self._frozen is None:
+                from sever_partition.artefact import decode
+
+                self._frozen = decode(self.corpus.artefact.read_bytes()).centroids
+            k = int(group.split("-")[1])
+            return self._frozen[k] if k < len(self._frozen) else None
+        mu = self.groups.mu.get(group)
+        return np.asarray(mu, np.float64) if mu is not None else None
+
+    def distances(self, rid: str) -> tuple[float, float] | None:
+        """A record's distance to its own group's centre and to the nearest other centre, in the
+        384 dimensions the database measures (§7.1)."""
+        rec = self.backend.index.records.get(rid)
+        if rec is None or rec.group == HOLDING:
+            return None
+        x = self.backend.vector_of(rid).astype(np.float64)
+        own = self.centre(rec.group)
+        if own is None:
+            return None
+        others = [
+            float(np.sqrt(((x - mu) ** 2).sum()))
+            for g in self.groups.anchors
+            if g != rec.group and (mu := self.centre(g)) is not None
+        ]
+        return float(np.sqrt(((x - own) ** 2).sum())), min(others, default=float("nan"))
 
     def centres(self) -> list[tuple[str, float, float, int]]:
-        """Each group with members: its centre on the map and its size."""
+        """Each group with members: where its centre μ is drawn (fixed, as μ is: §6, §7.5) and its
+        size."""
         sizes: dict[str, int] = {}
         for rec in self.backend.index.records.values():
             if rec.group != HOLDING:
@@ -157,6 +202,19 @@ class Studio:
         if any(g not in self.groups.anchors for g in sizes):
             self.place_groups()
         return [(g, *self.groups.anchors[g][:2], n) for g, n in sizes.items()]
+
+    def group_stats(self, group: str) -> tuple[int, npt.NDArray[np.int64], npt.NDArray[np.float64]]:
+        """A group's count ``n``, exact sum ``S`` of its members' Q24 integers (§4.2, §5) and mean
+        ``S / n`` back in real numbers, from the vectors Studio stored. The database keeps ``S``
+        encrypted; these are recomputed here, not read from it."""
+        b = self.backend
+        rids = [r for r, rec in b.index.records.items() if rec.group == group]
+        d = self.corpus.d
+        if not rids:
+            return 0, np.zeros(d, np.int64), np.zeros(d, np.float64)
+        q = wow.quantise(np.stack([b.vector_of(r) for r in rids]).astype(np.float32))
+        total = q.astype(np.int64).sum(axis=0)
+        return len(rids), total, total.astype(np.float64) / len(rids) / 2**24
 
     def meaning_xy(self, rid: str) -> tuple[float, float]:
         if rid in self.extra_xy:

@@ -11,6 +11,7 @@ import shutil
 from collections.abc import Iterator
 from pathlib import Path
 
+import numpy as np
 import pytest
 from conftest import WORK
 
@@ -90,11 +91,27 @@ def test_map_places_and_colours_are_kept(tmp_path: Path) -> None:
     assert len(set(again.colours.values())) == len(later)
 
 
-def test_map_a_dot_stays_in_its_disc_whatever_else_happens() -> None:
-    for rid in ("a", "frozen", "you-zoë-1", "x" * 256):
-        x, y = layout.disc_point(rid, 10.0, -4.0, 3.0)
-        assert math.hypot(x - 10, y + 4) <= 3.0
-        assert layout.disc_point(rid, 10.0, -4.0, 3.0) == (x, y)
+def test_map_a_member_is_drawn_inside_its_group_and_never_moves(tmp_path: Path) -> None:
+    gm = layout.GroupMap(tmp_path / "g.json", spawn_size=8)
+    members = fake_members(6, 2, seed=11)
+    gm.ensure(members)
+    for g, pts in members.items():
+        cx, cy, r = gm.anchors[g]
+        for pt in [*pts, (500.0, -500.0)]:  # a later member far away is kept inside too
+            x, y = gm.point(g, pt)
+            assert math.hypot(x - cx, y - cy) <= r + 1e-9
+            assert gm.point(g, pt) == (x, y)
+
+
+def test_map_outline_holds_every_point() -> None:
+    rng = random.Random(5)
+    pts = np.array([(rng.gauss(0, 3), rng.gauss(0, 3)) for _ in range(60)])
+    ring = layout.outline(pts, pad=1.0)
+    assert np.allclose(ring[0], ring[-1])  # closed
+    poly = ring[:-1]
+    for x, y in pts:  # inside a convex polygon: on the left of every edge (counter-clockwise)
+        for (ax, ay), (bx, by) in zip(poly, np.roll(poly, -1, axis=0), strict=True):
+            assert (bx - ax) * (y - ay) - (by - ay) * (x - ax) >= 0
 
 
 # -- on a real (fixture) database --------------------------------------------------------------
@@ -142,3 +159,33 @@ def test_map_by_meaning_is_still_there(studio: Studio) -> None:
     rid = next(r for r, rec in studio.backend.index.records.items() if rec.group != HOLDING)
     studio.by_group = False
     assert studio.xy(rid) == studio.meaning_xy(rid)
+
+
+def test_map_a_groups_sum_and_count_change_by_exactly_the_deleted_record(studio: Studio) -> None:
+    b = studio.backend
+    group = next(rec.group for rec in b.index.records.values() if rec.group.startswith("frozen-"))
+    members = [r for r, rec in b.index.records.items() if rec.group == group]
+    # §4.2 and §5, written out again: S = Σ round(x · 2^24), ties to even, as integers
+    q = {r: np.rint(b.vector_of(r).astype(np.float64) * 2**24).astype(np.int64) for r in members}
+    n, total, mean = studio.group_stats(group)
+    assert n == len(members)
+    assert np.array_equal(total, sum(q.values()))
+    assert np.allclose(mean, total / n / 2**24)
+    gone = members[0]
+    studio.delete([gone])
+    n2, total2, _ = studio.group_stats(group)
+    assert n2 == n - 1
+    assert np.array_equal(total2, total - q[gone])  # S − x̃: exact
+
+
+def test_map_a_frozen_centre_is_the_partitions_centroid(studio: Studio) -> None:
+    from sever_partition.artefact import decode
+
+    fitted = decode(studio.corpus.artefact.read_bytes()).centroids  # §6.3, label order
+    mu = studio.centre("frozen-0002")
+    assert mu is not None
+    assert np.array_equal(mu, fitted[2])
+    rid = next(r for r, rec in studio.backend.index.records.items() if rec.group == "frozen-0002")
+    x = studio.backend.vector_of(rid).astype(np.float64)
+    own, _ = studio.distances(rid) or (0.0, 0.0)
+    assert own == pytest.approx(float(np.sqrt(((x - fitted[2]) ** 2).sum())))

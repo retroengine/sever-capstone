@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .. import layout
 from ..actions import Studio
 from ..backend import HOLDING
 from . import copy, theme
@@ -110,9 +111,103 @@ class HoverCard(QFrame):
         self.raise_()
 
 
+def _nums(values: npt.NDArray[np.generic], fmt: str, shown: int = 3) -> str:
+    return "[" + ", ".join(format(v, fmt) for v in values[:shown]) + f", … {len(values)} numbers]"
+
+
+class GroupCard(QFrame):
+    """A group when its centre is hovered: n, the exact sum S, and the mean S / n."""
+
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(parent)
+        self.setObjectName("float")
+        lift(self)
+        self.setFixedWidth(400)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        lay = self.box = QVBoxLayout(self)
+        lay.setContentsMargins(14, 12, 14, 12)
+        lay.setSpacing(5)
+        self.title = label("", "strong")
+        lay.addWidget(self.title)
+        self.kind = label("", "small", wrap=True)
+        lay.addWidget(self.kind)
+        self.n = label("", "mono")
+        self.sum = label("", "mono", wrap=True)
+        self.mean = label("", "mono", wrap=True)
+        self.mu = label("", "mono", wrap=True)
+        for w in (self.n, self.sum, self.mean, self.mu):
+            lay.addWidget(w)
+        self.heat = Heatmap(cols=48)
+        lay.addWidget(self.heat)
+        lay.addWidget(label(copy.short("group.note"), "small", wrap=True))
+        self.hide()
+
+    def show_for(
+        self,
+        group: str,
+        colour: QColor,
+        stats: tuple[int, npt.NDArray[np.int64], npt.NDArray[np.float64]],
+        mu: npt.NDArray[np.float64] | None,
+    ) -> None:
+        n, total, mean = stats
+        c = colour.name()
+        self.title.setText(f"<span style='color:{c}'>✕</span> {group}")
+        self.kind.setText(
+            copy.short("group.frozen" if group.startswith("frozen-") else "group.spawned")
+        )
+        self.n.setText(f"n    = {n:,} records")
+        self.sum.setText(f"S    = Σ x̃ = {_nums(total, ',d')}")
+        self.mean.setText(f"mean = S / (n · 2²⁴) = {_nums(mean, '.4f')}")
+        self.mu.setText(
+            "μ    = fixed centre = " + (_nums(mu, ".4f") if mu is not None else "unknown")
+        )
+        self.heat.set(mean)
+        self.box.activate()
+        self.setFixedHeight(self.box.totalHeightForWidth(self.width()))
+        self.show()
+        self.raise_()
+
+
+class Outlines(pg.GraphicsObject):  # type: ignore[misc]  # pyqtgraph has no type hints
+    """Each group's boundary as a dotted line in its colour, all drawn by one item."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.paths: list[tuple[QPainterPath, QColor]] = []
+        self._rect = QRectF()
+
+    def set(self, outlines: list[tuple[npt.NDArray[np.float64], QColor]]) -> None:
+        self.prepareGeometryChange()
+        self.paths = []
+        rect = QRectF()
+        for pts, colour in outlines:
+            if len(pts) < 2:
+                continue
+            path = QPainterPath(QPointF(*pts[0]))
+            for x, y in pts[1:]:
+                path.lineTo(x, y)
+            self.paths.append((path, colour))
+            rect = rect.united(path.boundingRect())
+        self._rect = rect
+        self.update()
+
+    def boundingRect(self) -> QRectF:  # noqa: N802 (Qt's name)
+        return self._rect
+
+    def paint(self, p: QPainter, *args: object) -> None:
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        for path, colour in self.paths:
+            pen = QPen(colour, 1.6, Qt.PenStyle.DotLine)
+            pen.setCosmetic(True)  # in pixels, whatever the zoom
+            p.setPen(pen)
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawPath(path)
+
+
 class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hints
     hovered = Signal(object)
     clicked = Signal(object)
+    group_hovered = Signal(object)
 
     def __init__(self, studio: Studio) -> None:
         super().__init__()
@@ -127,6 +222,8 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         self.vb.setDefaultPadding(0.1)  # room for the floating search, legend and gauge
         self.base = pg.ScatterPlotItem(pxMode=True)
         self.centres = pg.ScatterPlotItem(pxMode=True)
+        self.outlines = Outlines()
+        self.centre_at: list[tuple[str, float, float]] = []
         self.halo = pg.ScatterPlotItem(pxMode=True)
         self.mine = pg.ScatterPlotItem(pxMode=True)
         self.anim = pg.ScatterPlotItem(pxMode=True)
@@ -134,6 +231,7 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         self.beam = pg.PlotDataItem(pen=pg.mkPen(theme.ACCENT + "aa", width=1.4), connect="pairs")
         self.star = pg.ScatterPlotItem(pxMode=True)
         for item in (
+            self.outlines,
             self.base,
             self.centres,
             self.halo,
@@ -151,7 +249,7 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         self.focus_group: str | None = None
         self.selected: str | None = None
         self._brush: dict[tuple[str, bool], object] = {}
-        self.scene().sigMouseMoved.connect(lambda pos: self.hovered.emit(self.nearest(pos)))
+        self.scene().sigMouseMoved.connect(self._moved)
         self.scene().sigMouseClicked.connect(
             lambda ev: self.clicked.emit(self.nearest(ev.scenePos()))
         )
@@ -203,26 +301,61 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         self._ring()
 
     def _centres(self) -> None:
-        """Each group's centre, in its colour: ◆ frozen, ■ spawned (by group only)."""
+        """Each group's centre μ (✕, fixed as the database keeps it) and its dotted boundary."""
         if not self.studio.by_group:
             self.centres.setData(pos=EMPTY)
+            self.outlines.set([])
+            self.centre_at = []
             return
-        spots = []
-        for g, x, y, _ in self.studio.centres():
+        members: dict[str, list[int]] = {}
+        recs = self.studio.backend.index.records
+        for i, rid in enumerate(self.rids):
+            members.setdefault(recs[rid].group, []).append(i)
+        spots, lines, at = [], [], []
+        for g, idx in members.items():
             c = self.palette.colour(g)
             if self.focus_group is not None and g != self.focus_group:
                 c = QColor(c.red(), c.green(), c.blue(), 50)
+            pts = self.xy[idx]
+            if g not in self.studio.groups.anchors:
+                self.studio.place_groups()
+            cx, cy, r = self.studio.groups.anchors[g]
+            at.append((g, cx, cy))
+            lines.append((layout.outline(pts, pad=0.12 * r + 0.8), c))
             spots.append(
                 {
-                    "pos": (x, y),
-                    "symbol": "d" if g.startswith("frozen-") else "s",
-                    "size": self.dot + (4 if g.startswith("frozen-") else 6),
-                    "brush": pg.mkBrush(c),
-                    "pen": pg.mkPen(theme.SURFACE, width=1.5),
-                    "data": g,
+                    "pos": (cx, cy),
+                    "symbol": "x",
+                    "size": self.dot + (9 if len(idx) >= 20 else 4),
+                    "brush": pg.mkBrush(c.darker(170)),
+                    "pen": pg.mkPen(theme.SURFACE, width=0.8),
                 }
             )
         self.centres.setData(spots=spots)
+        self.outlines.set(lines)
+        self.centre_at = at
+
+    def _moved(self, pos: QPointF) -> None:
+        """Over a centre: the group's card; anywhere else: the nearest dot's."""
+        g = self.nearest_centre(pos)
+        if g is not None:
+            self.hovered.emit(None)
+            self.group_hovered.emit(g)
+            return
+        self.group_hovered.emit(None)
+        self.hovered.emit(self.nearest(pos))
+
+    def nearest_centre(self, scene_pos: QPointF, radius: float = 11.0) -> str | None:
+        if not self.centre_at:
+            return None
+        p = self.vb.mapSceneToView(scene_pos)
+        px, py = self.vb.viewPixelSize()
+        best, d2 = None, radius * radius
+        for g, x, y in self.centre_at:
+            dd = ((x - p.x()) / max(px, 1e-12)) ** 2 + ((y - p.y()) / max(py, 1e-12)) ** 2
+            if dd <= d2:
+                best, d2 = g, dd
+        return best
 
     def recolour(self) -> None:
         """After the palette changes (the colour-blind-safe switch)."""
