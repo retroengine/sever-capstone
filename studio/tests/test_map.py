@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from sever_studio import layout
 from sever_studio.actions import Studio
 from sever_studio.backend import HOLDING
 from sever_studio.ui import theme
@@ -67,3 +68,18 @@ def test_map_each_group_has_its_own_colour(studio: Studio) -> None:
     names = {g: theme.group_colour(g).name() for g in set(groups)}
     assert len(set(names.values())) == len(names)
     assert theme.group_colour(HOLDING).name() == theme.HOLDING
+
+
+def test_map_3d_has_a_position_for_every_laid_out_row_and_is_kept(studio: Studio) -> None:
+    # oracle: D the 3-D picture is t-SNE again with three axes, on the same rows as the 2-D one,
+    # kept in the work directory like it
+    xyz = studio.layout3()
+    assert xyz.shape == (len(studio.coords), 3)
+    assert float(np.abs(xyz).max()) <= layout.SPAN + 1e-9
+    assert list(studio.work.glob("layout3-*.npy"))
+    again = layout.fit(studio.corpus.vectors[: len(studio.coords)], cache=studio.work, dims=3)
+    assert np.array_equal(again, xyz)
+    for rid in list(studio.backend.index.records)[:20]:
+        assert len(studio.xyz(rid)) == 3
+    for g, *at, _ in studio.centres3():
+        assert len(at) == 3, g

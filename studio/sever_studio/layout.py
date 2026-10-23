@@ -1,4 +1,4 @@
-"""The 2D map: every 384-dimensional vector drawn as a point where its meaning puts it.
+"""The map, in 2-D or 3-D: every 384-dimensional vector drawn as a point where its meaning puts it.
 
 The corpus is laid out once with t-SNE (cosine distance), which keeps near neighbours near.
 Distances on the map are only an approximation of the real ones, and the window says so; the
@@ -28,14 +28,16 @@ def _key(vectors: npt.NDArray[np.float32]) -> str:
     return hashlib.sha256(np.ascontiguousarray(vectors).tobytes()).hexdigest()[:16]
 
 
-def fit(vectors: npt.NDArray[np.float32], cache: Path | None = None) -> Coords:
-    """2D positions for every row, scaled into ``[-SPAN, SPAN]``."""
-    path = cache / f"layout-{len(vectors)}-{_key(vectors)}.npy" if cache else None
+def fit(vectors: npt.NDArray[np.float32], cache: Path | None = None, dims: int = 2) -> Coords:
+    """Positions with ``dims`` axes (2, or 3 for the 3-D mode) for every row, scaled into
+    ``[-SPAN, SPAN]``."""
+    name = "layout" if dims == 2 else f"layout{dims}"
+    path = cache / f"{name}-{len(vectors)}-{_key(vectors)}.npy" if cache else None
     if path is not None and path.exists():
         return np.asarray(np.load(path), np.float64)
     n = len(vectors)
     tsne = TSNE(
-        n_components=2,
+        n_components=dims,
         perplexity=float(min(30, max(5, (n - 1) // 3))),
         metric="cosine",
         init="pca",
@@ -58,8 +60,26 @@ def place(
 ) -> tuple[float, float]:
     """A new vector's position: its ``k`` most similar corpus rows, weighted by similarity. Only
     rows the layout placed count: rows loaded after it (more spares) have no position yet."""
+    x, y = _place(vector, vectors, coords, k)
+    return float(x), float(y)
+
+
+def place3(
+    vector: npt.NDArray[np.float32],
+    vectors: npt.NDArray[np.float32],
+    coords: Coords,
+    k: int = 8,
+) -> tuple[float, float, float]:
+    """``place`` in the 3-D layout."""
+    x, y, z = _place(vector, vectors, coords, k)
+    return float(x), float(y), float(z)
+
+
+def _place(
+    vector: npt.NDArray[np.float32], vectors: npt.NDArray[np.float32], coords: Coords, k: int
+) -> Coords:
     sims = vectors[: len(coords)].astype(np.float64) @ vector.astype(np.float64)
     near = np.argsort(-sims)[:k]
     w = np.clip(sims[near], 1e-6, None) ** 4
-    x, y = (coords[near] * w[:, None]).sum(axis=0) / w.sum()
-    return float(x), float(y)
+    out: Coords = (coords[near] * w[:, None]).sum(axis=0) / w.sum()
+    return out

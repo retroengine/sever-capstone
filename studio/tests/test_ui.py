@@ -28,6 +28,7 @@ from sever_studio.checklist import ROWS
 from sever_studio.ui import theme
 from sever_studio.ui.app import fit
 from sever_studio.ui.main_window import MainWindow
+from sever_studio.ui.map_view import paint
 from sever_studio.ui.tour import CHAPTERS
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -423,3 +424,72 @@ def test_ui_the_legend_never_covers_the_search_box(win: MainWindow) -> None:
         assert not e.legend.geometry().intersects(e.results.geometry()), width
     e.resize(win.sections["explore"].parentWidget().width(), e.height())
     e.place()
+
+
+def test_ui_a_2d_and_a_3d_mode_side_by_side(win: MainWindow) -> None:
+    # oracle: D the owner's ask (23 Oct 2026): both modes, 2-D the default; on a screen that cannot
+    # render OpenGL the 3-D mode says why and 2-D keeps working
+    e = win.sections["explore"]
+    win.go("explore")
+    assert e.map.isVisible()
+    e.set_mode("3d")
+    settle(win, at_least=0.5)
+    assert e.map3d.isVisible()
+    assert not e.map.isVisible()
+    if not e.map3d.ok:
+        assert e.map3d.reason
+        assert e.map3d.reason in e.map3d.note.text()
+    e.set_mode("2d")
+    settle(win)
+    assert e.map.isVisible()
+    assert not e.map3d.isVisible()
+
+
+def test_ui_3d_dots_are_the_maps_dots_with_the_same_colours(win: MainWindow) -> None:
+    # oracle: D the same records and the same colour rule as the 2-D map, a lit group included
+    e = win.sections["explore"]
+    m, m3 = e.map, e.map3d
+    win.go("explore")
+    e.redraw()
+    if not any(g.startswith("spawn-") for g, _ in win.studio.backend.group_sizes()):
+        win.studio.fill_bucket("flush")
+        e.redraw()
+    recs = win.studio.backend.index.records
+    spawned = next(g for g, _ in win.studio.backend.group_sizes() if g.startswith("spawn-"))
+    for lit in (None, spawned):
+        m.focus(lit)
+        rids, pos, rgba = m3.data()
+        assert rids == m.rids
+        assert pos.shape == (len(rids), 3)
+        for rid, c in zip(rids, rgba, strict=True):
+            g = recs[rid].group
+            want = paint(g, m._look(g), m.colour_all)
+            assert tuple(round(v, 4) for v in c) == tuple(
+                round(v, 4) for v in (want.redF(), want.greenF(), want.blueF(), want.alphaF())
+            )
+    m.focus(None)
+
+
+@pytest.mark.full
+def test_ui_3d_renders_on_the_real_display() -> None:
+    """OpenGL on this machine's own display: the 3-D map draws every dot (map3d_probe.py)."""
+    from conftest import REAL_DISPLAY
+
+    if not (os.environ.get("WAYLAND_DISPLAY") or os.environ.get("DISPLAY")):
+        pytest.skip("no display")
+    env = {k: v for k, v in os.environ.items() if k != "QT_QPA_PLATFORM"}
+    if REAL_DISPLAY:
+        env["QT_QPA_PLATFORM"] = REAL_DISPLAY
+    p = subprocess.run(
+        [sys.executable, str(Path(__file__).parent / "map3d_probe.py")],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=600,
+        check=False,
+    )
+    assert p.returncode == 0, p.stdout[-2000:] + p.stderr[-2000:]
+    doc = json.loads(p.stdout.strip().splitlines()[-1])
+    assert doc["ok"], doc
+    assert doc["dots"] == doc["records"] > 0
+    assert doc["drawn"] > 0

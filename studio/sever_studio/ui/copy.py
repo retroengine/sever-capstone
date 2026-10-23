@@ -69,6 +69,14 @@ TEXT: dict[str, tuple[str, str]] = {
         "members light up all over the map. Hover a ✕ for the group's count n and the commitment "
         "C_S the engine published; click a dot for its text and why it went where it did.",
     ),
+    "map.caption3": (
+        "A 3-D picture of 384-D distances: drag to turn it. Click a ✕ in 2-D to light a group.",
+        "",
+    ),
+    "map.laying3": (
+        "Laying the passages out in 3-D, once (t-SNE with three axes; a few minutes on NQ)…",
+        "",
+    ),
     "map.caption": (
         "A 2-D picture of 384-D distances. Each frozen group has its own colour; a spawned group"
         " is grey until you point at or click its ✕.",

@@ -156,6 +156,8 @@ QPushButton#danger {{ background: {rgba(BAD, 24)}; border: 1px solid {rgba(BAD, 
     color: {BAD}; }}
 QPushButton#ghost {{ background: transparent; border: none; color: {MUTED}; padding: 4px 8px; }}
 QPushButton#ghost:hover {{ color: {TEXT}; }}
+QPushButton#ghost:checked {{ background: {rgba(ACCENT, 40)}; color: {ACCENT}; border-radius: 8px;
+    font-weight: 700; }}
 QPushButton#rail {{ background: transparent; border: none; border-radius: 10px; padding: 8px; }}
 QPushButton#rail:hover {{ background: {SURFACE_2}; }}
 QPushButton#rail:checked {{ background: {rgba(ACCENT, 50)}; }}

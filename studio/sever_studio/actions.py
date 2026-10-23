@@ -123,6 +123,10 @@ class Studio:
         self.numbers: dict[str, Any] = {"data": data, "rows": rows}
         self.coords = layout.fit(self.corpus.vectors, cache=work)
         self.extra_xy: dict[str, tuple[float, float]] = {}
+        #: the 3-D layout, made the first time the 3-D mode opens (``layout3``)
+        self.coords3: layout.Coords | None = None
+        self.extra_xyz: dict[str, tuple[float, float, float]] = {}
+        self._centre_xyz: dict[str, tuple[float, float, float]] = {}
         #: where each group's centre is drawn: among the passages nearest it
         self._centre_xy: dict[str, tuple[float, float]] = {}
         self._frozen: npt.NDArray[np.float64] | None = None
@@ -216,6 +220,75 @@ class Studio:
             return p
         return 0.0, 0.0
 
+    # -- the 3-D mode -----------------------------------------------------------------------------
+
+    def layout3(self) -> layout.Coords:
+        """The 3-D picture of the same rows as the 2-D one: t-SNE with three axes, made once and
+        kept in the work directory (minutes on NQ the first time)."""
+        if self.coords3 is None:
+            self.coords3 = layout.fit(
+                self.corpus.vectors[: len(self.coords)], cache=self.work, dims=3
+            )
+        return self.coords3
+
+    def xyz(self, rid: str) -> tuple[float, float, float]:
+        """Where a record is drawn in 3-D: where its meaning puts it, as ``xy`` in 2-D."""
+        c3 = self.layout3()
+        if rid in self.extra_xyz:
+            return self.extra_xyz[rid]
+        i = self.corpus.position.get(rid)
+        if i is not None and i < len(c3):
+            return float(c3[i, 0]), float(c3[i, 1]), float(c3[i, 2])
+        p = layout.place3(self.backend.vector_of(rid), self.corpus.vectors, c3)
+        self.extra_xyz[rid] = p
+        return p
+
+    def centres3(self) -> list[tuple[str, float, float, float, int]]:
+        """``centres`` in 3-D."""
+        c3 = self.layout3()
+        out = []
+        for g, n in self.backend.group_sizes():
+            mu = self.centre(g)
+            if mu is None:
+                continue
+            if g not in self._centre_xyz:
+                self._centre_xyz[g] = layout.place3(
+                    mu.astype(np.float32), self.corpus.vectors[: len(c3)], c3
+                )
+            out.append((g, *self._centre_xyz[g], n))
+        return out
+
+    def separation(self, per_group: int = 8) -> list[tuple[str, str, float, float]]:
+        """Are the groups clusters, in all the dimensions? For up to ``per_group`` stored records of
+        each group: ``(record, group, D to its own centre, D to the nearest other centre)``, both
+        as the engine's search code ranks groups (§8.1 step 1, DB-108). A record of a cluster is
+        nearer its own centre than any other."""
+        b = self.backend
+        members: dict[str, list[str]] = {}
+        for rid, rec in b.index.records.items():
+            if rec.group != HOLDING:
+                some = members.setdefault(rec.group, [])
+                if len(some) < per_group:
+                    some.append(rid)
+        groups = []
+        for g, _ in b.group_sizes():
+            mu = self.centre(g)
+            if mu is not None:
+                groups.append((g, [float(v) for v in mu]))
+        known = {g for g, _ in groups}
+        out = []
+        for g, rids in members.items():
+            if g not in known:
+                continue
+            for rid in rids:
+                ranked = self.explainer().search([float(v) for v in b.vector_of(rid)], groups)[
+                    "ranked"
+                ]
+                own = next(d for h, d in ranked if h == g)
+                other = next(d for h, d in ranked if h != g)
+                out.append((rid, g, float(own), float(other)))
+        return out
+
     def encode(self, text: str) -> npt.NDArray[np.float32]:
         if self.data == "synthetic":
             fixed: npt.NDArray[np.float32] = fixture_encode(text, self.corpus.d)[0]
@@ -305,6 +378,9 @@ class Studio:
         self.coords = layout.fit(self.corpus.vectors, cache=self.work)
         self._centre_xy.clear()
         self.extra_xy.clear()
+        self.coords3 = None
+        self._centre_xyz.clear()
+        self.extra_xyz.clear()
         self.deleted_this_session = []
         self.open()
         self.store_first(progress)

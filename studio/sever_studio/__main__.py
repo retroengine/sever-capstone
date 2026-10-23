@@ -26,6 +26,8 @@ def prepare(data: str, rows: int, work: Path, dev: bool, held: int) -> int:
     work.mkdir(parents=True)
     studio = Studio(ROOT, data, work, dev, rows)
     print(f"  map laid out ({time.perf_counter() - t0:.0f} s)")
+    studio.layout3()
+    print(f"  3-D map laid out ({time.perf_counter() - t0:.0f} s)")
     studio.open()
     t1 = time.perf_counter()
 

@@ -43,6 +43,17 @@ pg.setConfigOptions(antialias=True, background=theme.BG, foreground=theme.MUTED)
 EMPTY = np.zeros((0, 2))
 
 
+def paint(group: str, look: str, colour_all: bool = False) -> QColor:
+    """A dot's colour, in 2-D and 3-D alike. A frozen group (a k-means cluster, §6) shows its own
+    colour; a spawned group (a batch of waiting records, §7.4) is grey until it is lit, or when
+    every group is coloured. ``look`` "dim" (another group is lit) fades it."""
+    lit = look == "lit" or colour_all or group.startswith("frozen-")
+    c = theme.group_colour(group) if lit else QColor(theme.MUTED)
+    if look == "dim":
+        c.setAlpha(30)
+    return c
+
+
 class HoverCard(QFrame):
     """What a dot is: its ID, group, three lines of its text, and its numbers as a strip."""
 
@@ -215,21 +226,14 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         return theme.group_colour(group)
 
     def _paint(self, group: str, look: str) -> QColor:
-        """A frozen group (a k-means cluster, §6) shows its own colour; a spawned group (a batch of
-        waiting records, §7.4) is grey until it is lit, or when every group is coloured."""
-        if look == "lit" or self.colour_all or group.startswith("frozen-"):
-            return self.colour(group)
-        return QColor(theme.MUTED)
+        return paint(group, look, self.colour_all)
 
     def _style(self, group: str, look: str) -> tuple[object, object]:
         """``look``: "plain", "dim" (another group is lit) or "lit" (the hovered or selected
         group)."""
         key = (group, look, self.colour_all)
         if key not in self._brush:
-            c = self._paint(group, look)
-            if look == "dim":
-                c = QColor(c.red(), c.green(), c.blue(), 30)
-            brush = pg.mkBrush(c)
+            brush = pg.mkBrush(self._paint(group, look))
             pen = (
                 pg.mkPen(QColor(theme.TEXT), width=1.4)
                 if look == "lit"
@@ -289,8 +293,6 @@ class MapView(pg.PlotWidget):  # type: ignore[misc]  # pyqtgraph has no type hin
         for g, cx, cy, n in self.studio.centres():
             look = self._look(g)
             c = self._paint(g, look)
-            if look == "dim":
-                c = QColor(c.red(), c.green(), c.blue(), 50)
             at.append((g, cx, cy))
             spots.append(
                 {

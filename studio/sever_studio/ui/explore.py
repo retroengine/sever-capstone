@@ -29,6 +29,7 @@ from ..actions import Added, Deleted
 from ..backend import HOLDING, Inserted
 from . import copy, theme
 from .host import Host
+from .map3d import Map3D
 from .map_view import Bucket, GroupCard, HoverCard, MapView
 from .widgets import Flow, Heatmap, Verdict, button, chip, info, label, lift
 
@@ -65,6 +66,11 @@ class Explore(QWidget):
         self.map.setParent(self)
         self.map.hovered.connect(self.on_hover)
         self.map.clicked.connect(self.on_click)
+        # the 3-D mode, beside the 2-D map (the owner, 23 Oct 2026); 2-D is the default
+        self.mode = "2d"
+        self.map3d = Map3D(s, self.map)
+        self.map3d.setParent(self)
+        self.map3d.hide()
 
         # the search, top centre
         self.search, sl = floating(vertical=False, margin=6)
@@ -84,6 +90,12 @@ class Explore(QWidget):
         ll.addWidget(chip("■ spawned group", theme.MUTED))
         ll.addWidget(chip("✕ centre μ", theme.TEXT))
         ll.addWidget(chip("★ yours", theme.WARN if theme.LIGHT else theme.YOURS_RING))
+        self.b2d = button("2-D", "ghost", lambda: self.set_mode("2d"), tip="The flat map")
+        self.b3d = button("3-D", "ghost", lambda: self.set_mode("3d"), tip="Turn it in 3-D")
+        for b in (self.b2d, self.b3d):
+            b.setCheckable(True)
+            ll.addWidget(b)
+        self.b2d.setChecked(True)
         self.colour_all = button("Colour every group", "ghost", self.toggle_colours, "layers")
         self.colour_all.setCheckable(True)
         ll.addWidget(self.colour_all)
@@ -226,6 +238,7 @@ class Explore(QWidget):
     def place(self) -> None:
         w, h = self.width(), self.height()
         self.map.setGeometry(0, 0, w, h)
+        self.map3d.setGeometry(0, 0, w, h)
         sw = min(520, max(260, w - 420))
         sh = self.search.sizeHint().height()
         self.legend.adjustSize()
@@ -295,6 +308,8 @@ class Explore(QWidget):
         if isValid(self.card):
             self.card.hide()
         self.map.refresh()
+        if self.mode == "3d":
+            self.map3d.refresh()
         mine = {r for r, rec in b.index.records.items() if rec.mine}
         self.bucket.set(b.index.holding, mine)
         sizes = b.group_sizes()
@@ -417,11 +432,38 @@ class Explore(QWidget):
         """Spawned groups in their own colours too: each is a batch of records that waited together
         (§7.4), so its colour is scattered over the map."""
         self.map.set_colour_all(self.colour_all.isChecked())
+        self.map3d.refresh()
+
+    def set_mode(self, mode: str) -> None:
+        """2-D or 3-D: the same records, colours and lit group. The 3-D layout is made on the worker
+        the first time (t-SNE with three axes; minutes on NQ), then kept."""
+        three = mode == "3d"
+        self.mode = mode
+        self.b2d.setChecked(not three)
+        self.b3d.setChecked(three)
+        self.map.setVisible(not three)
+        self.map3d.setVisible(three)
+        self.caption.setText(copy.short("map.caption3" if three else "map.caption"))
+        s = self.host.studio
+        if three and s.coords3 is None:
+            if not self.map3d.reason:
+                self.map3d.note.setText(copy.short("map.laying3"))
+                self.map3d.note.show()
+            self.host.worker.submit(s.layout3, lambda _: self._laid3(), self.host.error)
+        elif three:
+            self.map3d.refresh()
+        self.place()
+
+    def _laid3(self) -> None:
+        if not self.map3d.reason:
+            self.map3d.note.hide()
+        self.map3d.refresh()
 
     def select_group(self, group: str) -> None:
         """A centre clicked: its members light up wherever they lie (a frozen group's around its
         centre, a spawned group's scattered: a batch, not a cluster, §7.4)."""
         self.map.focus(None if self.map.focus_group == group else group)
+        self.map3d.refresh()
         if self.map.focus_group:
             n = dict(self.host.studio.backend.group_sizes())
             kind = "frozen" if group.startswith("frozen-") else "spawned"
