@@ -21,7 +21,14 @@ from PySide6.QtGui import (
     QPaintEvent,
     QPen,
 )
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ..actions import Studio
 from ..backend import HOLDING
@@ -54,15 +61,17 @@ class HoverCard(QFrame):
         super().__init__(parent)
         self.setObjectName("float")
         lift(self)
-        self.setFixedWidth(320)
+        self.setFixedWidth(380)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-        lay = QVBoxLayout(self)
+        lay = self.box = QVBoxLayout(self)
         lay.setContentsMargins(12, 10, 12, 10)
         lay.setSpacing(6)
         top = QHBoxLayout()
         self.rid = label("", "strong")
         top.addWidget(self.rid, 1)
+        self.rid.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self.group = QLabel()
+        self.group.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         top.addWidget(self.group)
         lay.addLayout(top)
         self.account = label("", "small")
@@ -76,18 +85,27 @@ class HoverCard(QFrame):
         self.hide()
 
     def show_for(self, info: dict[str, object], colour: QColor) -> None:
-        self.rid.setText(str(info["rid"]) + ("  ★" if info["mine"] else ""))
         c = colour.name()
         self.group.setText(str(info["group"]))
         self.group.setStyleSheet(
             f"background: {theme.rgba(c, 51)}; color: {c}; border-radius: 8px; padding: 1px 7px;"
             f" font-size: {theme.pt(theme.SMALL)}pt;"
         )
+        # the group's name always shows whole; a long record ID gives way, with an ellipsis
+        room = self.width() - 24 - self.group.sizeHint().width() - 8
+        rid = str(info["rid"]) + ("  ★" if info["mine"] else "")
+        self.rid.setText(
+            self.rid.fontMetrics().elidedText(rid, Qt.TextElideMode.ElideMiddle, max(40, room))
+        )
+        self.source.setText(copy.short("hover.source.mine" if info["mine"] else "hover.source"))
         self.account.setText(str(info["account"]))
         t = " ".join(str(info["text"]).split())
         self.text.setText(t if len(t) <= 170 else t[:169] + "…")
         self.heat.set(np.asarray(info["vector"], np.float64))
-        self.adjustSize()
+        # the wrapped text's real height for this width: adjustSize alone left the strip over
+        # the last line when the text wrapped
+        self.box.activate()
+        self.setFixedHeight(self.box.totalHeightForWidth(self.width()))
         self.show()
         self.raise_()
 

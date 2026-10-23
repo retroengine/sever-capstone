@@ -289,3 +289,22 @@ def test_ui_a_search_says_when_your_records_wait_in_the_bucket(win: MainWindow) 
     lines = [e.res_list.item(i).text() for i in range(e.res_list.count())]
     assert any("wait in the bucket" in t for t in lines), lines
     assert rid not in [r for r, _, _ in s.ask(0)[1]]  # and indeed no search reaches it
+
+
+def test_ui_a_name_lists_that_persons_records(win: MainWindow) -> None:
+    s = win.studio
+    one = s.add_mine("Lin Lookup", "first note").rid
+    two = s.add_mine("Lin Lookup", "second note").rid
+    e = win.sections["explore"]
+    win.go("explore")
+    e.query.setText("lin lookup")  # any case: a name, not a meaning
+    e.ask()
+    settle(win)
+    rows = [e.res_list.item(i) for i in range(e.res_list.count())]
+    assert "Lin Lookup: 2 records" in rows[0].text()
+    picked = [r.data(Qt.ItemDataRole.UserRole) for r in rows[1:3]]
+    assert set(picked) == {one, two}
+    e._pick_result(rows[1])  # a click on a result selects its dot
+    settle(win)
+    assert e.map.selected == picked[0]
+    assert e.sheet.isVisible()

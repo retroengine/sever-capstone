@@ -80,6 +80,11 @@ TEXT: dict[str, tuple[str, str]] = {
         "The database never hands text back (§13.2): what you read here comes from the dataset, or "
         "from what you typed.",
     ),
+    "hover.source.mine": (
+        "Text you typed; stored encrypted.",
+        "The database never hands text back (§13.2): what you read here is what Studio kept of "
+        "what you typed.",
+    ),
     "route.frozen": ("Joined a frozen group", "Close to a frozen group's centroid (§7.1–7.3)."),
     "route.spawn": (
         "Joined a spawned group",

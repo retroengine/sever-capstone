@@ -89,6 +89,7 @@ class Explore(QWidget):
         rl.addLayout(head)
         self.res_list = QListWidget()
         self.res_list.setMinimumHeight(150)
+        self.res_list.itemClicked.connect(self._pick_result)
         rl.addWidget(self.res_list)
         self.res_quality = Verdict()
         rl.addWidget(self.res_quality)
@@ -538,9 +539,12 @@ class Explore(QWidget):
         q = self.query.text().strip()
         if not q:
             return
-        question: int | str
+        question: int | str | None
+        named = any(a.strip().lower() == q.lower() for a in s.backend.accounts())
         if q.lstrip("#").isdigit():
             question = int(q.lstrip("#")) % max(1, len(s.corpus.questions))
+        elif named and s.data == "synthetic":
+            question = None  # the account's records only: the fixture has no encoder
         elif s.data == "synthetic":
             self.host.toast("The offline fixture has no encoder: use #number.", False)
             return
@@ -548,6 +552,8 @@ class Explore(QWidget):
             question = q
 
         def run() -> tuple[str, list[tuple[str, float, bool]], tuple[float, float]]:
+            if question is None:
+                return q, [], (0.0, 0.0)
             text, hits = s.ask(question)
             vec = (
                 s.corpus.question_vectors[question]
@@ -565,19 +571,41 @@ class Explore(QWidget):
                         sum(x for x, _ in spots) / len(spots),
                         sum(y for _, y in spots) / len(spots) + 6,
                     )
-            self.map.show_beam(origin, hits)
+            if hits:
+                self.map.show_beam(origin, hits)
+            else:
+                self.map.clear_beam()
             self.res_q.setText(text)
             self.res_list.clear()
+            # a person's name is not in any vector: their records come from the backend's list
+            owners = s.backend.accounts()
+            for name in [a for a in owners if a.strip().lower() == q.strip().lower()]:
+                head = QListWidgetItem(
+                    f"👤 {name}: {len(owners[name])} records (by account, not by meaning)"
+                )
+                head.setForeground(QColor(theme.ACCENT))
+                head.setToolTip(
+                    "A search compares meanings: the account's name is not in any vector. "
+                    "Studio's backend knows who owns which record."
+                )
+                self.res_list.addItem(head)
+                for rid in owners[name]:
+                    t = " ".join(s.backend.text_of(rid).split())
+                    where = s.backend.index.records[rid].group
+                    item = QListWidgetItem(f"   {rid} · {where} · {t[:40]}")
+                    item.setData(Qt.ItemDataRole.UserRole, rid)
+                    self.res_list.addItem(item)
             for rank, (rid, _, good) in enumerate(hits[:8], 1):
                 t = " ".join(s.backend.text_of(rid).split())
                 item = QListWidgetItem(
                     f"{rank}  {'✓ ' if good else ''}{t[:60]}{'…' if len(t) > 60 else ''}"
                 )
                 item.setToolTip(f"{rid}\n{t[:400]}")
+                item.setData(Qt.ItemDataRole.UserRole, rid)
                 if good:
                     item.setForeground(QColor(theme.OK))
                 self.res_list.addItem(item)
-            if not hits:
+            if not hits and question is not None:
                 self.res_list.addItem("Nothing found")
             waiting = [r for r in s.backend.index.holding if s.backend.index.records[r].mine]
             if waiting:  # §7.4: stored, deletable, but no search reaches the holding area
@@ -593,6 +621,12 @@ class Explore(QWidget):
             self.place()
 
         self.host.worker.submit(run, done, self.host.error)
+
+    def _pick_result(self, item: QListWidgetItem) -> None:
+        """A result clicked: its dot is selected, as if clicked on the map."""
+        rid = item.data(Qt.ItemDataRole.UserRole)
+        if isinstance(rid, str) and rid in self.host.studio.backend.index.records:
+            self.on_click(rid)
 
     def clear_search(self) -> None:
         self.map.clear_beam()
