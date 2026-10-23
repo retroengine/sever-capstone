@@ -12,6 +12,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from sever_studio import kmeans
 from sever_studio.actions import Studio
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -50,3 +51,12 @@ def test_clusters_samples_every_group_with_members_at_most_per_group(studio: Stu
     for g, n in sizes.items():
         if n and studio.centre(g) is not None:
             assert by.get(g, 0) == min(2, n), g
+
+
+def test_clusters_the_summary_counts_records_nearer_their_own_centre(studio: Studio) -> None:
+    # oracle: D counting: a record is nearer its own centre when its D_own < its D_other
+    rows = studio.separation(per_group=4)
+    summary = kmeans.separated(rows)
+    for kind in ("frozen", "spawn"):
+        mine = [(own, other) for _, g, own, other in rows if g.startswith(kind)]
+        assert summary[kind] == (len(mine), sum(own < other for own, other in mine))

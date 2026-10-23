@@ -493,3 +493,18 @@ def test_ui_3d_renders_on_the_real_display() -> None:
     assert doc["ok"], doc
     assert doc["dots"] == doc["records"] > 0
     assert doc["drawn"] > 0
+
+
+def test_ui_groups_made_measures_the_clusters_in_384_d(win: MainWindow) -> None:
+    # oracle: D the chart shows Studio.separation's counts (tested against §8.1 in test_clusters)
+    win.go("live", "kmeans")
+    tab = win.sections["live"].tabs["kmeans"]
+    tab.clusters()
+    settle(win)
+    assert tab.sep.isVisible()
+    assert not tab.plot.isVisible()
+    assert "Measured in all" in tab.state.text()
+    tab.real()
+    settle(win)
+    assert tab.plot.isVisible()
+    assert not tab.sep.isVisible()

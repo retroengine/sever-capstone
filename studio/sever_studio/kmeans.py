@@ -130,3 +130,14 @@ def real_partition(root: Path, data: str, rows: int) -> Partition:
     labels = np.array([e.route([float(v) for v in x], [], 1, 1)["j_star"] for x in raw], np.int64)
     mean, axes = _projection(xhat)
     return Partition(raw, xhat, centres, labels, mean, axes)
+
+
+def separated(rows: list[tuple[str, str, float, float]]) -> dict[str, tuple[int, int]]:
+    """``Studio.separation``'s rows counted by kind of group: ``(records, nearer their own centre
+    than any other)``. A k-means cluster's records are nearer their own centre; a spawned group's,
+    a batch of records that waited together (§7.4), mostly are not."""
+    out: dict[str, tuple[int, int]] = {}
+    for kind in ("frozen", "spawn"):
+        mine = [(own, other) for _, g, own, other in rows if g.startswith(kind)]
+        out[kind] = (len(mine), sum(own < other for own, other in mine))
+    return out

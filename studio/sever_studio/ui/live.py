@@ -461,10 +461,21 @@ class KMeansTab(QWidget):
         row.addWidget(button("Step", "", self.step, "right"))
         row.addWidget(button("Run to the end", "", self.run, "layers"))
         row.addWidget(button("The real partition", "", self.real, "map"))
+        row.addWidget(button("Are they clusters? (384-D)", "", self.clusters, "check"))
         row.addStretch(1)
         lay.addLayout(row)
         self.state = Verdict()
         lay.addWidget(self.state)
+        # the 384-D measurement: own centre against the nearest other, by the engine's search code
+        self.sep = pg.PlotWidget()
+        self.sep.setBackground(theme.SURFACE)
+        self.sep.setMenuEnabled(False)
+        self.sep.setLabel("bottom", copy.short("live.kmeans.ratio"))
+        self.sep.setLabel("left", "records")
+        self.sep.addLegend(offset=(-10, 10))
+        self.sep.setMinimumHeight(320)
+        self.sep.hide()
+        lay.addWidget(self.sep, 1)
         self.plot = pg.PlotWidget()
         self.plot.setBackground(theme.SURFACE)
         self.plot.setMenuEnabled(False)
@@ -490,6 +501,8 @@ class KMeansTab(QWidget):
         return [pg.mkBrush(theme.group_colour(f"frozen-{int(j):04d}")) for j in labels]
 
     def _draw(self, part: Any, trail: list[Any] | None) -> None:
+        self.sep.hide()
+        self.plot.show()
         self.points.setData(pos=part.xy, brush=self._colours(part.labels), pen=pg.mkPen(None))
         self.marks.setData(
             pos=part.centres_xy,
@@ -548,6 +561,49 @@ class KMeansTab(QWidget):
             self.timer.stop()
             return
         self.step()
+
+    def clusters(self) -> None:
+        """For up to 8 stored records of every group: D to its own centre ÷ D to the nearest other
+        centre, both in all the dimensions as the engine's search code ranks groups (§8.1). Below 1:
+        nearer its own centre, as in a cluster."""
+        s = self.host.studio
+
+        def done(rows: list[tuple[str, str, float, float]]) -> None:
+            self.timer.stop()
+            self.plot.hide()
+            self.sep.show()
+            self.sep.clear()
+            edges = np.linspace(0.0, 2.0, 41)
+            for kind, name, colour in (
+                ("frozen", "frozen groups (k-means)", theme.FROZEN),
+                ("spawn", "spawned groups (batches)", theme.MUTED),
+            ):
+                ratio = [min(own / other, 1.999) for _, g, own, other in rows if g.startswith(kind)]
+                counts, _ = np.histogram(ratio, bins=edges)
+                fill = QColor(colour)
+                fill.setAlpha(150)
+                self.sep.addItem(
+                    pg.BarGraphItem(
+                        x0=edges[:-1],
+                        x1=edges[1:],
+                        height=counts,
+                        brush=pg.mkBrush(fill),
+                        pen=pg.mkPen(colour),
+                        name=name,
+                    )
+                )
+            self.sep.addItem(pg.InfiniteLine(1.0, angle=90, pen=pg.mkPen(theme.TEXT, width=1.5)))
+            got = kmeans.separated(rows)
+            (fn, fk), (sn, sk) = got["frozen"], got["spawn"]
+            self.state.set(
+                True,
+                f"Measured in all {s.corpus.d} dimensions: {fk:,} of {fn:,} records of frozen"
+                f" groups ({fk / max(fn, 1):.0%}) are nearer their own centre than any other; of"
+                f" spawned groups, {sk:,} of {sn:,} ({sk / max(sn, 1):.0%})",
+            )
+
+        self.state.set(None, "measuring every group's records against every centre…")
+        self.host.worker.submit(lambda: s.separation(per_group=8), done, self.host.error)
 
     def real(self) -> None:
         s = self.host.studio

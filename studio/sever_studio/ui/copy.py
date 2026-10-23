@@ -69,6 +69,10 @@ TEXT: dict[str, tuple[str, str]] = {
         "members light up all over the map. Hover a ✕ for the group's count n and the commitment "
         "C_S the engine published; click a dot for its text and why it went where it did.",
     ),
+    "live.kmeans.ratio": (
+        "D to its own centre ÷ D to the nearest other centre (below 1: nearer its own)",
+        "",
+    ),
     "map.caption3": (
         "A 3-D picture of 384-D distances: drag to turn it. Click a ✕ in 2-D to light a group.",
         "",
