@@ -1548,7 +1548,7 @@ engine.stats(cid) -> Result<Stats>          // group counts, sizes, N, k, memory
 engine.group_snapshot(cid, group_id) -> Result<GroupSnapshot>   // S, n, C_S, r_agg, members, canonical blob
 ```
 
-**Inspection (optional; DB-107, DB-108).** A build of the final composition root (`sever-db`) and
+**Inspection (optional; DB-107, DB-108, DB-110).** A build of the final composition root (`sever-db`) and
 its SDK with the cargo feature `inspect` adds a read-only surface for programs that show the engine
 at work; the default build has none of it, and nothing in the engine depends on it.
 
@@ -1558,6 +1558,7 @@ db.events(since: u64) -> Vec<Event>   // every committed change since event `sin
 explain_route(artefact, x: &[f32], spawned: &[(GroupId, Vec<f64>, u64)], big_n: u64, k: u64)
     -> RouteExplanation               // §7.1–7.3 as the engine computes them
 explain_search(query: &[f32], groups: &[(GroupId, Vec<f64>)]) -> SearchExplanation   // §8.1 steps 1–2
+db.passage(cid, record_id: &str) -> Result<Option<Vec<u8>>>   // §3.4: a live record's stored passage
 ```
 
 - An `Event` holds only values §13.2 allows in plaintext: the transaction kind; each group created by
@@ -1572,6 +1573,10 @@ explain_search(query: &[f32], groups: &[(GroupId, Vec<f64>)]) -> SearchExplanati
   engine's bit for bit. A route explanation holds `x̃`, the nearest frozen groups with `D_j`, `j*`,
   `d_M`, `τ`, the spawned groups with room with their `D`, and the destination; a search explanation
   holds every group's `D_g` in rank order and the `p` probed.
+- `passage` returns the passage stored with a live record (§3.4), decrypted under its record key, or
+  `None` when the record is not live (never inserted, or deleted) or the collection stores no
+  passages. It wraps the engine's own read and nothing else of its test hooks (DB-110); a read in the
+  default build is deferred (G-46).
 
 ### 16.2 Application-backend SDK (Python, C-13)
 
@@ -1605,8 +1610,9 @@ acknowledgement was lost is retried with the same request (§15.1); a new reques
 `r_t`, hence a new `C_t`. The engine verifies the signature over the collection inserted into
 (§15.1 step 2), whatever collection the request names (DB-84).
 
-An SDK built with `inspect` adds `db.events(since)` and `explain_route` / `explain_search`
-(§16.1, DB-107, DB-108), with the same contents as Python values.
+An SDK built with `inspect` adds `db.events(since)`, `db.passage(collection, record_id)` and
+`explain_route` / `explain_search` (`Explainer`) (§16.1, DB-107, DB-108, DB-110), with the same
+contents as Python values; an application never imports the native module.
 
 The receipt carries the insert's `database_lsn` and its placement. The SDK and the command-line
 tool report the placement as the §5.1 text form of the group the record is in after the

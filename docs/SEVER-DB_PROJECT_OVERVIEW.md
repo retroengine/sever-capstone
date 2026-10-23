@@ -1043,6 +1043,16 @@ part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the fr
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
 
+#### DB-110 — The `inspect` build reads a stored passage (23 October 2026)
+
+**Decision.** `sever-db`'s cargo feature `inspect` turns on `sever-engine/test-hooks` and adds one read, `Db::passage(cid, record_id) -> Option<Vec<u8>>`, which wraps `Engine::passage`: the stored passage of a live record, decrypted under its record key (§3.4, §13.2), or `None` when the record is not live or the collection stores no passages. Nothing else of `test-hooks` is reachable from `sever-db` or its SDK; G-45's rejection of `group_snapshot` (it exposes `S` and `r_agg`) stands. The SDK built with `inspect` adds `Database.passage` and re-exports `Explainer`, so an application never imports the native module. Release and measured builds are unchanged: without the feature, `sever-db`'s dependency tree and code are as before. Closes G-46.
+
+**Why.** An application that answers from stored passages (the owner's company demo: an AI assistant on SEVER-DB) must read them from the database itself, or a deletion could not reach what it reads. The read already exists in the frozen engine, but only for tests (F-3 forbids a new accessor there).
+
+**Rejected.** An application-side copy of the text (a deletion in the database would not remove it). A release-build read now (a Part 2 erratum before v1.0, rerunning Part 2's exit gates).
+
+**Consequence.** The `inspect` build compiles `sever-engine`'s test hooks; the default build does not. A release API for passages is an erratum after v1.0 (with E-3).
+
 #### DB-109 — Studio shows the engine's values, or says what else it shows (23 October 2026)
 
 **Decision.** Every number, dot and verdict SEVER-DB Studio shows is the engine's (through the SDK,
@@ -2590,6 +2600,7 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **23 October 2026 — The `inspect` build reads a stored passage.** DB-110 (`db.passage`, wrapping the frozen engine's test read; release build unchanged); closes G-46. Specification sections touched: §16.1, §16.2.
 - **23 October 2026 — Studio wired to the engine.** DB-107 (an `inspect` build reports each committed
   change's public fields), DB-108 (`sever-explain`), DB-109 (Studio's provenance rule; the "By group"
   map removed; amends DB-106); closes G-45. Specification sections touched: §16.1, §16.2, §19.2.
