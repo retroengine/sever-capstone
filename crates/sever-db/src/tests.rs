@@ -1000,4 +1000,74 @@ mod inspect_events {
             assert!(!found(&snap.blob[at..at + 32]), "r_agg of {g}");
         }
     }
+
+    // oracle: A §3.4 "A collection MAY store the passage text of each record. When stored, it is
+    // encrypted under the record's key"; §16.1 `passage` returns it decrypted (DB-110)
+    #[test]
+    fn p4_inspect_passage_returns_each_records_own_text_also_after_a_reopen() {
+        let disks = Disks::new();
+        let user = KeyPair::generate();
+        let mut w = Written::default();
+        let (db, cid) = base(&disks, &user, &mut w);
+        for (id, text) in w.ids.iter().zip(&w.passages) {
+            assert_eq!(
+                db.passage(cid, id).unwrap().as_deref(),
+                Some(&text[..]),
+                "{id}"
+            );
+        }
+        drop(db);
+        let db = disks.open().unwrap();
+        for (id, text) in w.ids.iter().zip(&w.passages) {
+            assert_eq!(
+                db.passage(cid, id).unwrap().as_deref(),
+                Some(&text[..]),
+                "{id} reopened"
+            );
+        }
+    }
+
+    // oracle: A §3.4 "erased with it"; §16.1 `passage` is None for a record that is not live or
+    // a collection that stores no passages (DB-110)
+    #[test]
+    fn p4_inspect_passage_is_none_unless_the_record_is_live_and_stored() {
+        let disks = Disks::new();
+        let user = KeyPair::generate();
+        let mut w = Written::default();
+        let (db, cid) = base(&disks, &user, &mut w);
+        assert_eq!(db.passage(cid, "never-inserted").unwrap(), None);
+        db.delete(cid, &w.ids[2]).unwrap();
+        assert_eq!(db.passage(cid, &w.ids[2]).unwrap(), None, "deleted");
+        assert_eq!(
+            db.passage(cid, &w.ids[3]).unwrap().as_deref(),
+            Some(&w.passages[3][..]),
+            "a survivor keeps its text"
+        );
+        let bare = db
+            .create_collection(
+                ARTEFACT,
+                CollectionOptions {
+                    store_passages: false,
+                    ..OPTS
+                },
+            )
+            .unwrap();
+        insert(&db, &user, bare, "bare-00", &rows()[0], &mut w);
+        assert_eq!(
+            db.passage(bare, "bare-00").unwrap(),
+            None,
+            "stores no passages"
+        );
+    }
+
+    // oracle: A §17 "never containing a record ID, vector value, key, r_t or text"
+    #[test]
+    fn p4_inspect_passage_errors_hold_no_id_or_text() {
+        let disks = Disks::new();
+        let user = KeyPair::generate();
+        let mut w = Written::default();
+        let (db, cid) = base(&disks, &user, &mut w);
+        let e = db.passage(cid, "424242").unwrap_err();
+        assert!(!format!("{e:?} {e}").contains("424242"), "{e:?}");
+    }
 }

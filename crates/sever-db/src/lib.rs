@@ -268,6 +268,14 @@ impl Db {
             .collect()
     }
 
+    /// `passage` (§16.1, DB-110): the passage stored with a live record (§3.4), decrypted under
+    /// its record key; `None` when the record is not live or the collection stores no passages.
+    /// The engine's own read; nothing else of its test hooks is reachable from here.
+    #[cfg(feature = "inspect")]
+    pub fn passage(&self, cid: CollectionId, record_id: &str) -> Result<Option<Vec<u8>>, Error> {
+        self.engine.passage(cid, record_id)
+    }
+
     /// `certificate(database_lsn)` (§16.1).
     pub fn certificate(&self, lsn: u64) -> Result<Option<Vec<u8>>, Error> {
         self.log

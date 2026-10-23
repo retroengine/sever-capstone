@@ -14,8 +14,9 @@ path = "src/bin/sever-db.rs"
 # DB-54 `sever-db-noerase` (EX-7): encryption kept, no key rotation, no key erase.
 noerase = ["sever-erasure/noerase"]
 # DB-107: a read-only participant that reports each committed change's public fields (Studio's
-# build only; the default build compiles none of it).
-inspect = []
+# build only; the default build compiles none of it). DB-110: and `Db::passage`, the engine's own
+# read of a stored passage, which lives behind sever-engine's test hooks.
+inspect = ["sever-engine/test-hooks"]
 
 [dependencies]
 sever-types = { path = "../sever-types" }
