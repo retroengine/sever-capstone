@@ -970,6 +970,11 @@ class Studio:
         )
         return out
 
+    def operator_forgeries(self) -> list[wow.Forgery]:
+        """Part 3's register of forgeries made with the operator's own keys (P3-T2), judged by
+        sever-verify: each must be rejected at a step its register row lists."""
+        return wow.operator_forgeries(self.root, self.work)
+
     def crash_test_person(self, size: int = 0) -> tuple[str, list[str]]:
         """A person with many records (the next spare passages), for the killed deletion."""
         size = size or (40 if self.data == "nq" else 16)

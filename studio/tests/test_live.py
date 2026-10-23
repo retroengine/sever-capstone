@@ -157,3 +157,14 @@ def test_live_race_keeps_the_integer_sum_identical(studio: Studio) -> None:
     assert r.differing[-1][1] > 0  # the float mean did drift
     # C3, DB-109: the model is Studio's, so it ticks nothing; Part 1's program ticks the row
     assert not studio.checklist.ticked("race")
+
+
+def test_live_operator_forgeries_are_each_rejected_at_their_register_step(studio: Studio) -> None:
+    # oracle: A Part 3's attack register (spec/registers_p3.yaml, Build 3-4 §1.8) lists, for each
+    # forgery made with the operator's own keys, the §11.3 step that must reject it; P Part 3's own
+    # attack generator (P3-T2) and sever-verify
+    out = studio.operator_forgeries()
+    assert len(out) == 20
+    assert all(f.caught for f in out), [f for f in out if not f.caught]
+    reached = set().union(*(f.rejected_at for f in out))
+    assert {3, 5, 6} <= reached

@@ -192,6 +192,15 @@ class AttackTab(QWidget):
         self.pick = ReceiptPicker(host)
         row.addWidget(self.pick)
         row.addWidget(button("Try to cheat", "danger", self.run, "zap"))
+        row.addWidget(
+            button(
+                "The operator cheats (Part 3)",
+                "",
+                self.operator,
+                "shield",
+                "Part 3's 20 forgeries made with the operator's own keys (P3-T2)",
+            )
+        )
         row.addStretch(1)
         lay.addLayout(row)
         self.grid = QGridLayout()
@@ -201,10 +210,35 @@ class AttackTab(QWidget):
         self.total = Verdict()
         lay.addWidget(self.total)
         lay.addWidget(label(copy.long("live.attacks.note"), "small", wrap=True))
+        self.forged = label("", "small", wrap=True)
+        self.forged.setTextFormat(Qt.TextFormat.RichText)
+        lay.addWidget(self.forged)
         lay.addStretch(1)
 
     def arrive(self) -> None:
         self.pick.fill()
+
+    def operator(self) -> None:
+        """Part 3's register of forgeries made with the operator's keys, judged by sever-verify."""
+
+        def done(out: list[wow.Forgery]) -> None:
+            caught = sum(f.caught for f in out)
+            lines = [
+                f"<b>{caught} of {len(out)} operator forgeries rejected</b> by sever-verify, each "
+                "at a step its register row names (Part 3's own generator, P3-T2):"
+            ]
+            for f in out:
+                sign, colour = mark(f.caught)
+                at = ", ".join(str(x) for x in sorted(f.rejected_at)) or "—"
+                lines.append(
+                    f"<span style='color:{colour}'>{sign}</span> {f.id} {f.text}: step {at}"
+                    f" ({f.tries} tries)"
+                )
+            self.forged.setText("<br>".join(lines))
+            self.host.changed()
+
+        self.forged.setText("building Part 3's attack generator and forging…")
+        self.host.worker.submit(self.host.studio.operator_forgeries, done, self.host.error)
 
     def run(self) -> None:
         lsn = self.pick.lsn()

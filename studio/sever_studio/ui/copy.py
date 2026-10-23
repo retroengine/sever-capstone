@@ -223,12 +223,10 @@ TEXT: dict[str, tuple[str, str]] = {
     ),
     "live.attacks.note": (
         "",
-        "Every byte of a receipt is signed by the operator, so any edit stops at step 2. Steps 3, "
-        "5 "
-        "and 6 guard against the operator itself, who holds that key: Part 3's attack gate (P3-T2) "
-        "forges with it. A valid receipt is not proof it is yours: check the key inside against "
-        "your "
-        "own.",
+        "Every byte of a receipt is signed by the operator, so an outsider's edit stops at step 2. "
+        'Steps 3, 5 and 6 guard against the operator itself, who holds that key: "The operator '
+        "cheats\" runs Part 3's own forgeries made with it (P3-T2). A valid receipt is not proof "
+        "it is yours: check the key inside against your own.",
     ),
     "live.kill": (
         "Kill a deletion mid-way.",

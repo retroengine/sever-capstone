@@ -264,6 +264,67 @@ def attacks(
     return out
 
 
+@dataclass
+class Forgery:
+    """One attack of Part 3's register (AT-n), made with the operator's own keys."""
+
+    id: str
+    text: str
+    steps: list[int]
+    #: the steps sever-verify rejected it at, over every honest certificate it was made on
+    rejected_at: set[int] = field(default_factory=set)
+    tries: int = 0
+    caught: bool = True
+
+    @property
+    def step(self) -> int | None:
+        return min(self.rejected_at) if self.rejected_at else None
+
+
+def register(root: Path) -> dict[str, tuple[str, list[int]]]:
+    """``spec/registers_p3.yaml``: each attack's text and the §11.3 steps that may reject it."""
+    text = (root / "spec/registers_p3.yaml").read_text("utf-8")
+    pattern = r'\{id: (AT-\d+), text: "([^"]*)".*?steps: \[([\d, ]+)\]'
+    return {m[0]: (m[1], [int(x) for x in m[2].split(",")]) for m in re.findall(pattern, text)}
+
+
+def operator_forgeries(root: Path, work: Path) -> list[Forgery]:
+    """Part 3's own attack generator (P3-T2) makes every forgery of its register on five honest
+    certificates of the fixture, re-signed with the operator's keys where the register says so;
+    ``sever-verify --batch`` judges each. An attack is caught when every one of its forgeries is
+    rejected at a step its register row lists. These reach the steps an outsider's edits cannot
+    (3, 5, 6): the ones that guard against the operator itself."""
+    subprocess.run(
+        ["cargo", "build", "-q", "--release", "-p", "sever-crashkit-p3"], cwd=root, check=True
+    )
+    lab = work / "forgeries"
+    shutil.rmtree(lab, ignore_errors=True)
+    lab.mkdir(parents=True)
+    batch, verdicts = lab / "batch.jsonl", lab / "verdicts.jsonl"
+    kit = root / "target/release/sever-crashkit-p3"
+    gen: list[str | Path] = [kit, "attacks", "--root", root, "--data", "synthetic"]
+    gen += ["--seed", "42", "--n", "5"]
+    tools.run([*gen, "--out", batch], root)
+    _, out = tools.run([tools.build(root).verify, "--batch", batch], root)
+    verdicts.write_text(out, "utf-8")
+    reg = register(root)
+    found: dict[str, Forgery] = {}
+    for line in out.splitlines():
+        if not line.startswith("{"):
+            continue
+        v = json.loads(line)
+        if v.get("kind") not in reg:
+            continue
+        text, steps = reg[v["kind"]]
+        f = found.setdefault(v["kind"], Forgery(v["kind"], text, steps))
+        step = v.get("step")
+        f.tries += 1
+        f.caught = f.caught and not v["accepted"] and step in steps
+        if step is not None:
+            f.rejected_at.add(int(step))
+    return [found[k] for k in sorted(found, key=lambda a: int(a.split("-")[1]))]
+
+
 # -- a deletion killed part-way -------------------------------------------------------------------
 
 
