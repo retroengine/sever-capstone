@@ -39,6 +39,9 @@ use sever_vfs::{PosixVfs, Vfs};
 
 pub use sever_p3::{Anchors, Deleted, cid_hex, parse_cid, placement_text};
 
+#[cfg(feature = "inspect")]
+pub mod inspect;
+
 /// The final engine.
 pub type FinalEngine = Engine<CommitmentExtension, AeadSealer>;
 
@@ -83,6 +86,9 @@ pub struct Db {
     pub log: Arc<LogHandle>,
     ring: Arc<KeyRing>,
     gens: Arc<Generators>,
+    /// The committed changes' public fields (DB-107).
+    #[cfg(feature = "inspect")]
+    pub inspect: Arc<inspect::InspectHandle>,
 }
 
 impl core::fmt::Debug for Db {
@@ -137,6 +143,9 @@ pub fn open_on(data: Arc<dyn Vfs>, keys: Arc<dyn Vfs>, s: Settings) -> Result<Db
     );
     let participants: Vec<Box<dyn TxnParticipant<CommitmentExtension>>> =
         vec![Box::new(log_participant), Box::new(rotation)];
+    // DB-107: the inspect build adds a read-only participant last; the default build has none.
+    #[cfg(feature = "inspect")]
+    let (participants, inspect) = inspect::register(participants);
     let ext = CommitmentExtension::new(Arc::clone(&gens), Arc::clone(&log) as Arc<dyn LeafLog>);
     let engine = Engine::open(
         data,
@@ -151,6 +160,8 @@ pub fn open_on(data: Arc<dyn Vfs>, keys: Arc<dyn Vfs>, s: Settings) -> Result<Db
         log,
         ring,
         gens,
+        #[cfg(feature = "inspect")]
+        inspect,
     })
 }
 

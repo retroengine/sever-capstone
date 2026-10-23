@@ -813,3 +813,191 @@ fn p4_db_a_checkpoint_after_recovery_keeps_every_rotated_key() {
         }
     }
 }
+
+/// DB-107: the `inspect` build's events. Expected values come from the spec (§5.3, §7.5, §7.6,
+/// §13.2) and from the engine's own state through the `test-hooks` snapshot, never from the
+/// participant.
+#[cfg(feature = "inspect")]
+mod inspect_events {
+    use super::*;
+    use crate::inspect::Event;
+    use sever_types::GroupId;
+
+    /// A direction far from every frozen centroid of the small artefact: a flush needs eight.
+    fn far(seed: u64) -> Vec<f32> {
+        let mut x = seed
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        let mut v: Vec<f64> = (0..D)
+            .map(|_| {
+                x ^= x << 13;
+                x ^= x >> 7;
+                x ^= x << 17;
+                (x >> 11) as f64 / (1u64 << 53) as f64 * 2.0 - 1.0
+            })
+            .collect();
+        let norm = v.iter().map(|a| a * a).sum::<f64>().sqrt();
+        v.iter_mut().for_each(|a| *a /= norm);
+        v.iter().map(|a| *a as f32).collect()
+    }
+
+    fn events(db: &Db) -> Vec<Event> {
+        db.inspect.since(0)
+    }
+
+    // oracle: A §7.5 μ_i = ((f64)S_i / 2^24) / n over the founding cohort
+    #[test]
+    fn p4_inspect_a_flush_reports_the_centroid_of_its_founders() {
+        let disks = Disks::new();
+        let user = KeyPair::generate();
+        let mut w = Written::default();
+        let (db, cid) = base(&disks, &user, &mut w);
+        let mut waiting: Vec<Vec<i32>> = Vec::new();
+        let mut seed = 1;
+        let created = loop {
+            let before = events(&db).len();
+            let v = far(seed);
+            insert(&db, &user, cid, &format!("far-{seed:03}"), &v, &mut w);
+            seed += 1;
+            let e = &events(&db)[before];
+            if let Some(c) = e.created.first() {
+                waiting.push(w.x.last().unwrap().clone());
+                break c.clone();
+            }
+            if e.outcomes == ["placed holding"] {
+                waiting.push(w.x.last().unwrap().clone());
+            }
+            assert!(seed < 500, "no flush");
+        };
+        assert_eq!(waiting.len(), OPTS.spawn_target);
+        let n = waiting.len() as f64;
+        for (i, mu) in created.1.iter().enumerate() {
+            let s: i64 = waiting.iter().map(|x| i64::from(x[i])).sum();
+            assert_eq!(
+                mu.to_bits(),
+                ((s as f64 / 16_777_216.0) / n).to_bits(),
+                "μ_{i}"
+            );
+        }
+    }
+
+    // oracle: A §5.3 (n ± 1 per record), §7.6 (N ± 1 for a group); C_S after equals the
+    // engine's own snapshot (test-hooks)
+    #[test]
+    fn p4_inspect_each_change_moves_n_and_the_counters_by_one_record() {
+        let disks = Disks::new();
+        let user = KeyPair::generate();
+        let mut w = Written::default();
+        let (db, cid) = base(&disks, &user, &mut w);
+        let e = events(&db);
+        let ins = e.last().unwrap();
+        assert_eq!(ins.kind, "insert");
+        assert_eq!(ins.groups.len(), 1);
+        let g = &ins.groups[0];
+        assert_eq!(g.n_after, g.n_before + 1);
+        assert_eq!(ins.counters_after.0, ins.counters_before.0 + 1);
+        let snap = db
+            .engine
+            .group_snapshot(cid, &GroupId::parse(&g.group).unwrap())
+            .unwrap();
+        assert_eq!(g.c_s_after, encode_point(&snap.ext_public.0));
+        assert_eq!(snap.n, g.n_after);
+        let before = e.len();
+        cert(db.delete(cid, &w.ids[0]).unwrap());
+        let del = &events(&db)[before];
+        assert_eq!(del.kind, "delete");
+        assert_eq!(del.groups[0].n_after + 1, del.groups[0].n_before);
+        assert_eq!(del.counters_after.0 + 1, del.counters_before.0);
+        assert_eq!(del.outcomes.len(), 1);
+        assert!(del.outcomes[0].starts_with("deleted from "));
+    }
+
+    // oracle: A §5.4 an absent delete changes no group and creates none
+    #[test]
+    fn p4_inspect_a_refused_or_absent_request_reports_nothing_new() {
+        let disks = Disks::new();
+        let user = KeyPair::generate();
+        let mut w = Written::default();
+        let (db, cid) = base(&disks, &user, &mut w);
+        cert(db.delete(cid, &w.ids[1]).unwrap());
+        let n = events(&db).len();
+        assert!(matches!(
+            db.delete(cid, &w.ids[1]).unwrap(),
+            Deleted::AlreadyAbsent
+        ));
+        assert!(events(&db).len() <= n + 1);
+        assert!(
+            events(&db)[n..]
+                .iter()
+                .all(|e| e.groups.is_empty() && e.created.is_empty())
+        );
+    }
+
+    // oracle: A §13.2 (what may be plaintext) and §17: every event of a session, searched byte
+    // by byte for each record's ID, x̃, r_t and text and each group's S and r_agg, in binary and
+    // as decimal lists (a leak through a debug print)
+    #[test]
+    fn p4_inspect_events_hold_no_secret() {
+        let disks = Disks::new();
+        let user = KeyPair::generate();
+        let mut w = Written::default();
+        let (db, cid) = base(&disks, &user, &mut w);
+        for seed in 1..40 {
+            insert(
+                &db,
+                &user,
+                cid,
+                &format!("far-{seed:03}"),
+                &far(seed),
+                &mut w,
+            );
+        }
+        cert(db.delete(cid, &w.ids[2]).unwrap());
+        let mut blob: Vec<u8> = Vec::new();
+        for e in events(&db) {
+            blob.extend(format!("{e:?}").as_bytes());
+            for (g, c) in &e.created {
+                blob.extend(g.as_bytes());
+                c.iter().for_each(|m| blob.extend(m.to_be_bytes()));
+            }
+            for g in &e.groups {
+                blob.extend(g.c_s_before);
+                blob.extend(g.c_s_after);
+                blob.extend(g.n_before.to_be_bytes());
+            }
+            for (_, s) in e.arrivals.iter().chain(&e.departures) {
+                blob.extend(s);
+            }
+        }
+        let found = |needle: &[u8]| blob.windows(needle.len()).any(|win| win == needle);
+        for (i, id) in w.ids.iter().enumerate() {
+            assert!(!found(id.as_bytes()), "record ID {i}");
+            assert!(!found(&w.r_t[i]), "r_t {i}");
+            assert!(!found(&w.passages[i][..32]), "text {i}");
+            let xq: Vec<u8> = w.x[i][..4].iter().flat_map(|v| v.to_be_bytes()).collect();
+            let xl: Vec<u8> = w.x[i][..4].iter().flat_map(|v| v.to_le_bytes()).collect();
+            assert!(!found(&xq) && !found(&xl), "x̃ {i}");
+            let xd = format!("{}, {}", w.x[i][0], w.x[i][1]);
+            assert!(!found(xd.as_bytes()), "x̃ {i} as text");
+        }
+        let groups: BTreeSet<String> = events(&db)
+            .iter()
+            .flat_map(|e| e.groups.iter().map(|g| g.group.clone()))
+            .collect();
+        for g in groups {
+            let snap = db
+                .engine
+                .group_snapshot(cid, &GroupId::parse(&g).unwrap())
+                .unwrap();
+            if snap.n == 0 {
+                continue;
+            }
+            let s: Vec<u8> = snap.s[..2].iter().flat_map(|v| v.to_be_bytes()).collect();
+            assert!(!found(&s), "S of {g}");
+            let sd = format!("{}, {}", snap.s[0], snap.s[1]);
+            assert!(!found(sd.as_bytes()), "S of {g} as text");
+            let at = 6 + 2 + 2 + 8 + 8 * D + 32; // §5.5: … S ‖ C_S ‖ r_agg
+            assert!(!found(&snap.blob[at..at + 32]), "r_agg of {g}");
+        }
+    }
+}
