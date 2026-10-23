@@ -361,6 +361,7 @@ def delete_child(studio: Any, ids_file: Path) -> int:
     (marks / "begin").write_text("1", "utf-8")
     t0 = time.perf_counter()
     b.live.delete_user(b.cid, ids)
+    b.record_events()
     (marks / "done").write_text(f"{(time.perf_counter() - t0) * 1000:.1f}", "utf-8")
     b.close()
     return 0
