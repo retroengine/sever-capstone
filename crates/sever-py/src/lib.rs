@@ -23,6 +23,8 @@ use pyo3::create_exception;
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
+#[cfg(feature = "inspect")]
+use pyo3::types::PyDict;
 use rand_core::{OsRng, RngCore};
 use sever_commit::InsertCredential;
 use sever_crypto::{
@@ -506,6 +508,14 @@ impl PyEngine {
         Ok(p.map(|p| p.iter().map(|h| bytes(py, h)).collect()))
     }
 
+    /// DB-107: every committed change's public fields since event `since`, as dicts (the
+    /// `inspect` build only; spec §16.1).
+    #[cfg(feature = "inspect")]
+    fn events<'py>(&self, py: Python<'py>, since: u64) -> PyResult<Vec<Bound<'py, PyDict>>> {
+        let evs = self.with(py, move |o| Ok(o.db.inspect.since(since)))?;
+        evs.iter().map(|e| event_dict(py, e)).collect()
+    }
+
     /// The committed log for an auditor, as JSON (DB-86).
     fn export_log(&self, py: Python<'_>) -> PyResult<String> {
         self.with(py, |o| o.db.export_log())
@@ -618,4 +628,37 @@ fn sever_db_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m.add(name, ty)?;
     }
     Ok(())
+}
+
+/// One event as a dict: the same fields as `sever_db::inspect::Event` (DB-107).
+#[cfg(feature = "inspect")]
+fn event_dict<'py>(py: Python<'py>, e: &sever_db::inspect::Event) -> PyResult<Bound<'py, PyDict>> {
+    let d = PyDict::new(py);
+    d.set_item("seq", e.seq)?;
+    d.set_item("kind", e.kind)?;
+    d.set_item("collection", &e.collection)?;
+    d.set_item("created", e.created.clone())?;
+    let groups: Vec<Bound<'py, PyDict>> = e
+        .groups
+        .iter()
+        .map(|g| {
+            let m = PyDict::new(py);
+            m.set_item("group", &g.group)?;
+            m.set_item("n_before", g.n_before)?;
+            m.set_item("n_after", g.n_after)?;
+            m.set_item("c_s_before", bytes(py, &g.c_s_before))?;
+            m.set_item("c_s_after", bytes(py, &g.c_s_after))?;
+            Ok(m)
+        })
+        .collect::<PyResult<_>>()?;
+    d.set_item("groups", groups)?;
+    d.set_item("counters_before", e.counters_before)?;
+    d.set_item("counters_after", e.counters_after)?;
+    let side = |v: &[(String, [u8; 64])]| -> Vec<(String, Bound<'py, PyBytes>)> {
+        v.iter().map(|(g, s)| (g.clone(), bytes(py, s))).collect()
+    };
+    d.set_item("arrivals", side(&e.arrivals))?;
+    d.set_item("departures", side(&e.departures))?;
+    d.set_item("outcomes", e.outcomes.clone())?;
+    Ok(d)
 }

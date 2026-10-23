@@ -281,6 +281,17 @@ class Database:
         """RFC 9162 consistency proof (§10.1), or ``None`` if the sizes are out of range."""
         return self._e.consistency_proof(old_size, new_size)
 
+    def events(self, since: int = 0) -> list[dict[str, object]]:
+        """Every committed change's public fields since event ``since`` (DB-107, spec §16.1): the
+        kind, created groups with the centroid the engine computed, each touched group's ``n`` and
+        ``C_S`` before and after, ``N`` and ``k``, arrivals and departures by scrambled ID, and each
+        outcome. Never ``S``, ``r_agg``, ``x̃``, ``r_t``, a record ID or text. Only in an SDK built
+        with the cargo feature ``inspect``."""
+        if not hasattr(self._e, "events"):
+            raise SeverError("this SDK was built without the inspect feature (DB-107)")
+        out: list[dict[str, object]] = self._e.events(since)
+        return out
+
     def export_log(self) -> str:
         """The committed log for an auditor (``sever-audit``; DB-86), as JSON: every leaf, where
         each leaf's record went, and every log checkpoint with its cosignatures."""

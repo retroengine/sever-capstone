@@ -14,6 +14,10 @@ crate-type = ["cdylib"]
 test = false
 doctest = false
 
+[features]
+# DB-107, DB-108: Engine.events and the route and search explanations (Studio's build only).
+inspect = ["sever-db/inspect"]
+
 [dependencies]
 sever-types = { path = "../sever-types" }
 sever-quant = { path = "../sever-quant" }

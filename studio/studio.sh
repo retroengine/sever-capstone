@@ -34,13 +34,13 @@ shift || true
 case "$cmd" in
   setup)
     (cd "$here" && uv sync --locked)
-    # The SDK's native module, built into Studio's environment (uv sync removes it).
     # The SDK's native modules, built into Studio's environment (uv sync removes them): Part 4's,
-    # which Studio drives, and Part 3's, which Part 3's own proof program needs.
-    for crate in sever-py sever-py-p3; do
-      VIRTUAL_ENV="$here/.venv" "$here/.venv/bin/maturin" develop -q --release --uv \
-        -m "crates/$crate/Cargo.toml"
-    done
+    # which Studio drives, with inspect (DB-107, DB-108: the engine's own events and explanations),
+    # and Part 3's, which Part 3's own proof program needs.
+    VIRTUAL_ENV="$here/.venv" "$here/.venv/bin/maturin" develop -q --release --uv \
+      -m crates/sever-py/Cargo.toml --features inspect
+    VIRTUAL_ENV="$here/.venv" "$here/.venv/bin/maturin" develop -q --release --uv \
+      -m crates/sever-py-p3/Cargo.toml
     for ws in verifier audit; do
       (cd "$ws" && CARGO_TARGET_DIR="$root/$ws/target" cargo build -q --release --locked)
     done
