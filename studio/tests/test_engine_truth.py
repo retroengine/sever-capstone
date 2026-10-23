@@ -90,3 +90,18 @@ def test_studio_a_swap_that_keeps_every_count_is_still_caught(studio: Studio) ->
     finally:
         recs[a].group, recs[c].group = ga, gc
     assert b.mismatches() == []
+
+
+def test_studio_group_card_shows_the_engines_n_and_published_commitment(studio: Studio) -> None:
+    # Oracle E/A: n is the engine's group_sizes(); the commitment is tag 3 (C_S_post, §11.1) of the
+    # newest certificate of a deletion from that group, found through the log's placements.
+    b = studio.backend
+    rid = next(r for r, v in b.index.records.items() if v.group.startswith("frozen-"))
+    g = b.index.records[rid].group
+    d = studio.delete([rid])
+    card = studio.group_card(g)
+    assert card["n"] == dict(b.live.group_sizes(b.cid))[g]
+    cert = (b.receipts / f"{d.lsns[0]}.cert").read_bytes()
+    assert card["commitment"] == tag(cert, 3).hex()
+    assert card["commitment_lsn"] == d.lsns[0]
+    assert "S" not in card

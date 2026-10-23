@@ -377,9 +377,7 @@ class Explore(QWidget):
                 self.gcard.hide()
             return
         s = self.host.studio
-        self.gcard.show_for(
-            group, self.map.palette.colour(group), s.group_stats(group), s.centre(group)
-        )
+        self.gcard.show_for(s.group_card(group), self.map.palette.colour(group))
         x, y, _ = s.groups.anchors[group]
         p = self.map.to_widget(x, y)
         right = p.x() + 18 + self.gcard.width() < self.width() - 12

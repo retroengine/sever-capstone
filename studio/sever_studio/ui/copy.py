@@ -92,10 +92,11 @@ TEXT: dict[str, tuple[str, str]] = {
         "",
     ),
     "group.note": (
-        "Insert: S + x̃, n + 1. Delete: S − x̃, n − 1. Whole numbers, so a deletion leaves exactly "
-        "what the group would hold had the record never come (§5). μ never moves: routing and "
-        "search measure against it (§7.1, §8.1). Recomputed by Studio; the database keeps S "
-        "encrypted.",
+        "Inside the engine, insert: S + x̃, n + 1, C_S + C_t; delete: S − x̃, n − 1, "
+        "C_S − C_t (§5.3). S stays encrypted (§13.2); C_S is its public commitment, so a receipt "
+        "can prove the "
+        "change without showing S. μ never moves: routing and search measure against it (§7.1, "
+        "§8.1).",
         "",
     ),
     "hover.source.mine": (

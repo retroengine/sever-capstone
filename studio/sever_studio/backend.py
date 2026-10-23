@@ -45,22 +45,23 @@ Progress = Callable[[int, int], None]
 @dataclass(frozen=True)
 class Replay:
     """The engine's log, replayed: insert ``database_lsn`` -> its record's group now; the holding
-    area's records in arrival order."""
+    area's records in arrival order; and per group, the newest commitment the engine published
+    for it (``C_S_post`` of its latest deletion, with that deletion's ``database_lsn``)."""
 
     groups: dict[int, str]
     holding: list[int]
+    commitments: dict[str, tuple[int, bytes]] = field(default_factory=dict)
 
 
-def scrambled_id(cert: bytes) -> bytes:
-    """§11.1: a certificate is ``u8 tag ‖ u32be length ‖ value`` fields; tag 9 is the record's
-    scrambled ID."""
+def cert_field(cert: bytes, want: int) -> bytes:
+    """§11.1: a certificate is ``u8 tag ‖ u32be length ‖ value`` fields, tags 1 … 13 in order."""
     at = 0
     while at + 5 <= len(cert):
         tag, length = cert[at], int.from_bytes(cert[at + 1 : at + 5], "big")
-        if tag == 9:
+        if tag == want:
             return cert[at + 5 : at + 5 + length]
         at += 5 + length
-    raise ValueError("a deletion leaf without tag 9")
+    raise ValueError(f"a certificate without tag {want}")
 
 
 class WorkInUseError(Exception):
@@ -172,6 +173,8 @@ class Backend:
         self.index = Index()
         self.users: dict[str, UserKey] = {}
         self.refused: str | None = None
+        #: the last replay of the engine's log; dropped by every insert, deletion and reopen
+        self._replay: Replay | None = None
 
     # -- opening and state ------------------------------------------------------------------------
 
@@ -180,6 +183,7 @@ class Backend:
         with ``dev`` the memory override is used, and the database lists it in ``startup``."""
         self.work.mkdir(parents=True, exist_ok=True)
         self.receipts.mkdir(exist_ok=True)
+        self._replay = None
         try:
             self.db = Database.open(self.data, self.keys, d=self.corpus.d)
             self.refused = None
@@ -280,6 +284,7 @@ class Backend:
         req = request or self.request(rid, vector, account)
         passage = (text or self._dataset_text(rid) or "").encode("utf-8") or None
         r: Receipt = self.live.insert(self.cid, req, passage=passage)
+        self._replay = None
         if r.retried:
             return Inserted(rid, None, self.index.records[rid].group, True, None)
         own = [float(x) for x in vector] if mine else None
@@ -375,12 +380,17 @@ class Backend:
         """Every live record's group, rebuilt from the engine's own log (DB-86): an insert leaf
         names where its record went, an insert that flushed names the new group of everything then
         in the holding area (§7.4), and a deletion leaf's certificate names the record it removed
-        by its scrambled ID (§11.1 tag 9)."""
+        by its scrambled ID (§11.1 tag 9) and the group's commitment after it (tag 3). Kept until
+        this backend next writes or reopens."""
+        if self._replay is not None:
+            return self._replay
         log = json.loads(self.live.export_log())
+        leaves = log["leaves"]
         group: dict[bytes, str] = {}
         lsn_of: dict[bytes, int] = {}
         holding: list[bytes] = []
-        for i, (h, p) in enumerate(zip(log["leaves"], log["placements"], strict=True)):
+        published: dict[str, tuple[int, bytes]] = {}
+        for i, (h, p) in enumerate(zip(leaves, log["placements"], strict=True)):
             leaf = bytes.fromhex(h)
             if leaf[0] == INSERT_LEAF:
                 sid = leaf[17:81]
@@ -393,10 +403,18 @@ class Backend:
                 if p["group"] == HOLDING:
                     holding.append(sid)
             else:
-                sid = scrambled_id(leaf[1:])
-                if group.pop(sid) == HOLDING:
+                cert = leaf[1:]
+                sid = cert_field(cert, 9)
+                left = group.pop(sid)
+                if left == HOLDING:
                     holding.remove(sid)
-        return Replay({lsn_of[s]: g for s, g in group.items()}, [lsn_of[s] for s in holding])
+                elif cs := cert_field(cert, 3):
+                    published[left] = (i, cs)
+        out = Replay(
+            {lsn_of[s]: g for s, g in group.items()}, [lsn_of[s] for s in holding], published
+        )
+        self._replay = out
+        return out
 
     def mismatches(self) -> list[str]:
         """The application's index against the engine's log, record by record, and against the
@@ -436,6 +454,7 @@ class Backend:
         """One person's records in one transaction, all or nothing (§12.5); each certificate is
         saved for them with the public anchors."""
         out = self.live.delete_user(self.cid, ids)
+        self._replay = None
         for rid, d in zip(ids, out, strict=True):
             if d.outcome == "deleted" and d.certificate is not None and d.database_lsn is not None:
                 (self.receipts / f"{d.database_lsn}.cert").write_bytes(d.certificate)
@@ -449,6 +468,7 @@ class Backend:
 
     def absent(self, rid: str) -> bool:
         """Deleting a record that is not live changes nothing and says ``absent`` (§5.4)."""
+        self._replay = None
         return self.live.delete(self.cid, rid).outcome == "absent"
 
     # -- after a crash ----------------------------------------------------------------------------
@@ -477,6 +497,7 @@ class Backend:
                     self.request(in_flight, c.vectors[i], c.accounts[i]),
                     passage=c.texts[i].encode("utf-8"),
                 )
+                self._replay = None
                 self.track(in_flight, r.placement or HOLDING, c.accounts[i], lsn=r.database_lsn)
             self.index.loaded += 1
         self.adopt(self.replay())

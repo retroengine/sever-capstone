@@ -6,6 +6,7 @@ reaches them until the area flushes (§7.4), so they sit in the gauge at the map
 """
 
 from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -116,7 +117,7 @@ def _nums(values: npt.NDArray[np.generic], fmt: str, shown: int = 3) -> str:
 
 
 class GroupCard(QFrame):
-    """A group when its centre is hovered: n, the exact sum S, and the mean S / n."""
+    """A group when its centre is hovered: what the engine says about it (DB-109)."""
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
@@ -132,36 +133,38 @@ class GroupCard(QFrame):
         self.kind = label("", "small", wrap=True)
         lay.addWidget(self.kind)
         self.n = label("", "mono")
-        self.sum = label("", "mono", wrap=True)
-        self.mean = label("", "mono", wrap=True)
+        self.cs = label("", "mono", wrap=True)
+        self.cs_note = label("", "small", wrap=True)
         self.mu = label("", "mono", wrap=True)
-        for w in (self.n, self.sum, self.mean, self.mu):
+        self.mu_note = label("", "small", wrap=True)
+        for w in (self.n, self.cs, self.cs_note, self.mu, self.mu_note):
             lay.addWidget(w)
         self.heat = Heatmap(cols=48)
         lay.addWidget(self.heat)
         lay.addWidget(label(copy.short("group.note"), "small", wrap=True))
         self.hide()
 
-    def show_for(
-        self,
-        group: str,
-        colour: QColor,
-        stats: tuple[int, npt.NDArray[np.int64], npt.NDArray[np.float64]],
-        mu: npt.NDArray[np.float64] | None,
-    ) -> None:
-        n, total, mean = stats
+    def show_for(self, card: dict[str, Any], colour: QColor) -> None:
+        group = str(card["group"])
         c = colour.name()
         self.title.setText(f"<span style='color:{c}'>✕</span> {group}")
         self.kind.setText(
             copy.short("group.frozen" if group.startswith("frozen-") else "group.spawned")
         )
-        self.n.setText(f"n    = {n:,} records")
-        self.sum.setText(f"S    = Σ x̃ = {_nums(total, ',d')}")
-        self.mean.setText(f"mean = S / (n · 2²⁴) = {_nums(mean, '.4f')}")
-        self.mu.setText(
-            "μ    = fixed centre = " + (_nums(mu, ".4f") if mu is not None else "unknown")
+        self.n.setText(f"n   = {card['n']:,} records  (the engine's count)")
+        cs = card["commitment"]
+        self.cs.setText(f"C_S = {cs[:24]}…" if cs else "C_S = not published yet")
+        self.cs_note.setText(
+            f"the group's commitment, from the engine's receipt #{card['commitment_lsn']}"
+            " (after that deletion)"
+            if cs
+            else "the engine publishes a group's commitment in each deletion's receipt"
         )
-        self.heat.set(mean)
+        mu = card["mu"]
+        self.mu.setText("μ   = " + (_nums(mu, ".4f") if mu is not None else "unknown"))
+        self.mu_note.setText(f"fixed centre, from {card['mu_source']}")
+        if mu is not None:
+            self.heat.set(np.asarray(mu, np.float64))
         self.box.activate()
         self.setFixedHeight(self.box.totalHeightForWidth(self.width()))
         self.show()

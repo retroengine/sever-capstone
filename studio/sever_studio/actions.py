@@ -204,6 +204,28 @@ class Studio:
             self.place_groups()
         return [(g, *self.groups.anchors[g][:2], n) for g, n in sizes.items()]
 
+    def group_card(self, group: str) -> dict[str, Any]:
+        """What the engine says about a group: its size ``n`` (``group_sizes``), the newest
+        commitment it published for it (``C_S_post`` of its latest deletion, §11.1 tag 3), and its
+        centre μ with where that number comes from. ``S`` stays encrypted in the engine (§13.2) and
+        is not shown."""
+        b = self.backend
+        n = dict(b.live.group_sizes(b.cid)).get(group, 0)
+        published = b.replay().commitments.get(group)
+        mu = self.centre(group)
+        return {
+            "group": group,
+            "n": n,
+            "commitment": published[1].hex() if published else None,
+            "commitment_lsn": published[0] if published else None,
+            "mu": mu,
+            "mu_source": (
+                "the partition artefact the engine verified (§6.3)"
+                if group.startswith("frozen-")
+                else "computed by Studio from the founding cohort (§7.5)"
+            ),
+        }
+
     def group_stats(self, group: str) -> tuple[int, npt.NDArray[np.int64], npt.NDArray[np.float64]]:
         """A group's count ``n``, exact sum ``S`` of its members' Q24 integers (§4.2, §5) and mean
         ``S / n`` back in real numbers, from the vectors Studio stored. The database keeps ``S``
