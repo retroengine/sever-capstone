@@ -3,13 +3,13 @@
 It owns one account key per account (``accounts.keys``, mode 0600, never shown), inserts through
 ``prepare_insert``, searches, deletes, and keeps each deletion certificate for the person it belongs
 to. It also keeps the application's own index of its records (``index.json``: ID, account, where the
-record landed), because the database never hands record IDs or passages back (§13.2). Everything
-goes through the public SDK ``sever_db``.
+record landed, its insert's log position), because the database never hands passages back (§13.2).
+Everything goes through the public SDK ``sever_db``.
 
-Where a record lands comes from the database itself: ``Receipt.placement`` (§5.1 text form). A
-record placed in the holding area stays there until the insert that brings it to the spawn size,
-which flushes all of them into one new spawned group (§7.4); that insert's own placement names the
-new group, whose ID is recomputed here from its members (§7.5) and must match.
+The engine decides where each record is, and its own log says so (DB-109): an insert's
+``database_lsn`` is the index of its leaf (§10.2), and ``replay`` rebuilds every live record's group
+from ``export_log`` (placements, flushes, deletions by their certificate's scrambled ID, §11.1).
+The index is a cache that ``mismatches`` checks against that replay, record by record.
 """
 
 import fcntl
@@ -28,7 +28,6 @@ import numpy.typing as npt
 from sever_db import (
     Database,
     Deletion,
-    DuplicateRecord,
     InsertRequest,
     PlatformUnsafe,
     Receipt,
@@ -39,7 +38,29 @@ from sever_db import (
 from .corpus import Corpus
 
 HOLDING = "holding"
+INSERT_LEAF = 0x01  # §10.2
 Progress = Callable[[int, int], None]
+
+
+@dataclass(frozen=True)
+class Replay:
+    """The engine's log, replayed: insert ``database_lsn`` -> its record's group now; the holding
+    area's records in arrival order."""
+
+    groups: dict[int, str]
+    holding: list[int]
+
+
+def scrambled_id(cert: bytes) -> bytes:
+    """§11.1: a certificate is ``u8 tag ‖ u32be length ‖ value`` fields; tag 9 is the record's
+    scrambled ID."""
+    at = 0
+    while at + 5 <= len(cert):
+        tag, length = cert[at], int.from_bytes(cert[at + 1 : at + 5], "big")
+        if tag == 9:
+            return cert[at + 5 : at + 5 + length]
+        at += 5 + length
+    raise ValueError("a deletion leaf without tag 9")
 
 
 class WorkInUseError(Exception):
@@ -99,6 +120,8 @@ class Record:
     mine: bool = False
     text: str | None = None
     vector: list[float] | None = None
+    #: the insert's ``database_lsn``: the index of its leaf in the public log (§10.2)
+    lsn: int | None = None
 
 
 @dataclass
@@ -260,7 +283,9 @@ class Backend:
         if r.retried:
             return Inserted(rid, None, self.index.records[rid].group, True, None)
         own = [float(x) for x in vector] if mine else None
-        flush = self.track(rid, r.placement or HOLDING, account, mine, text if mine else None, own)
+        flush = self.track(
+            rid, r.placement or HOLDING, account, mine, text if mine else None, own, r.database_lsn
+        )
         if save:
             self.save()
         return Inserted(rid, r.database_lsn, r.placement or HOLDING, False, flush)
@@ -273,6 +298,7 @@ class Backend:
         mine: bool = False,
         text: str | None = None,
         vector: list[float] | None = None,
+        lsn: int | None = None,
     ) -> Flush | None:
         """Records where an insert landed. An insert whose placement is a new spawned group while
         the holding area is one short of the spawn size is the flush: all of them move there."""
@@ -287,7 +313,7 @@ class Backend:
             flush = Flush(placement, members, spawn_id(members))
         elif placement == HOLDING:
             self.index.holding.append(rid)
-        self.index.records[rid] = Record(account, placement, mine, text, vector)
+        self.index.records[rid] = Record(account, placement, mine, text, vector, lsn)
         return flush
 
     def insert_next(self, count: int, progress: Progress | None = None) -> list[Inserted]:
@@ -330,14 +356,10 @@ class Backend:
         row: npt.NDArray[np.float32] = self.corpus.vectors[self.corpus.position[rid]]
         return row
 
-    def stored(self, rid: str, vector: npt.NDArray[np.float32], account: str) -> bool:
-        """The database holds a live record with this ID: a second insert of it is refused as a
-        duplicate (§3.2). Only for a record expected to be live: if it is not, this stores it."""
-        try:
-            self.live.insert(self.cid, self.request(rid, vector, account))
-        except DuplicateRecord:
-            return True
-        return False
+    def is_live(self, rid: str) -> bool:
+        """The engine's log holds this record's insert and no deletion of it (§10.2, §11.1)."""
+        rec = self.index.records.get(rid)
+        return rec is not None and rec.lsn is not None and rec.lsn in self.replay().groups
 
     def total(self) -> int:
         st = self.live.stats(self.cid)
@@ -349,20 +371,57 @@ class Backend:
             out.setdefault(rec.account, []).append(rid)
         return out
 
+    def replay(self) -> Replay:
+        """Every live record's group, rebuilt from the engine's own log (DB-86): an insert leaf
+        names where its record went, an insert that flushed names the new group of everything then
+        in the holding area (§7.4), and a deletion leaf's certificate names the record it removed
+        by its scrambled ID (§11.1 tag 9)."""
+        log = json.loads(self.live.export_log())
+        group: dict[bytes, str] = {}
+        lsn_of: dict[bytes, int] = {}
+        holding: list[bytes] = []
+        for i, (h, p) in enumerate(zip(log["leaves"], log["placements"], strict=True)):
+            leaf = bytes.fromhex(h)
+            if leaf[0] == INSERT_LEAF:
+                sid = leaf[17:81]
+                lsn_of[sid] = i
+                if p["flush"]:
+                    for w in holding:
+                        group[w] = p["flush"]
+                    holding = []
+                group[sid] = p["group"]
+                if p["group"] == HOLDING:
+                    holding.append(sid)
+            else:
+                sid = scrambled_id(leaf[1:])
+                if group.pop(sid) == HOLDING:
+                    holding.remove(sid)
+        return Replay({lsn_of[s]: g for s, g in group.items()}, [lsn_of[s] for s in holding])
+
     def mismatches(self) -> list[str]:
-        """The application's index against the database's own counts: each group's size, the
-        holding area and ``N`` (§5, §7.6). Empty when they agree."""
-        st = self.live.stats(self.cid)
-        mine = Counter(r.group for r in self.index.records.values())
+        """The application's index against the engine's log, record by record, and against the
+        engine's own counts (§5, §7.6). Empty when they agree."""
+        truth = self.replay()
         out = []
-        if mine[HOLDING] != st["holding"] or len(self.index.holding) != st["holding"]:
-            out.append(f"holding area: index {mine[HOLDING]}, database {st['holding']}")
-        n = sum(v for g, v in mine.items() if g != HOLDING)
-        if n != st["N"]:
-            out.append(f"N: index {n}, database {st['N']}")
+        known: set[int] = set()
+        for rid, rec in self.index.records.items():
+            if rec.lsn is None:
+                out.append(f"{rid}: no log position (an index from an older Studio: prepare again)")
+                continue
+            known.add(rec.lsn)
+            engine = truth.groups.get(rec.lsn)
+            if engine != rec.group:
+                out.append(f"{rid}: index {rec.group}, engine {engine or 'deleted'}")
+        unknown = len(set(truth.groups) - known)
+        if unknown:
+            out.append(f"{unknown} live record(s) in the engine that the index does not know")
+        st = self.live.stats(self.cid)
+        sizes = Counter(truth.groups.values())
+        if sizes[HOLDING] != st["holding"]:
+            out.append(f"holding area: log {sizes[HOLDING]}, engine {st['holding']}")
         for g, size in self.live.group_sizes(self.cid):
-            if mine[g] != size:
-                out.append(f"{g}: index {mine[g]}, database {size}")
+            if sizes[g] != size:
+                out.append(f"{g}: log {sizes[g]}, engine {size}")
         return out
 
     # -- deletions --------------------------------------------------------------------------------
@@ -394,41 +453,40 @@ class Backend:
 
     # -- after a crash ----------------------------------------------------------------------------
 
-    def reconcile(self, acked: list[tuple[str, str]], in_flight: str | None) -> bool | None:
-        """Takes in the inserts a killed writer reported (ID, placement), in order, then asks the
-        database whether the insert in flight committed too. Returns that answer (``None`` when
-        nothing was in flight)."""
+    def reconcile(self, acked: list[tuple[str, str, int]], in_flight: str | None) -> bool | None:
+        """Takes in the inserts a killed writer reported (ID, placement, log position), in order,
+        then reads the engine's log for the insert in flight: committed if the log holds one live
+        insert the index does not know (its answer was lost with the writer). Returns that answer
+        (``None`` when nothing was in flight)."""
         c = self.corpus
-        for rid, placement in acked:
-            self.track(rid, placement, c.accounts[c.position[rid]])
+        for rid, placement, lsn in acked:
+            self.track(rid, placement, c.accounts[c.position[rid]], lsn=lsn)
         self.index.loaded += len(acked)
         committed = None
         if in_flight is not None:
             i = c.position[in_flight]
-            # Not committed: this insert stores it now; committed: refused as a duplicate.
-            try:
+            truth = self.replay()
+            known = {r.lsn for r in self.index.records.values()}
+            lost = [lsn for lsn in truth.groups if lsn not in known]
+            committed = len(lost) == 1
+            if committed:
+                self.track(in_flight, truth.groups[lost[0]], c.accounts[i], lsn=lost[0])
+            else:
                 r = self.live.insert(
                     self.cid,
                     self.request(in_flight, c.vectors[i], c.accounts[i]),
                     passage=c.texts[i].encode("utf-8"),
                 )
-                committed = False
-                self.track(in_flight, r.placement or HOLDING, c.accounts[i])
-            except DuplicateRecord:
-                committed = True
-                self.track(in_flight, self._surplus_group(), c.accounts[i])
+                self.track(in_flight, r.placement or HOLDING, c.accounts[i], lsn=r.database_lsn)
             self.index.loaded += 1
+        self.adopt(self.replay())
         self.save()
         return committed
 
-    def _surplus_group(self) -> str:
-        """Where the database holds one record more than the index knows: the committed insert
-        whose answer was lost with the writer."""
-        st = self.live.stats(self.cid)
-        if st["holding"] > len(self.index.holding):
-            return HOLDING
-        mine = Counter(r.group for r in self.index.records.values())
-        for g, size in self.live.group_sizes(self.cid):
-            if size > mine[g]:
-                return g
-        return HOLDING
+    def adopt(self, truth: Replay) -> None:
+        """Takes each known record's group, and the holding area's order, from the engine's log."""
+        by_lsn = {r.lsn: rid for rid, r in self.index.records.items() if r.lsn is not None}
+        for lsn, g in truth.groups.items():
+            if lsn in by_lsn:
+                self.index.records[by_lsn[lsn]].group = g
+        self.index.holding = [by_lsn[lsn] for lsn in truth.holding if lsn in by_lsn]

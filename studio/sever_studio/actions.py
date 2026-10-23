@@ -117,7 +117,8 @@ class Studio:
         self.groups = layout.GroupMap(work / "group-map.json", self.corpus.spawn_target)
         self._spot: dict[tuple[str, str], tuple[float, float]] = {}
         self._frozen: npt.NDArray[np.float64] | None = None
-        self.deleted_this_session: list[str] = []
+        #: (record ID, its insert's log position) of each deletion this session
+        self.deleted_this_session: list[tuple[str, int]] = []
         self._encoder: Any = None
 
     # -- the map ----------------------------------------------------------------------------------
@@ -515,7 +516,7 @@ class Studio:
         rid = b.index.holding[-1]
         vec = b.vector_of(rid)
         found = any(h == rid for h, _ in b.search(vec, 10))
-        stored = b.stored(rid, vec, b.index.records[rid].account)
+        stored = b.is_live(rid)
         grouped = next(r for r, rec in b.index.records.items() if rec.group != HOLDING)
         control = any(h == grouped for h, _ in b.search(b.vector_of(grouped), 3))
         self.checklist.mark(
@@ -537,6 +538,7 @@ class Studio:
     def delete(self, rids: list[str], key: str = "delete") -> Deleted:
         b = self.backend
         groups = {b.index.records[r].group for r in rids if r in b.index.records}
+        lsns_of = {r: b.index.records[r].lsn for r in rids if r in b.index.records}
         before, total = self._sizes(), b.total()
         t0 = time.perf_counter()
         out = b.forget_ids(rids)
@@ -553,7 +555,7 @@ class Studio:
             and total - total_after == gone
             and not b.mismatches()
         )
-        self.deleted_this_session += rids
+        self.deleted_this_session += [(r, n) for r, n in lsns_of.items() if n is not None]
         self.checklist.mark(
             key,
             ok,
@@ -700,7 +702,8 @@ class Studio:
         b.close()
         b.open()
         after = b.total()
-        gone = all(b.absent(r) for r in self.deleted_this_session[-20:])
+        live = b.replay().groups
+        gone = all(n not in live for _, n in self.deleted_this_session[-20:])
         self.checklist.mark(
             "restart",
             before == after and gone and not b.mismatches(),
@@ -734,19 +737,16 @@ class Studio:
             time.sleep(0.005)
         killed = child.wait() == -signal.SIGKILL
         acked = [
-            (ln.split("\t")[0], ln.split("\t")[1])
+            (f[0], f[1], int(f[2]))
             for ln in (acks.read_text("utf-8").splitlines() if acks.exists() else [])
-            if "\t" in ln
+            if len(f := ln.split("\t")) == 3
         ]
         nxt = start + len(acked)
         in_flight = c.ids[nxt] if killed and nxt < start + count else None
         b.open()
         committed = b.reconcile(acked, in_flight)
-        missing = [
-            r
-            for r, _ in acked
-            if not b.stored(r, c.vectors[c.position[r]], c.accounts[c.position[r]])
-        ]
+        live = b.replay().groups
+        missing = [r for r, _, lsn in acked if lsn not in live]
         grew = b.total() - before
         ok = killed and bool(acked) and not missing and not b.mismatches()
         self.numbers.update(crash_acked=len(acked), crash_missing=len(missing), crash_killed=killed)
@@ -916,7 +916,7 @@ def crash_child(
     with (work / "acks.txt").open("a", encoding="utf-8") as acks:
         for i in range(start, min(start + count, len(corpus.ids))):
             r = b.insert(corpus.ids[i], corpus.vectors[i], corpus.accounts[i], save=False)
-            acks.write(f"{r.rid}\t{r.placement}\n")
+            acks.write(f"{r.rid}\t{r.placement}\t{r.lsn}\n")
             acks.flush()
             os.fsync(acks.fileno())
     b.close()
