@@ -6,7 +6,8 @@
 //! 2. One person's records are deleted (`delete_user`); each certificate is checked (§11.3).
 //! 3. Checkpoint, shut down, scan: no finding.
 //! 4. The leak, made visible: built with `--features demo-sb24` (group-key rotation skipped,
-//!    SB-24) the same scan decrypts what was deleted.
+//!    SB-24) the same scan decrypts two versions of the group's accumulator and prints the deleted
+//!    vector, reconstructed as `S_pre − S_post`, next to the original (Build 3-4 §2.11 step 4).
 //! 5. Crash between COMMIT and phase C: on restart recovery erases the old key; a new scan is
 //!    clean.
 
@@ -292,13 +293,34 @@ fn main() -> Result<(), Fail> {
             "NOT recovered"
         }
     );
+    let names = ["note-1", "note-4"];
     if sabotaged {
         println!(
-            "\n4. The leak, made visible: with group-key rotation skipped the live key still opens\n   what the deletion should have destroyed; the deleted vectors are decrypted above."
+            "\n4. The leak, made visible: with group-key rotation skipped the live key still opens the\n   accumulator from before the deletion. S_pre − S_post is the deleted vector (§5):"
         );
+        for x in &r.reconstructions {
+            let (name, orig) = match (names.get(x.target), after.deleted.get(x.target)) {
+                (Some(n), Some(t)) => (*n, &t.x),
+                _ => continue,
+            };
+            let same =
+                orig.len() == x.x.len() && orig.iter().zip(&x.x).all(|(a, b)| i64::from(*a) == *b);
+            println!(
+                "   {name}  S_pre − S_post (n {} → {}) = {:?}",
+                x.n_pre, x.n_post, x.x
+            );
+            println!(
+                "   {name}  original x̃                  = {orig:?}  {}",
+                if same { "IDENTICAL" } else { "differs" }
+            );
+        }
+        if r.reconstructions.is_empty() {
+            println!("   (no two versions of a group's accumulator opened: nothing rebuilt)");
+        }
     } else {
         println!(
-            "\n4. The leak, made visible: run `scripts/demo-p4.sh` (it builds the SB-24 variant) to see\n   the same scan decrypt the deleted records when group-key rotation is skipped."
+            "\n4. The leak, made visible: here no two versions of any group's accumulator open, so the\n   scan rebuilds {} deleted vectors. Run `scripts/demo-p4.sh` (it builds the SB-24 variant,\n   group-key rotation skipped) to see S_pre − S_post printed next to the original.",
+            r.reconstructions.len()
         );
     }
 

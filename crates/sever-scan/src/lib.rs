@@ -112,11 +112,78 @@ pub struct Finding {
     pub target: Option<usize>,
 }
 
+/// A deleted record's vector rebuilt from two versions of its group's accumulator that both
+/// opened: `S_pre − S_post` (§5: a deletion subtracts `x̃` exactly), matched against a deleted
+/// target (Build 3-4 §2.11 step 4). Only possible when a deletion left the old accumulator
+/// readable, as the SB-24 build does; the real build never yields one.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Reconstruction {
+    /// The deleted target it equals (by index).
+    pub target: usize,
+    /// `S_pre − S_post`, component by component.
+    pub x: Vec<i64>,
+    /// `n` of the two accumulator versions (`n_pre = n_post + 1`).
+    pub n_pre: u64,
+    /// See [`Reconstruction::n_pre`].
+    pub n_post: u64,
+}
+
+/// `S` of one opened accumulator: `(domain, n, S)`.
+pub type OpenedAccumulator = (Domain, u64, Vec<i64>);
+
+/// Every deleted target that equals `S_pre − S_post` of two opened accumulators of one group
+/// whose `n` differ by one (§5.3). Each target is reported once.
+pub fn reconstruct(opened: &[OpenedAccumulator], deleted: &[Target]) -> Vec<Reconstruction> {
+    let mut out: Vec<Reconstruction> = Vec::new();
+    for (d, n_pre, s_pre) in opened {
+        for (d2, n_post, s_post) in opened {
+            if d != d2 || n_post.checked_add(1) != Some(*n_pre) || s_pre.len() != s_post.len() {
+                continue;
+            }
+            let x: Vec<i64> = s_pre
+                .iter()
+                .zip(s_post)
+                .map(|(a, b)| a.wrapping_sub(*b))
+                .collect();
+            let hit = deleted.iter().position(|t| {
+                t.x.len() == x.len() && t.x.iter().zip(&x).all(|(a, b)| i64::from(*a) == *b)
+            });
+            if let Some(target) = hit {
+                if !out.iter().any(|r| r.target == target) {
+                    out.push(Reconstruction {
+                        target,
+                        x,
+                        n_pre: *n_pre,
+                        n_post: *n_post,
+                    });
+                }
+            }
+        }
+    }
+    out
+}
+
+/// `S` from an accumulator plaintext `S as d × i64 (big-endian) ‖ r_agg` (§5.5, §14.3).
+fn decode_s(plain: &[u8], d: usize) -> Option<Vec<i64>> {
+    let s = plain.get(..d.checked_mul(8)?)?;
+    Some(
+        s.chunks_exact(8)
+            .map(|c| {
+                let mut a = [0u8; 8];
+                a.copy_from_slice(c);
+                i64::from_be_bytes(a)
+            })
+            .collect(),
+    )
+}
+
 /// What a scan found.
 #[derive(Clone, Debug, Default)]
 pub struct Report {
     /// Every finding.
     pub findings: Vec<Finding>,
+    /// Deleted vectors rebuilt as `S_pre − S_post` (Build 3-4 §2.11 step 4).
+    pub reconstructions: Vec<Reconstruction>,
     /// For each control target: whether its vector was recovered.
     pub controls_recovered: Vec<bool>,
     /// WAL records carved.
@@ -150,6 +217,7 @@ impl Report {
             "findings": self.findings.len(),
             "by_kind": self.counts(),
             "controls_recovered": self.controls_recovered,
+            "reconstructed": self.reconstructions.iter().map(|r| r.target).collect::<Vec<_>>(),
             "carved": {
                 "records": self.records,
                 "key_slots": self.key_slots,
@@ -516,15 +584,25 @@ impl Scanner {
         let gk = |k: &[u8; 32]| sever_keys::Key::from_bytes(k);
         // Accumulators of retired versions.
         let headers = std::mem::take(&mut self.carved.headers);
+        let mut opened_s: Vec<OpenedAccumulator> = Vec::new();
         for (d, v, n, ct, at) in &headers {
-            let opened = keys.get(d).is_some_and(|ks| {
+            let plain = keys.get(d).and_then(|ks| {
                 ks.iter()
-                    .any(|(_, k)| aead::open(&gk(k), &ad::accumulator(d, *v, *n), ct).is_ok())
+                    .find_map(|(_, k)| aead::open(&gk(k), &ad::accumulator(d, *v, *n), ct).ok())
             });
-            if opened && live.get(d).is_some_and(|lv| v < lv) {
+            if let Some(s) = plain.as_deref().and_then(|p| decode_s(p, self.targets.d)) {
+                if !opened_s
+                    .iter()
+                    .any(|(d2, n2, s2)| d2 == d && n2 == n && *s2 == s)
+                {
+                    opened_s.push((*d, *n, s));
+                }
+            }
+            if plain.is_some() && live.get(d).is_some_and(|lv| v < lv) {
                 self.finding(Kind::RetiredAccumulator, *at, None);
             }
         }
+        self.report.reconstructions = reconstruct(&opened_s, &self.targets.deleted);
         // Bucket keys from every block a carved group key opens.
         let mut bks: BTreeMap<Domain, Vec<BucketKey>> = BTreeMap::new();
         for (d, v, blk) in std::mem::take(&mut self.carved.blocks) {

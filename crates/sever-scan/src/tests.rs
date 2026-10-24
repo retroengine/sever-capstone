@@ -352,3 +352,85 @@ fn p4_scan_finds_every_planted_secret() {
     assert_eq!(chunked.findings.len(), r.findings.len());
     assert_eq!(chunked.controls_recovered, r.controls_recovered);
 }
+
+fn bare_target(x: Vec<i32>) -> Target {
+    Target {
+        sid: vec![],
+        x,
+        vector: vec![],
+        passage: vec![],
+        r_t: None,
+    }
+}
+
+// oracle: A §5.3 (a deletion subtracts the record's x̃ from S exactly and n by one), worked by
+// hand: S_pre = (10, -3, 7), S_post = (4, -1, 7) ⇒ S_pre − S_post = (6, -2, 0) = the deleted x̃;
+// pairs whose n differ by two, or in another group, rebuild nothing (Build 3-4 §2.11 step 4)
+#[test]
+fn p4_scan_reconstruct_is_s_pre_minus_s_post_of_one_group_one_record_apart() {
+    let g = Domain {
+        collection_id: [1; 16],
+        group_id: [2; 32],
+    };
+    let other = Domain {
+        collection_id: [1; 16],
+        group_id: [3; 32],
+    };
+    let deleted = vec![bare_target(vec![9, 9, 9]), bare_target(vec![6, -2, 0])];
+    let opened = vec![
+        (g, 3, vec![10, -3, 7]),
+        (g, 2, vec![4, -1, 7]),
+        (g, 1, vec![-5, -10, -3]), // n 2 → 1 gives (9, 9, 10): no target; n 3 → 1 is two apart
+        // another group, chosen so that (10,-3,7) − (1,-12,-2) = (9,9,9), the decoy target: it
+        // must never be paired across groups
+        (other, 2, vec![1, -12, -2]),
+    ];
+    let r = reconstruct(&opened, &deleted);
+    assert_eq!(
+        r,
+        vec![Reconstruction {
+            target: 1,
+            x: vec![6, -2, 0],
+            n_pre: 3,
+            n_post: 2
+        }]
+    );
+    let twice = [opened.clone(), opened].concat();
+    assert_eq!(reconstruct(&twice, &deleted).len(), 1, "each target once");
+    assert!(reconstruct(&[(g, 3, vec![10, -3, 7])], &deleted).is_empty());
+}
+
+// oracle: A Build 3-4 §2.11 step 3 ("0 findings") and §13.4 (the deletion erases the key of the
+// old accumulator version): on the real build no two versions of a group open, so nothing deleted
+// can be rebuilt as S_pre − S_post
+#[cfg(not(feature = "demo-sb24"))]
+#[test]
+fn p4_scan_rebuilds_no_deleted_vector_on_the_real_build() {
+    for checkpoint in [false, true] {
+        let w = world_with(checkpoint);
+        let r = scan_bytes(&w.image, w.targets);
+        assert!(r.reconstructions.is_empty(), "{}", r.to_json());
+    }
+}
+
+// oracle: A Build 3-4 §2.11 step 4 (with SB-24, group-key rotation skipped, "the scanner decrypts
+// two old accumulator versions and prints the deleted vector, reconstructed as S_pre − S_post,
+// next to the original") and §5.3 (the difference is the deleted x̃ exactly)
+#[cfg(feature = "demo-sb24")]
+#[test]
+fn p4_scan_rebuilds_the_deleted_vector_when_rotation_is_skipped() {
+    let w = world();
+    let r = scan_bytes(&w.image, w.targets.clone());
+    let doc1 = r
+        .reconstructions
+        .iter()
+        .find(|x| x.target == 0)
+        .unwrap_or_else(|| panic!("doc-1 not rebuilt: {}", r.to_json()));
+    let want: Vec<i64> = w.targets.deleted[0]
+        .x
+        .iter()
+        .map(|c| i64::from(*c))
+        .collect();
+    assert_eq!(doc1.x, want);
+    assert_eq!(doc1.n_pre, doc1.n_post + 1);
+}
