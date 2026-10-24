@@ -300,7 +300,7 @@ class Studio:
 
     def explainer(self) -> Any:
         if self._explainer is None:
-            from sever_db_native import Explainer
+            from sever_db import Explainer
 
             self._explainer = Explainer(self.corpus.artefact.read_bytes())
         return self._explainer

@@ -49,6 +49,19 @@ from sever_db_native import (
     WrongDimension,
 )
 
+if hasattr(_native, "Explainer"):
+    # DB-108: routing and search explained by the frozen crates' own code (the inspect build),
+    # re-exported so an application never imports the native module (DB-110).
+    from sever_db_native import Explainer
+else:
+
+    class Explainer:  # type: ignore[no-redef]
+        """A release build has no explanations: constructing one raises ``SeverError``."""
+
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            raise SeverError("this SDK was built without the inspect feature (DB-108)")
+
+
 __all__ = [
     "BadUserSignature",
     "CommitmentMismatch",
@@ -58,6 +71,7 @@ __all__ = [
     "DuplicateRecord",
     "DurabilityFailure",
     "Engine",
+    "Explainer",
     "GroupCapacityExceeded",
     "InsertRequest",
     "IntegrityViolation",
@@ -290,6 +304,16 @@ class Database:
         if not hasattr(self._e, "events"):
             raise SeverError("this SDK was built without the inspect feature (DB-107)")
         out: list[dict[str, Any]] = self._e.events(since)
+        return out
+
+    def passage(self, collection: str, record_id: str) -> bytes | None:
+        """The passage stored with a live record, decrypted under its record key (§3.4, §16.1;
+        DB-110), or ``None`` when the record is not live or the collection stores no passages. An
+        application reads its text from here, so a deletion removes what it reads. Only in an SDK
+        built with the cargo feature ``inspect``."""
+        if not hasattr(self._e, "passage"):
+            raise SeverError("this SDK was built without the inspect feature (DB-110)")
+        out: bytes | None = self._e.passage(collection, _rid(record_id))
         return out
 
     def export_log(self) -> str:

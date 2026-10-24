@@ -116,7 +116,7 @@ class Run(Partition):
 def real_partition(root: Path, data: str, rows: int) -> Partition:
     """The partition the engine uses: the artefact's centres, each reference row coloured by its
     nearest one as the engine's routing code finds it (§7.1, DB-108)."""
-    from sever_db_native import Explainer
+    from sever_db import Explainer
 
     artefact = (
         root / "golden/p1_partition_small.svp"

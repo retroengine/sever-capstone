@@ -276,3 +276,29 @@ def test_p4_sdk_reports_the_placement_as_the_groups_text_form(db: tuple[Database
     assert all(p in groups or p == "holding" for p in placed)
     assert any(p.startswith("frozen-") for p in placed if p)
     assert "holding" in placed
+
+
+@pytest.mark.oracle("A", "§3.4 the passage is erased with its record; §16.1 passage (DB-110)")
+def test_p4_sdk_passage_reads_the_engines_text_only_in_the_inspect_build(
+    db: tuple[Database, str],
+) -> None:
+    import sever_db
+    import sever_db_native
+
+    d, cid = db
+    user = UserKey.generate()
+    texts = [f"passage {i}: é ✓".encode() for i in range(3)]
+    for i, v in enumerate(rows(3)):
+        d.insert(cid, prepare_insert(cid, f"r{i}", v, user), passage=texts[i])
+    if not hasattr(sever_db_native.Engine, "passage"):  # a release build (DB-110)
+        with pytest.raises(sever_db.SeverError, match="inspect"):
+            d.passage(cid, "r0")
+        with pytest.raises(sever_db.SeverError, match="inspect"):
+            sever_db.Explainer(ARTEFACT.read_bytes())
+        return
+    assert sever_db.Explainer is sever_db_native.Explainer
+    assert [d.passage(cid, f"r{i}") for i in range(3)] == texts
+    assert d.passage(cid, "never-inserted") is None
+    d.delete(cid, "r1")
+    assert d.passage(cid, "r1") is None, "a deleted record's text is gone (§3.4)"
+    assert d.passage(cid, "r2") == texts[2]

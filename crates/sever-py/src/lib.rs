@@ -516,6 +516,20 @@ impl PyEngine {
         evs.iter().map(|e| event_dict(py, e)).collect()
     }
 
+    /// `passage(collection, record_id)` (§16.1, DB-110; the `inspect` build only): the passage
+    /// stored with a live record, or `None`.
+    #[cfg(feature = "inspect")]
+    fn passage<'py>(
+        &self,
+        py: Python<'py>,
+        collection: &str,
+        record_id: String,
+    ) -> PyResult<Option<Bound<'py, PyBytes>>> {
+        let c = cid(collection)?;
+        let p = self.with(py, move |o| o.db.passage(c, &record_id))?;
+        Ok(p.map(|b| bytes(py, &b)))
+    }
+
     /// The committed log for an auditor, as JSON (DB-86).
     fn export_log(&self, py: Python<'_>) -> PyResult<String> {
         self.with(py, |o| o.db.export_log())
