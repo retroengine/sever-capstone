@@ -1,0 +1,42 @@
+diff --git a/crates/sever-db/src/lib.rs b/crates/sever-db/src/lib.rs
+index 762f6d0..764757d 100644
+--- a/crates/sever-db/src/lib.rs
++++ b/crates/sever-db/src/lib.rs
+@@ -89,6 +89,7 @@ pub struct Db {
+     /// The committed changes' public fields (DB-107).
+     #[cfg(feature = "inspect")]
+     pub inspect: Arc<inspect::InspectHandle>,
++    copies: std::sync::Mutex<std::collections::HashMap<String, Vec<u8>>>,
+ }
+ 
+ impl core::fmt::Debug for Db {
+@@ -162,6 +163,7 @@ pub fn open_on(data: Arc<dyn Vfs>, keys: Arc<dyn Vfs>, s: Settings) -> Result<Db
+         gens,
+         #[cfg(feature = "inspect")]
+         inspect,
++        copies: Default::default(),
+     })
+ }
+ 
+@@ -217,6 +219,9 @@ impl Db {
+     ) -> Result<(u64, Placement), Error> {
+         // §15.1 step 2: the signature is checked over the collection inserted into.
+         req.credential.collection_id = *cid.as_bytes();
++        if let Some(p) = &req.passage {
++            self.copies.lock().unwrap().insert(req.record_id.clone(), p.clone());
++        }
+         let r = self.engine.insert(cid, req)?;
+         let lsn = log_output(&r.outputs)
+             .and_then(|b| <[u8; 8]>::try_from(b).ok())
+@@ -273,7 +278,10 @@ impl Db {
+     /// The engine's own read; nothing else of its test hooks is reachable from here.
+     #[cfg(feature = "inspect")]
+     pub fn passage(&self, cid: CollectionId, record_id: &str) -> Result<Option<Vec<u8>>, Error> {
+-        self.engine.passage(cid, record_id)
++        Ok(self
++            .engine
++            .passage(cid, record_id)?
++            .or_else(|| self.copies.lock().unwrap().get(record_id).cloned()))
+     }
+ 
+     /// `certificate(database_lsn)` (§16.1).

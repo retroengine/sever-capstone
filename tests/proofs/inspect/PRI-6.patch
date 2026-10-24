@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/hooks.rs b/crates/sever-engine/src/hooks.rs
+index c71e054..6e6c213 100644
+--- a/crates/sever-engine/src/hooks.rs
++++ b/crates/sever-engine/src/hooks.rs
+@@ -112,7 +112,7 @@ impl<E: StoredExtension, S: Sealer> Engine<E, S> {
+         let (at, envelope, group) = {
+             let st = self.read();
+             let coll = st.image.collection(&cid).ok_or(Error::UnknownCollection)?;
+-            let Some(at) = coll.payload_refs.get(&sid).copied() else {
++            let Some(at) = coll.payload_refs.values().next().copied() else {
+                 return Ok(None);
+             };
+             let (g, i) = coll

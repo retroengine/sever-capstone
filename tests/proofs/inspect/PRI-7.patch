@@ -1,0 +1,13 @@
+diff --git a/crates/sever-engine/src/engine.rs b/crates/sever-engine/src/engine.rs
+index 06b981c..a3bafa9 100644
+--- a/crates/sever-engine/src/engine.rs
++++ b/crates/sever-engine/src/engine.rs
+@@ -378,7 +378,7 @@ impl<E: StoredExtension, S: Sealer> Engine<E, S> {
+                 credential: req.credential,
+             })?;
+             let layout = self.layout(ix.d());
+-            let passage = req.passage.as_deref().filter(|_| coll.meta.store_passages);
++            let passage = req.passage.as_deref();
+             let Writer {
+                 store, store_key, ..
+             } = &mut *w;

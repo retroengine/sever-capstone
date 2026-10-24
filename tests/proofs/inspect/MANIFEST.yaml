@@ -17,3 +17,15 @@
   claim: a touched group's C_S after is reported as its C_S before (§5.3; the engine's snapshot)
   patch: PRI-4.patch
   test: p4_inspect_each_change_moves_n_and_the_counters_by_one_record
+- id: PRI-5
+  claim: passage answers for a deleted record (an application-side copy outlives the deletion; §3.4 "erased with it", DB-110)
+  patch: PRI-5.patch
+  test: p4_inspect_passage_is_none_unless_the_record_is_live_and_stored
+- id: PRI-6
+  claim: passage reads another record's stored text (§3.4 each record's own passage, under its own key)
+  patch: PRI-6.patch
+  test: p4_inspect_passage_returns_each_records_own_text_also_after_a_reopen
+- id: PRI-7
+  claim: a collection created with store_passages = false stores passages anyway (§3.4 "MAY store")
+  patch: PRI-7.patch
+  test: p4_inspect_passage_is_none_unless_the_record_is_live_and_stored
