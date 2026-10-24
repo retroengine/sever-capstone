@@ -1,0 +1,8 @@
+# sever-hpc-backup.service — copies the real run's logs, ledger and results (scripts/hpc/backup.sh).
+[Unit]
+Description=SEVER-DB HPC backup
+
+[Service]
+Type=oneshot
+Nice=15
+ExecStart=@REPO@/scripts/hpc/backup.sh real

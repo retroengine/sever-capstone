@@ -1,0 +1,34 @@
+# sever-hpc@.service — the SEVER-DB HPC run as a systemd user unit (DB-111; scripts/hpc/HPC_GUIDE.md).
+# Instances: real (the 22 gate steps) and drill (MOCK=1 fake steps). Installed by install.sh, which
+# replaces @REPO@ and adds a per-instance drop-in (memory cap, memory lock, restart limits).
+[Unit]
+Description=SEVER-DB HPC run (%i)
+# A finished run (on-exit.sh writes DONE) is never started again, not even after a reboot.
+ConditionPathExists=!%h/longrun/%i/DONE
+OnFailure=sever-hpc-alert@%i.service
+# Restart cap: more starts than this within the interval and the unit gives up (and alerts).
+StartLimitIntervalSec=7d
+StartLimitBurst=8
+
+[Service]
+Type=exec
+WorkingDirectory=@REPO@
+EnvironmentFile=-%h/longrun/%i.env
+Environment=LOG_TO_FILE=1
+Nice=10
+ExecStartPre=@REPO@/scripts/hpc/preflight.sh %i
+ExecStart=@REPO@/scripts/hpc/run-all.sh
+ExecStopPost=@REPO@/scripts/hpc/on-exit.sh %i
+# run-all.sh exit 1 = finished with failed steps: a result, never a reason to restart (Build §2.5).
+# systemd applies this to ExecStartPre too, so preflight.sh refuses with exit 2, never 1.
+SuccessExitStatus=1
+# Exit 3 (a step interrupted), a kill or an out-of-memory kill: restart, 60 s growing to 15 min.
+Restart=on-failure
+RestartSec=60
+RestartSteps=5
+RestartMaxDelaySec=900
+KillMode=control-group
+TimeoutStopSec=120
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,7 @@
+# sever-hpc-watchdog.service — checks every HPC run instance (scripts/hpc/watchdog.sh).
+[Unit]
+Description=SEVER-DB HPC watchdog
+
+[Service]
+Type=oneshot
+ExecStart=@REPO@/scripts/hpc/watchdog.sh

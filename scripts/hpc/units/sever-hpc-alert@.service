@@ -1,0 +1,7 @@
+# sever-hpc-alert@.service — runs when sever-hpc@%i gives up (start limit reached or a refused start).
+[Unit]
+Description=SEVER-DB HPC run (%i) failed: alert
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c '. @REPO@/scripts/hpc/lib.sh; load_instance %i; notify failed "the run unit failed and will not restart by itself: bash @REPO@/scripts/hpc/status.sh %i"'

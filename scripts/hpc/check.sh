@@ -36,17 +36,19 @@ case "$fs" in
 esac
 
 echo "== commands"
-for c in cc git curl; do command -v "$c" >/dev/null 2>&1 && ok "$c" || fail "$c missing (setup.sh installs build-essential git curl)"; done
-for c in make pkg-config python3 rsync xz sha256sum; do command -v "$c" >/dev/null 2>&1 && ok "$c" || warn "$c missing (setup.sh installs it)"; done
-for c in mkfs.ext4 debugfs fuse2fs fusermount3; do command -v "$c" >/dev/null 2>&1 && ok "$c" || warn "$c missing (setup.sh installs e2fsprogs, fuse3, fuse2fs)"; done
+for c in cc git curl; do command -v "$c" >/dev/null 2>&1 && ok "$c" || fail "$c missing (root-setup.sh installs build-essential git curl)"; done
+for c in make pkg-config python3 rsync xz sha256sum; do command -v "$c" >/dev/null 2>&1 && ok "$c" || warn "$c missing (root-setup.sh installs it)"; done
+for c in mkfs.ext4 debugfs fuse2fs fusermount3; do command -v "$c" >/dev/null 2>&1 && ok "$c" || warn "$c missing (root-setup.sh installs e2fsprogs, fuse3, fuse2fs)"; done
 [ -r /dev/fuse ] && [ -w /dev/fuse ] && ok "/dev/fuse usable" || warn "/dev/fuse not usable (p4-forensics needs it; update WSL in PowerShell: wsl --update)"
-for c in rustup cargo uv; do command -v "$c" >/dev/null 2>&1 && ok "$c (already installed)" || ok "$c not yet installed (setup.sh installs it)"; done
-warn "Windows must not sleep, restart or sign out during the run (HPC_GUIDE.md step 2); this script cannot see that"
+for c in rustup cargo uv; do command -v "$c" >/dev/null 2>&1 && ok "$c (already installed)" || ok "$c not yet installed (root-setup.sh installs it)"; done
+warn "Windows must not sleep, restart or sign out during the run (windows.sh, HPC_GUIDE.md Part D); this script cannot see that"
 
 echo "== memory rules for --locked-memory (p4-forensics, p4-ex6; spec §12.8)"
-l=$(ulimit -l)
-[ "$l" = "unlimited" ] && ok "ulimit -l unlimited" \
-  || { warn "ulimit -l = $l KiB, not unlimited (before the run: sudo prlimit --pid \$\$ --memlock=unlimited:unlimited)"; locked_ok=0; }
+# The run is a systemd user unit: what counts is the user manager's limit, not this shell's.
+umgr=$(pgrep -u "$USER" -x systemd | head -1)
+l=$(awk '/Max locked memory/ {print $5}' "/proc/$umgr/limits" 2>/dev/null)
+[ "$l" = "unlimited" ] && ok "memory lock unlimited for user services" \
+  || { warn "memory lock for user services = ${l:-?} bytes, not unlimited (sudo bash scripts/hpc/root-setup.sh, then wsl --shutdown)"; locked_ok=0; }
 swap_bad=0
 while read -r name kind _; do
   [ "$name" = "Filename" ] && continue
@@ -72,7 +74,7 @@ done
 echo "== project files"
 [ -f datasets/MANIFEST.sha256 ] && ok "datasets/MANIFEST.sha256 (from git)" || fail "datasets/MANIFEST.sha256 missing: is this the repo root?"
 if [ -d datasets/processed/nq_1m ]; then ok "datasets/processed present (setup.sh checks every hash)"
-else fail "datasets/processed missing: unpack sever-data.tar here (HPC_GUIDE.md step 6)"; fi
+else fail "datasets/processed missing: bash scripts/hpc/fetch-data.sh"; fi
 for s in 42 123 777 2024 9999; do
   [ -s "traces/p1-nq-100k-seed$s.jsonl" ] && [ -s "traces/p2-oracle-nq-10k-seed$s.jsonl" ] \
     || { warn "traces for seed $s missing (setup.sh writes them, slowly)"; }
@@ -83,7 +85,7 @@ echo "== result"
 if [ "$fails" -gt 0 ]; then echo "$fails FAIL line(s): fix those first."; fi
 if [ "$locked_ok" = 1 ]; then echo "All 22 run-all.sh steps can run here."
 else
-  echo "20 of 22 steps can run here until the memory rules above are met (HPC_GUIDE.md steps 3 and 9):"
+  echo "20 of 22 steps can run here until the memory rules above are met (root-setup.sh, windows.sh):"
   echo "p4-forensics and p4-ex6 need swap off, ulimit -l unlimited and a usable /dev/fuse."
 fi
 [ "$fails" -eq 0 ]

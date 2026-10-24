@@ -1,0 +1,9 @@
+[Unit]
+Description=SEVER-DB HPC backup, hourly
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=1h
+
+[Install]
+WantedBy=timers.target

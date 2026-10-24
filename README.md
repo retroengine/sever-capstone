@@ -378,11 +378,13 @@ Everything runs once, at full size, in WSL2 Ubuntu on the college HPC (about 1â€
 cores; DB-111). The one guide, step by step, is [`scripts/hpc/HPC_GUIDE.md`](scripts/hpc/HPC_GUIDE.md):
 
 ```bash
-bash scripts/hpc/check.sh                # read-only machine check
-bash scripts/hpc/setup.sh                # tools, memlock, SDK, data check, artefacts, traces
-sudo prlimit --pid $$ --memlock=unlimited:unlimited   # same window; .wslconfig has swap=0
-setsid nohup bash scripts/hpc/run-all.sh > traces/hpc-run.out 2>&1 &
-tail -f traces/hpc-summary.log
+bash scripts/hpc/discover.sh             # read-only machine report
+bash scripts/hpc/windows.sh              # .wslconfig (cores-2, RAM-8 GB, swap=0), keep-alive, no sleep
+sudo bash scripts/hpc/root-setup.sh      # the owner: packages, memory lock, linger; then wsl --shutdown
+bash scripts/hpc/fetch-data.sh && bash scripts/hpc/setup.sh && bash scripts/hpc/check.sh
+bash scripts/hpc/install.sh              # systemd user units: run, watchdog, backup, alerts
+bash scripts/hpc/drills.sh               # failure drills on a mock run; all must pass
+bash scripts/hpc/launch.sh start real    # the run, as sever-hpc@real; status: scripts/hpc/status.sh
 ```
 
 ---

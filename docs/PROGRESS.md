@@ -93,6 +93,27 @@ Audit 2 (`studio/audit/AUDIT2.md`) lists what is still overstated; it is fixed i
 
 ## Session log
 
+- **24 Oct 2026 (later):** the HPC run rebuilt around the owner's long-run checklist
+  (`scripts/hpc/HPC_GUIDE.md`, rewritten). The owner pastes one prompt (Part C), and Claude follows
+  Part D:
+  - discover;
+  - Windows settings (`windows.sh`);
+  - the owner's one sudo step (`root-setup.sh`);
+  - data (`fetch-data.sh`, tested on the OneDrive zip: DATA OK) and `setup.sh`;
+  - safeguards (`install.sh`: systemd user units with restarts after a kill but never after a
+    failed gate, a memory cap, `nice 10`, a watchdog, hourly verified backups, ntfy alerts);
+  - failure drills on a mock run (`drills.sh`);
+  - a real reboot drill with the owner;
+  - the real start only on the owner's word (`launch.sh`).
+
+  The drills caught three bugs, all fixed:
+  - `SuccessExitStatus=1` also accepted a refused preflight;
+  - the DONE marker came before its alert;
+  - `run-all.sh` would have rerun failed gates after a restart, and restarted `p3-crash` without
+    `--resume`.
+
+  Not possible under WSL without Windows admin: temperature alerts, and resuming before someone
+  signs in after a reboot.
 - **24 Oct 2026:** the gate-run machine settled: the college HPC in WSL2 Ubuntu, full sizes (G-47,
   DB-111; `scripts/vm/` became `scripts/hpc/` with one guide). Cleanup (DB-112): the post-v1.0
   plans dropped (E-3 … E-6, the release passage API); this file cut to the current state, history

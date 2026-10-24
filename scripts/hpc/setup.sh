@@ -1,25 +1,22 @@
 #!/usr/bin/env bash
-# scripts/hpc/setup.sh — one-time, idempotent setup of WSL2 Ubuntu 24.04 on the college HPC
+# scripts/hpc/setup.sh — one-time, idempotent setup of WSL2 Ubuntu on the college HPC
 # workstation for SEVER-DB's pre-registered Full-tier gates and measures (DB-111; Build §2.8;
 # Build 3-4 §1.9, §2.10). The one guide is scripts/hpc/HPC_GUIDE.md.
 #
-# What it does (each step is skipped when already done, so re-running is safe):
-#   1. apt packages: build-essential, pkg-config, git, e2fsprogs, fuse3, fuse2fs, curl, python3, ...
-#      (sudo inside WSL: the Ubuntu user is the distribution's admin).
-#   2. memlock: writes /etc/security/limits.d/99-sever.conf (memlock unlimited for the run user).
-#      A WSL shell may not read it, so the guide raises the limit of the launching shell with
-#      `sudo prlimit` instead (HPC_GUIDE.md step 9); the file is a second route.
-#   3. rustup: the toolchain pinned in rust-toolchain.toml (spec §20.1), nightly (cargo-fuzz),
+# What it does (each step is skipped when already done, so re-running is safe). No sudo: the
+# system packages, the memory lock and linger are root-setup.sh's, which the owner runs first.
+#   1. checks the system packages root-setup.sh installs.
+#   2. rustup: the toolchain pinned in rust-toolchain.toml (spec §20.1), nightly (cargo-fuzz),
 #      1.85 (the MSRV step of scripts/ci.sh), llvm-tools-preview (cargo-llvm-cov).
-#   4. cargo tools, only if missing: cargo-mutants, cargo-llvm-cov, cargo-fuzz, cargo-deny.
-#   5. uv (astral installer), `uv sync`, then the three SDK native modules exactly as scripts/ci.sh
+#   3. cargo tools, only if missing: cargo-mutants, cargo-llvm-cov, cargo-fuzz, cargo-deny.
+#   4. uv (astral installer), `uv sync`, then the three SDK native modules exactly as scripts/ci.sh
 #      builds them (sever-py-p2, sever-py-p3, sever-py). `uv sync` removes them, so they are always
 #      rebuilt after it.
-#   6. datasets: checks datasets/MANIFEST.sha256. The data are not in git; they come from the data
-#      bundle sever-data.tar (HPC_GUIDE.md step 6).
-#   7. artefacts: builds the partition (C-15) and the nq-1m ID export if artefacts/ lacks them
+#   5. datasets: checks datasets/MANIFEST.sha256. The data are not in git; they come from the data
+#      bundle (fetch-data.sh).
+#   6. artefacts: builds the partition (C-15) and the nq-1m ID export if artefacts/ lacks them
 #      (skip with SKIP_ARTEFACTS=1).
-#   8. traces: writes Part 1's nq-100k traces and Part 2's nq-10k oracle streams when missing.
+#   7. traces: writes Part 1's nq-100k traces and Part 2's nq-10k oracle streams when missing.
 #
 # How to run (from anywhere; the script cds to the repo root):
 #   bash scripts/hpc/setup.sh
@@ -33,8 +30,6 @@ cd "$(dirname "$0")/../.."
 ROOT=$(pwd)
 
 say() { printf '\n== %s\n' "$*"; }
-if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
-RUN_USER=${SUDO_USER:-$(id -un)}
 
 case "$(stat -f -c %T . 2>/dev/null)" in
   ext2/ext3|ext4|xfs) ;;
@@ -42,33 +37,17 @@ case "$(stat -f -c %T . 2>/dev/null)" in
      echo "Clone it into the WSL home folder (~/sever-db) and run this again."; exit 1 ;;
 esac
 
-# ---- 1. apt packages --------------------------------------------------------------------------
-say "apt packages"
-PKGS=(build-essential pkg-config git e2fsprogs fuse3 fuse2fs curl ca-certificates python3 \
-      python3-venv rsync xz-utils)
+# ---- 1. system packages (installed by root-setup.sh) ------------------------------------------
+say "system packages"
 missing=()
-for p in "${PKGS[@]}"; do dpkg -s "$p" >/dev/null 2>&1 || missing+=("$p"); done
+for c in cc git curl unzip pkg-config mkfs.ext4 debugfs fuse2fs fusermount3 rsync xz; do
+  command -v "$c" >/dev/null 2>&1 || missing+=("$c")
+done
 if [ ${#missing[@]} -gt 0 ]; then
-  $SUDO apt-get update -y
-  DEBIAN_FRONTEND=noninteractive $SUDO apt-get install -y --no-install-recommends "${missing[@]}"
-else
-  echo "all present"
+  echo "MISSING: ${missing[*]}. The owner runs:  sudo bash $ROOT/scripts/hpc/root-setup.sh"
+  exit 1
 fi
-# fuse2fs mounts the forensic disk image (P4-T1/T2) as an unprivileged user: /dev/fuse must be usable.
-[ -e /dev/fuse ] || echo "WARNING: /dev/fuse is missing; the forensics gate needs FUSE (PowerShell: wsl --update)"
-
-# ---- 2. memlock -------------------------------------------------------------------------------
-say "memlock limit for $RUN_USER"
-LIMITS=/etc/security/limits.d/99-sever.conf
-WANT="$RUN_USER soft memlock unlimited
-$RUN_USER hard memlock unlimited"
-if [ "$(cat "$LIMITS" 2>/dev/null || true)" != "$WANT" ]; then
-  printf '%s\n' "$WANT" | $SUDO tee "$LIMITS" >/dev/null
-  echo "wrote $LIMITS"
-fi
-echo "current shell: ulimit -l = $(ulimit -l)"
-[ "$(ulimit -l)" = "unlimited" ] || echo "NOTE: before run-all.sh, in the same terminal:" \
-  "sudo prlimit --pid \$\$ --memlock=unlimited:unlimited (HPC_GUIDE.md step 9)"
+echo "all present"
 
 # ---- 3. rustup and toolchains -----------------------------------------------------------------
 say "rust toolchains"
@@ -116,9 +95,7 @@ if [ -f datasets/MANIFEST.sha256 ] && [ -d datasets/processed ] \
 else
   cat <<MSG
 DATASETS MISSING OR NOT MATCHING datasets/MANIFEST.sha256.
-They are not in git. Unpack the data bundle in ${ROOT} (HPC_GUIDE.md step 6):
-  sha256sum -c sever-data.tar.sha256 && tar xf sever-data.tar
-Then check:  (cd datasets && sha256sum -c MANIFEST.sha256)
+They are not in git. Fetch the data bundle first:  bash scripts/hpc/fetch-data.sh
 and re-run this script.
 MSG
 fi
@@ -154,4 +131,4 @@ else
 fi
 
 say "done"
-echo "Next (HPC_GUIDE.md steps 8-9): bash scripts/hpc/check.sh, then start the run from $ROOT."
+echo "Next (HPC_GUIDE.md): bash scripts/hpc/fetch-data.sh if the data are missing, then install.sh."

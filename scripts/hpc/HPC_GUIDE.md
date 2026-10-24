@@ -1,341 +1,364 @@
-# Running SEVER-DB's final test run on the college HPC (WSL2 Ubuntu)
+# SEVER-DB on the college HPC: the one guide
 
-The one guide for the v1.0 gate run (DB-111). It is written for the owner, step by step, and so that
-it can be pasted into a Claude chat on the HPC as background when help is needed there. Nothing else
-in the repository describes this run; other files point here.
+The v1.0 gate run (DB-111): every pre-registered gate and measure of Parts 3 and 4, once, at full
+size, in WSL2 Ubuntu on the college HPC (Windows). This file is the only document for it.
 
----
+- **Parts A–B** are for the owner: what to prepare, and the few things only a person can do.
+- **Part C** is the one prompt to paste into Claude Code on the HPC.
+- **Part D** is Claude's instructions there, phase by phase, with the points where it stops for the
+  owner.
+- **Parts E–F** are the runbook (monitor, stop, resume, restore, alerts) and troubleshooting.
 
-## Part A — The scenario (paste this part into Claude chat first)
+**What runs.** `scripts/hpc/run-all.sh` runs 22 steps one after another (`p3-crash` … `p4-ex8`),
+about 1.5–3 days on 22 cores. It runs as a systemd user unit, `sever-hpc@real`, with these
+safeguards:
+- **Restarts:** after a kill or an out-of-memory kill, with a growing delay (60 s up to 15 min),
+  at most 8 times.
+- **Never reruns a failed gate** (Build §2.5).
+- **Memory cap**, and `nice 10`.
+- **Watchdog:** every 5 minutes, it alerts on a hang, low disk or low memory, or a late backup.
+- **Hourly backup** of the logs, the ledger and the results.
+- **Alerts on your phone** through ntfy.
+- **Resumes after a Windows restart** once you sign in.
 
-**Who I am and what this is.** I'm the owner of SEVER-DB, a vector database with provable
-deletion, built in Rust and Python as a capstone project. The code is on GitHub (private
-repository `retroengine/sever-capstone`, branch `main`). Parts 1 and 2 of the project are finished
-and frozen. Parts 3 and 4 are built and pass every check on my laptop. What's left is **one long
-run of every pre-registered test gate and measure**, at full size, about 1–2 days. The results
-decide whether Parts 3 and 4 can be frozen and v1.0 released.
-
-**The machine.** The college HPC workstation, running **Windows**. The run happens inside
-**WSL2 Ubuntu 24.04** on it; there is no native Linux (decision DB-111).
-- The run is CPU-only (the GPU is not used), and the floating-point results must be bit-for-bit
-  reproducible.
-- Inside Ubuntu I am the distribution's admin (`sudo` with my Ubuntu password), even if my Windows
-  account is not an administrator.
-- WSL2 must already be enabled on the machine (`wsl --status` works in PowerShell). Enabling it the
-  first time needs a Windows administrator; installing Ubuntu into it does not.
-- I can leave it running for 2 days. A paper note on it says not to turn it off.
-
-**The scripts that do the work** (in the repository, under `scripts/hpc/`):
-- `check.sh` checks the machine and changes nothing. It prints `[ ok ]`, `[WARN]` or `[FAIL]` lines,
-  and at the end says whether all 22 steps can run or only 20.
-- `setup.sh` installs everything once, in about 20–40 minutes (`sudo` inside Ubuntu).
-- `run-all.sh` runs the 22 steps one after another (`p3-crash`, `p3-replay`, …, `p4-ex8`) at their
-  full pre-registered sizes. Each step's output goes to `traces/hpc-<step>.log`, which ends with
-  `rc=N` (0 = passed). There's one line per step in `traces/hpc-summary.log`. If restarted, it skips
-  the steps that already passed.
-
-**Two steps have extra needs.** `p4-forensics` and `p4-ex6` run the database in its strict "keys
-never touch the disk" mode (spec §12.8). That needs, inside Ubuntu:
-- `ulimit -l` = `unlimited` (the memory-lock limit; step 9 raises it with `sudo prlimit`),
-- swap off (`swap=0` in the Windows file `.wslconfig`, step 3),
-- hibernation off (WSL has none),
-- a working `/dev/fuse` with `fusermount3` (`setup.sh` installs them).
-
-**What the run claims, and what it does not (DB-111, overview L-8).** Locked memory and the forensic
-scan cover the Ubuntu guest: its memory and the ext4 disk the engine writes to. What the Windows
-host keeps (its pagefile, old blocks of the virtual disk file `ext4.vhdx`) is outside the claim and
-is reported as a limit.
-
-**Rules the helper must respect** (from the project's CLAUDE.md):
-- Don't change any code or test on this machine. The run must test the exact commit on GitHub.
-- A failing **gate** is a bug to report, not something to fix or rerun here. Save its log.
-- A **measure** is recorded as it comes out, never rerun because of its value.
-- Never edit `docs/RUN_LEDGER.jsonl`, `results/` or `docs/audit/` by hand.
-- Never print, copy or commit database folders, key files or certificates written by the run. They
-  live under `target/` and `traces/`, which git ignores.
-- Don't run the two strict steps in a weaker mode (`allow_unsafe_memory`) to make them pass, and
-  don't shrink any step. Changing a pre-registered gate is the owner's recorded decision, made
-  before any result.
+All of it is in `scripts/hpc/`; its state lives in `~/longrun/`.
 
 ---
 
-## Part B — Before you leave home
+## Part A — Before you go (at home)
 
-1. **The data bundle** is on the laptop's Windows Desktop in the folder `sever-hpc`:
-   - `sever-data.tar` (about 3.8 GB): `datasets/processed/`, `artefacts/`, and 10 trace files.
-   - `sever-data.tar.sha256`: its fingerprint, to check that the copy is complete.
-2. **Get the bundle to the HPC.** Pick one way:
-   - **USB stick** (8 GB or more, formatted **exFAT** or NTFS; FAT32 can't hold a file over 4 GB):
-     copy the whole `sever-hpc` folder onto it.
-   - **Google Drive:** upload the `sever-hpc` folder at drive.google.com. On the HPC you download it in
-     the browser.
-3. **Bring your phone.** On the HPC you'll log in to GitHub (and maybe Google) in the browser, which
-   may ask for a 2-factor code.
+1. **The commit.** Claude on the laptop finishes the engine work and merges it into `main`, then
+   tells you the commit to test. Don't go before that.
+2. **The data** is `sever-hpc.zip` (3.4 GB) in your **OneDrive Desktop**: it is already online. On
+   the laptop, check that OneDrive shows it as synced (a green tick). A USB stick (exFAT, 8 GB or
+   more) with the same zip is a good spare.
+3. **Alerts:** install the **ntfy** app on your phone and subscribe to a topic with a long, unguessable
+   name (for example `sever-` and 12 random letters). Anyone who knows the name can read the alerts.
+   The alerts never contain data: only step names, counts and exit codes.
+4. **Your phone**, for GitHub's and Microsoft's 2-factor codes.
+
+## Part B — On the HPC, by hand (about 30 minutes)
+
+Windows PowerShell: press the Windows key, type `PowerShell`, Enter. Ubuntu: Start menu, Ubuntu.
+
+1. **WSL and Ubuntu.** In PowerShell:
+   ```powershell
+   wsl --status
+   wsl --install -d Ubuntu-24.04
+   ```
+   - If `wsl --status` fails, WSL is not enabled. Enabling it needs a Windows administrator once:
+     ask IT to run `wsl --install --no-distribution`.
+   - Installing Ubuntu needs no admin. It asks for a **new Ubuntu user name and password**: write
+     the password down, because `sudo` will ask for it.
+2. **The code and Claude Code.** In the Ubuntu window:
+   ```bash
+   ssh-keygen -t ed25519 -C "college-hpc" -f ~/.ssh/id_ed25519 -N "" && cat ~/.ssh/id_ed25519.pub
+   ```
+   1. Add the printed line on github.com: **Settings → SSH and GPG keys → New SSH key**.
+   2. Then run:
+      ```bash
+      git clone git@github.com:retroengine/sever-capstone.git ~/sever-db
+      cd ~/sever-db && git checkout <the commit Claude gave you>
+      curl -fsSL https://claude.ai/install.sh | bash
+      ```
+   3. Close the Ubuntu window and open a new one.
+3. **The data.** In the browser, open **onedrive.live.com** and go to **Desktop**. Download
+   `sever-hpc.zip` into **Downloads**. Don't unzip it; Claude finds it there.
+4. **Start Claude.** In Ubuntu:
+   ```bash
+   cd ~/sever-db && claude
+   ```
+   Log in, then paste Part C.
+
+## Part C — The prompt (paste this into Claude Code on the HPC)
+
+```text
+I am on the college HPC, in WSL2 Ubuntu, in ~/sever-db. We are doing SEVER-DB's v1.0 gate run.
+Read CLAUDE.md, then scripts/hpc/HPC_GUIDE.md (Part D is your instructions), then the "Now"
+section of docs/PROGRESS.md. Then carry out Part D phase by phase. Report after each phase in a
+few lines. Stop and wait for me at every STOP. Do not start the real run until I say exactly
+"start the real run".
+```
 
 ---
 
-## Part C — On the HPC, step by step
+## Part D — Claude's instructions on the HPC
 
-Steps 1–3 happen in **Windows** (PowerShell: press the Windows key, type `PowerShell`, Enter).
-From step 4 on, everything happens in the **Ubuntu** window. Paste into a terminal with right-click
-or **Ctrl+Shift+V**.
+### Rules (binding; they come from CLAUDE.md)
 
-### Step 1 — WSL and Ubuntu (5–15 min)
+- **Change no code, test, config or spec.** The run tests the commit exactly as checked out
+  (`preflight.sh` refuses otherwise). If something needs a code change, stop and tell the owner;
+  the fix happens on the laptop.
+- **A failed gate is a result.** Never rerun it, never loosen it, never touch its log. A measure is
+  recorded as found (Build §2.5). Never run the strict steps with `allow_unsafe_memory`, and never
+  shrink a step.
+- **Never edit by hand** `docs/RUN_LEDGER.jsonl`, `results/`, `docs/audit/`, `tests/cleanroom/`.
+- **Never print, copy or commit** database folders, key files, certificates, `r_t` or passage text
+  written by the run.
+- **Root and Windows are the owner's.** Claude cannot type a sudo password and must not try. The
+  only Windows-side change is `windows.sh` (the owner's own files, no admin). Respect the college's
+  policy; if something would break it, say so.
+- **Keep 2 cores and 8 GB for other users** (`windows.sh` does this); the run uses `nice 10`.
+- **If a script fails,** report its output and the likely cause. Fix only the environment (packages,
+  settings, data). Never fix the repository's code.
 
-In PowerShell:
-```powershell
-wsl --status
-wsl --list --verbose
-```
-- `wsl --status` fails or says WSL is not installed: WSL needs a Windows administrator once (IT:
-  `wsl --install --no-distribution`). Ask, then continue.
-- `Ubuntu-24.04` is not in the list: install it (no admin needed when WSL is enabled):
-  ```powershell
-  wsl --update
-  wsl --install -d Ubuntu-24.04
-  ```
-  It opens an Ubuntu window and asks for a new **Ubuntu user name and password**. Write the password
-  down: `sudo` asks for it.
-- The list shows `VERSION 1` for Ubuntu-24.04: `wsl --set-version Ubuntu-24.04 2`.
-
-### Step 2 — Keep Windows awake for 2 days (2 min)
-
-1. **Settings → System → Power** (or **Power & battery**) **→ Screen and sleep:** set "When plugged
-   in, put my device to sleep after" to **Never**. If the setting is locked, ask IT.
-2. **Settings → Windows Update → Pause updates** for 1 week, so Windows doesn't restart itself.
-3. Leave the paper note on the machine.
-
-During the run: lock the screen with **Windows key + L**. **Never sign out or shut down**; signing
-out stops Ubuntu and the run with it.
-
-### Step 3 — Give Ubuntu the machine's cores and memory, and no swap (3 min)
-
-In PowerShell, see what the machine has:
-```powershell
-$env:NUMBER_OF_PROCESSORS
-[math]::Floor((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
-```
-Open the WSL settings file (Notepad creates it if it doesn't exist):
-```powershell
-notepad "$env:USERPROFILE\.wslconfig"
-```
-Put exactly this in it, with your numbers, and save:
-```ini
-[wsl2]
-memory=56GB
-processors=32
-swap=0
-```
-- `memory`: the machine's RAM minus 8 GB (for Windows). 64 GB of RAM gives `56GB`.
-- `processors`: the first number printed above (all of them).
-- `swap=0`: required for the two strict steps (§12.8).
-
-Then restart WSL so it reads the file:
-```powershell
-wsl --shutdown
-```
-Open Ubuntu again (Start menu → **Ubuntu 24.04**).
-
-### Step 4 — Quick look at the machine (1 min)
-
-In Ubuntu:
-```bash
-uname -m; nproc; free -g | head -3; df -hT ~
-```
-You want `x86_64`, all the cores, the memory you set, a **Swap** row of `0`, and a home folder of
-type `ext4`.
-
-`df` shows the virtual disk's maximum size, not real free space. Check the real space in Windows:
-**File Explorer → This PC**. Drive **C:** needs **150 GB or more free**, because Ubuntu's disk
-lives there.
-
-### Step 5 — Let Ubuntu talk to GitHub (5 min)
+### Phase 1 — Discover (read-only)
 
 ```bash
-ssh-keygen -t ed25519 -C "college-hpc" -f ~/.ssh/id_ed25519 -N ""
-cat ~/.ssh/id_ed25519.pub
+bash scripts/hpc/discover.sh
 ```
-1. Copy the printed line, which starts with `ssh-ed25519`.
-2. In the browser, log in to github.com and go to **profile picture → Settings → SSH and GPG keys →
-   New SSH key**.
-3. Title it `College HPC`, paste the line, and click **Add SSH key**.
+Show the table. Summarise what blocks the run and which later phase fixes each item:
+- swap, `.wslconfig` and sleep → phase 2;
+- packages, memory lock and linger → phase 3;
+- tools → phase 5.
 
-Then test it:
-```bash
-ssh -T -o StrictHostKeyChecking=accept-new git@github.com
-```
-It should say `Hi <your-name>! You've successfully authenticated`.
+Real blockers mean stop and tell the owner:
+- not WSL2;
+- not x86-64;
+- the repository not on ext4;
+- C: with under 150 GB free;
+- no internet.
 
-### Step 6 — Get the code and the data (10–15 min)
-
-The project **must** live in the Ubuntu home folder (`~/sever-db`), never on a Windows drive
-(`/mnt/c/...`): the engine refuses a Windows drive (spec §12.9).
-```bash
-git clone git@github.com:retroengine/sever-capstone.git ~/sever-db
-cd ~/sever-db
-git log --oneline -1
-```
-Write down the commit shown; it's the one being tested.
-
-Find the bundle. Windows drives appear under `/mnt/` (C: is `/mnt/c`).
-
-**From a USB stick** (say it is drive **E:** in File Explorer):
-```bash
-ls /mnt/e/sever-hpc/ 2>/dev/null || { sudo mkdir -p /mnt/e && sudo mount -t drvfs E: /mnt/e; }
-cp /mnt/e/sever-hpc/sever-data.tar* ~/sever-db/
-```
-**From Google Drive:** download the `sever-hpc` folder in the browser (it lands in Downloads, maybe as
-a zip, which you unzip in File Explorer), then:
-```bash
-WINUSER=$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')
-cp "/mnt/c/Users/$WINUSER/Downloads/sever-hpc/sever-data.tar"* ~/sever-db/
-```
-Then, for either way:
-```bash
-cd ~/sever-db
-sha256sum -c sever-data.tar.sha256          # must say: sever-data.tar: OK
-tar xf sever-data.tar && rm sever-data.tar sever-data.tar.sha256
-(cd datasets && sha256sum --quiet -c MANIFEST.sha256) && echo "DATA OK"
-```
-
-### Step 7 — Check the machine (1 min)
+### Phase 2 — Windows-side settings (no admin)
 
 ```bash
-cd ~/sever-db
-bash scripts/hpc/check.sh
+bash scripts/hpc/windows.sh --dry-run
+bash scripts/hpc/windows.sh
 ```
-Fix every `[FAIL]` line before going on:
+It does three things:
+- writes `.wslconfig`: all cores but 2, all memory but 8 GB, `swap=0`;
+- puts the keep-alive in the Startup folder;
+- turns sleep off on mains power. If `powercfg` was refused, tell the owner to set
+  **Settings → System → Power → Sleep: Never** (or ask IT).
 
-| `[FAIL]` says | What to do |
+Also tell the owner: **Settings → Windows Update → Pause updates** for 1 week.
+
+### Phase 3 — The root step. **STOP** for the owner
+
+Tell the owner, word for word:
+> In a **new Ubuntu window**, run: `sudo bash ~/sever-db/scripts/hpc/root-setup.sh` (it asks for
+> your Ubuntu password). When it says done, run `wsl --shutdown` in **PowerShell**. This closes
+> Claude too. Then open Ubuntu, run `cd ~/sever-db && claude --continue`, and say "root-setup done".
+
+`root-setup.sh` does five things:
+- installs the system packages;
+- makes the memory lock unlimited for the user's services;
+- enables linger;
+- checks systemd;
+- turns swap off.
+
+`wsl --shutdown` applies `.wslconfig`.
+
+### Phase 4 — Verify the configuration
+
+```bash
+bash scripts/hpc/discover.sh
+```
+Expect:
+- **cores and memory:** the Windows totals minus 2 cores and 8 GB;
+- **swap:** off;
+- **linger:** yes;
+- **memory lock:** services `unlimited`;
+- **sleep (mains):** never;
+- **keep-alive:** installed;
+- **tools missing:** only `cargo`, `uv` (phase 5 installs them).
+
+Anything else: fix it through the scripts (rerun `windows.sh`, or ask the owner to rerun
+`root-setup.sh`), or stop and ask.
+
+### Phase 5 — Data and environment (about 30–60 min)
+
+```bash
+bash scripts/hpc/fetch-data.sh                    # finds sever-hpc.zip in Downloads; must end DATA OK
+bash scripts/hpc/setup.sh 2>&1 | tee ~/longrun-setup.log
+bash scripts/hpc/check.sh                         # must end: All 22 run-all.sh steps can run here.
+```
+- **If `fetch-data.sh` finds no bundle,** ask the owner where it is and pass the path.
+- **`setup.sh` installs** Rust (pinned 1.98.1, nightly, 1.85), the cargo tools, `uv`, Python and the
+  packages, and builds the SDK modules. It checks the data and writes any missing artefacts and
+  traces.
+- **If `check.sh` lists a `[FAIL]`,** fix it before going on.
+
+### Phase 6 — Safeguards
+
+```bash
+bash scripts/hpc/install.sh                       # must end: install: OK
+```
+It installs the units and writes `~/longrun/real.env`, `~/longrun/drill.env` and `~/longrun/env.txt`
+(versions, commit, machine). Then:
+1. Ask the owner for their **ntfy topic**. Set `NTFY_TOPIC=` in `~/longrun/real.env` (and in
+   `drill.env` if they want the drills' alerts too).
+2. Ask about an optional off-machine backup target: `BACKUP_REMOTE=`, an rclone remote or
+   `user@host:path`.
+3. Send a test alert, and have the owner confirm it reached the phone:
+   ```bash
+   bash -c '. scripts/hpc/lib.sh; load_instance real; notify test "SEVER-DB alerts work"'
+   ```
+
+### Phase 7 — Mock run and failure drills (about 15 min)
+
+```bash
+bash scripts/hpc/drills.sh
+```
+This runs the real unit, scripts and restart rules on three fake steps. Every drill must PASS:
+
+| Drill | What it proves |
 |---|---|
-| `WSL1` | PowerShell: `wsl --set-version Ubuntu-24.04 2`, then reopen Ubuntu |
-| `RAM: too little` | Raise `memory=` in `.wslconfig` (step 3), `wsl --shutdown`, reopen Ubuntu. If the machine itself has under 32 GB, tell Claude |
-| `this folder is on '9p'` (or `drvfs`, `v9fs`) | The project is on a Windows drive. Clone it again into `~/sever-db` (step 6) |
-| `cannot reach https://…` | The campus may need a proxy. Ask IT for the address, then `export https_proxy=http://PROXY:PORT http_proxy=http://PROXY:PORT` before the next steps |
-| `datasets/processed missing` | Step 6, the data part |
+| session | the run doesn't belong to a terminal, so closing windows can't stop it |
+| kill9 | `kill -9`: systemd restarts it; passed steps are kept; the killed step reruns |
+| torn | a log cut mid-write: that step reruns, the others are kept |
+| reboot | every process killed at once, then the boot path continues the run |
+| disk | low disk: the start is refused, alerted, and capped; after the fix it runs |
+| hang | a hung step: an alert after the stale time, no kill; when it resumes, the run finishes |
+| loop | a job that always crashes: it stops at the start limit, with an alert |
+| failed | a failed step: the run finishes, is marked DONE, and that step is never rerun |
+| backup | a backup is written and verified; restore checks it; a damaged copy is refused |
 
-`[WARN]` lines about missing tools are fine now; `setup.sh` installs them. The memory-rule warnings
-are handled in steps 3 and 9.
-
-### Step 8 — Install everything (20–40 min)
-
+Show the table. Any FAIL: stop and report. Then do the **real reboot drill** with the owner
+(**STOP**):
 ```bash
-cd ~/sever-db
-bash scripts/hpc/setup.sh 2>&1 | tee ~/setup.log
+sed -i 's/^MOCK_SECONDS=.*/MOCK_SECONDS=90/' ~/longrun/drill.env
+systemctl --user enable sever-hpc@drill.service && systemctl --user start --no-block sever-hpc@drill.service
 ```
-It asks for your Ubuntu password once (`sudo`). It installs the system packages, Rust (1.98.1,
-nightly and 1.85), the cargo tools, `uv`, Python 3.13 and the project's packages, builds the three
-Python modules, checks the data, and builds anything still missing.
+Tell the owner:
+> In PowerShell run `wsl --shutdown`, then **sign out of Windows and sign back in**. Don't open
+> Ubuntu. Wait 2 minutes, then open Ubuntu, run `cd ~/sever-db && claude --continue`, and say
+> "back".
 
-- It ends with `== done`: good.
-- Any error: give the last 50 lines (`tail -50 ~/setup.log`) to Claude chat.
-
-Close the Ubuntu window and open a new one, so the new programs are on your `PATH`.
-
-### Step 9 — Start the run
-
-In the new Ubuntu window, **all in the same window**:
+Then check that the run continued after the reboot with no help:
 ```bash
-cd ~/sever-db
-sudo prlimit --pid $$ --memlock=unlimited:unlimited
-ulimit -l                                   # must print: unlimited
-bash scripts/hpc/check.sh | tail -3         # must say: All 22 run-all.sh steps can run here.
-mkdir -p traces
-setsid nohup bash scripts/hpc/run-all.sh > traces/hpc-run.out 2>&1 &
+bash scripts/hpc/status.sh drill
 ```
-- The `prlimit` line lifts the memory-lock limit for this window and everything started from it.
-  It has to be repeated in any new window that starts the run.
-- If `check.sh` still says **20 of 22**, read its `[WARN]` lines: swap (step 3) or `/dev/fuse`
-  (`wsl --update` in PowerShell, then `wsl --shutdown`). Don't start without the two strict steps;
-  ask Claude chat.
-- If Ubuntu has less than 60 GB of memory, put `JOBS=4 ` at the very front of the `setsid` line.
-
-**Check that it started**, about a minute later:
+It should be active or finished, with the steps finished before the reboot kept. Afterwards:
 ```bash
-pgrep -af run-all.sh          # shows a line: it is running
-tail -5 traces/hpc-run.out    # shows "run-all start ..." and "p3-crash START"
+systemctl --user disable --now sever-hpc@drill.service
+sed -i 's/^MOCK_SECONDS=.*/MOCK_SECONDS=10/' ~/longrun/drill.env
 ```
 
-### Step 10 — Leave it running
+### Phase 8 — Report and approval. **STOP**
 
-1. In the same Ubuntu window: `tail -f traces/hpc-summary.log`. **Leave this window open**
-   (minimising is fine). An open Ubuntu window keeps WSL running.
-2. Lock the screen: **Windows key + L**. Don't sign out, don't shut down, don't run `wsl --shutdown`.
-3. Come back in 1–2 days. The run doesn't need you in between.
+Give the owner, in a few lines:
+- the commit;
+- cores, memory cap, `nice`;
+- the alert topic and backup folder;
+- the phase 4 table's key rows;
+- the drills table and the reboot drill's result;
+- the expected duration (1.5–3 days);
+- what they must not do: sign out, shut down, or run `wsl --shutdown`. Locking the screen with
+  Windows+L is fine.
 
-### Step 11 — Checking on it (any time)
+Then ask: **"Start the real run?"** Start only on "start the real run".
 
-Open Ubuntu (or use the open window; Ctrl+C stops `tail -f`, not the run):
+### Phase 9 — Launch
+
 ```bash
-cd ~/sever-db
-cat traces/hpc-summary.log    # one line per finished step: rc=0 = passed
-tail -3 traces/hpc-run.out    # which step is running now
-pgrep -af run-all.sh          # still running? (no output = finished or stopped)
+bash scripts/hpc/launch.sh start real
+sleep 120 && bash scripts/hpc/status.sh real
 ```
+`launch.sh` does four things:
+- refuses unless the drills passed on this commit;
+- pins the commit (`EXPECTED_COMMIT`);
+- runs the unit's own preflight;
+- enables autostart and the hourly backup, then starts the run.
 
-**If Windows restarted or the run stopped:** open Ubuntu and repeat **step 9** exactly (the
-`prlimit` line included; `.wslconfig` keeps swap off). Steps that already passed are skipped, and
-the interrupted step starts over.
-
-### Step 12 — When it has finished
-
-The last line of `traces/hpc-run.out` reads `run-all end failed=0` (all passed) or `failed=1`.
-
-**1. Collect the logs** (small, no secrets in them) and put a copy on the Windows Desktop:
+Confirm `p3-crash` started, the owner got the "run started" alert, and the backup timer is listed:
 ```bash
-cd ~/sever-db
-tar czf ~/hpc-logs-$(date +%Y%m%d).tar.gz traces/hpc-*.log traces/hpc-summary.log traces/hpc-run.out
-WINUSER=$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')
-cp ~/hpc-logs-*.tar.gz "/mnt/c/Users/$WINUSER/Desktop/"
+systemctl --user list-timers 'sever-hpc*'
 ```
-Copy that file from the Desktop to the USB stick or Google Drive. The laptop's Claude needs it.
+Tell the owner to lock the screen (Windows+L) and leave. Claude can be closed: the run doesn't need
+it.
 
-**2. Send the results to GitHub** (on a separate branch; the laptop merges it):
+### Phase 10 — When the owner asks how it is going
+
 ```bash
-cd ~/sever-db
+bash scripts/hpc/status.sh real
+```
+Explain any alert with Part E's table. Never rerun or change anything because of a result.
+
+### Phase 11 — Finish (after the "finished" alert)
+
+```bash
+bash scripts/hpc/status.sh real
+bash scripts/hpc/backup.sh real                   # the final backup
 git status --short
 ```
-You should see only files under `docs/`: the run ledger `docs/RUN_LEDGER.jsonl` and generated
-reports such as `docs/MUTANTS_P3.md`, `docs/MUTANTS_P4.md`, `docs/PROOFS_P3.md`,
-`docs/TEST_ORACLES_P4.md` or `docs/TRACE_PART_3.md`.
+1. Only files under `docs/` and `results/` may have changed: the run ledger and the generated
+   reports. If **anything else** shows up (above all a name with `key`, `cert`, `db`, `secrets` or
+   `wal`), stop and show the owner. Otherwise:
+   ```bash
+   git switch -c hpc-run-$(date +%Y%m%d)
+   git add docs/ results/
+   git commit -m "test(hpc): full run of the Part 3 and Part 4 gates and measures on the college HPC (WSL2)"
+   git push -u origin HEAD
+   ```
+   The commit has no AI attribution line (the owner's rule).
+2. Copy the logs to the Windows Desktop:
+   ```bash
+   W=$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')
+   tar czf "/mnt/c/Users/$W/Desktop/hpc-logs-$(date +%Y%m%d).tar.gz" traces/hpc-*.log traces/hpc-summary.log traces/hpc-run.out
+   ```
+3. Report:
+   - steps passed and failed;
+   - the branch pushed;
+   - where the logs are.
 
-If **anything outside `docs/`** shows up, especially anything with `key`, `cert`, `db`, `secrets` or
-`wal` in its name, **stop**. Don't commit; show the list to Claude chat. If only `docs/` files show:
-```bash
-git switch -c hpc-run-$(date +%Y%m%d)
-git add docs/
-git -c user.name="SaiKiran Vanaparthi" -c user.email="saikiran.vanaparthi72@gmail.com" commit -m "test(hpc): full run of the Part 3 and Part 4 gates and measures on the college HPC (WSL2)"
-git push -u origin HEAD
-```
-
-**3. A step failed (`rc=1`)?** Don't rerun it, and don't change anything. The logs from point 1 are
-what's needed. Back home, give them to Claude on the laptop. Each failed gate is a bug to fix there,
-with a failing test first. Then only that gate and the ones after it run again, here, with the same
-steps 9–12.
-
-**4. Clean up** when everything is back home and safe:
-- Remove the HPC's SSH key on github.com (Settings → SSH and GPG keys → Delete), unless you'll use
-  the machine again.
-- Delete the Ubuntu installation, which also removes every database, key and certificate the run
-  wrote. In PowerShell, **only after** the push in point 2 worked and the logs are safely copied:
-  `wsl --unregister Ubuntu-24.04`.
-- Delete `.wslconfig` (`del "$env:USERPROFILE\.wslconfig"` in PowerShell) and undo the sleep and
-  update settings of step 2.
+   Failed steps go back to the laptop (Part E, "A gate failed").
 
 ---
 
-## Part D — If something goes wrong (for Claude chat)
+## Part E — Runbook (the owner)
+
+| I want to… | Do this (in Ubuntu, `cd ~/sever-db`) |
+|---|---|
+| See how it's going | `bash scripts/hpc/status.sh` (or just watch the phone) |
+| Stop it | `bash scripts/hpc/launch.sh stop real`. Finished steps are kept |
+| Continue after a stop | `bash scripts/hpc/launch.sh start real`. It continues where it stopped |
+| Continue after Windows restarted | Sign in to Windows. The keep-alive starts Ubuntu and the run continues by itself; check with `status.sh` |
+| See the alerts | `tail ~/longrun/real/alerts.log` |
+| Restore a backup | `bash scripts/hpc/backup.sh real restore <file.tar.gz>`. It unpacks into `~/restored-<time>/` after checking the checksum, and never touches the repository |
+| Remove everything afterwards | `bash scripts/hpc/install.sh --uninstall`; delete `sever-wsl-keepalive.vbs` from the Startup folder; restore `.wslconfig` from `.wslconfig.before-sever` (or delete it); after the results are pushed and copied, PowerShell `wsl --unregister Ubuntu-24.04` (deletes the run's databases and keys too); remove the HPC's SSH key on GitHub |
+
+**What each alert means:**
+
+| Alert | Meaning | What to do |
+|---|---|---|
+| start | the run began | nothing |
+| restart | it restarted after an interruption; finished steps are kept | nothing; several in a row: look at `status.sh` |
+| crash | the job was killed (out of memory, or killed by hand); systemd restarts it with a delay | nothing, unless it repeats |
+| stopped | someone stopped it (`launch.sh stop`) | `launch.sh start real` to continue |
+| refused | the start check failed (disk, memory, swap, memory lock, commit); the reason is in the alert | fix the reason; it retries by itself until the cap |
+| failed | it gave up: 8 starts in 7 days, or refused at the cap | `status.sh`, fix, then `launch.sh start real` |
+| stale | no CPU progress for 30 min (a hang); it is **not** killed | `status.sh`; if really stuck: `launch.sh stop real`, then `start real` |
+| disk / memory | little disk (under 40 GB) or memory (under 2 GB) left | free space on C: / close other programs |
+| backup | no backup for 3 hours, or a copy failed | `bash scripts/hpc/backup.sh real` and read its message |
+| done | finished: every step passed, or a list of failed steps | Part D phase 11 (Claude), or Part E below |
+
+**A gate failed.** That's a result, not a crash, and it is never rerun here.
+1. On the laptop, Claude reads the logs.
+2. It fixes the bug with a red test first.
+3. The fix is merged into `main` and gets a new commit.
+4. Back on the HPC, with the new commit checked out:
+   - Claude removes `~/longrun/real/DONE`;
+   - it deletes the stale outputs of the steps to rerun (`traces/p3-crash-*`, `traces/p4-crash-*`
+     when those rerun);
+   - it sets `ONLY="<that gate and every later step>"` and `FORCE=1` in `~/longrun/real.env`;
+   - it runs `drills.sh` and then `launch.sh start real`.
+
+The decision to rerun is recorded on the laptop with its reason.
+
+## Part F — Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `Permission denied (publickey)` on clone | The SSH key isn't on GitHub, or was added to another account | Redo step 5; `ssh -T git@github.com` must greet you |
-| `wsl --install` says it needs administrator rights | WSL isn't enabled on the machine | Ask IT to run `wsl --install --no-distribution` once (step 1) |
-| `setup.sh` fails downloading | A proxy is needed | `export https_proxy=…` (step 7), then rerun step 8 (it is safe to rerun) |
-| `uv sync` fails on `faiss-cpu` or another package | Network, or no wheel for this Python | Show Claude the error; don't change `pyproject.toml` |
-| `ulimit -l` doesn't print `unlimited` after `prlimit` | `prlimit` ran in another window, or `sudo` failed | Run step 9 again, all lines in one window |
-| A step's log says `PlatformUnsafe` and `§12.8` | Swap is on or the memory-lock limit is low | `free -g` must show swap 0 (step 3); start again from step 9 |
-| A step's log says `§12.9` and `filesystem` | The project is on a Windows drive | Clone into `~/sever-db` (step 6) |
-| The run stopped and Ubuntu was closed | Windows signed out, restarted, or `wsl --shutdown` | Step 11, "If Windows restarted" |
-| `traces/hpc-summary.log` shows `rc=1` | A gate failed | Step 12, point 3: collect the logs, change nothing |
-| Out of memory (the log ends abruptly; `dmesg` mentions oom) | Too many parallel jobs for the memory given to WSL | Raise `memory=` (step 3) or rerun step 9 with `JOBS=4 ` in front (passed steps are skipped) |
-| C: runs out of space | Ubuntu's virtual disk grows on C: | Free space on C:, then step 11 |
+| `Permission denied (publickey)` on clone | the SSH key isn't on GitHub | Part B step 2; `ssh -T git@github.com` must greet you |
+| `wsl --install` needs administrator rights | WSL isn't enabled on the machine | IT runs `wsl --install --no-distribution` once |
+| `setup.sh` fails downloading | a campus proxy | ask IT for it; `export https_proxy=http://HOST:PORT http_proxy=…`, rerun (safe) |
+| `preflight refused: ulimit -l …` | `root-setup.sh` not run, or WSL not restarted after it | Phase 3 again |
+| `preflight refused: swap is on` | `.wslconfig` not applied | `windows.sh`, then `wsl --shutdown` |
+| `preflight refused: HEAD is …` | a different commit is checked out | `git checkout <approved commit>` |
+| `preflight refused: tracked files differ` | something changed a tracked file | `git status`; show Claude on the laptop; never commit it here |
+| A step's log says `PlatformUnsafe` / `§12.8` | memory lock or swap | `status.sh`; Phase 3/4 checks |
+| A step's log says `§12.9` and `filesystem` | the repository is on a Windows drive | it must be `~/sever-db` |
+| Out of memory (`dmesg` mentions oom; a crash alert) | too many parallel jobs for the memory WSL has | set `JOBS=4` in `~/longrun/real.env`; it continues |
+| C: runs out of space | Ubuntu's virtual disk grows on C: | free space on C: |
+| Nothing happens after a Windows restart | not signed in yet, or the keep-alive was deleted | sign in; check the Startup folder for `sever-wsl-keepalive.vbs` |
