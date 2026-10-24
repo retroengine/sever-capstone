@@ -10,7 +10,7 @@
 # again; if it has a resume command, that runs instead (e.g. `gates p2-crash … --resume`). Sleep
 # needs nothing: the whole VM pauses and every process continues on wake.
 #
-# Install once (user service, starts with WSL; see docs/PROGRESS.md):
+# Install once (user service, starts with WSL; see docs/archive/PROGRESS_HISTORY.md, "Crash safety"):
 #   mkdir -p ~/.config/systemd/user && cp scripts/sever-jobq.service ~/.config/systemd/user/
 #   systemctl --user daemon-reload && systemctl --user enable --now sever-jobq
 set -u

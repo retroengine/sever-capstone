@@ -459,8 +459,7 @@ studio/          SEVER-DB Studio, the desktop demo of every feature (DB-106)  â†
 
 Rust unit tests live next to the code they test (`src/tests.rs`), integration tests in each crate's
 `tests/`, Python tests in each package's `tests/`; the cross-cutting suites are in `tests/`. Parts 1
-and 2 are frozen in place, so this layout stays until v1.0 is tagged; a one-folder-per-kind layout is
-planned as v1.1 ([`docs/PROGRESS.md`](docs/PROGRESS.md)).
+and 2 are frozen in place, so this layout is final (no re-layout is planned, DB-112).
 
 Generated, not in git: `artefacts/` (partition artefacts, ID export, demo reports), `traces/`,
 `jobs/`, `target/`.

@@ -1043,6 +1043,16 @@ part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the fr
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
 
+#### DB-112 — Nothing is planned after v1.0 (24 October 2026)
+
+**Decision.** The post-v1.0 plans are dropped: (1) the v1.1 one-folder-per-kind layout and its erratum E-3; (2) errata E-4 … E-6 for the frozen Part 2 builds (DB-103), whose three defects stay a stated limit (L-28); (3) a release-build API for stored passages (DB-110's follow-up), so passages are read only in the `inspect` build. The one plan is `docs/plans/2026-10-23-v1-then-demo.md`: finish the engine additions, the HPC gate run (DB-111), fair testing, the freeze and `v1.0.0`, then Studio's company demo. `docs/PROGRESS.md` holds the current state only; its history is archived in `docs/archive/PROGRESS_HISTORY.md`. Amends DB-103 and DB-110.
+
+**Why.** The owner wants the project finished and sealed (owner, 24 October 2026). E-3 is tidiness that would re-freeze Parts 1 and 2 and rerun every gate. The v1 build (`sever-db`) has none of L-28's defects; they affect only the frozen Part 2 builds, which are kept as evidence, not as products. Studio's demo reads passages through the `inspect` build.
+
+**Rejected.** Keeping E-4 … E-6 alone (each re-freezes Part 2 and reruns every later exit gate for defects the v1 build does not have).
+
+**Consequence.** No erratum is planned. L-28 no longer names an erratum. A new erratum is opened only for a defect found in a frozen part that the v1 build shares (F-6).
+
 #### DB-111 — The v1.0 gate run is on the college HPC, in WSL2 Ubuntu (24 October 2026)
 
 **Decision.** Every pre-registered gate and measure of Parts 3 and 4 (P3-T1 … P3-T13, P4-T1 … P4-T15) runs once, at the full sizes of Build 3-4 §1.9 and §2.10, in WSL2 Ubuntu 24.04 on the college HPC workstation (Windows). No native Linux, cloud VM, VPS or other machine is used. The run's scripts are `scripts/hpc/` (`check.sh`, `setup.sh`, `run-all.sh`, formerly `scripts/vm/`), with one guide, `scripts/hpc/HPC_GUIDE.md`; logs are `traces/hpc-*.log`. The two locked-memory steps (`p4-forensics`, `p4-ex6`) run in the strict mode of spec §12.8 inside the guest: swap off through `.wslconfig` (`swap=0`), the memory-lock limit raised with `sudo prlimit` in the launching shell. Spec §20.4 names the machine; L-8 says what the claims then cover. Closes G-47; amends DB-94 (the machine only).
@@ -1061,7 +1071,7 @@ a later crate with the same name (two crates in one workspace cannot both produc
 
 **Rejected.** An application-side copy of the text (a deletion in the database would not remove it). A release-build read now (a Part 2 erratum before v1.0, rerunning Part 2's exit gates).
 
-**Consequence.** The `inspect` build compiles `sever-engine`'s test hooks; the default build does not. A release API for passages is an erratum after v1.0 (with E-3).
+**Consequence.** The `inspect` build compiles `sever-engine`'s test hooks; the default build does not. A release API for passages is an erratum after v1.0 (dropped by DB-112) (with E-3).
 
 #### DB-109 — Studio shows the engine's values, or says what else it shows (23 October 2026)
 
@@ -1224,6 +1234,9 @@ E-6 touches the v1 build (`sever-db`), which already has every fix. The bug hunt
 its proposals E-2 and E-3, which were taken.
 **Rejected.** Three errata now, before the VM run: three re-freezes and gate re-runs for defects
 that only the frozen Part 2 builds (its demo, CLI and SDK) can show.
+
+**Amended by DB-112 (24 October 2026):** E-3 … E-6 are dropped; the three defects stay a stated
+limit (L-28).
 
 #### DB-102 — The October bug hunt: participant stores keep what recovery replays; every Part 3 and Part 4 requirement traced in the fast tier (21 October 2026)
 
@@ -2399,7 +2412,7 @@ declared surface.
 - **L-27 Service-held keys.** The operator holds every account's signing key and every `r_t`, so insert
   signatures and deletion authorisation do not constrain a dishonest operator; they record that the
   service acted on an authenticated account.
-- **L-28 Frozen Part 2 builds keep three known defects until erratum E-4 … E-6** (DB-103): its SDK lets a
+- **L-28 Frozen Part 2 builds keep three known defects** (DB-103; no erratum is planned, DB-112): its SDK lets a
   record ID with no UTF-8 encoding raise `UnicodeEncodeError` instead of `InvalidRecordId`; its builds keep
   serving after an `IntegrityViolation` and checkpoint at close; the frozen tracer misses a split `#[spec]`
   attribute. The v1 build (`sever-db`) has none of them.
@@ -2617,6 +2630,7 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **24 October 2026 — Nothing planned after v1.0.** DB-112 (E-3 … E-6 and the release passage API dropped; L-28 stays a limit; PROGRESS keeps only the current state, its history archived). Specification sections touched: none.
 - **24 October 2026 — The gate run on the college HPC.** DB-111 (every gate and measure of Parts 3 and 4 runs once, at full size, in WSL2 Ubuntu on the college HPC; `scripts/vm/` becomes `scripts/hpc/` with one guide; L-8 extended; amends DB-94); closes G-47. Specification sections touched: §20.4.
 - **23 October 2026 — The `inspect` build reads a stored passage.** DB-110 (`db.passage`, wrapping the frozen engine's test read; release build unchanged); closes G-46. Specification sections touched: §16.1, §16.2.
 - **23 October 2026 — Studio wired to the engine.** DB-107 (an `inspect` build reports each committed

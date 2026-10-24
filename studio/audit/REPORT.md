@@ -671,7 +671,7 @@ under their first class: 10 as I, 24 as R, 42 as E, 53 as S, 71 as S.
 
 ## 8. After the fixes (23 Oct 2026, branch `studio-raw`)
 
-The plan is `PLAN.md`; the decisions are G-45, DB-107 (the engine's `inspect` participant),
+The plan (`PLAN.md`, done and removed on 24 Oct 2026; in git history) was carried out; the decisions are G-45, DB-107 (the engine's `inspect` participant),
 DB-108 (`sever-explain`: routing and search explained by the frozen crates' own functions) and
 DB-109 (Studio's provenance rule). Each finding has a test that fails without its fix; the tests are
 in `studio/tests/` and run with `studio/studio.sh test` (`--full` for the NQ ones).
