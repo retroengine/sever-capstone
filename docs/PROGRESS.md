@@ -16,19 +16,17 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
 
 - **Branch:** `studio-raw` (pushed), not yet merged into `main` (`f6be0d2`). It holds the Part 4
   `inspect` additions (DB-107, DB-108, DB-110), Studio's audit-1 fixes, and the HPC decision.
-- **Plan stage:** Stage 1, the engine additions. Done: G-46, DB-110, `Db::passage` with 3 tests
-  (`5a655fc`).
+- **Plan stage:** Stage 1 (the engine additions) is done; Stage 2, the merge into `main`, waits
+  for GitHub's fast tier and the laptop's `full-checks`.
+  - `Db::passage` with 3 tests (`5a655fc`); red proofs PRI-5 … 7 (`37bf88f`; PRI-1 … 7 all red).
+  - The SDK's `Database.passage` and `sever_db.Explainer` (`2acd91d`).
+  - The erase demo's step 4 (`dc29088`): on SB-24, `S_pre − S_post` is printed next to the
+    original, identical for both deleted notes; the real build rebuilds 0. Red proofs PRS-1 … 4
+    in `tests/proofs/scan/`, all red.
 
 ## Next
 
-1. **Stage 1 (Claude):**
-   - red proofs PRI-5 … 7 in `tests/proofs/inspect/`;
-   - the SDK: `Engine.passage`, `Database.passage`, `Explainer` re-exported from `sever_db`, the
-     `.pyi` stub;
-   - the erase demo's step 4 (Build 3-4 §2.11): `S_pre − S_post` beside the original, on the SB-24
-     build, with tests from the spec and red proofs;
-   - the checks: with and without `--features inspect`, `cargo tree` unchanged, clippy, fmt,
-     `tests/proofs/inspect/run.sh`, `scripts/ci.sh fast`, `studio/studio.sh test --full`.
+1. **Stage 1 (Claude): done** (above).
 2. **Stage 2 (Claude):** merge `studio-raw` into `main` once GitHub's fast tier and the laptop's
    `scripts/ci.sh full-checks` are green; tell the owner the commit.
 3. **Stage 3 (the owner):** the one full run of every gate and measure, at full size, in WSL2 Ubuntu

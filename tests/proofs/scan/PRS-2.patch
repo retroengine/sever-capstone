@@ -1,0 +1,13 @@
+diff --git a/crates/sever-scan/src/lib.rs b/crates/sever-scan/src/lib.rs
+index 5e6e2c4..d24300b 100644
+--- a/crates/sever-scan/src/lib.rs
++++ b/crates/sever-scan/src/lib.rs
+@@ -137,7 +137,7 @@ pub fn reconstruct(opened: &[OpenedAccumulator], deleted: &[Target]) -> Vec<Reco
+     let mut out: Vec<Reconstruction> = Vec::new();
+     for (d, n_pre, s_pre) in opened {
+         for (d2, n_post, s_post) in opened {
+-            if d != d2 || n_post.checked_add(1) != Some(*n_pre) || s_pre.len() != s_post.len() {
++            if n_post.checked_add(1) != Some(*n_pre) || s_pre.len() != s_post.len() {
+                 continue;
+             }
+             let x: Vec<i64> = s_pre

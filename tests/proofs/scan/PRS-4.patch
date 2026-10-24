@@ -1,0 +1,12 @@
+diff --git a/crates/sever-scan/Cargo.toml b/crates/sever-scan/Cargo.toml
+index 0f4b1b2..ffa9c85 100644
+--- a/crates/sever-scan/Cargo.toml
++++ b/crates/sever-scan/Cargo.toml
+@@ -49,6 +49,7 @@ sever-platform = { path = "../sever-platform", optional = true }
+ rand_core = { version = "=0.6.4", features = ["getrandom"], optional = true }
+ 
+ [dev-dependencies]
++sever-seal = { path = "../sever-seal", features = ["sabotage-SB-24"] }
+ sever-spec = { path = "../sever-spec" }
+ sever-db = { path = "../sever-db" }
+ sever-engine = { path = "../sever-engine", features = ["test-hooks"] }

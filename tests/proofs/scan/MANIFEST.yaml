@@ -1,0 +1,28 @@
+# Red proofs for the erase demo's reconstruction (Build 3-4 §2.11 step 4; CLAUDE.md §6.3). Each
+# patch breaks one rule of crates/sever-scan; the named test, built with the named features, must
+# go red. Run them all: bash tests/proofs/scan/run.sh (a throwaway worktree of HEAD per patch).
+- id: PRS-1
+  claim: the rebuilt vector is S_post − S_pre (§5.3 a deletion subtracts x̃, so x̃ = S_pre − S_post)
+  patch: PRS-1.patch
+  features: ""
+  test: p4_scan_reconstruct_is_s_pre_minus_s_post_of_one_group_one_record_apart
+- id: PRS-1b
+  claim: the same sign error on a real SB-24 image
+  patch: PRS-1.patch
+  features: demo-sb24
+  test: p4_scan_rebuilds_the_deleted_vector_when_rotation_is_skipped
+- id: PRS-2
+  claim: accumulators of two different groups are paired (S of one group minus S of another)
+  patch: PRS-2.patch
+  features: ""
+  test: p4_scan_reconstruct_is_s_pre_minus_s_post_of_one_group_one_record_apart
+- id: PRS-3
+  claim: S is decoded little-endian (§0.2 integers are big-endian)
+  patch: PRS-3.patch
+  features: demo-sb24
+  test: p4_scan_rebuilds_the_deleted_vector_when_rotation_is_skipped
+- id: PRS-4
+  claim: the build under test skips group-key rotation (SB-24), so the old accumulator stays readable
+  patch: PRS-4.patch
+  features: ""
+  test: p4_scan_rebuilds_no_deleted_vector_on_the_real_build

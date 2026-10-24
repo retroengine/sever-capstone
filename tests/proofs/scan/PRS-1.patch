@@ -1,0 +1,13 @@
+diff --git a/crates/sever-scan/src/lib.rs b/crates/sever-scan/src/lib.rs
+index 5e6e2c4..6f3da4b 100644
+--- a/crates/sever-scan/src/lib.rs
++++ b/crates/sever-scan/src/lib.rs
+@@ -143,7 +143,7 @@ pub fn reconstruct(opened: &[OpenedAccumulator], deleted: &[Target]) -> Vec<Reco
+             let x: Vec<i64> = s_pre
+                 .iter()
+                 .zip(s_post)
+-                .map(|(a, b)| a.wrapping_sub(*b))
++                .map(|(a, b)| b.wrapping_sub(*a))
+                 .collect();
+             let hit = deleted.iter().position(|t| {
+                 t.x.len() == x.len() && t.x.iter().zip(&x).all(|(a, b)| i64::from(*a) == *b)
