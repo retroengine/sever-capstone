@@ -14,10 +14,9 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
 | 3 The Receipt | **built**; every interim laptop check passes; waits for the HPC run, a fair-testing PASS (FT-10), `scripts/freeze.sh 3` | |
 | 4 The Erasure | **built**; interim checks pass, no gate in the ledger yet; waits for the same | |
 
-- **Branch:** `studio-raw` (pushed), not yet merged into `main` (`f6be0d2`). It holds the Part 4
-  `inspect` additions (DB-107, DB-108, DB-110), Studio's audit-1 fixes, and the HPC decision.
-- **Plan stage:** Stage 1 (the engine additions) is done; Stage 2, the merge into `main`, waits
-  for GitHub's fast tier and the laptop's `full-checks`.
+- **Branch:** `main` = `3417b7f` (fast-forwarded from `studio-raw` on 24 Oct; GitHub's fast tier
+  and `scripts/ci.sh full-checks` 42/42 green on it). **The HPC run tests `3417b7f`.**
+- **Plan stage:** Stages 1 and 2 are done; next is Stage 3, the HPC run.
   - `Db::passage` with 3 tests (`5a655fc`); red proofs PRI-5 … 7 (`37bf88f`; PRI-1 … 7 all red).
   - The SDK's `Database.passage` and `sever_db.Explainer` (`2acd91d`).
   - The erase demo's step 4 (`dc29088`): on SB-24, `S_pre − S_post` is printed next to the
@@ -27,8 +26,7 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
 ## Next
 
 1. **Stage 1 (Claude): done** (above).
-2. **Stage 2 (Claude):** merge `studio-raw` into `main` once GitHub's fast tier and the laptop's
-   `scripts/ci.sh full-checks` are green; tell the owner the commit.
+2. **Stage 2 (Claude): done**: `main` = `3417b7f`.
 3. **Stage 3 (the owner):** the one full run of every gate and measure, at full size, in WSL2 Ubuntu
    on the college HPC (DB-111): [`scripts/hpc/HPC_GUIDE.md`](../scripts/hpc/HPC_GUIDE.md). A failed
    gate is a bug: red test first, the smallest fix, then that gate and every later one rerun.
@@ -58,6 +56,11 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
 prepare | run | test`. Audit 1 (`studio/audit/REPORT.md`) is fixed, each finding with a test that
 fails without its fix; verified on `d3cdbc4` (`studio.sh test --full` 131 passed, NQ smoke PASS).
 Audit 2 (`studio/audit/AUDIT2.md`) lists what is still overstated; it is fixed in Stage 6.
+On `3417b7f`, `studio.sh test --full` gave 129 passed, 2 failed: the no-freeze test (677 ms
+against 250 ms on a busy laptop; it passed on rerun) and the UI smoke, which timed out after
+900 s, probably because the part demos' `cargo run --release` builds were cold after
+`cargo clean`. The owner deferred this to Stage 6 (24 Oct); it does not affect the engine or
+the HPC run.
 
 ## Working setup
 
@@ -91,6 +94,8 @@ Audit 2 (`studio/audit/AUDIT2.md`) lists what is still overstated; it is fixed i
 
 ## Session log
 
+- **24 Oct 2026 (end):** Stage 1 done (above); Stage 2: `main` fast-forwarded to `3417b7f`.
+  Studio's full tier is deferred to Stage 6 (two failures noted under Studio).
 - **24 Oct 2026 (later):** the HPC run rebuilt around the owner's long-run checklist
   (`scripts/hpc/HPC_GUIDE.md`, rewritten). The owner pastes one prompt (Part C), and Claude follows
   Part D:
