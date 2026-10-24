@@ -25,6 +25,8 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
    - red proofs PRI-5 … 7 in `tests/proofs/inspect/`;
    - the SDK: `Engine.passage`, `Database.passage`, `Explainer` re-exported from `sever_db`, the
      `.pyi` stub;
+   - the erase demo's step 4 (Build 3-4 §2.11): `S_pre − S_post` beside the original, on the SB-24
+     build, with tests from the spec and red proofs;
    - the checks: with and without `--features inspect`, `cargo tree` unchanged, clippy, fmt,
      `tests/proofs/inspect/run.sh`, `scripts/ci.sh fast`, `studio/studio.sh test --full`.
 2. **Stage 2 (Claude):** merge `studio-raw` into `main` once GitHub's fast tier and the laptop's
@@ -70,14 +72,16 @@ Audit 2 (`studio/audit/AUDIT2.md`) lists what is still overstated; it is fixed i
   `scripts/ops/sidejobs.sh`, memory guard `scripts/oomguard.sh`. The laptop has 16 GB (WSL 11 GB),
   8 cores, and overheats on long runs.
 
-## Open questions (decide before Stage 3: the HPC run tests the build as it then is)
+## Decided (24 Oct 2026)
 
-- **Part 4's erase program** (`sever-demo-p4`, SB-24 build) counts what the scan decrypts but does
-  not print the reconstructed vector beside the original, as Build 3-4 §2.11 step 4 says. A Part 4
-  change; Part 4 is not frozen yet.
-- **The frozen partition** is fitted on SciQ, so 88 % of NQ passages are out of distribution and
-  live in spawned groups (by design: the drift case). Refitting on NQ would change the artefacts
-  every gate uses.
+- **Part 4's erase demo will show the leak** as Build 3-4 §2.11 step 4 says. On the SB-24 build,
+  `sever-scan` decrypts the deleted record's group at both versions and `sever-demo-p4` prints
+  `S_pre − S_post` beside the original `x̃`. Added to Stage 1, so the HPC run tests it. The spec
+  (§16.3) says nothing about the scanner's report, so no gap is needed.
+- **The frozen partition stays fitted on SciQ.** This is the design (DB-41): the groups must be
+  fixed on data that holds no user data, and the drift test is meant to send most live data (about
+  90 % expected; 88 % of NQ) to spawned groups. Refitting on NQ would break that thesis and Part 1's
+  frozen artefacts and evidence.
 
 ## To explain later (learning pass)
 
