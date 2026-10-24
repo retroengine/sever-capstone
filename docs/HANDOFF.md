@@ -14,19 +14,19 @@ We are continuing SEVER-DB. Read these first, in order, and do not start work un
 3. docs/plans/2026-10-23-v1-then-demo.md (the approved plan; we are in Stage 1, then Stage 3)
 4. docs/PROGRESS.md (the "Now" section)
 Then tell me in 5 lines: where we are, what is done, the next step, and anything on this machine
-that blocks it (run `bash scripts/vm/check.sh` to see the machine). Save my working rules from
+that blocks it (run `bash scripts/hpc/check.sh` to see the machine). Save my working rules from
 docs/HANDOFF.md §3 into your memory.
 ```
 
 ## 2. Where things stand (23 Oct 2026)
 
 - **Branch `studio-raw`**, pushed to `origin`; last commit `5a655fc`.
-  - `main` is merged in (the VM guide).
+  - `main` is merged in (the gate-run guide, now `scripts/hpc/HPC_GUIDE.md`).
   - **Not yet merged into `main`.**
 - **The plan:** `docs/plans/2026-10-23-v1-then-demo.md`, approved by the owner. Its order:
   1. finish the engine additions;
   2. merge to `main`;
-  3. the VM gate run;
+  3. the gate run on the college HPC, in WSL2 Ubuntu (DB-111; the owner);
   4. fairness for Parts 3 and 4;
   5. freeze Parts 3 and 4 (`v1.0.0`);
   6. only then, Studio's company demo (a Groq AI assistant on SEVER-DB, Chroma side by side, a
@@ -75,25 +75,17 @@ docs/HANDOFF.md §3 into your memory.
   mocks, no overclaims (audit 2).
 - **The owner's style:** wants to understand deeply; explain plainly; ask before big decisions.
 
-## 4. Moving to a VPS / HPC: the method
+## 4. The gate run on the college HPC
 
-1. **On the old laptop (already done by this handoff):** everything is committed and pushed. The
-   only things not in git are the data (`datasets/`, by design) and Studio's demo databases
-   (rebuilt by `studio/studio.sh prepare`).
-2. **On the new machine:** follow `scripts/vm/HPC_GUIDE.md`, Part C:
-   1. check the machine;
-   2. add an SSH key to GitHub;
-   3. `git clone git@github.com:retroengine/sever-capstone.git ~/sever-db`, then
-      `git checkout studio-raw`;
-   4. put the data bundle (`sever-hpc`, from the Windows Desktop) in `datasets/`, then
-      `(cd datasets && sha256sum -c MANIFEST.sha256)`;
-   5. `bash scripts/vm/check.sh`;
-   6. `bash scripts/vm/setup.sh` (`NO_SUDO=1` without admin).
-   - Clone onto a **local ext4/XFS disk**, not a network home (the engine refuses others, §12.9).
-3. **Install Claude Code on it:** `curl -fsSL https://claude.ai/install.sh | bash` (or `npm install
-   -g @anthropic-ai/claude-code`), run `claude` in `~/sever-db`, log in, and paste §1's prompt.
-4. **Long runs survive a closed terminal:** use `tmux new -s sever` (detach with Ctrl-b d, come
-   back with `tmux attach -t sever`) for both Claude Code and the run, or the guide's `setsid nohup
-   …` line.
-5. **Then, in that new chat:** finish Stage 1, merge (Stage 2), and start the VM run (Stage 3) on
-   that same machine.
+Decided 24 Oct 2026 (DB-111): the only machines are the laptop and the college HPC, both Windows
+with WSL2. Claude keeps working on the laptop; the HPC only runs the gates. There is no MacBook, VPS
+or cloud-VM plan.
+
+1. **On the laptop (Claude):** finish Stage 1, merge (Stage 2), and tell the owner the `main`
+   commit to test.
+2. **On the HPC (the owner):** follow the one guide, `scripts/hpc/HPC_GUIDE.md`, from Part B (the
+   data bundle) through Part C step 12. Its Part A can be pasted into a Claude chat there as
+   background.
+3. **Back on the laptop (Claude):** read the logs (`traces/hpc-*.log`, `hpc-summary.log`) and the
+   `hpc-run-<date>` branch with the run ledger; fix any failed gate red-test-first; the owner reruns
+   that gate and every later one on the HPC.

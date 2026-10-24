@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# scripts/vm/run-all.sh — runs every pre-registered Part 3 and Part 4 gate and measure once, in
-# sequence, on a VM prepared by scripts/vm/setup.sh (Build 3-4 §1.9 P3-T1…T13, §2.10 P4-T1…T15).
+# scripts/hpc/run-all.sh — runs every pre-registered Part 3 and Part 4 gate and measure once, in
+# sequence, in WSL2 Ubuntu on the college HPC workstation prepared by scripts/hpc/setup.sh (DB-111;
+# Build 3-4 §1.9 P3-T1…T13, §2.10 P4-T1…T15). The one guide is scripts/hpc/HPC_GUIDE.md.
 #
-# Detached-safe; launch from the repo root and log out freely:
-#   mkdir -p traces && setsid nohup bash scripts/vm/run-all.sh > traces/vm-run.out 2>&1 &
+# Detached; launch from the repo root (HPC_GUIDE.md step 9) and keep the Ubuntu window open:
+#   mkdir -p traces && setsid nohup bash scripts/hpc/run-all.sh > traces/hpc-run.out 2>&1 &
 #
 # Output:
-#   traces/vm-<step>.log   the step's full output, ending with a line "rc=N"
-#   traces/vm-summary.log  one line per step: time, step, rc, duration (appended, never rewritten)
+#   traces/hpc-<step>.log   the step's full output, ending with a line "rc=N"
+#   traces/hpc-summary.log  one line per step: time, step, rc, duration (appended, never rewritten)
 #   The gates themselves write the run ledger and results/ (never edit those by hand, CLAUDE.md §6.4).
 # A failing step does not stop the rest; the script exits 1 if any step failed.
 #
@@ -30,7 +31,7 @@ NPROC=$(nproc)
 JOBS=${JOBS:-$(( NPROC / 4 ))}
 [ "$JOBS" -ge 2 ] 2>/dev/null || JOBS=2
 mkdir -p traces
-SUMMARY=traces/vm-summary.log
+SUMMARY=traces/hpc-summary.log
 
 # name | command (word-split on purpose; no arguments contain spaces)
 STEPS=(
@@ -73,13 +74,13 @@ done
 
 echo "run-all start $(date -Is) on $(hostname): nproc=$NPROC JOBS=$JOBS commit=$(git rev-parse --short HEAD 2>/dev/null)"
 echo "ulimit -l = $(ulimit -l)"
-[ "$(ulimit -l)" = "unlimited" ] || echo "WARNING: ulimit -l is not unlimited; the --locked-memory steps will fail (re-login after setup.sh)"
+[ "$(ulimit -l)" = "unlimited" ] || echo "WARNING: ulimit -l is not unlimited; the --locked-memory steps will fail (HPC_GUIDE.md step 9: sudo prlimit)"
 echo "== $(date -Is) run-all start nproc=$NPROC JOBS=$JOBS commit=$(git rev-parse --short HEAD 2>/dev/null)" >>"$SUMMARY"
 
 failed=0
 for s in "${STEPS[@]}"; do
   name=${s%%|*}; cmd=${s#*|}
-  log="traces/vm-$name.log"
+  log="traces/hpc-$name.log"
   if [ -n "${ONLY:-}" ] && ! in_list "$name" "$ONLY"; then continue; fi
   if in_list "$name" "${SKIP:-}"; then
     echo "$(date -Is) $name SKIPPED (SKIP)" | tee -a "$SUMMARY"; continue

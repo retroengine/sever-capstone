@@ -16,8 +16,8 @@ frozen (Build §0.1):
 |---|---|---|
 | **1 The Idea** | Deleting a vector returns its group, bit for bit, to the never-inserted state | **Done**: every gate passed on 6 Oct 2026; frozen as `part-1-frozen` (see [Part 1 results](#part-1-results)) |
 | **2 The Database** | Exactness survives a crash at any point; multi-group deletion is all-or-nothing | **Done**: every gate passed on 8 Oct 2026, then an independent test audit; frozen as `part-2-frozen` (see [Part 2](#part-2-the-database)) |
-| **3 The Receipt** | Every deletion yields a certificate anyone can verify offline | **Built**: every interim laptop check passes (19 Oct 2026); the full gates run once on a VM, then it freezes (DB-94; see [Part 3](#part-3-the-receipt)) |
-| **4 The Erasure** | Nothing deleted can be recovered from raw storage | **Built**: interim checks pass; the full gates and the evaluation run on the same VM (see [Part 4](#part-4-the-erasure)) |
+| **3 The Receipt** | Every deletion yields a certificate anyone can verify offline | **Built**: every interim laptop check passes (19 Oct 2026); the full gates run once on the college HPC in WSL2, then it freezes (DB-94, DB-111; see [Part 3](#part-3-the-receipt)) |
+| **4 The Erasure** | Nothing deleted can be recovered from raw storage | **Built**: interim checks pass; the full gates and the evaluation run in the same HPC run (see [Part 4](#part-4-the-erasure)) |
 
 Where things stand in detail: [`docs/PROGRESS.md`](docs/PROGRESS.md). Working rules for contributors
 and AI assistants: [`CLAUDE.md`](CLAUDE.md).
@@ -287,8 +287,8 @@ audit/target/release/sever-audit export.json --anchors anchors.json --certificat
 
 ### Part 3 results
 
-The pre-registered gates (Build 3-4 §1.9) run once, in full, on a cloud VM with Part 4's
-([DB-94](docs/SEVER-DB_PROJECT_OVERVIEW.md); `scripts/vm/run-all.sh`). Until then the laptop runs
+The pre-registered gates (Build 3-4 §1.9) run once, in full, on the college HPC in WSL2 Ubuntu with
+Part 4's ([DB-94, DB-111](docs/SEVER-DB_PROJECT_OVERVIEW.md); `scripts/hpc/run-all.sh`). Until then the laptop runs
 **interim checks**, which are evidence, never reported as the gates (from the run ledger, 19 Oct
 2026):
 
@@ -349,7 +349,7 @@ The forensic scanner reads a raw disk image for anything deleted: `target/releas
 ### Part 4 results
 
 Interim (laptop, 19 Oct 2026); the gates P4-T1 … P4-T11 and the measures P4-T12 … P4-T15 run on
-the VM.
+the college HPC (DB-111).
 
 | Target | Interim check | Result |
 |---|---|---|
@@ -374,13 +374,15 @@ EX-2 on a `fuse2fs`-mounted ext4 image (`sever-ex2`), EX-6's four arms (the engi
 soft-delete and rebuild IVF), EX-7's three builds (`sever-db`, `sever-db-noerase`, `sever-softdelete`
 through `sever-bench`) and EX-8 at nq-1m.
 
-Everything runs once on a VM (about 1–2 days on 32 cores):
+Everything runs once, at full size, in WSL2 Ubuntu on the college HPC (about 1–2 days on 32
+cores; DB-111). The one guide, step by step, is [`scripts/hpc/HPC_GUIDE.md`](scripts/hpc/HPC_GUIDE.md):
 
 ```bash
-bash scripts/vm/setup.sh                 # tools, memlock, SDK, data check, artefacts, traces
-# log out and in (ulimit -l unlimited), then:
-setsid nohup bash scripts/vm/run-all.sh > traces/vm-run.out 2>&1 &
-tail -f traces/vm-summary.log
+bash scripts/hpc/check.sh                # read-only machine check
+bash scripts/hpc/setup.sh                # tools, memlock, SDK, data check, artefacts, traces
+sudo prlimit --pid $$ --memlock=unlimited:unlimited   # same window; .wslconfig has swap=0
+setsid nohup bash scripts/hpc/run-all.sh > traces/hpc-run.out 2>&1 &
+tail -f traces/hpc-summary.log
 ```
 
 ---
@@ -450,7 +452,7 @@ spikes/          Part 3's proof spike (a gate)
 golden/ spec/ configs/ datasets/   golden vectors, requirements and registers, pre-registration, data pins
 docs/            specification, overview, build plans, gaps, progress, evidence, guides  → docs/README.md
 results/         gate and measure results (written by the runners, cited by docs/RUN_LEDGER.jsonl)
-scripts/         CI tiers, demos, fair testing, freeze, job queue, the VM run (scripts/vm/)
+scripts/         CI tiers, demos, fair testing, freeze, job queue, the HPC gate run (scripts/hpc/)
 freeze/          hashes of the frozen parts' files (F-1)
 studio/          SEVER-DB Studio, the desktop demo of every feature (DB-106)  → studio/README.md
 ```

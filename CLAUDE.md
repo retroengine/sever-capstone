@@ -358,6 +358,7 @@ they name exists. Python modules under `python/` need `PYTHONPATH=python`.
 | Part 2 proofs (§6.3): static check / run them all | `PYTHONPATH=python uv run python -m sever_testkit_p2.proofs check`; `… proofs run` (writes `docs/PROOFS_P2.md`; `--only <ID>` for one) |
 | P2-T1…T3 crash gate (Full tier; writes the run ledger; ~7 h) | `PYTHONHASHSEED=0 PYTHONPATH=python uv run python -m sever_testkit_p2.gates p2-crash --data nq-10k --all-seeds --jobs 3` |
 | Fair testing (§6.4): check, one run, run + fix cycle, offline plumbing run | `scripts/fair.sh doctor --live`; `scripts/fair.sh run 2` prints the cost estimate, then `scripts/fair.sh --bg run 2 --yes` starts it (also `cycle`, `resume RUN_ID`, `fix RUN_ID`; DB-74); `scripts/fair.sh dry-run 2` (offline; runs in `~/.sever-fair/runs/`) |
+| v1.0 gate run (college HPC, WSL2 Ubuntu; DB-111): check, setup, run | `bash scripts/hpc/check.sh`, `bash scripts/hpc/setup.sh`, then `scripts/hpc/run-all.sh` as in `scripts/hpc/HPC_GUIDE.md` step 9 (logs `traces/hpc-*.log`) |
 | SEVER-DB Studio, the desktop demo of every feature (own env in `studio/`; DB-106) | `studio/studio.sh setup` (once), `studio/studio.sh prepare` (once, ~10 min), `studio/studio.sh run`; tests: `studio/studio.sh test`; offline: add `--data synthetic` (see `studio/README.md`) |
 
 ---

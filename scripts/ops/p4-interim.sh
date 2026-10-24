@@ -1,5 +1,5 @@
 #!/bin/bash
-# Part 4 interim crash campaign (DB-94; the full P4-T3 runs on the VM): the final build through
+# Part 4 interim crash campaign (DB-94; the full P4-T3 runs on the college HPC, DB-111): the final build through
 # sever-crashkit-p4, crash points on both disks in three windows of each seed's trace, so every
 # kind of operation is crashed: single deletions (from op 17,000), multi-group deletions (from op
 # 17,844) and the inserts after them (from op 18,860), WINDOW operations each, five seeds.

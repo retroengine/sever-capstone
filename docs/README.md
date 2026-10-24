@@ -31,4 +31,5 @@
 | [`SOUNDNESS.md`](SOUNDNESS.md) | The argument behind the deletion proof (§9.5) |
 | [`FAIR_TESTING.md`](FAIR_TESTING.md) | The clean-room AI testing system (FT-1 … FT-10) |
 | [`TEAM_HANDBOOK.md`](guides/TEAM_HANDBOOK.md) | Teammates doing documentation and review work |
+| [`HPC_GUIDE.md`](../scripts/hpc/HPC_GUIDE.md) | The v1.0 gate run on the college HPC, in WSL2 Ubuntu (DB-111) |
 | [`TRACEABILITY.md`](TRACEABILITY.md) | Where the traceability matrices are |

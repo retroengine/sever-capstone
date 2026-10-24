@@ -1950,7 +1950,8 @@ invalidates runs that used the old bytes.
 | CPU | Intel Core Ultra 5 226V (Core Ultra 200V series) | AVX2, AES-NI, PCLMULQDQ and SHA extensions are available; there is no AVX-512, so there is no AVX-512 code path |
 | RAM | 16 GB, not upgradeable | 10^6 vectors need about 3.8 GB resident; the startup budget refuses more than 60 % of RAM |
 | Disk | Laptop SSD | Key-file overwrite is not guaranteed on flash (overview L-1); crash campaigns run in memory on `SimVfs` |
-| OS | Native Linux, ext4 or XFS; swap off or encrypted; hibernation off | WSL2 or a VM is for development only; experiments run on native Linux |
+| OS | Linux x86-64, ext4 or XFS; swap off or encrypted; hibernation off | Development runs on the laptop's WSL2. No native Linux machine is available, so the v1.0 run of every gate and measure is on WSL2 (next row; overview DB-111); what the Windows host keeps is outside the claims (overview L-8) |
+| Gate-run machine | The college HPC workstation: Windows, WSL2 Ubuntu 24.04, run by `scripts/hpc/` (`scripts/hpc/HPC_GUIDE.md`) | Every pre-registered gate and measure runs there once, at full size; its CPU and memory are recorded in the run ledger |
 | Forensics | `fuse2fs` (e2fsprogs) mounts ext4 images without root | Used by EX-2 |
 
 ---

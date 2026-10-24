@@ -1043,6 +1043,16 @@ part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the fr
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
 
+#### DB-111 — The v1.0 gate run is on the college HPC, in WSL2 Ubuntu (24 October 2026)
+
+**Decision.** Every pre-registered gate and measure of Parts 3 and 4 (P3-T1 … P3-T13, P4-T1 … P4-T15) runs once, at the full sizes of Build 3-4 §1.9 and §2.10, in WSL2 Ubuntu 24.04 on the college HPC workstation (Windows). No native Linux, cloud VM, VPS or other machine is used. The run's scripts are `scripts/hpc/` (`check.sh`, `setup.sh`, `run-all.sh`, formerly `scripts/vm/`), with one guide, `scripts/hpc/HPC_GUIDE.md`; logs are `traces/hpc-*.log`. The two locked-memory steps (`p4-forensics`, `p4-ex6`) run in the strict mode of spec §12.8 inside the guest: swap off through `.wslconfig` (`swap=0`), the memory-lock limit raised with `sudo prlimit` in the launching shell. Spec §20.4 names the machine; L-8 says what the claims then cover. Closes G-47; amends DB-94 (the machine only).
+
+**Why.** The owner has two machines: the laptop and the college HPC, both Windows with WSL2 (owner, 24 October 2026). The HPC is the larger, so the gates keep their pre-registered sizes; on the laptop they would have had to shrink.
+
+**Rejected.** A MacBook (Apple Silicon is not x86-64, so §12.9 refuses it, and a Linux VM on it is still not native). A rented VPS or cloud VM (not available to the owner). The laptop with smaller gates (it would shrink pre-registered evidence after the interim results were seen). The strict steps with `allow_unsafe_memory`.
+
+**Consequence.** The forensic scan (T-2) and the memory lock cover the Linux guest: its memory and the ext4 device the engine writes to. What the Windows host keeps, its pagefile and old blocks of the virtual disk file `ext4.vhdx`, is outside the claim and is disclosed (L-8); §11 recommendation 6 (native Linux for EX-2) is not followed. Interim laptop evidence stays evidence only (DB-94).
+
 #### DB-110 — The `inspect` build reads a stored passage (23 October 2026)
 
 **Decision.** `sever-db`'s cargo feature `inspect` turns on `sever-engine/test-hooks` and adds one read, `Db::passage(cid, record_id) -> Option<Vec<u8>>`, which wraps `Engine::passage`: the stored passage of a live record, decrypted under its record key (§3.4, §13.2), or `None` when the record is not live or the collection stores no passages. Nothing else of `test-hooks` is reachable from `sever-db` or its SDK; G-45's rejection of `group_snapshot` (it exposes `S` and `r_agg`) stands. The SDK built with `inspect` adds `Database.passage` and re-exports `Explainer`, so an application never imports the native module. Release and measured builds are unchanged: without the feature, `sever-db`'s dependency tree and code are as before. Closes G-46.
@@ -1389,7 +1399,9 @@ disks (2 to 3.5 GB per seed, about a third of Part 3's speed), so five seeds fro
 did not fit (the memory guard stopped two and paused three after 50 operations). The interim check
 is instead three windows of 80 operations per seed, two seeds at a time: single deletions from
 operation 17,000, multi-group deletions from 17,844 and the inserts after them from 18,860
-(`scripts/ops/p4-interim.sh`). It is evidence only; P4-T3 runs in full on the VM.
+(`scripts/ops/p4-interim.sh`). It is evidence only; P4-T3 runs in full on the VM. **Amended by DB-111
+(24 October 2026):** the full run is on the college HPC in WSL2 Ubuntu, not a cloud VM; the gate
+sizes and the interim rules here stand.
 
 #### DB-93 — Memory is locked process-wide at startup; the btrfs attribute before `KEYS` exists (18 October 2026)
 
@@ -2395,7 +2407,10 @@ declared surface.
 **Scope and method**
 
 - **L-8 Platform.** Linux x86-64, ext4 or XFS, AVX2 or scalar; under WSL2 or a VM the host may keep old
-  blocks, so experiments run on native Linux.
+  blocks and page out guest memory. No native Linux machine was available, so the v1.0 gates and
+  measures run in WSL2 Ubuntu on the college HPC (DB-111): the forensic scan and the memory lock
+  cover the Linux guest (its memory and the ext4 device the engine writes to); the Windows host's
+  pagefile and the old blocks of its virtual disk file are outside the claim.
 - **L-19 The reference set is non-commercial** (SciQ, CC BY-NC 3.0).
 - **L-20 Statistics.** No distinguisher-based privacy claim; the five-seed design is very likely
   underpowered for equivalence; `ddof = 0` is the more permissive convention (both are reported); one
@@ -2475,7 +2490,9 @@ About eight months full time, after the earlier SEVER paper is submitted.
 5. **Seek an informal cryptography review** of spec §9 and `SOUNDNESS.md` — for example a university
    cryptography group or a practitioner forum. It is the largest risk (R-1) and is cheap to reduce.
 6. **Use native Linux** (dual boot or a spare disk) for EX-2. Under WSL2 or a VM, the host's disk layer
-   can keep old blocks, which would make the forensic test unsound.
+   can keep old blocks, which would make the forensic test unsound. Not followed in v1.0: no native
+   Linux machine was available, so EX-2 runs in WSL2 and its claim is limited to the guest (DB-111,
+   L-8).
 7. **Keep the server optional.** It adds no research claim.
 8. **Aim for a venue with artefact evaluation.** The contribution is systems plus security; a venue that
    checks artefacts rewards exactly this project's reproducibility discipline.
@@ -2600,6 +2617,7 @@ Links checked on 27 September 2026 unless noted.
 
 ## Changelog
 
+- **24 October 2026 — The gate run on the college HPC.** DB-111 (every gate and measure of Parts 3 and 4 runs once, at full size, in WSL2 Ubuntu on the college HPC; `scripts/vm/` becomes `scripts/hpc/` with one guide; L-8 extended; amends DB-94); closes G-47. Specification sections touched: §20.4.
 - **23 October 2026 — The `inspect` build reads a stored passage.** DB-110 (`db.passage`, wrapping the frozen engine's test read; release build unchanged); closes G-46. Specification sections touched: §16.1, §16.2.
 - **23 October 2026 — Studio wired to the engine.** DB-107 (an `inspect` build reports each committed
   change's public fields), DB-108 (`sever-explain`), DB-109 (Studio's provenance rule; the "By group"
