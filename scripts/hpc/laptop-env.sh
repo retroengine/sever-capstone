@@ -135,7 +135,7 @@ if [ "$mode" = apply ]; then
   pkill -f 'rust-analyzer' 2>/dev/null; pkill -f 'copilot-sdk|copilot-runtime' 2>/dev/null
   for u in sever-jobq sever-sidejobs; do
     if systemctl --user is-active --quiet "$u.service"; then
-      if [ -z "$(ls -A jobs/queue jobs/running jobs/side 2>/dev/null | grep -v '^$')" ]; then
+      if [ -z "$(find jobs/queue jobs/running jobs/side -maxdepth 1 -type f 2>/dev/null | head -1)" ]; then
         systemctl --user disable --now "$u.service" >/dev/null 2>&1
       else echo "  note  $u has queued work: left running"; fi
     fi
