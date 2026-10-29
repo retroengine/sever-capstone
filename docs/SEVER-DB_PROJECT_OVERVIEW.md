@@ -1043,6 +1043,23 @@ part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the fr
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
 
+#### DB-113 — The v1.0 gate run is on the laptop, every step scoped to fit 36 hours (29 October 2026)
+
+**Decision.** The college HPC is no longer available (owner, 29 October 2026), so the one v1.0 run of every pre-registered gate and measure of Parts 3 and 4 is on the owner's laptop (Intel Core Ultra 5 226V, 8 cores, 16 GB, WSL2 Ubuntu 24.04 with 12 GB) through the same `scripts/hpc/` machinery. Every step of DB-111's run still runs, with the same thresholds; sizes are scoped so that the whole run is estimated at about 33 hours, leaving time inside the owner's two days for one fix-and-rerun. The sizes, the phases (steps that run at the same time) and their estimates are `scripts/hpc/steps.sh`:
+
+- **Full size:** P3-T4 (`p3-crash`, every crash point of 20,000 operations, five seeds), P3-T5 (`p3-replay`, `nq-100k`), P3-T1/T2 and P4-T9's attacks, both fuzz steps (10^8 executions per target), both mutant steps (every mutant), the check suites, coverage, spikes, P3-T13, P4-T13 (`nq-1m`) and P4-T15 (EX-8, `nq-1m`).
+- **P4-T3 (`p4-crash`):** crash points in one window of 300 operations per seed instead of all 20,000 (a full seed is about 39 hours here: about 467,000 crash points at about 0.3 s each). Window A, operations 17,694–17,993, crashes single deletions and the first multi-group deletions (seeds 42, 123, 777); window B, 18,700–18,999, crashes the last multi-group deletions and the inserts after them (seeds 2024, 9999). So every kind of operation is crashed on at least two seeds; it is recorded as two P4-T3 entries.
+- **P4-T9's replay, P4-T1/T2 (`p4-forensics`) and P4-T12 (EX-6):** `nq-10k` instead of `nq-100k`, all five seeds (the measured engine inserts about 58 records/s and deletes about 21 calls/s on one core, so each `nq-100k` seed costs hours per arm).
+- **P4-T14 (EX-7):** `nq-10k` with all five seeds, and `nq-100k` with seed 42, instead of `nq-100k` and `nq-1m` with all seeds (one `nq-1m` arm-run alone is about 15 hours).
+
+The sizes were chosen by measured cost only (pilots on 29 October that wrote nothing to the run ledger: EX-7 per arm at `nq-10k`, fuzz executions per second per target, the mutant suites' test times, the interim crash windows' seconds per crash point), never by which sizes passed before. Two run rules are added: (1) a step that ends with a failure while an out-of-memory kill happened (the kernel's `oom_kill` count rose, or `oomguard` stopped a process) did not produce a result; it is recorded as `rc=137` with an `# oom:` line and runs again, so the machine can never make a gate fail; (2) a step waits (with an alert), never fails, while the laptop is on battery, and the two locked-memory steps wait until the memory lock is unlimited and swap is off (the owner's `owner-sudo.sh`, which restarts nothing). Timing measures (P3-T13, EX-7) run in phases where no gate shares the CPU; EX-7's two sizes and EX-8 share it with each other, one core each, turbo off (this is recorded with their results). The unit's memory cap is 10 GB; the laptop is dedicated to the run (`laptop-env.sh`: extra programs closed, no sleep on mains, maximum CPU 99 % against overheating, a supervisor that restarts WSL if it stops). Amends DB-111 (the machine and the sizes); closes G-48.
+
+**Why.** The owner has only the laptop now and two days. Shrinking was rejected in DB-111 because the interim results had been seen; that reason still holds, so the scoping rule is fixed in advance and is about time alone: every gate keeps its threshold, the largest size that fits is kept, and the scoped claims are stated at laptop scale (L-8).
+
+**Rejected.** Dropping steps (the owner wants every step run). Fewer seeds instead of smaller data (the owner keeps the five seeds where possible). Running the full sizes over several weeks (the owner has two days). `allow_unsafe_memory` for the locked steps (spec §12.8's strict mode stays).
+
+**Consequence.** T-1 on the final build (P4-T3) covers two windows of crash points per seed, not every operation; T-2, T-3 on the final build and T-5 are established at `nq-10k`; EX-7's cost is reported at `nq-10k` (five seeds) and `nq-100k` (one seed, no interval). Part 3's gates, both fuzzers and both mutation scores are at full size. Spec §20.4 names the laptop; L-8 says what the claims cover.
+
 #### DB-112 — Nothing is planned after v1.0 (24 October 2026)
 
 **Decision.** The post-v1.0 plans are dropped: (1) the v1.1 one-folder-per-kind layout and its erratum E-3; (2) errata E-4 … E-6 for the frozen Part 2 builds (DB-103), whose three defects stay a stated limit (L-28); (3) a release-build API for stored passages (DB-110's follow-up), so passages are read only in the `inspect` build. The one plan is `docs/plans/2026-10-23-v1-then-demo.md`: finish the engine additions, the HPC gate run (DB-111), fair testing, the freeze and `v1.0.0`, then Studio's company demo. `docs/PROGRESS.md` holds the current state only; its history is archived in `docs/archive/PROGRESS_HISTORY.md`. Amends DB-103 and DB-110.
@@ -2421,9 +2438,12 @@ declared surface.
 
 - **L-8 Platform.** Linux x86-64, ext4 or XFS, AVX2 or scalar; under WSL2 or a VM the host may keep old
   blocks and page out guest memory. No native Linux machine was available, so the v1.0 gates and
-  measures run in WSL2 Ubuntu on the college HPC (DB-111): the forensic scan and the memory lock
-  cover the Linux guest (its memory and the ext4 device the engine writes to); the Windows host's
-  pagefile and the old blocks of its virtual disk file are outside the claim.
+  measures run in WSL2 Ubuntu on the owner's laptop (DB-113, which replaced the college HPC of
+  DB-111): the forensic scan and the memory lock cover the Linux guest (its memory and the ext4
+  device the engine writes to); the Windows host's pagefile and the old blocks of its virtual disk
+  file are outside the claim. The claims are at laptop scale: P4-T3 crashes two 300-operation
+  windows per seed, and T-2, T-3 on the final build, T-5 and EX-7 are measured at `nq-10k` (EX-7
+  also at `nq-100k` on one seed), as DB-113 lists.
 - **L-19 The reference set is non-commercial** (SciQ, CC BY-NC 3.0).
 - **L-20 Statistics.** No distinguisher-based privacy claim; the five-seed design is very likely
   underpowered for equivalence; `ddof = 0` is the more permissive convention (both are reported); one

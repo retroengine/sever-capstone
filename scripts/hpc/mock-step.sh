@@ -6,6 +6,7 @@
 #   killrun.NAME     kill -9 run-all once, mid-step (the file is removed first)
 #   killrun-always   kill -9 run-all every time (a crash loop)
 #   hang.NAME        stop itself (SIGSTOP) mid-step once: a hung process
+#   oom.NAME         exit 1 once, after writing a memory-guard stop to OOMGUARD_LOG
 set -u
 name=$1; secs=$2
 D=${LONGRUN:-$HOME/longrun}/drill
@@ -21,5 +22,10 @@ for ((i = 1; i <= secs; i++)); do
     if [ -f "$D/hang.$name" ]; then rm -f "$D/hang.$name"; echo "$name: drill: hang"; kill -STOP $$; fi
   fi
 done
+if [ -f "$D/oom.$name" ]; then   # the memory guard stops it: exit 1 with a stop in its log
+  rm -f "$D/oom.$name"
+  echo "$(date -u +%FT%TZ) avail=100MB: stopped lone process $$ (drill)" >>"${OOMGUARD_LOG:-$D/oomguard.log}"
+  echo "$name: drill: stopped by the memory guard"; exit 1
+fi
 [ -f "$D/fail.$name" ] && { echo "$name: drill: FAIL"; exit 1; }
 echo "$name: PASS"

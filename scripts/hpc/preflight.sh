@@ -22,9 +22,11 @@ touch "$STATE/.w" 2>/dev/null && rm -f "$STATE/.w" || problems+=("$STATE is not 
 mkdir -p traces 2>/dev/null; [ -w traces ] || problems+=("traces/ is not writable")
 
 if [ "${MOCK:-0}" != 1 ]; then
-  # The two --locked-memory steps (spec §12.8): unlimited memory lock, no unencrypted swap.
-  [ "$(ulimit -l)" = unlimited ] || problems+=("ulimit -l is $(ulimit -l), not unlimited (root-setup.sh not run, or WSL not restarted)")
-  [ "$(awk 'NR>1' /proc/swaps | wc -l)" -eq 0 ] || problems+=("swap is on (.wslconfig needs swap=0, then wsl --shutdown)")
+  # The two --locked-memory steps (spec §12.8) need an unlimited memory lock and no swap. DB-113:
+  # run-all.sh makes those two steps wait for it (the owner's owner-sudo.sh, any time during the
+  # run), so it no longer blocks the start; the engine's strict mode still refuses without it.
+  [ "$(ulimit -l)" = unlimited ] || echo "preflight: note: ulimit -l is $(ulimit -l); p4-forensics and p4-ex6 will wait for owner-sudo.sh"
+  [ "$(awk 'NR>1' /proc/swaps | wc -l)" -eq 0 ] || echo "preflight: note: swap is on; p4-forensics and p4-ex6 will wait for owner-sudo.sh"
   [ -r /dev/fuse ] && [ -w /dev/fuse ] || problems+=("/dev/fuse is not usable (p4-forensics needs it)")
   (cd datasets && [ -f MANIFEST.sha256 ] && [ -d processed/nq_1m ]) || problems+=("datasets/processed is missing (fetch-data.sh)")
   command -v cargo >/dev/null && cargo --version >/dev/null 2>&1 || problems+=("cargo does not run (setup.sh)")

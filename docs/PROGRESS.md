@@ -5,18 +5,21 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
 [`plans/2026-10-23-v1-then-demo.md`](plans/2026-10-23-v1-then-demo.md); nothing is planned after it
 (DB-112).
 
-## Now (24 Oct 2026)
+## Now (29 Oct 2026)
 
 | Part | Status | Tag |
 |---|---|---|
 | 1 The Idea | **frozen** 6 Oct 2026 | `part-1-frozen` |
 | 2 The Database | **frozen** 8 Oct 2026; errata E-1, E-2; three known defects kept as limit L-28 | `part-2-frozen-e2` |
-| 3 The Receipt | **built**; every interim laptop check passes; waits for the HPC run, a fair-testing PASS (FT-10), `scripts/freeze.sh 3` | |
+| 3 The Receipt | **built**; every interim laptop check passes; waits for the laptop run (DB-113), a fair-testing PASS (FT-10), `scripts/freeze.sh 3` | |
 | 4 The Erasure | **built**; interim checks pass, no gate in the ledger yet; waits for the same | |
 
 - **Branch:** `main` = `3417b7f` (fast-forwarded from `studio-raw` on 24 Oct; GitHub's fast tier
-  and `scripts/ci.sh full-checks` 42/42 green on it). **The HPC run tests `3417b7f`.**
-- **Plan stage:** Stages 1 and 2 are done; next is Stage 3, the HPC run.
+  and `scripts/ci.sh full-checks` 42/42 green on it). The run is on branch `laptop-final-run`,
+  whose engine and test-kit code are identical to `3417b7f` (only `scripts/hpc/` and docs differ).
+- **The HPC is gone (29 Oct, DB-113):** the v1.0 run is on the laptop, every step scoped to fit
+  about 33 h of the owner's two days (`scripts/hpc/steps.sh`, `scripts/hpc/LAPTOP_RUN.md`).
+- **Plan stage:** Stages 1 and 2 are done; Stage 3 is the laptop run.
   - `Db::passage` with 3 tests (`5a655fc`); red proofs PRI-5 … 7 (`37bf88f`; PRI-1 … 7 all red).
   - The SDK's `Database.passage` and `sever_db.Explainer` (`2acd91d`).
   - The erase demo's step 4 (`dc29088`): on SB-24, `S_pre − S_post` is printed next to the
@@ -27,9 +30,10 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
 
 1. **Stage 1 (Claude): done** (above).
 2. **Stage 2 (Claude): done**: `main` = `3417b7f`.
-3. **Stage 3 (the owner):** the one full run of every gate and measure, at full size, in WSL2 Ubuntu
-   on the college HPC (DB-111): [`scripts/hpc/HPC_GUIDE.md`](../scripts/hpc/HPC_GUIDE.md). A failed
-   gate is a bug: red test first, the smallest fix, then that gate and every later one rerun.
+3. **Stage 3:** the one run of every gate and measure on the laptop at the DB-113 sizes
+   ([`scripts/hpc/LAPTOP_RUN.md`](../scripts/hpc/LAPTOP_RUN.md)); the owner runs
+   `owner-sudo.sh` once before its last phase. A failed gate is a bug: red test first, the
+   smallest fix, then that gate and every later one rerun.
 4. **Stage 4:** fair testing for Parts 3 and 4 until PASS, each run on the owner's go after its cost
    estimate.
 5. **Stage 5:** `scripts/freeze.sh 3` and `4`; the tags `part-3-frozen`, `part-4-frozen`, `v1.0.0`,
@@ -93,6 +97,16 @@ the HPC run.
 - Why a valid WAL record after a bad one means corruption, not a torn tail.
 
 ## Session log
+
+- **29 Oct 2026:** the HPC is no longer available; DB-113 (amends DB-111, closes G-48) moves the
+  v1.0 run to the laptop. Pilots, outside the ledger, measured: EX-7 per arm at `nq-10k`
+  (595 s, 570 s, 4 s), fuzz executions per second per target (P4: all ≤ 40 min at 10^8; P3's
+  `audit/export` about 3.7 h), the mutant suites' test times (P3 120 s, P4 182–199 s, 1.5–2
+  cores each), and the interim crash windows (about 0.3 s per crash point, so a full P4-T3 seed
+  is about 39 h). `run-all.sh` gained phases, a backup after every step, the OOM rule and the
+  battery and memory-lock waits; `watchdog.sh` a heartbeat and a late-phase alert;
+  `laptop-env.sh` cleans the laptop; `owner-sudo.sh` is the owner's sudo step, which restarts
+  nothing; four new drills (parallel, oom, battery, lockwait).
 
 - **24 Oct 2026 (end):** Stage 1 done (above); Stage 2: `main` fast-forwarded to `3417b7f`.
   Studio's full tier is deferred to Stage 6 (two failures noted under Studio).

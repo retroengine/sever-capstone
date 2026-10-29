@@ -1,5 +1,8 @@
 # SEVER-DB on the college HPC: the one guide
 
+> **Superseded by DB-113 (29 Oct 2026):** the HPC is no longer available; the v1.0 run is on the
+> laptop: [`LAPTOP_RUN.md`](LAPTOP_RUN.md). This guide stays for the machinery it describes.
+
 The v1.0 gate run (DB-111): every pre-registered gate and measure of Parts 3 and 4, once, at full
 size, in WSL2 Ubuntu on the college HPC (Windows). This file is the only document for it.
 

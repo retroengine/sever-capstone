@@ -13,6 +13,12 @@
 #   loop      a job that always crashes: restarts stop at the start limit, with an alert
 #   failed    a step that fails: the run finishes, is marked DONE and never reruns that step
 #   backup    a backup is written and verified; restore checks it; a damaged copy is refused
+#   parallel  a step of a parallel phase killed: the other is kept, the killed one reruns (DB-113)
+#   oom       a step that fails because the memory guard stopped it is interrupted, not a result:
+#             it reruns and passes (DB-113)
+#   battery   on battery power the run waits, with an alert; on mains power it continues
+#   lockwait  a locked-memory step waits for the memory lock (owner-sudo.sh), with an alert and
+#             no hang alert while it waits; once the lock is there it runs
 set -u
 . "$(dirname "$0")/lib.sh"
 cd "$REPO" || exit 1
@@ -32,7 +38,7 @@ reset() {
   systemctl --user stop "$UNIT" 2>/dev/null; systemctl --user disable "$UNIT" 2>/dev/null
   systemctl --user reset-failed "$UNIT" 2>/dev/null
   rm -rf "${D:?}"/* traces/hpc-drill-*
-  set_env MOCK_SECONDS 10; set_env DISK_MIN_GB 1; set_env STALE_MIN 1
+  set_env MOCK_SECONDS 10; set_env DISK_MIN_GB 1; set_env STALE_MIN 1; set_env OOMGUARD_LOG "$D/oomguard.log"
 }
 start() { systemctl --user reset-failed "$UNIT" 2>/dev/null; systemctl --user start --no-block "$UNIT"; }
 done_ok() { [ -f "$D/DONE" ] && grep -q "run-all end failed=0 interrupted=0" "$SUM" 2>/dev/null; }
@@ -143,7 +149,46 @@ drill_backup() {
   else record backup FAIL "restored=$good refused_damaged=$refused"; fi
 }
 
-all=(session kill9 torn reboot disk hang loop failed backup)
+drill_parallel() {
+  reset; touch "$D/killrun.mock-e"; start
+  if wait_until 150 done_ok && grep -q "mock-d SKIPPED (passed earlier)" "$SUM" && step_passed mock-e \
+     && [ "$(cat "$D/starts")" -ge 2 ]; then
+    record parallel PASS "killed mid-phase: mock-d kept, mock-e rerun on the restart ($(cat "$D/starts") starts)"
+  else record parallel FAIL "starts=$(cat "$D/starts" 2>/dev/null) see $SUM"; fi
+}
+
+drill_oom() {
+  reset; touch "$D/oom.mock-c"; start
+  if wait_until 150 done_ok && grep -q " mock-c rc=137 " "$SUM" && step_passed mock-c \
+     && grep -q "^# oom:" traces/hpc-drill-mock-c.log.prev 2>/dev/null; then
+    record oom PASS "exit 1 with a memory-guard stop recorded as rc=137 (# oom), rerun, passed"
+  else record oom FAIL "see $SUM"; fi
+}
+
+drill_battery() {
+  reset; touch "$D/battery"; start
+  ok1=0; wait_until 60 'grep -q "WAIT: the laptop runs on battery" "$SUM" 2>/dev/null' \
+    && sleep 8 && ! grep -q "mock-a START" traces/hpc-drill-run.out 2>/dev/null \
+    && grep -q "\[waiting\]" "$ALERTS" && ok1=1
+  rm -f "$D/battery"
+  if [ "$ok1" = 1 ] && wait_until 120 done_ok; then
+    record battery PASS "waited on battery with an alert, nothing started; on mains it finished"
+  else record battery FAIL "waited=$ok1 state=$(prop ActiveState)"; fi
+}
+
+drill_lockwait() {
+  reset; touch "$D/nolock"; start
+  ok1=0; wait_until 150 'grep -q "WAIT: mock-l waits for the memory lock" "$SUM" 2>/dev/null' \
+    && grep -q "\[waiting\]" "$ALERTS" && ok1=1
+  bash scripts/hpc/watchdog.sh drill; sleep 65; bash scripts/hpc/watchdog.sh drill
+  stale=0; grep -q "\[stale\]" "$ALERTS" && stale=1
+  rm -f "$D/nolock"
+  if [ "$ok1" = 1 ] && [ "$stale" = 0 ] && wait_until 90 done_ok && step_passed mock-l; then
+    record lockwait PASS "waited for the lock with an alert, no hang alert; then ran and passed"
+  else record lockwait FAIL "waited=$ok1 stale_alert=$stale state=$(prop ActiveState)"; fi
+}
+
+all=(session kill9 torn reboot disk hang loop failed backup parallel oom battery lockwait)
 want=("$@"); [ ${#want[@]} -gt 0 ] || want=("${all[@]}")
 for d in "${want[@]}"; do echo "== drill $d"; "drill_$d"; done
 reset

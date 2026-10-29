@@ -36,7 +36,7 @@ done
 
 # The real run: memory cap (all but 4 GB of what WSL has), memory lock for p4-forensics/p4-ex6.
 total=$(awk '/MemTotal/ {print int($2/1048576)}' /proc/meminfo)
-cap=$(( total > 12 ? total - 4 : total ))
+cap=${MEM_CAP_GB:-$(( total > 12 ? total - 4 : total - 1 ))}   # laptop (DB-113): 11 GB WSL → 10 GB
 mkdir -p "$UDIR/sever-hpc@real.service.d"
 {
   echo "[Service]"
@@ -64,7 +64,7 @@ if [ ! -f "$LONGRUN/real.env" ]; then
   cat >"$LONGRUN/real.env" <<EOF
 # SEVER-DB HPC run settings (scripts/hpc/HPC_GUIDE.md). Plain KEY=value lines, no spaces.
 # ntfy topic for alerts on your phone (app "ntfy", subscribe to the same topic); empty = log only.
-NTFY_TOPIC=
+NTFY_TOPIC=$(cat "$LONGRUN/ntfy-topic" 2>/dev/null)
 # Backups: a folder on the Windows side (outside the Linux disk), plus an optional off-machine copy
 # (an rclone remote "name:path" or an ssh target "user@host:path").
 BACKUP_DIR=/mnt/c/Users/${winuser:-$USER}/sever-backup/real
@@ -72,7 +72,7 @@ BACKUP_REMOTE=
 # Set by launch.sh: the commit the run must test.
 EXPECTED_COMMIT=
 DISK_MIN_GB=40
-MEM_MIN_GB=16
+MEM_MIN_GB=${MEM_MIN_GB:-6}
 STALE_MIN=30
 KILL_STALE=0
 EOF
