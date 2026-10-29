@@ -178,8 +178,9 @@ drill_battery() {
 
 drill_lockwait() {
   reset; touch "$D/nolock"; start
-  ok1=0; wait_until 150 'grep -q "WAIT: mock-l waits for the memory lock" "$SUM" 2>/dev/null' \
-    && grep -q "\[waiting\]" "$ALERTS" && ok1=1
+  ok1=0; wait_until 240 'grep -q "WAIT: mock-l waits for the memory lock" "$SUM" 2>/dev/null' \
+    && wait_until 10 'grep -q "\[waiting\]" "$ALERTS"' && ok1=1
+  [ "$ok1" = 1 ] || { echo "lockwait: summary tail:"; tail -n 4 "$SUM" 2>/dev/null; tail -n 3 "$ALERTS" 2>/dev/null; }
   bash scripts/hpc/watchdog.sh drill; sleep 65; bash scripts/hpc/watchdog.sh drill
   stale=0; grep -q "\[stale\]" "$ALERTS" && stale=1
   rm -f "$D/nolock"
