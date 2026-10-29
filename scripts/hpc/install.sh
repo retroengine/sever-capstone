@@ -42,9 +42,9 @@ mkdir -p "$UDIR/sever-hpc@real.service.d"
   echo "[Service]"
   echo "MemoryMax=${cap}G"
   if [ "$memlock_hard" = unlimited ]; then echo "LimitMEMLOCK=infinity"
-  else echo "# LimitMEMLOCK=infinity needs root-setup.sh (user manager hard limit: $memlock_hard); preflight refuses until then"; fi
+  else echo "# LimitMEMLOCK=infinity needs owner-sudo.sh (user manager hard limit: $memlock_hard); the locked steps wait until then"; fi
 } >"$UDIR/sever-hpc@real.service.d/override.conf"
-[ "$memlock_hard" = unlimited ] || { echo "WARNING: the memory lock is limited to $memlock_hard bytes: run root-setup.sh, then wsl --shutdown"; problems=1; }
+[ "$memlock_hard" = unlimited ] || echo "note: the memory lock is limited to $memlock_hard bytes: p4-forensics and p4-ex6 wait for owner-sudo.sh (DB-113)"
 
 # The drill: the same unit, fast restarts and a low start limit so a crash loop stops in minutes.
 mkdir -p "$UDIR/sever-hpc@drill.service.d"

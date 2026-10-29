@@ -24,8 +24,12 @@ case "$cmd" in
         echo "refused: the drills have not passed on this commit (bash scripts/hpc/drills.sh)"; exit 1
       fi
       sed -i "s/^EXPECTED_COMMIT=.*/EXPECTED_COMMIT=$head/" "$LONGRUN/real.env"
-      # The same check the unit runs, in the unit's own limits (memory lock), without starting.
-      systemd-run --user --wait --pipe --collect --quiet -p LimitMEMLOCK=infinity \
+      # The same check the unit runs, in the unit's own limits, without starting. The memory lock
+      # is asked for only once the unit's drop-in has it (owner-sudo.sh, DB-113): before that,
+      # a transient unit asking for it could not start, and the run starts without it anyway.
+      lim=(); grep -q '^LimitMEMLOCK=infinity' "$HOME/.config/systemd/user/sever-hpc@real.service.d/override.conf" 2>/dev/null \
+        && lim=(-p LimitMEMLOCK=infinity)
+      systemd-run --user --wait --pipe --collect --quiet "${lim[@]}" \
         -p EnvironmentFile="$LONGRUN/real.env" -p WorkingDirectory="$REPO" \
         "$REPO/scripts/hpc/preflight.sh" real --check || { echo "refused by preflight (above)"; exit 1; }
       systemctl --user enable --now sever-hpc-backup.timer >/dev/null
