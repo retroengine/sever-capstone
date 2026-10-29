@@ -1,12 +1,12 @@
 # The v1.0 run on the laptop (DB-113)
 
 Every pre-registered gate and measure of Parts 3 and 4, once, on this laptop, at the sizes of
-[`steps.sh`](steps.sh) (about 33 hours). It replaces the college-HPC run of DB-111;
+[`steps.sh`](steps.sh) (about 29 hours). It replaces the college-HPC run of DB-111;
 [`HPC_GUIDE.md`](HPC_GUIDE.md) is kept for the machinery it describes.
 
 ## What runs
 
-`run-all.sh` runs the 23 entries of `steps.sh` (DB-111's 22 steps; `p4-crash` is two windows) in 13
+`run-all.sh` runs the 23 entries of `steps.sh` (DB-111's 22 steps; `p4-crash` is two windows) in 12
 phases. Steps in one phase run at the same time. It runs as the systemd user unit `sever-hpc@real`,
 with these safeguards:
 
@@ -26,12 +26,12 @@ with these safeguards:
 
 1. **Phone:** the ntfy app, subscribed to the topic in `~/longrun/ntfy-topic`. You get a heartbeat
    every 3 hours, and an alert for each wait, crash, hang or finish.
-2. **Once, any time before the last phase** (about 28 hours in), in an Ubuntu terminal:
+2. **Once, before phase 3** (about 10 hours in; done on 29 Oct at 11:40), in an Ubuntu terminal:
    ```bash
    sudo bash ~/sever-db/scripts/hpc/owner-sudo.sh
    ```
-   It restarts nothing. If the run reaches `p4-forensics` and `p4-ex6` first, they wait and you
-   get an alert.
+   It restarts nothing. If the run reaches `p4-forensics` and `p4-ex6` (phase 3) first, they wait
+   and you get an alert.
 3. **Keep it plugged in, keep the lid open, close VS Code** (it uses about 2.5 GB that the run
    needs). Watch from an Ubuntu window:
    `bash ~/sever-db/scripts/hpc/status.sh real`.
@@ -59,7 +59,7 @@ with these safeguards:
 | Alert or sign | Meaning | Do |
 |---|---|---|
 | `waiting` … battery | on battery: nothing runs | plug in |
-| `waiting` … memory lock | the last phase is waiting for you | run `owner-sudo.sh` (above) |
+| `waiting` … memory lock | `p4-forensics` and `p4-ex6` wait for you | run `owner-sudo.sh` (above) |
 | `crash` / `restart` | killed (memory, WSL); it continues by itself | nothing, unless it repeats |
 | `stale` | no CPU progress for 30 min (fuzzing can be quiet) | `status.sh real`; if stuck: `launch.sh stop real`, then `start` |
 | `late` | a phase is taking more than 1.2× its estimate | nothing; tell Claude |

@@ -18,7 +18,7 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
   and `scripts/ci.sh full-checks` 42/42 green on it). The run is on branch `laptop-final-run`,
   whose engine and test-kit code are identical to `3417b7f` (only `scripts/hpc/` and docs differ).
 - **The HPC is gone (29 Oct, DB-113):** the v1.0 run is on the laptop, every step scoped to fit
-  about 33 h of the owner's two days (`scripts/hpc/steps.sh`, `scripts/hpc/LAPTOP_RUN.md`).
+  about 29 h of the owner's two days (`scripts/hpc/steps.sh`, `scripts/hpc/LAPTOP_RUN.md`).
 - **Plan stage:** Stages 1 and 2 are done; Stage 3 is the laptop run.
   - `Db::passage` with 3 tests (`5a655fc`); red proofs PRI-5 … 7 (`37bf88f`; PRI-1 … 7 all red).
   - The SDK's `Database.passage` and `sever_db.Explainer` (`2acd91d`).
@@ -32,7 +32,7 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
 2. **Stage 2 (Claude): done**: `main` = `3417b7f`.
 3. **Stage 3:** the one run of every gate and measure on the laptop at the DB-113 sizes
    ([`scripts/hpc/LAPTOP_RUN.md`](../scripts/hpc/LAPTOP_RUN.md)); the owner runs
-   `owner-sudo.sh` once before its last phase. A failed gate is a bug: red test first, the
+   `owner-sudo.sh` once before its phase 3 (done 29 Oct, 11:40). A failed gate is a bug: red test first, the
    smallest fix, then that gate and every later one rerun.
 4. **Stage 4:** fair testing for Parts 3 and 4 until PASS, each run on the owner's go after its cost
    estimate.

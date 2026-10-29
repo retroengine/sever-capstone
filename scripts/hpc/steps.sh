@@ -25,10 +25,15 @@ STEPS=(
   # 2 — T-3 at nq-100k (2 seeds at once, ≈ 5 GB) beside Part 3's mutants (3 jobs, ≈ 6 cores)
   "2|p3-replay|330|0|$G3 p3-replay --data nq-100k --all-seeds --jobs 2"
   "2|p3-mutants|440|0|env CARGO_BUILD_JOBS=2 $G3 p3-mutants --jobs 3"
-  # 3 — the fuzzers (10^8 per target; audit/export is the long pole) beside T-3 on the final build
+  # 3 — the fuzzers (10^8 per target; audit/export is the long pole, one core for hours) beside
+  # T-3 on the final build and the two single-core strict-mode steps of spec §12.8 (memory lock,
+  # no swap; they wait for owner-sudo.sh, never fail for it). Moved here from a last phase of
+  # their own once the owner's sudo step was done (29 Oct): the same steps, about 4 h sooner.
   "3|p3-fuzz|230|0|$G3 p3-fuzz --runs 100000000"
   "3|p4-fuzz|45|0|$G4 p4-fuzz --runs 100000000"
   "3|p4-replay|45|0|$G4 p4-replay --data nq-10k --all-seeds --jobs 3"
+  "3|p4-forensics|180|1|$G4 p4-forensics --data nq-10k --all-seeds --locked-memory"
+  "3|p4-ex6|240|1|$G4 p4-ex6 --data nq-10k --all-seeds --locked-memory"
   # 4, 5 — the Part 4 crash campaign, window A then window B (2–3.5 GB per seed)
   "4|p4-crash-a|90|0|$G4 p4-crash --data nq-10k --seed 42 --seed 123 --seed 777 --jobs 3 --crash-from 17694 --limit-ops 17994"
   "5|p4-crash-b|70|0|$G4 p4-crash --data nq-10k --seed 2024 --seed 9999 --jobs 2 --crash-from 18700 --limit-ops 19000"
@@ -46,8 +51,4 @@ STEPS=(
   "12|p4-ex7-nq-10k|150|0|$G4 p4-ex7 --data nq-10k --all-seeds"
   "12|p4-ex7-nq-100k|240|0|$G4 p4-ex7 --data nq-100k --seed 42"
   "12|p4-ex8|330|0|$G4 p4-ex8 --seed 42"
-  # 13 — the strict mode of spec §12.8 (memory lock, no swap): last, so the owner's one sudo step
-  # (owner-sudo.sh) can come as late as possible; these wait for it, they never fail for it
-  "13|p4-forensics|180|1|$G4 p4-forensics --data nq-10k --all-seeds --locked-memory"
-  "13|p4-ex6|240|1|$G4 p4-ex6 --data nq-10k --all-seeds --locked-memory"
 )
