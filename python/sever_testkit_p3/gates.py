@@ -50,6 +50,7 @@ import subprocess
 import sys
 import time
 import tomllib
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final
@@ -160,6 +161,49 @@ def _mutants(tree: Path, out_dir: Path, args: list[str], tmp: Path) -> tuple[int
     return run.returncode, data
 
 
+_SABOTAGE_CFG = re.compile(r'#\[cfg\(feature = "sabotage-')
+
+
+def sabotage_lines(tree: Path, crates: Iterable[str]) -> dict[str, list[int]]:
+    """The lines only the sabotage builds compile (Build §2.6): every item or statement under
+    ``#[cfg(feature = "sabotage-…")]``. cargo-mutants mutates them too, but the measured build
+    never compiles them, so a test of it cannot see the change and each one is reported missed
+    (DB-114). Lines are 1-based, keyed by the path cargo-mutants prints."""
+    out: dict[str, list[int]] = {}
+    for crate in crates:
+        for f in sorted((tree / "crates" / crate / "src").rglob("*.rs")):
+            text = f.read_text(encoding="utf-8").splitlines()
+            hit: list[int] = []
+            i = 0
+            while i < len(text):
+                if not _SABOTAGE_CFG.search(text[i]):
+                    i += 1
+                    continue
+                j = i + 1
+                while j < len(text) and text[j].strip().startswith("#["):
+                    j += 1  # further attributes on the same item
+                depth, k = 0, j
+                while k < len(text):
+                    code = text[k].split("//", 1)[0].rstrip()
+                    depth += code.count("{") - code.count("}")
+                    if depth <= 0 and code.endswith((";", "}")):
+                        break
+                    k += 1
+                hit.extend(range(j + 1, min(k, len(text) - 1) + 2))
+                i = k + 1
+            if hit:
+                out[f.relative_to(tree).as_posix()] = sorted(set(hit))
+    return out
+
+
+def sabotage_excludes(tree: Path, crates: Iterable[str]) -> list[str]:
+    """One ``--exclude-re`` per file: its sabotage-only lines, as cargo-mutants names them."""
+    return [
+        f"^{re.escape(path)}:({'|'.join(str(n) for n in lines)}):"
+        for path, lines in sabotage_lines(tree, crates).items()
+    ]
+
+
 def _verifier_scratch(tree: Path, scratch: Path) -> None:
     """cargo-mutants copies only ``verifier/`` into ``scratch`` (as ``scratch/<copy>/``), so a
     path dependency leaving it, the test-label crate ``../crates/sever-spec`` (DB-85), resolves
@@ -218,6 +262,9 @@ def p3_mutants(root: Path, jobs: int) -> int:
             args += ["-p", p]
         for p in P3_MUTANT_TESTS:
             args += ["--test-package", p]
+        excluded = sabotage_lines(tree, P3_MUTATED)  # DB-114
+        for rx in sabotage_excludes(tree, P3_MUTATED):
+            args += ["--exclude-re", rx]
         rc_root, out_root = _mutants(tree, root / "traces/mutants-p3-gate", args, tmp)
         _verifier_scratch(tree, tmp)
         rc_ver, out_ver = _mutants(
@@ -258,6 +305,7 @@ def p3_mutants(root: Path, jobs: int) -> int:
         "missed": missed,
         "untriaged": left,
         "cargo_mutants_exit": {"root": rc_root, VERIFIER: rc_ver},
+        "excluded_sabotage_lines": excluded,
         "outcome": "PASS" if passed else "FAIL",
     }
     path, sha = ledger.result_file(

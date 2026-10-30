@@ -1,5 +1,6 @@
 """``gates p3-mutants`` scoring (Build 3-4 §1.9 P3-T9) on hand-written ``outcomes.json`` data."""
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -92,3 +93,46 @@ def test_p3_mutants_the_verifier_copy_finds_its_path_dependencies(tmp_path: Path
     gates._verifier_scratch_clean(scratch)
     assert not (scratch / "crates").exists()
     assert not (scratch / "Cargo.toml").exists()
+
+
+def test_p3_mutants_sabotage_only_lines_are_excluded(tmp_path: Path) -> None:
+    # cargo-mutants also mutates code under #[cfg(feature = "sabotage-SB-N")], which only the
+    # sabotage builds compile (Build §2.6): the measured build passes every test with or without
+    # the change, so each such mutant is reported missed. On 29 Oct five Part 3 survivors were
+    # such lines (builder.rs SB-22, nonce.rs SB-18). The measured build's own code, including a
+    # cfg(not(feature = …)) line, stays mutated.
+    src = tmp_path / "crates" / "x" / "src"
+    src.mkdir(parents=True)
+    (src / "a.rs").write_text(
+        "fn real() {}\n"  # 1
+        '#[cfg(feature = "sabotage-SB-1")]\n'  # 2
+        "struct S;\n"  # 3
+        '#[cfg(feature = "sabotage-SB-1")]\n'  # 4
+        "impl T for S {\n"  # 5
+        "    fn f(&self) -> u32 {\n"  # 6
+        "        1\n"  # 7
+        "    }\n"  # 8
+        "}\n"  # 9
+        "fn g() {\n"  # 10
+        '    #[cfg(not(feature = "sabotage-SB-2"))]\n'  # 11
+        "    let a = 1;\n"  # 12
+        '    #[cfg(feature = "sabotage-SB-2")]\n'  # 13
+        "    let x = {\n"  # 14
+        "        1 // { not a brace that counts\n"  # 15
+        "    };\n"  # 16
+        '    #[cfg(feature = "sabotage-SB-2")]\n'  # 17
+        "    return Ok(f(\n"  # 18
+        "        x,\n"  # 19
+        "    ));\n"  # 20
+        "    let b = 2;\n"  # 21
+        "}\n"  # 22
+    )
+    lines = gates.sabotage_lines(tmp_path, ["x"])
+    assert lines == {"crates/x/src/a.rs": [3, 5, 6, 7, 8, 9, 14, 15, 16, 18, 19, 20]}
+    [rx] = gates.sabotage_excludes(tmp_path, ["x"])
+    assert re.match(rx, "crates/x/src/a.rs:7:9: replace S::f -> u32 with 0")
+    assert re.match(rx, "crates/x/src/a.rs:20:5: replace f with ()")
+    assert not re.match(rx, "crates/x/src/a.rs:12:13: replace 1 with 0")
+    assert not re.match(rx, "crates/x/src/a.rs:1:1: replace real with ()")
+    assert not re.match(rx, "crates/x/src/a.rs:21:13: replace 2 with 0")
+    assert not re.match(rx, "crates/x/src/a.rs:70:1: replace h with ()")

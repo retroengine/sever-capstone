@@ -417,6 +417,9 @@ def p4_mutants(root: Path, jobs: int) -> int:
             args += ["-p", p]
         for p in P4_MUTANT_TESTS:
             args += ["--test-package", p]
+        excluded = p3.sabotage_lines(tree, P4_UNITS)  # DB-114
+        for rx in p3.sabotage_excludes(tree, P4_UNITS):
+            args += ["--exclude-re", rx]
         rc, out = p3._mutants(tree, root / "traces/mutants-p4-gate", args, tmp)
     finally:
         subprocess.run(
@@ -443,6 +446,7 @@ def p4_mutants(root: Path, jobs: int) -> int:
         "missed": missed,
         "untriaged": left,
         "cargo_mutants_exit": rc,
+        "excluded_sabotage_lines": excluded,
         "outcome": "PASS" if passed else "FAIL",
     }
     p3._record(
