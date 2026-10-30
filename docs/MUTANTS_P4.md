@@ -104,27 +104,25 @@ crates/sever-keys/src/file.rs:300:32: replace || with &&
 
 ## Accessors reached only through the engine
 
-`KeyRotationParticipant::durable` and `AeadSealer::ring` hand out the participant's merged state and the shared ring; the contract digest and the engine's tests read them, and the in-crate tests need a full engine recovery with a key slot to give `durable` a non-empty state (INV-14 refuses a bare block).
+`AeadSealer::ring` hands out the shared ring; the engine's tests read it through the engine. (`KeyRotationParticipant::durable` is now killed by `p4_erasure_recovery_loads_the_store_into_the_merged_state`.)
 
 ```
-crates/sever-erasure/src/participant.rs:121:9: replace KeyRotationParticipant::durable -> &Durable with Box::leak(Box::new(Default::default()))
 crates/sever-seal/src/sealer.rs:40:9: replace AeadSealer::ring -> &Arc<KeyRing> with Box::leak(Box::new(Arc::new(Default::default())))
 ```
 
 ## Real test gap: the compaction boundary
 
-`maybe_compact` starts a compaction when the store holds the minimum and more than four times its live bytes (§14.8). The new test shows the minimum and the factor matter (below the minimum nothing compacts, above it the store shrinks), but not the exact boundary: a size equal to the minimum, or the 16-byte per-value overhead in the live total (`164`), would need a test that lands a store exactly on the boundary.
+`maybe_compact` starts a compaction when the store holds the minimum and more than four times its live bytes (§14.8). `p4_erasure_compaction_waits_for_four_times_the_live_bytes` now kills the factor's mutants (`167:32`, `167:49`). The exact boundaries are still open: a store exactly at the minimum (`167:26`), and the 16-byte per-value overhead in the live total (`164`), which moves the factor by a few percent. Each would need a test that lands a store exactly on the boundary. Risk: low (it changes when compaction runs, never what the store means).
 
 ```
 crates/sever-erasure/src/participant.rs:164:60: replace + with -
-crates/sever-erasure/src/participant.rs:167:32: replace || with &&
-crates/sever-erasure/src/participant.rs:167:49: replace <= with >
 crates/sever-erasure/src/participant.rs:167:26: replace < with <=
+crates/sever-erasure/src/participant.rs:167:26: replace < with ==
 ```
 
 ## Real test gap: `prepare`'s justification set
 
-`prepare` (`participant.rs:254`, `256`) decides which staged keys the transaction justifies (`retain_stage`). The effect shows only when a planning attempt fails after staging and the next transaction reuses the ring; the crash campaign (P4-T3) exercises this, the in-crate tests do not.
+Correction (interactive review): `participant.rs:254` (`holding`) and `:256` (`||`) feed only `skip_buckets = cfg!(feature = "sabotage-SB-25") || (cfg!(feature = "sabotage-SB-26") && holding)`. Both `cfg!` are false in the measured build, so either mutation leaves `skip_buckets` false: **equivalent in the measured build** (a sabotage switch written as `cfg!` rather than `#[cfg]`, which DB-114's exclusion rule does not cover; the rule is not widened after the Part 4 result).
 
 ```
 crates/sever-erasure/src/participant.rs:254:28: replace == with !=
@@ -142,4 +140,55 @@ crates/sever-seal/src/ring.rs:582:9: replace KeyRing::committed_block -> Result<
 crates/sever-seal/src/ring.rs:582:9: replace KeyRing::committed_block -> Result<(u64, Vec<u8>), Error> with Ok((1, vec![]))
 crates/sever-seal/src/ring.rs:582:9: replace KeyRing::committed_block -> Result<(u64, Vec<u8>), Error> with Ok((1, vec![0]))
 crates/sever-seal/src/ring.rs:582:9: replace KeyRing::committed_block -> Result<(u64, Vec<u8>), Error> with Ok((1, vec![1]))
+```
+
+## Killed by the new tests (listed so a chance survival is still triaged)
+
+These survived the 30 October run and are killed by tests added since (each checked by applying the mutation by hand). If one survives a rerun by chance, it is a test gap of the kind its group above describes.
+
+```
+crates/sever-erasure/src/participant.rs:121:9: replace KeyRotationParticipant::durable -> &Durable with Box::leak(Box::new(Default::default()))
+crates/sever-erasure/src/participant.rs:167:32: replace || with &&
+crates/sever-erasure/src/participant.rs:167:49: replace <= with >
+crates/sever-erasure/src/participant.rs:116:9: replace KeyRotationParticipant::ring -> &Arc<KeyRing> with Box::leak(Box::new(Arc::new(Default::default())))
+crates/sever-erasure/src/participant.rs:32:38: replace << with >>
+crates/sever-erasure/src/participant.rs:78:9: replace <impl core::fmt::Debug for KeyRotationParticipant>::fmt -> core::fmt::Result with Ok(Default::default())
+crates/sever-erasure/src/participant.rs:325:9: replace <impl TxnParticipant<E> for KeyRotationParticipant>::abort with ()
+crates/sever-erasure/src/participant.rs:442:9: replace <impl TxnParticipant<E> for KeyRotationParticipant>::check_invariants -> Result<(), Error> with Ok(())
+crates/sever-erasure/src/participant.rs:461:9: delete match arm RecordType::BucketBlock
+crates/sever-erasure/src/participant.rs:465:16: replace match guard r.payload.get(..2) == Some(&KEY_PARTICIPANT_ID.to_be_bytes()[..]) with true
+crates/sever-erasure/src/participant.rs:465:16: replace match guard r.payload.get(..2) == Some(&KEY_PARTICIPANT_ID.to_be_bytes()[..]) with false
+crates/sever-erasure/src/records.rs:155:9: replace Durable::newer -> bool with true
+crates/sever-erasure/src/records.rs:156:89: replace < with <=
+crates/sever-erasure/src/records.rs:160:48: replace < with ==
+crates/sever-erasure/src/records.rs:160:48: replace < with >
+crates/sever-erasure/src/records.rs:160:48: replace < with <=
+crates/sever-erasure/src/records.rs:162:33: delete !
+crates/sever-erasure/src/store.rs:115:9: replace <impl core::fmt::Debug for WrappedStore>::fmt -> core::fmt::Result with Ok(Default::default())
+crates/sever-erasure/src/store.rs:176:45: replace + with *
+crates/sever-keys/src/lib.rs:94:9: replace <impl Zeroize for Key>::zeroize with ()
+crates/sever-keys/src/lib.rs:111:9: replace <impl fmt::Debug for Key>::fmt -> fmt::Result with Ok(Default::default())
+crates/sever-keys/src/file.rs:241:9: replace KeyFile::path -> &str with ""
+crates/sever-keys/src/file.rs:241:9: replace KeyFile::path -> &str with "xyzzy"
+crates/sever-seal/src/ring.rs:69:9: replace Stage::is_empty -> bool with true
+crates/sever-seal/src/ring.rs:69:9: replace Stage::is_empty -> bool with false
+crates/sever-seal/src/ring.rs:74:13: replace && with ||
+crates/sever-seal/src/ring.rs:73:13: replace && with ||
+crates/sever-seal/src/ring.rs:72:13: replace && with ||
+crates/sever-seal/src/ring.rs:71:13: replace && with ||
+crates/sever-seal/src/ring.rs:70:13: replace && with ||
+crates/sever-seal/src/ring.rs:127:9: replace <impl core::fmt::Debug for KeyRing>::fmt -> core::fmt::Result with Ok(Default::default())
+crates/sever-seal/src/ring.rs:338:47: replace && with ||
+crates/sever-seal/src/ring.rs:338:42: replace == with !=
+crates/sever-seal/src/ring.rs:338:63: replace == with !=
+crates/sever-seal/src/ring.rs:393:9: replace KeyRing::retain_stage with ()
+crates/sever-seal/src/ring.rs:405:9: replace KeyRing::drop_collection with ()
+crates/sever-seal/src/ring.rs:458:9: replace KeyRing::stage_is_empty -> bool with false
+crates/sever-seal/src/ring.rs:458:9: replace KeyRing::stage_is_empty -> bool with true
+crates/sever-seal/src/ring.rs:505:45: replace == with !=
+crates/sever-seal/src/ring.rs:511:64: replace != with ==
+crates/sever-seal/src/ring.rs:512:62: replace != with ==
+crates/sever-seal/src/ring.rs:547:37: replace < with ==
+crates/sever-seal/src/ring.rs:547:37: replace < with >
+crates/sever-seal/src/ring.rs:555:9: replace KeyRing::finish_recovery with ()
 ```

@@ -792,3 +792,68 @@ fn p4_erasure_compaction_needs_both_the_minimum_size_and_four_times_the_live_byt
         "by a clear margin: {compacting} against {never}"
     );
 }
+
+/// The wrapped-key store's size after each of 40 delete-and-reinsert rounds, compaction from
+/// `min` bytes.
+fn store_sizes_with_compaction_at(min: u64) -> Vec<u64> {
+    let disks = Disks::new();
+    let ring = Arc::new(sever_seal::KeyRing::new());
+    let p: Box<dyn sever_txn::TxnParticipant<sever_index::NoExtension>> = Box::new(
+        crate::KeyRotationParticipant::new(
+            Arc::new(disks.data.clone()),
+            Arc::new(disks.keys.clone()),
+            Arc::clone(&ring),
+            64 * 1024,
+        )
+        .with_compaction_at(min),
+    );
+    let db = sever_engine::Engine::open(
+        Arc::new(disks.data.clone()),
+        Arc::new(disks.keys.clone()),
+        sever_seal::AeadSealer::new(Arc::clone(&ring)),
+        sever_index::NoExtension,
+        vec![p],
+        cfg(1 << 30),
+    )
+    .unwrap();
+    let cid = db.create_collection(ARTEFACT, OPTS).unwrap();
+    let vs = vectors();
+    for (i, v) in vs.iter().take(30).enumerate() {
+        insert(&db, cid, &format!("r{i}"), v).unwrap();
+    }
+    let mut sizes = Vec::new();
+    for round in 0..40 {
+        let id = format!("r{}", round % 30);
+        db.delete(cid, &id).unwrap();
+        insert(&db, cid, &id, &vs[round % 30]).unwrap();
+        let (s, _) =
+            crate::store::WrappedStore::open(Arc::new(disks.data.fork()), 64 * 1024).unwrap();
+        sizes.push(s.bytes());
+    }
+    sizes
+}
+
+#[test]
+// oracle: A §14.8 "When it holds more than four times the bytes of its live entries, the participant writes the live entries to a new segment": with no size floor, the store still grows past four times its live bytes before each compaction, so it is never rewritten on every commit
+fn p4_erasure_compaction_waits_for_four_times_the_live_bytes() {
+    let sizes = store_sizes_with_compaction_at(1);
+    let drops: Vec<(u64, u64)> = sizes
+        .windows(2)
+        .filter(|w| w[1] < w[0])
+        .map(|w| (w[0], w[1]))
+        .collect();
+    assert!(
+        !drops.is_empty(),
+        "the store compacts at least once: {sizes:?}"
+    );
+    assert!(
+        drops.len() * 4 < sizes.len(),
+        "it compacts only now and then, not on every round: {sizes:?}"
+    );
+    let most = *sizes.iter().max().unwrap_or(&0);
+    let least = *sizes.iter().min().unwrap_or(&0);
+    assert!(
+        most > 3 * least,
+        "between compactions it grows to several times its compacted size: {sizes:?}"
+    );
+}

@@ -240,3 +240,19 @@ fn p4_erasure_abort_discards_the_stage_and_the_invariant_names_a_ring_domain_wit
     let r = <KeyRotationParticipant as TxnParticipant<NoExt>>::check_invariants(&p);
     assert!(r.is_err(), "INV-14: a domain without a key slot");
 }
+
+#[test]
+// oracle: A §14.8 "recovery loads the store, then replays the WAL tail"; a kind-3 value means
+// "the collection and all its domains are gone": the recovered participant's merged state holds it
+fn p4_erasure_recovery_loads_the_store_into_the_merged_state() {
+    let data: Arc<dyn sever_vfs::Vfs> = Arc::new(sever_vfs::SimVfs::new());
+    let keys: Arc<dyn sever_vfs::Vfs> = Arc::new(sever_vfs::SimVfs::new());
+    let cid = [5u8; 16];
+    let (mut s, _) = crate::store::WrappedStore::open(Arc::clone(&data), 64 * 1024).unwrap();
+    s.append(&[[&[crate::records::KIND_DROP][..], &cid[..]].concat()])
+        .unwrap();
+    drop(s);
+    let mut p = KeyRotationParticipant::new(data, keys, Arc::new(KeyRing::new()), 64 * 1024);
+    <KeyRotationParticipant as TxnParticipant<sever_index::NoExtension>>::recover(&mut p).unwrap();
+    assert!(p.durable().dropped.contains(&cid));
+}
