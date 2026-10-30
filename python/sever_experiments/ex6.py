@@ -152,7 +152,7 @@ class Engine:
         if p == "holding":
             self.holding.add(rid)
             self.ood += 1
-        elif p.startswith("Spawned"):
+        elif p.startswith("spawn-"):  # the new or existing spawned group's ID (§7.4; DB-114)
             if p not in self.groups and len(self.holding) == 199:
                 self.holding.clear()  # §7.4: this insert's flush took the other 199
             self.groups.add(p)
