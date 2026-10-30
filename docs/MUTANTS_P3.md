@@ -184,6 +184,14 @@ crates/sever-log/src/witness.rs:234:31: replace + with *
 crates/sever-log/src/witness.rs:234:31: replace + with -
 ```
 
+## Caught or missed by chance: a random bit
+
+`ep10_contract` damages the operator's signature with `bad.operator_signature[0] ^= 1`. The operator's key comes from the OS (CLAUDE.md §6.2), so the signature's first byte is random. When its low bit is 0, `|= 1` flips it exactly as `^= 1` does, the damaged signature is refused, and the mutant survives. When the bit is 1, `|= 1` changes nothing, the contract sees a good signature accepted, and the mutant is caught. The 30 October run caught it; the DB-114 rerun missed it. It changes only the contract suite's own damage step, not the log. Risk: none for the engine. A fixed damage (`^= 0xff` on a byte, or `^= 1` checked twice with both bit values) would make it deterministic.
+
+```
+crates/sever-log/src/witness.rs:233:31: replace ^= with |= in ep10_contract
+```
+
 ## Defensive integrity checks of a stored log (`LogStore`)
 
 These refuse a store whose files disagree with each other (`load`, `insert_leaf`, `certificate`, `replay`, `check_invariants`) or check the order of checkpoints (`push_checkpoint`, `stage_checkpoint`: an equal size is allowed, so `<` to `<=` is a test gap: no test pushes two checkpoints of one size). No test corrupts these fields one at a time; the crash campaign (P3-T4) reaches the recovery paths at scale but is not run per mutant. Risk: low.
