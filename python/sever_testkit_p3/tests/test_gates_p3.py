@@ -82,9 +82,18 @@ def test_p3_mutants_the_verifier_copy_finds_its_path_dependencies(tmp_path: Path
         '[package]\nname = "sever-verify"\n[workspace]\n'
         '[dev-dependencies]\nsever-spec = { path = "../crates/sever-spec" }\n'
     )
+    # Its sources also compile in golden files from outside it (include_str!, Build §2.2 item 4):
+    # on 30 Oct, with the dependency mirrored, the baseline still failed on those.
+    (tree / "verifier" / "src").mkdir()
+    (tree / "golden").mkdir()
+    (tree / "golden" / "g.json").write_text("{}")
+    (tree / "verifier" / "src" / "gens.rs").write_text(
+        'const G: &str = include_str!("../../golden/g.json");\n'
+    )
     scratch.mkdir()
     gates._verifier_scratch(tree, scratch)
     copy = scratch / "cargo-mutants-verifier-xyz"
+    assert ((copy / "src" / "../../golden/g.json").resolve()).is_file()
     assert ((copy / "../crates/sever-spec/Cargo.toml").resolve()).is_file()
     assert ((copy / "../crates/sever-spec/src/lib.rs").resolve()).is_file()
     root = (copy / "../Cargo.toml").resolve()
@@ -92,6 +101,7 @@ def test_p3_mutants_the_verifier_copy_finds_its_path_dependencies(tmp_path: Path
     assert "[workspace.package]" in root.read_text()
     gates._verifier_scratch_clean(scratch)
     assert not (scratch / "crates").exists()
+    assert not (scratch / "golden").exists()
     assert not (scratch / "Cargo.toml").exists()
 
 

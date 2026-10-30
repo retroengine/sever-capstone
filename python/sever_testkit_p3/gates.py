@@ -205,10 +205,11 @@ def sabotage_excludes(tree: Path, crates: Iterable[str]) -> list[str]:
 
 
 def _verifier_scratch(tree: Path, scratch: Path) -> None:
-    """cargo-mutants copies only ``verifier/`` into ``scratch`` (as ``scratch/<copy>/``), so a
-    path dependency leaving it, the test-label crate ``../crates/sever-spec`` (DB-85), resolves
-    to ``scratch/crates/sever-spec``; that crate inherits its settings from the root manifest
-    above it. Mirror both there, so the copy builds as it does in the tree."""
+    """cargo-mutants copies only ``verifier/`` into ``scratch`` (as ``scratch/<copy>/``), so
+    whatever the verifier reaches outside it resolves under ``scratch``: its path dependency, the
+    test-label crate ``../crates/sever-spec`` (DB-85), which inherits its settings from the root
+    manifest, and the golden files its sources compile in (``include_str!("../../golden/…")``).
+    Mirror all of them there, so the copy builds as it does in the tree."""
     manifest = tomllib.loads((tree / VERIFIER / "Cargo.toml").read_text(encoding="utf-8"))
     tops: set[str] = set()
     for table in ("dependencies", "dev-dependencies", "build-dependencies"):
@@ -218,6 +219,19 @@ def _verifier_scratch(tree: Path, scratch: Path) -> None:
                 rel = src.relative_to(tree.resolve())
                 shutil.rmtree(scratch / rel, ignore_errors=True)
                 shutil.copytree(src, scratch / rel)
+                tops.add(rel.parts[0])
+    # Files its sources compile in from outside it (include_str!/include_bytes!, e.g. golden/).
+    vroot = (tree / VERIFIER).resolve()
+    for rs in sorted(vroot.rglob("*.rs")):
+        if "target" in rs.relative_to(vroot).parts:
+            continue
+        code = rs.read_text(encoding="utf-8")
+        for lit in re.findall(r'include_(?:str|bytes)!\(\s*"([^"]+)"', code):
+            src = (rs.parent / lit).resolve()
+            if src.is_file() and not src.is_relative_to(vroot):
+                rel = src.relative_to(tree.resolve())
+                (scratch / rel).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, scratch / rel)
                 tops.add(rel.parts[0])
     shutil.copy2(tree / "Cargo.toml", scratch / "Cargo.toml")
     (scratch / ".verifier-mirror").write_text("\n".join(sorted(tops)), encoding="utf-8")
