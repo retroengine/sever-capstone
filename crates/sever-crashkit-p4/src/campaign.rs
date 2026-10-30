@@ -35,10 +35,12 @@ use sever_crashkit::oracle::{Oracle, OracleOp, hex};
 use sever_crashkit::rows::Rows;
 use sever_db::{Db, Deleted};
 use sever_engine::{CollectionOptions, EngineConfig, InsertRequest};
+use sever_erasure::records;
+use sever_erasure::store::{self, WrappedStore};
 use sever_keys::file::{HEADER_BYTES, KeyFile, PAIR_BYTES, SLOT_BYTES, SlotState};
 use sever_types::{CollectionId, Error};
 use sever_vfs::rng::SplitMix64;
-use sever_vfs::{CrashPolicy, FaultPlan, Vfs};
+use sever_vfs::{CrashPolicy, FaultPlan, SimVfs, Vfs};
 use sha2::{Digest, Sha256};
 
 use crate::check::accept;
@@ -503,7 +505,7 @@ impl Run<'_> {
         if let Some(t) = &twin {
             self.sum.compared += 1;
             t.restart(policy);
-            if listing(&t.data) != listing(&d.data) || listing(&t.keys) != listing(&d.keys) {
+            if files(&t.data) != files(&d.data) || listing(&t.keys) != listing(&d.keys) {
                 self.sum.method_mismatches += 1;
             }
         }
@@ -535,12 +537,14 @@ impl Run<'_> {
                 .open(t)
                 .ok()
                 .map(|db| (Self::digest(&db, cid, dim), Self::size(&db)));
+            let opened = d.fork();
             let this = self
                 .world
-                .open(&d.fork())
+                .open(&opened)
                 .ok()
                 .map(|db| (Self::digest(&db, cid, dim), Self::size(&db)));
-            if other != this {
+            // Both recovered: the wrapped-key stores must now say the same (DB-114 item 5).
+            if other != this || wrapped_state(&t.data) != wrapped_state(&opened.data) {
                 self.sum.method_mismatches += 1;
             }
         }
@@ -957,4 +961,71 @@ pub fn run(
     line.insert("t".into(), "summary".into());
     writeln!(run.out, "{}", serde_json::Value::Object(line)).map_err(|e| e.to_string())?;
     Ok(sum)
+}
+
+/// The data disk's files for the method comparison (DB-88), without the wrapped-key store's
+/// directories. The replay method reopens the disks before the operation, so it runs one more
+/// recovery than the main line, and a recovery appends the WAL tail's newer entries to that store
+/// (spec §15.7 step 3, G-43): the same entries reach it at different times, so its segment sizes
+/// may differ while it means the same. That meaning is compared after recovery
+/// (`wrapped_state`; DB-114 item 5).
+fn files(vfs: &dyn Vfs) -> Vec<(String, u64)> {
+    let wrapped = |p: &str| {
+        [store::DIR, "wrapped.new", "wrapped.old"]
+            .iter()
+            .any(|d| p == *d || p.strip_prefix(d).is_some_and(|r| r.starts_with('/')))
+    };
+    listing(vfs)
+        .into_iter()
+        .filter(|(p, _)| !wrapped(p))
+        .collect()
+}
+
+/// What a recovered data disk's wrapped-key store says (§14.8: each domain's newest bucket block,
+/// each record's newest envelope, the dropped collections), read from a copy; `None` if it does
+/// not open or a value does not parse.
+fn wrapped_state(data: &SimVfs) -> Option<records::Durable> {
+    let (_, values) = WrappedStore::open(Arc::new(data.fork()), 1 << 20).ok()?;
+    let mut merged = records::Durable::default();
+    for v in values {
+        merged.merge(records::parse(&v).ok()?);
+    }
+    Some(merged)
+}
+
+#[cfg(test)]
+mod method_compare_tests {
+    use super::*;
+
+    fn block(version: u64, byte: u8) -> Vec<u8> {
+        // §14.8 bucket-block value: kind, domain (16-byte collection, 32-byte group), version, block.
+        let mut v = vec![records::KIND_BLOCK];
+        v.extend_from_slice(&[7u8; 16]);
+        v.extend_from_slice(&[9u8; 32]);
+        v.extend_from_slice(&version.to_be_bytes());
+        v.extend_from_slice(&[byte; sever_seal::block::BLOCK_BYTES]);
+        v
+    }
+
+    fn disk(values: &[Vec<u8>]) -> Arc<SimVfs> {
+        let vfs = Arc::new(SimVfs::new());
+        let shared: Arc<dyn Vfs> = Arc::clone(&vfs) as Arc<dyn Vfs>;
+        let (mut s, _) = WrappedStore::open(shared, 1 << 20).unwrap_or_else(|_| unreachable!());
+        s.append(values).unwrap_or_else(|_| unreachable!());
+        vfs
+    }
+
+    // oracle: A §14.8 (the newest version wins) and §15.7 step 3 (recovery writes back WAL values
+    // the store lacks): a store holding an older value too means the same as one without it
+    #[test]
+    fn p4_crash_method_compare_reads_the_wrapped_store_by_meaning_not_size() {
+        let lean = disk(&[block(2, 0xbb)]);
+        let late = disk(&[block(1, 0xaa), block(2, 0xbb)]);
+        assert_ne!(listing(lean.as_ref()), listing(late.as_ref()));
+        assert_eq!(files(lean.as_ref()), files(late.as_ref()));
+        assert!(wrapped_state(&lean).is_some());
+        assert_eq!(wrapped_state(&lean), wrapped_state(&late));
+        let other = disk(&[block(3, 0xcc)]);
+        assert_ne!(wrapped_state(&lean), wrapped_state(&other));
+    }
 }
