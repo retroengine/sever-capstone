@@ -548,10 +548,15 @@ fn p3_log_txn_a_deletion_needs_four_witnesses() {
     let o = w.open().unwrap();
     w.insert(&o, cid, "late", &rows("ref")[0]); // a leaf no witnessed checkpoint covers
     let n = o.db.stats(cid).unwrap().big_n;
-    assert!(matches!(
-        o.db.delete(cid, &ids[1]),
-        Err(Error::IntegrityViolation { .. })
-    ));
+    // §10.4: refused cosignatures on an honest checkpoint are the witnesses' verdict, and the
+    // refusal names that rule (§17), not a later step that merely finds no witnessed checkpoint.
+    match o.db.delete(cid, &ids[1]) {
+        Err(Error::IntegrityViolation { invariant }) => {
+            assert!(invariant.contains("§10.4"), "refused by {invariant}");
+        }
+        Err(e) => panic!("refused with {e:?}, not as §10.4"),
+        Ok(_) => panic!("deleted without a witnessed checkpoint"),
+    }
     assert_eq!(o.db.stats(cid).unwrap().big_n, n, "nothing changed");
 }
 
@@ -575,6 +580,11 @@ fn p3_log_txn_due_checkpoints_follow_section_10_3() {
         Vec::<u64>::new()
     );
     assert_eq!(
+        due_checkpoints(10_000, 10_000, 20_003, TxnKind::Insert),
+        [20_000],
+        "the next multiple after a checkpoint at 10,000"
+    );
+    assert_eq!(
         due_checkpoints(10_000, 10_000, 10_003, TxnKind::Delete),
         [10_003]
     );
@@ -595,6 +605,49 @@ fn p3_log_txn_due_checkpoints_follow_section_10_3() {
         due_checkpoints(0, 0, 5, TxnKind::CreateCollection),
         Vec::<u64>::new()
     );
+}
+
+#[test]
+// oracle: A §11.1 "then u8 0xFF ‖ u32be 64 ‖ operator_signature": the trailer is the last 1 + 4 + 64 = 69 bytes
+#[spec("SR-11.1-1")]
+fn p3_log_txn_a_certificate_ends_in_the_section_11_1_trailer() {
+    let w = World::new();
+    let (o, cid, placed) = base(&w, 6);
+    let ids = in_group(&placed);
+    let bytes = cert_of(&o.db.delete(cid, &ids[0]).unwrap());
+    assert_eq!(sever_cert::TRAILER_LEN, 1 + 4 + 64);
+    assert_eq!(sever_cert::TRAILER, 0xFF);
+    let trailer = &bytes[bytes.len() - 69..];
+    assert_eq!(trailer[0], 0xFF);
+    assert_eq!(trailer[1..5], 64u32.to_be_bytes());
+}
+
+#[test]
+// oracle: A §15.1 step 2 "verify the user signature" and §9.8 "User insert signature over DST_INSERT ‖ collection_id ‖ C_t": a credential signed for one collection is not one for another
+#[spec("SR-15.1-3", "SR-9.8-1")]
+fn p3_log_txn_a_credential_for_another_collection_is_refused() {
+    let w = World::new();
+    let (o, a, _) = base(&w, 2);
+    let b = o.db.create_collection(ARTEFACT, OPTS).unwrap();
+    let v = &rows("ref")[3];
+    let n = o.db.stats(b).unwrap().big_n;
+    let next = o.log.with(|l| l.next_index());
+    let r = o.db.insert(
+        b,
+        InsertRequest {
+            record_id: "moved".into(),
+            vector: v.to_vec(),
+            credential: w.credential(a, v), // signed for collection a, inserted into b
+            passage: None,
+        },
+    );
+    assert!(
+        r.is_err(),
+        "a credential for collection a was accepted in b"
+    );
+    assert_eq!(o.db.stats(b).unwrap().big_n, n, "nothing inserted");
+    assert_eq!(o.log.with(|l| l.next_index()), next, "no insert leaf");
+    w.insert(&o, a, "moved", v); // the same credential where it belongs
 }
 
 fn group_of(p: &Placement) -> GroupId {

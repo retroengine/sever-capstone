@@ -1,0 +1,13 @@
+diff --git a/crates/sever-cert/src/participant.rs b/crates/sever-cert/src/participant.rs
+index b93ad97..70cd718 100644
+--- a/crates/sever-cert/src/participant.rs
++++ b/crates/sever-cert/src/participant.rs
+@@ -225,7 +225,7 @@ impl Inner {
+             // A witness may create its epoch key when it first cosigns: read the keys now.
+             let now_rings = self::rings(&self.parts.witnesses);
+             let witnessed = is_witnessed(&w.checkpoint, &w.cosignatures, &now_rings);
+-            if kind == TxnKind::Delete && s == size && !witnessed {
++            if kind != TxnKind::Delete && s == size && !witnessed {
+                 self.log()?.abort();
+                 // §10.4: an honest checkpoint of committed leaves that four witnesses refuse means
+                 // the log forked from what they saw (DB-82).

@@ -1,0 +1,13 @@
+diff --git a/crates/sever-cert/src/encoding.rs b/crates/sever-cert/src/encoding.rs
+index 3cc5be9..91717b4 100644
+--- a/crates/sever-cert/src/encoding.rs
++++ b/crates/sever-cert/src/encoding.rs
+@@ -10,7 +10,7 @@ pub const VERSION: u8 = 1;
+ /// The trailer's tag (§11.1).
+ pub const TRAILER: u8 = 0xFF;
+ /// The trailer's size: `u8 0xFF ‖ u32be 64 ‖ signature`.
+-pub const TRAILER_LEN: usize = 1 + 4 + 64;
++pub const TRAILER_LEN: usize = 1 * 4 + 64;
+ 
+ /// Why certificate bytes were refused (§11.1). Names a tag number at most, never a value (§17).
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]

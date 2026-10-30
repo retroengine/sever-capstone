@@ -1,0 +1,13 @@
+diff --git a/crates/sever-cert/src/participant.rs b/crates/sever-cert/src/participant.rs
+index b93ad97..910f8c8 100644
+--- a/crates/sever-cert/src/participant.rs
++++ b/crates/sever-cert/src/participant.rs
+@@ -261,7 +261,7 @@ impl Inner {
+             .map(|p| encode_point(&p))
+             .map_err(|_| inv("§15.1 step 6 C_t"))?;
+         if staged.insert_leaf_index != index
+-            || staged.collection_id != *draft.collection.as_bytes()
++            && staged.collection_id != *draft.collection.as_bytes()
+             || staged.c_t != c_t
+         {
+             return Err(inv("§15.1 step 6 staged insert"));
