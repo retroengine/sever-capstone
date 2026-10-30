@@ -232,7 +232,9 @@ def _ivf(x: NDArray[np.float32], ids: NDArray[np.int64], nlist: int, seed: int) 
     d = x.shape[1]
     quant = faiss.IndexFlatL2(d)
     index = faiss.IndexIVFFlat(quant, d, nlist, faiss.METRIC_L2)
-    index.cp.seed = sub_seed(seed, "kmeans") % 2**32
+    # faiss's ClusteringParameters.seed is a signed 32-bit int: reduce mod 2^31 (DB-114). The
+    # sub-seeds of seeds 42, 777, 2024 and 9999 are below 2^31 already, so only 123's changes.
+    index.cp.seed = sub_seed(seed, "kmeans") % 2**31
     index.train(x)
     index.add_with_ids(x, ids)
     return index

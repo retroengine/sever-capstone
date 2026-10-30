@@ -1043,6 +1043,22 @@ part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the fr
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
 
+#### DB-114 — The v1.0 laptop run's harness faults are fixed, and only the gates they broke rerun (30 October 2026)
+
+**Decision.** The v1.0 run on the laptop (DB-113, commit `7c445b5`) found three faults in the gate harness, not in the engine. Each is fixed red-test-first on the fix branch, and only the steps they broke rerun once on the fix commit (`ONLY=… FORCE=1`, this entry being the recorded reason); every other step's result stands as recorded.
+
+1. **The verifier's mutants never ran** (P3-T9). cargo-mutants copies only `verifier/` into its scratch folder, so the verifier's out-of-tree inputs were missing from the copy: the test-label crate `../crates/sever-spec` (DB-85), the root manifest it inherits its settings from, and the golden files its sources compile in (`include_str!("../../golden/…")`). The baseline build failed and 0 of 238 mutants were tested. The gate now mirrors those inputs into the scratch folder; the unmutated baseline builds and passes.
+2. **Mutants of sabotage-only code are excluded** from the mutant sets of P3-T9 and P4-T10. A line under `#[cfg(feature = "sabotage-SB-N")]` exists only in the sabotage builds (Build §2.6): the measured build passes every test with or without the mutation, so such a mutant is reported missed by construction. The gates compute those lines from the source on every run, pass them to cargo-mutants (`--exclude-re`) and record them in the result (`excluded_sabotage_lines`). On the 30 October Part 3 result the rule removes exactly five survivors (SB-18 in `sever-crypto/src/nonce.rs`, SB-22 in `sever-cert/src/builder.rs`) and no caught mutant. The rule was set after the Part 3 result but before any Part 4 mutant result existed. The thresholds do not change.
+3. **EX-6's FAISS arm overflowed** (P4-T12). faiss's `ClusteringParameters.seed` is a signed 32-bit integer; the k-means sub-seed was reduced mod 2^32, and seed 123's (3,130,619,076) raised `OverflowError`. It is now reduced mod 2^31, which leaves the sub-seeds of seeds 42, 777, 2024 and 9999 unchanged.
+
+Also, as P3-T9 and P4-T10 require: every surviving mutant is triaged in `docs/MUTANTS_P3.md` and `docs/MUTANTS_P4.md` (never written, since these gates had never run), and seven sever-cert survivors are killed by tests from the spec with red proofs PR3-K01 … K04 (§10.3, §10.4, §11.1, §15.1 step 2, §9.8). The reruns are `p3-mutants`, `p4-mutants` and `p4-ex6`, plus `p4-coverage` if it fails and tests are added for it.
+
+**Why.** A failed gate is a result (Build §2.5), and these three results are faults of the harness: the engine was never exercised (the verifier's mutants, EX-6's seed 123) or was measured against code the build does not contain. No engine code changes; between `7c445b5` and the fix commit only test code, the test kits and documents differ. Rerunning only the affected steps keeps the owner's two-day window.
+
+**Rejected.** Rerunning the whole run (two more days). Excluding mutants judged equivalent by hand (only the objective sabotage-only rule excludes; every other survivor is triaged with its reason and counts in the score). Lowering a threshold. Leaving the three gates failed (they would carry no evidence about the engine).
+
+**Consequence.** P3-T9, P4-T10 and P4-T12 are established by the reruns on the fix commit; the run ledger keeps the failed entries of `7c445b5` beside them.
+
 #### DB-113 — The v1.0 gate run is on the laptop, every step scoped to fit 36 hours (29 October 2026)
 
 **Decision.** The college HPC is no longer available (owner, 29 October 2026), so the one v1.0 run of every pre-registered gate and measure of Parts 3 and 4 is on the owner's laptop (Intel Core Ultra 5 226V, 8 cores, 16 GB, WSL2 Ubuntu 24.04 with 12 GB) through the same `scripts/hpc/` machinery. Every step of DB-111's run still runs, with the same thresholds; sizes are scoped so that the whole run is estimated at about 29 hours, leaving time inside the owner's two days for one fix-and-rerun. The sizes, the phases (steps that run at the same time) and their estimates are `scripts/hpc/steps.sh`:
