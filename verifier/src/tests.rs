@@ -12,6 +12,7 @@ use crate::gens::{Generators, KAT_RISTRETTO, KAT_XMD, check_ristretto, check_xmd
 use crate::hex;
 use crate::merkle::{leaf_hash, verify_inclusion};
 use crate::verify::verify;
+use crate::xmd::expand_message_xmd_sha512;
 use crate::{GOLDEN_GENERATORS, Rejection};
 
 const CERTS: &str = include_str!("../../golden/p3_certificates.json");
@@ -265,4 +266,106 @@ fn p3_verify_refuses_generators_of_another_dimension_and_odd_hex() {
     assert!(r.reason.contains("dimension"), "{}", r.reason);
     assert_eq!(hex::decode("abc"), None);
     assert_eq!(hex::decode("ab"), Some(vec![0xab]));
+}
+
+#[test]
+// oracle: A RFC 9380 §5.3.1 step 2: ABORT if ell > 255, so 255 × 64 = 16320 bytes is the longest output; the boundary is worked out by hand
+fn p3_verify_xmd_aborts_exactly_beyond_255_blocks() {
+    let msg = b"abc";
+    let dst = b"QUUX-V01-CS02-with-expander-SHA512-256";
+    assert_eq!(
+        expand_message_xmd_sha512(msg, dst, 16320).map(|v| v.len()),
+        Some(16320)
+    );
+    assert_eq!(expand_message_xmd_sha512(msg, dst, 16321), None);
+    assert_eq!(expand_message_xmd_sha512(msg, dst, 65535), None);
+}
+
+#[test]
+// oracle: A §9.2 the self-check refuses a known-answer file that disagrees or is empty; each damaged copy of the RFC vectors differs from them in one place
+fn p3_verify_known_answer_checks_refuse_each_damaged_file() {
+    // RFC 9380 K.3: one hex digit of an expected output changed; no vectors at all.
+    let mut v = json(KAT_XMD);
+    let first = v["vectors"][0]["uniform_bytes"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let flipped = format!(
+        "{}{}",
+        if first.starts_with('0') { "1" } else { "0" },
+        &first[1..]
+    );
+    v["vectors"][0]["uniform_bytes"] = Value::String(flipped);
+    assert!(check_xmd(&v.to_string()).is_err());
+    let mut v = json(KAT_XMD);
+    v["vectors"] = Value::Array(vec![]);
+    assert!(check_xmd(&v.to_string()).is_err());
+    // RFC 9496 A: a wrong one-way-map output; a valid encoding (the identity) listed as invalid;
+    // either list empty on its own.
+    let mut v = json(KAT_RISTRETTO);
+    v["from_uniform_bytes"][0]["output"] = Value::String("00".repeat(32));
+    assert!(check_ristretto(&v.to_string()).is_err());
+    let mut v = json(KAT_RISTRETTO);
+    v["invalid_encodings"]
+        .as_array_mut()
+        .unwrap()
+        .push(Value::String("00".repeat(32)));
+    assert!(check_ristretto(&v.to_string()).is_err());
+    let mut v = json(KAT_RISTRETTO);
+    v["invalid_encodings"] = Value::Array(vec![]);
+    assert!(check_ristretto(&v.to_string()).is_err());
+    let mut v = json(KAT_RISTRETTO);
+    v["from_uniform_bytes"] = Value::Array(vec![]);
+    assert!(check_ristretto(&v.to_string()).is_err());
+}
+
+#[test]
+// oracle: A §9.2 H, G_0 and G_383 are each compared with the golden file; a golden file wrong in only one of them is refused
+fn p3_verify_self_check_refuses_a_golden_file_wrong_in_one_generator() {
+    let g = Generators::derive(16).unwrap();
+    let golden = json(GOLDEN_GENERATORS);
+    assert!(self_check(&g, GOLDEN_GENERATORS).is_ok());
+    for key in ["H", "G_0", "G_383"] {
+        let mut v = golden.clone();
+        let other = if key == "H" { "G_0" } else { "H" };
+        v[key] = golden[other].clone();
+        assert!(self_check(&g, &v.to_string()).is_err(), "{key}");
+    }
+}
+
+#[test]
+// oracle: A §11.3 step 4 "at least four cosignatures from distinct witnesses": exactly four are enough; B-shared golden p3_attacks.json honest certificate (five cosignatures) with one witness key withdrawn from the anchors
+fn p3_verify_accepts_exactly_four_cosignatures() {
+    let t = json(ATTACKS);
+    let full = attack_anchors();
+    let cert = h(&t["honest"]["group"]);
+    assert!(verify(&cert, &full, &Generators::derive(16).unwrap()).is_ok());
+    let mut four = full.clone();
+    let key = *four.witnesses.keys().next().unwrap();
+    four.witnesses.remove(&key);
+    assert!(verify(&cert, &four, &Generators::derive(16).unwrap()).is_ok());
+    let mut three = four.clone();
+    let key = *three.witnesses.keys().next().unwrap();
+    three.witnesses.remove(&key);
+    let r = verify(&cert, &three, &Generators::derive(16).unwrap()).unwrap_err();
+    assert_eq!(r.step, 4);
+}
+
+#[test]
+// oracle: B-shared golden p3_attacks.json (AT-3 and AT-6 differ from the honest leaf in the fields of tags 13, 9, 1, 5); A §11.3 step 3 names that check
+fn p3_verify_names_the_leaf_field_mismatch_at_step_3() {
+    let t = json(ATTACKS);
+    let gens = Generators::derive(16).unwrap();
+    let anchors = attack_anchors();
+    for a in t["attacks"].as_array().unwrap() {
+        if a["model_reason"].as_str() == Some("leaf fields differ from tags 13, 9, 1, 5") {
+            let r = verify(&h(&a["certificate"]), &anchors, &gens).unwrap_err();
+            assert_eq!(r.step, 3);
+            assert!(
+                r.reason.contains("differ from tags 13, 9, 1"),
+                "{}",
+                r.reason
+            );
+        }
+    }
 }
