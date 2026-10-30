@@ -981,16 +981,35 @@ fn files(vfs: &dyn Vfs) -> Vec<(String, u64)> {
         .collect()
 }
 
-/// What a recovered data disk's wrapped-key store says (§14.8: each domain's newest bucket block,
-/// each record's newest envelope, the dropped collections), read from a copy; `None` if it does
-/// not open or a value does not parse.
-fn wrapped_state(data: &SimVfs) -> Option<records::Durable> {
+/// Which key versions a recovered data disk's wrapped-key store makes durable (§14.8: each domain's
+/// newest bucket-block version, each record's newest bucket version, the dropped collections),
+/// read from a copy; `None` if it does not open or a value does not parse. Versions, not bytes:
+/// every rotation draws fresh keys from the OS (§9), so the replay method, which runs the operation
+/// again, writes other key bytes under the same versions. Whether the keys work is checked on the
+/// recovered disks themselves (`check_keys`, `check_readable`).
+fn wrapped_state(data: &SimVfs) -> Option<WrappedVersions> {
     let (_, values) = WrappedStore::open(Arc::new(data.fork()), 1 << 20).ok()?;
     let mut merged = records::Durable::default();
     for v in values {
         merged.merge(records::parse(&v).ok()?);
     }
-    Some(merged)
+    Some(WrappedVersions {
+        blocks: merged.blocks.iter().map(|(d, (v, _))| (*d, *v)).collect(),
+        envelopes: merged
+            .envelopes
+            .iter()
+            .map(|(k, (v, _))| (*k, *v))
+            .collect(),
+        dropped: merged.dropped,
+    })
+}
+
+/// See [`wrapped_state`].
+#[derive(Debug, PartialEq, Eq)]
+struct WrappedVersions {
+    blocks: std::collections::BTreeMap<sever_keys::Domain, u64>,
+    envelopes: std::collections::BTreeMap<(sever_keys::Domain, sever_seal::ad::Sid), u64>,
+    dropped: std::collections::BTreeSet<[u8; 16]>,
 }
 
 #[cfg(test)]
@@ -1027,5 +1046,9 @@ mod method_compare_tests {
         assert_eq!(wrapped_state(&lean), wrapped_state(&late));
         let other = disk(&[block(3, 0xcc)]);
         assert_ne!(wrapped_state(&lean), wrapped_state(&other));
+        // §9: a rotation's keys come from the OS, so a replayed rotation writes other bytes under
+        // the same version; the versions are what the store makes durable.
+        let redrawn = disk(&[block(2, 0xdd)]);
+        assert_eq!(wrapped_state(&lean), wrapped_state(&redrawn));
     }
 }
