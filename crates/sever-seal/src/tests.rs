@@ -3,6 +3,8 @@
 //! §13.2 associated data and the §14 sizes written out by hand (oracle A), Part 2's frozen EP-6
 //! contract suite (oracle C), and §13.3's rotation rule stated as properties (oracle A).
 
+use std::collections::BTreeSet;
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use serde_json::Value;
@@ -12,7 +14,7 @@ use sever_txn::sealer::{GroupOwner, RecordOwner, Sealer};
 use sever_types::{CollectionId, GroupId, ScrambledId};
 
 use crate::ad::{self, Sid};
-use crate::block::{self, BLOCK_BYTES, BucketKey, ENVELOPE_BYTES};
+use crate::block::{self, BLOCK_BYTES, BucketKey, ENVELOPE_BYTES, Envelope};
 use crate::ring::KeyRing;
 use crate::{AeadSealer, aead};
 
@@ -345,4 +347,211 @@ fn p4_seal_after_a_restart_a_survivor_opens_through_the_wrapped_key_store() {
         "the stale slot envelope does not open"
     );
     assert_eq!(&other.record_key(&d, &sid, &env).unwrap(), &recs[1].1);
+}
+
+// --- the stage and recovery of the ring (P4-T10 survivors, DB-114) --------------------------------
+
+/// A ring with `populated()`'s committed domain, a rotation of bucket 3 staged and adopted, and the
+/// store's envelope for the survivor `recs[1]` at bucket version 2.
+fn rotated() -> (Arc<KeyRing>, Domain, Vec<(Sid, Key)>, Sid, Envelope) {
+    let (ring, d, recs) = populated();
+    ring.next_version(&d, Some(1), true);
+    let rot = ring.rotate(&d, &[recs[0].0]).unwrap();
+    ring.adopt();
+    let (sid, bv, env) = rot.envelopes[0];
+    assert_eq!((sid, bv), (recs[1].0, 2));
+    (ring, d, recs, sid, env)
+}
+
+#[test]
+// oracle: A §13.3 / §15.3: a transaction that stages nothing leaves the stage empty, one that stages anything does not
+fn p4_seal_the_stage_is_empty_exactly_when_nothing_is_staged() {
+    let ring = Arc::new(KeyRing::new());
+    assert!(ring.stage_is_empty(), "a fresh ring stages nothing");
+    let d = dom(1, 7);
+    // a new domain alone (§13.3: a spawned group starts with fresh keys)
+    ring.next_version(&d, None, false);
+    assert!(!ring.stage_is_empty(), "a staged new domain");
+    ring.discard();
+    assert!(ring.stage_is_empty(), "a discarded stage is empty");
+    ring.next_version(&d, None, false);
+    ring.adopt();
+    assert!(ring.stage_is_empty(), "an adopted stage is empty");
+    // a staged rotation alone
+    ring.next_version(&d, Some(1), true);
+    assert!(!ring.stage_is_empty(), "a staged rotation");
+    ring.discard();
+    // a joining record alone
+    ring.join(&d, &sid_in_bucket(3, 1), &Key::generate())
+        .unwrap();
+    assert!(!ring.stage_is_empty(), "a staged joining record");
+    ring.adopt();
+    // a departing record alone
+    ring.depart(&d, &sid_in_bucket(3, 1));
+    assert!(!ring.stage_is_empty(), "a staged departure");
+    ring.discard();
+    // a staged drop alone
+    ring.drop_collection(&d.collection_id);
+    assert!(!ring.stage_is_empty(), "a staged drop");
+    ring.discard();
+    assert!(ring.stage_is_empty());
+}
+
+#[test]
+// oracle: A §15.9 drop collection: after the commit the collection's domains and envelopes are gone from the ring
+fn p4_seal_a_staged_drop_removes_the_collections_domains_when_adopted() {
+    let (ring, d, recs) = populated();
+    let other = dom(2, 7);
+    ring.next_version(&other, None, false);
+    ring.adopt();
+    ring.drop_collection(&d.collection_id);
+    assert_eq!(
+        ring.active_versions().len(),
+        2,
+        "a stage is not yet the state"
+    );
+    let out = ring.adopt();
+    assert_eq!(out.dropped, [(d.collection_id, vec![d])]);
+    assert_eq!(
+        ring.active_versions().keys().copied().collect::<Vec<_>>(),
+        [other]
+    );
+    assert!(ring.record_key(&d, &recs[0].0, &[0; 60]).is_err());
+}
+
+#[test]
+// oracle: A §15.3 the core drops what a failed planning attempt staged: only what the transaction justifies stays
+fn p4_seal_retain_stage_keeps_the_justified_and_drops_the_rest() {
+    let ring = Arc::new(KeyRing::new());
+    let d = dom(1, 7);
+    ring.next_version(&d, None, false);
+    ring.drop_collection(&d.collection_id);
+    ring.retain_stage(
+        &BTreeSet::new(),
+        &BTreeSet::new(),
+        &HashSet::new(),
+        &HashSet::new(),
+    );
+    assert!(
+        ring.stage_is_empty(),
+        "nothing is justified: the stage, the drop included, is gone"
+    );
+    // The new domain is justified, the drop never is.
+    ring.next_version(&d, None, false);
+    ring.drop_collection(&d.collection_id);
+    ring.retain_stage(
+        &BTreeSet::from([d]),
+        &BTreeSet::new(),
+        &HashSet::new(),
+        &HashSet::new(),
+    );
+    assert!(!ring.stage_is_empty(), "the justified new domain stays");
+    let out = ring.adopt();
+    assert_eq!(out.created, [(d, 1)]);
+    assert!(out.dropped.is_empty(), "the unjustified drop was cleared");
+}
+
+#[test]
+// oracle: A §14.8 (DB-91): the store's envelope serves only until recovery has opened every slot
+fn p4_seal_finish_recovery_forgets_the_envelopes_no_slot_claimed() {
+    let (ring, d, recs, sid, env) = rotated();
+    let gk = ring.group_key(&d, 2).unwrap();
+    let (v, blk) = ring.committed_block(&d).unwrap();
+    assert_eq!(v, 2);
+    let stale = [0xEE; 60];
+    let fresh = KeyRing::new();
+    fresh.load_domain(d, 2, gk.duplicate(), &blk).unwrap();
+    fresh.load_envelope(d, sid, 2, env);
+    fresh.finish_recovery();
+    assert!(
+        fresh.record_key(&d, &sid, &stale).is_err(),
+        "the unclaimed store entry is forgotten"
+    );
+    let kept = KeyRing::new();
+    kept.load_domain(d, 2, gk, &blk).unwrap();
+    kept.load_envelope(d, sid, 2, env);
+    assert_eq!(&kept.record_key(&d, &sid, &stale).unwrap(), &recs[1].1);
+    // A record the engine opened is learned: it still opens after recovery forgets the rest.
+    kept.finish_recovery();
+    assert_eq!(&kept.record_key(&d, &sid, &stale).unwrap(), &recs[1].1);
+}
+
+#[test]
+// oracle: A §14.8 "the highest version wins": a lower version never replaces a higher one, a higher always does
+fn p4_seal_a_stored_envelope_is_replaced_only_by_a_higher_bucket_version() {
+    let (ring, d, recs, sid, env) = rotated();
+    let gk = ring.group_key(&d, 2).unwrap();
+    let (_, blk) = ring.committed_block(&d).unwrap();
+    let stale = [0xEE; 60];
+    let junk: Envelope = [0xAB; ENVELOPE_BYTES];
+    let load = |order: &[(u64, Envelope)]| {
+        let r = KeyRing::new();
+        r.load_domain(d, 2, gk.duplicate(), &blk).unwrap();
+        for (bv, e) in order {
+            r.load_envelope(d, sid, *bv, *e);
+        }
+        r.record_key(&d, &sid, &stale)
+    };
+    // current version first, an older one after: the current one stays
+    assert_eq!(&load(&[(2, env), (1, junk)]).unwrap(), &recs[1].1);
+    // an older one first, the current one after: the current one replaces it
+    assert_eq!(&load(&[(1, junk), (2, env)]).unwrap(), &recs[1].1);
+    // a newer-than-current entry replaces the current one (and is then not the bucket's version)
+    assert!(load(&[(2, env), (3, junk)]).is_err());
+}
+
+#[test]
+// oracle: A §13.3 steps 1–4 on a bucket that loses a record while another record joins it: the joiner is a survivor; other domains and buckets are untouched
+fn p4_seal_a_rotation_rewraps_exactly_the_survivors_of_the_buckets_that_lost_a_record() {
+    let (ring, d, recs) = populated();
+    let other = dom(1, 8);
+    ring.next_version(&other, None, false);
+    ring.join(&other, &sid_in_bucket(3, 50), &Key::generate())
+        .unwrap();
+    let joiner = sid_in_bucket(3, 60);
+    ring.join(&d, &joiner, &Key::generate()).unwrap();
+    ring.next_version(&d, Some(1), true);
+    let new = ring.staged_new();
+    assert_eq!(new.len(), 1, "the other domain is new in this transaction");
+    assert_eq!(new[0].0, other);
+    let rot = ring.rotate(&d, &[recs[0].0]).unwrap();
+    let sids: Vec<Sid> = rot.envelopes.iter().map(|(s, _, _)| *s).collect();
+    assert_eq!(sids, [recs[1].0, recs[2].0, joiner]);
+    let staged = ring.staged_rotations().unwrap();
+    assert_eq!(staged.len(), 1);
+    assert_eq!((staged[0].0, staged[0].1, staged[0].2), (d, 1, 2));
+    // the new group key differs from the old one, before and after the commit
+    let (old, new_key) = (
+        ring.group_key(&d, 1).unwrap(),
+        ring.group_key(&d, 2).unwrap(),
+    );
+    assert!(
+        old != new_key,
+        "step 1: a new group key, not the old bytes under a new version"
+    );
+    assert!(ring.group_key(&d, 5).is_err());
+    ring.adopt();
+    let stored: Vec<(Sid, u64)> = ring.stored_envelopes().iter().map(|e| (e.1, e.2)).collect();
+    assert_eq!(stored, [(recs[1].0, 2), (recs[2].0, 2), (joiner, 2)]);
+}
+
+#[test]
+// oracle: A §15.9 a drop removes one collection's keys and envelopes and leaves every other collection's alone
+fn p4_seal_dropping_one_collection_leaves_the_others_keys_and_envelopes() {
+    let (ring, d, _) = populated();
+    let keep = dom(2, 7);
+    ring.next_version(&keep, None, false);
+    let (a, b) = (sid_in_bucket(3, 1), sid_in_bucket(3, 2));
+    let (ka, kb) = (Key::generate(), Key::generate());
+    ring.join(&keep, &a, &ka).unwrap();
+    ring.join(&keep, &b, &kb).unwrap();
+    ring.adopt();
+    ring.drop_collection(&d.collection_id);
+    ring.adopt();
+    assert_eq!(&ring.record_key(&keep, &a, &[0; 60]).unwrap(), &ka);
+    // its bucket membership survives too: a departure re-wraps the other record
+    ring.next_version(&keep, Some(1), true);
+    let rot = ring.rotate(&keep, &[a]).unwrap();
+    assert_eq!(rot.envelopes.iter().map(|e| e.0).collect::<Vec<_>>(), [b]);
+    assert!(format!("{ring:?}").starts_with("KeyRing"));
 }

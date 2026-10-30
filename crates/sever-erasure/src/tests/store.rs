@@ -196,3 +196,23 @@ fn p4_erasure_store_compaction_closes_the_old_store_before_removing_it() {
     let (_, got) = WrappedStore::open(Arc::new(sim), 1 << 20).unwrap();
     assert_eq!(got, values(3));
 }
+
+// oracle: C Part 2's frozen store record: a record costs `StoreRecord::OVERHEAD` bytes plus its value
+#[test]
+fn p4_erasure_store_counts_its_bytes_as_overhead_plus_value_for_each_record() {
+    let (mut s, _) = WrappedStore::open(Arc::new(SimVfs::new()), 1 << 20).unwrap();
+    assert_eq!(s.bytes(), 0);
+    let each = (sever_format::StoreRecord::OVERHEAD + 300) as u64;
+    s.append(&values(3)).unwrap();
+    assert_eq!(s.bytes(), 3 * each);
+    s.compact(&values(2)).unwrap();
+    assert_eq!(
+        s.bytes(),
+        2 * each,
+        "a compacted store counts exactly its live values"
+    );
+    assert_eq!(
+        format!("{s:?}"),
+        format!("WrappedStore({} bytes)", 2 * each)
+    );
+}

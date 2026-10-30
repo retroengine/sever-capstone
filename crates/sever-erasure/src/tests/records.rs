@@ -9,8 +9,8 @@ use sever_spec::spec;
 use sever_txn::TxnParticipant;
 use sever_txn::contract::{ProbedParticipant, ep7_participant_contract};
 
-use crate::KeyRotationParticipant;
 use crate::records::*;
+use crate::{KeyRotationParticipant, parse_wal};
 
 fn dom() -> Domain {
     let mut group_id = [0u8; 32];
@@ -140,4 +140,103 @@ fn p4_erasure_the_participant_passes_the_frozen_ep7_contract() {
         )))
     };
     assert_eq!(ep7_participant_contract(&make), Ok(()));
+}
+
+#[test]
+// oracle: A §14.8 "the highest version wins; a drop is final": recovery writes back only a value that would change the state (G-43)
+fn p4_erasure_a_value_is_newer_only_when_merging_it_would_change_the_state() {
+    let d = dom();
+    let mut s = Durable::default();
+    let (b2, b3) = (
+        Value::Block(d, 2, vec![2; 4_352]),
+        Value::Block(d, 3, vec![3; 4_352]),
+    );
+    assert!(s.newer(&b2), "an absent block is news");
+    s.merge(b2.clone());
+    assert!(!s.newer(&b2), "the same version is not news");
+    assert!(s.newer(&b3), "a higher version is news");
+    assert!(
+        !s.newer(&Value::Block(d, 1, vec![1; 4_352])),
+        "a lower version is not news"
+    );
+    let e = |v: u64| Value::Envelopes(d, vec![([1; 64], v, [v as u8; 60])]);
+    assert!(s.newer(&e(5)), "an absent envelope is news");
+    s.merge(e(5));
+    assert!(
+        !s.newer(&e(5)) && !s.newer(&e(4)),
+        "the same or a lower version is not news"
+    );
+    assert!(s.newer(&e(6)), "a higher version is news");
+    let mixed = Value::Envelopes(d, vec![([1; 64], 5, [5; 60]), ([2; 64], 1, [1; 60])]);
+    assert!(s.newer(&mixed), "one new entry among old ones is news");
+    let cid = [0xC1; 16];
+    assert!(s.newer(&Value::Drop(cid)), "a drop not yet seen is news");
+    s.merge(Value::Drop(cid));
+    assert!(!s.newer(&Value::Drop(cid)), "a drop seen is not news");
+}
+
+fn bare() -> (KeyRotationParticipant, Arc<KeyRing>) {
+    let vfs: Arc<dyn sever_vfs::Vfs> = Arc::new(sever_vfs::SimVfs::new());
+    let ring = Arc::new(KeyRing::new());
+    (
+        KeyRotationParticipant::new(Arc::clone(&vfs), vfs, Arc::clone(&ring), 64 * 1024),
+        ring,
+    )
+}
+
+type NoExt = sever_index::NoExtension;
+
+#[test]
+// oracle: A §14.6 BUCKET_BLOCK / EXTENSION payloads: a block record is a §14.8 block value without its kind byte; an extension record starts with participant ID 4
+fn p4_erasure_parse_wal_reads_only_the_participants_own_records() {
+    use sever_format::{RecordType, WalRecord};
+    let d = dom();
+    let rec = |ty, payload: Vec<u8>| WalRecord {
+        ty,
+        wal_seq: 1,
+        txn_id: 1,
+        payload,
+    };
+    let block = vec![0x42u8; 4_352];
+    let value = block_value(&d, 3, &block);
+    let got = parse_wal(&rec(RecordType::BucketBlock, value[1..].to_vec()));
+    assert_eq!(got, Some(Value::Block(d, 3, block)));
+    let mut ext = KEY_PARTICIPANT_ID.to_be_bytes().to_vec();
+    ext.extend(drop_value(&[0xC1; 16]));
+    assert_eq!(
+        parse_wal(&rec(RecordType::Extension, ext.clone())),
+        Some(Value::Drop([0xC1; 16]))
+    );
+    ext[1] ^= 1; // another participant's extension record
+    assert_eq!(parse_wal(&rec(RecordType::Extension, ext)), None);
+    assert_eq!(parse_wal(&rec(RecordType::Extension, vec![])), None);
+}
+
+#[test]
+// oracle: A §14.8 "compaction starts at 1 MiB" as the participant's constant (COMPACT_MIN_BYTES = 2^20)
+fn p4_erasure_compaction_starts_from_one_mebibyte() {
+    assert_eq!(crate::participant::COMPACT_MIN_BYTES, 1_048_576);
+}
+
+#[test]
+// oracle: A §15.3 an abort drops the stage; INV-14 every domain the ring knows has its key slot
+fn p4_erasure_abort_discards_the_stage_and_the_invariant_names_a_ring_domain_without_a_slot() {
+    let (mut p, ring) = bare();
+    assert!(
+        Arc::ptr_eq(p.ring(), &ring),
+        "the participant shares the engine's ring"
+    );
+    assert!(format!("{p:?}").starts_with("KeyRotationParticipant("));
+    ring.next_version(&dom(), None, false);
+    assert!(!ring.stage_is_empty());
+    <KeyRotationParticipant as TxnParticipant<NoExt>>::abort(&mut p);
+    assert!(
+        ring.stage_is_empty(),
+        "abort discards what the transaction staged"
+    );
+    // A committed ring domain with no key slot breaks INV-14.
+    ring.next_version(&dom(), None, false);
+    ring.adopt();
+    let r = <KeyRotationParticipant as TxnParticipant<NoExt>>::check_invariants(&p);
+    assert!(r.is_err(), "INV-14: a domain without a key slot");
 }

@@ -459,3 +459,24 @@ fn p4_keys_keys_are_32_fresh_bytes() {
         }
     }
 }
+
+#[test]
+// oracle: A §12.8 keys compare by value, print as `Key(<redacted>)`, and zeroize to all zero bytes
+fn p4_keys_a_key_compares_by_value_prints_redacted_and_zeroizes() {
+    use zeroize::Zeroize;
+    let (a, b) = (Key::from_bytes(&[1; 32]), Key::from_bytes(&[2; 32]));
+    assert!(a == Key::from_bytes(&[1; 32]));
+    assert!(a != b);
+    assert_eq!(format!("{a:?}"), "Key(<redacted>)");
+    let mut z = Key::from_bytes(&[7; 32]);
+    z.zeroize();
+    assert_eq!(z.as_bytes(), &[0u8; 32]);
+}
+
+#[test]
+// oracle: A §14.7 the key file reports the path it was opened at
+fn p4_keys_the_key_file_reports_its_path() {
+    let (_, v) = vfs();
+    let (f, _) = KeyFile::open(v, "KEYS").unwrap();
+    assert_eq!(f.path(), "KEYS");
+}

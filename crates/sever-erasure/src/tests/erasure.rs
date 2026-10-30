@@ -737,3 +737,58 @@ fn p4_erasure_a_crash_anywhere_in_a_compacting_deletion_recovers_and_reopens() {
         }
     }
 }
+
+/// The largest wrapped-key store seen over 40 delete-and-reinsert rounds when compaction starts at
+/// `min` bytes.
+fn largest_store_with_compaction_at(min: u64) -> u64 {
+    let disks = Disks::new();
+    let ring = Arc::new(sever_seal::KeyRing::new());
+    let p: Box<dyn sever_txn::TxnParticipant<sever_index::NoExtension>> = Box::new(
+        crate::KeyRotationParticipant::new(
+            Arc::new(disks.data.clone()),
+            Arc::new(disks.keys.clone()),
+            Arc::clone(&ring),
+            64 * 1024,
+        )
+        .with_compaction_at(min),
+    );
+    let db = sever_engine::Engine::open(
+        Arc::new(disks.data.clone()),
+        Arc::new(disks.keys.clone()),
+        sever_seal::AeadSealer::new(Arc::clone(&ring)),
+        sever_index::NoExtension,
+        vec![p],
+        cfg(1 << 30),
+    )
+    .unwrap();
+    let cid = db.create_collection(ARTEFACT, OPTS).unwrap();
+    let vs = vectors();
+    for (i, v) in vs.iter().take(30).enumerate() {
+        insert(&db, cid, &format!("r{i}"), v).unwrap();
+    }
+    let mut most = 0u64;
+    for round in 0..40 {
+        let id = format!("r{}", round % 30);
+        db.delete(cid, &id).unwrap();
+        insert(&db, cid, &id, &vs[round % 30]).unwrap();
+        let (s, _) =
+            crate::store::WrappedStore::open(Arc::new(disks.data.fork()), 64 * 1024).unwrap();
+        most = most.max(s.bytes());
+    }
+    most
+}
+
+#[test]
+// oracle: A §14.8 compaction starts only once the store holds the minimum AND four times its live bytes: below the minimum it never compacts, above it the store is rewritten
+fn p4_erasure_compaction_needs_both_the_minimum_size_and_four_times_the_live_bytes() {
+    let never = largest_store_with_compaction_at(1 << 30);
+    let compacting = largest_store_with_compaction_at(32 * 1024);
+    assert!(
+        compacting < never,
+        "compaction from 32 KiB keeps the store smaller ({compacting}) than none ({never})"
+    );
+    assert!(
+        compacting * 3 < never * 2,
+        "by a clear margin: {compacting} against {never}"
+    );
+}
