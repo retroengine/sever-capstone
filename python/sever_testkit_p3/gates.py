@@ -49,6 +49,7 @@ import shutil
 import subprocess
 import sys
 import time
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final
@@ -159,6 +160,35 @@ def _mutants(tree: Path, out_dir: Path, args: list[str], tmp: Path) -> tuple[int
     return run.returncode, data
 
 
+def _verifier_scratch(tree: Path, scratch: Path) -> None:
+    """cargo-mutants copies only ``verifier/`` into ``scratch`` (as ``scratch/<copy>/``), so a
+    path dependency leaving it, the test-label crate ``../crates/sever-spec`` (DB-85), resolves
+    to ``scratch/crates/sever-spec``; that crate inherits its settings from the root manifest
+    above it. Mirror both there, so the copy builds as it does in the tree."""
+    manifest = tomllib.loads((tree / VERIFIER / "Cargo.toml").read_text(encoding="utf-8"))
+    tops: set[str] = set()
+    for table in ("dependencies", "dev-dependencies", "build-dependencies"):
+        for dep in manifest.get(table, {}).values():
+            if isinstance(dep, dict) and str(dep.get("path", "")).startswith(".."):
+                src = (tree / VERIFIER / dep["path"]).resolve()
+                rel = src.relative_to(tree.resolve())
+                shutil.rmtree(scratch / rel, ignore_errors=True)
+                shutil.copytree(src, scratch / rel)
+                tops.add(rel.parts[0])
+    shutil.copy2(tree / "Cargo.toml", scratch / "Cargo.toml")
+    (scratch / ".verifier-mirror").write_text("\n".join(sorted(tops)), encoding="utf-8")
+
+
+def _verifier_scratch_clean(scratch: Path) -> None:
+    """Removes what ``_verifier_scratch`` put in ``scratch``."""
+    marker = scratch / ".verifier-mirror"
+    if marker.exists():
+        for top in marker.read_text(encoding="utf-8").split():
+            shutil.rmtree(scratch / top, ignore_errors=True)
+        marker.unlink()
+    (scratch / "Cargo.toml").unlink(missing_ok=True)
+
+
 def p3_mutants(root: Path, jobs: int) -> int:
     """P3-T9 (mutants): every unit at its minimum score, every survivor triaged."""
     missing = _missing_code(root)
@@ -189,6 +219,7 @@ def p3_mutants(root: Path, jobs: int) -> int:
         for p in P3_MUTANT_TESTS:
             args += ["--test-package", p]
         rc_root, out_root = _mutants(tree, root / "traces/mutants-p3-gate", args, tmp)
+        _verifier_scratch(tree, tmp)
         rc_ver, out_ver = _mutants(
             tree,
             root / "traces/mutants-p3-verifier",
@@ -196,6 +227,7 @@ def p3_mutants(root: Path, jobs: int) -> int:
             tmp,
         )
     finally:
+        _verifier_scratch_clean(tmp)
         subprocess.run(
             ["git", "worktree", "remove", "--force", str(tree)],
             cwd=root,
