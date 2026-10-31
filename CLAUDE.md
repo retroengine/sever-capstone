@@ -31,6 +31,9 @@ current part is Part 3, The Receipt** (Parts 1 and 2 are frozen; Part 2 at `part
 | 5 | `docs/PROGRESS.md` | Where we are right now. |
 | 6 | The code | Must agree with 1–4. When it disagrees, the code is wrong or the spec has a gap. |
 
+- **Navigation (generated, DB-115):** `parts/` has one page per part (code, tests, results,
+  reports), `tests/README.md` lists every test and `docs/RESULTS.md` every result. They are
+  written by `python3 scripts/index.py`; rerun it after a change (`--check` finds a stale page).
 - **The spec wins.** If code and spec disagree, fix the code, or record a gap in `docs/SPEC_GAPS.md`
   (**G-N**) and fix the spec **in the same commit** with a decision entry (Overview §13.4). Never
   change the spec quietly to match code.

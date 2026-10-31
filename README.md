@@ -15,9 +15,13 @@ frozen (Build §0.1):
 | Part | The claim it adds | Status |
 |---|---|---|
 | **1 The Idea** | Deleting a vector returns its group, bit for bit, to the never-inserted state | **Done**: every gate passed on 6 Oct 2026; frozen as `part-1-frozen` (see [Part 1 results](#part-1-results)) |
-| **2 The Database** | Exactness survives a crash at any point; multi-group deletion is all-or-nothing | **Done**: every gate passed on 8 Oct 2026, then an independent test audit; frozen as `part-2-frozen` (see [Part 2](#part-2-the-database)) |
-| **3 The Receipt** | Every deletion yields a certificate anyone can verify offline | **Built**: every interim laptop check passes (19 Oct 2026); the full gates run once on the college HPC in WSL2, then it freezes (DB-94, DB-111; see [Part 3](#part-3-the-receipt)) |
-| **4 The Erasure** | Nothing deleted can be recovered from raw storage | **Built**: interim checks pass; the full gates and the evaluation run in the same HPC run (see [Part 4](#part-4-the-erasure)) |
+| **2 The Database** | Exactness survives a crash at any point; multi-group deletion is all-or-nothing | **Done**: every gate passed on 8 Oct 2026, then an independent test audit; frozen, now as `part-2-frozen-e2` after errata E-1 and E-2 (see [Part 2](#part-2-the-database)) |
+| **3 The Receipt** | Every deletion yields a certificate anyone can verify offline | **Built**: every gate of the v1.0 laptop run passes (31 Oct 2026); it freezes after a fair-testing pass (DB-113, DB-114; see [Part 3](#part-3-the-receipt)) |
+| **4 The Erasure** | Nothing deleted can be recovered from raw storage | **Built**: the v1.0 laptop run's gates pass, P4-T10 by the owner's acceptance; the EX-8 measure did not complete (DB-114; see [Part 4](#part-4-the-erasure)) |
+
+**Each part has its own page** with its code, tests, results and reports: [`parts/`](parts/README.md).
+Every test: [`tests/README.md`](tests/README.md). Every result: [`docs/RESULTS.md`](docs/RESULTS.md).
+A map of all the documents: [`docs/README.md`](docs/README.md).
 
 Where things stand in detail: [`docs/PROGRESS.md`](docs/PROGRESS.md). Working rules for contributors
 and AI assistants: [`CLAUDE.md`](CLAUDE.md).
@@ -448,7 +452,7 @@ WSL's default 8 GB run at most two at once (`--jobs 2`), with 10 GB (`memory=10G
 crates/          the Rust workspace: the database, earlier parts' roots, test tooling  → crates/README.md
 python/          partition builder, reference models, SDKs, test kits, gate runners, the evaluation
 verifier/ audit/ the certificate verifier and the log auditor (separate workspaces, no engine code)
-tests/           architecture rules, sabotage runner, end-to-end, errata, red proofs, fair-testing output
+tests/           architecture rules, sabotage runner, end-to-end, errata, red proofs, fair-testing output  → tests/README.md
 fuzz/ fuzz-p2/ fuzz-p3/ fuzz-p4/   cargo-fuzz targets, one workspace per part (nightly)
 spikes/          Part 3's proof spike (a gate)
 golden/ spec/ configs/ datasets/   golden vectors, requirements and registers, pre-registration, data pins
@@ -456,6 +460,7 @@ docs/            specification, overview, build plans, gaps, progress, evidence,
 results/         gate and measure results (written by the runners, cited by docs/RUN_LEDGER.jsonl)
 scripts/         CI tiers, demos, fair testing, freeze, job queue, the HPC gate run (scripts/hpc/)
 freeze/          hashes of the frozen parts' files (F-1)
+parts/           one page per part: its code, tests, results, reports (generated, DB-115)  → parts/README.md
 studio/          SEVER-DB Studio, the desktop demo of every feature (DB-106)  → studio/README.md
 ```
 
@@ -475,6 +480,7 @@ Generated, not in git: `artefacts/` (partition artefacts, ID export, demo report
 | [`docs/SEVER-DB_BUILD_PLAN_PART_1-2.md`](docs/SEVER-DB_BUILD_PLAN_PART_1-2.md), [`…PART_3-4.md`](docs/SEVER-DB_BUILD_PLAN_PART_3-4.md) | How it is built: parts, freeze rule, test plans, gates |
 | [`docs/SPEC_GAPS.md`](docs/SPEC_GAPS.md) | Every place the spec was unclear, and the decision that closed it |
 | [`docs/TRACE_PART_1.md`](docs/TRACE_PART_1.md) … [`TRACE_PART_4.md`](docs/TRACE_PART_4.md) | Requirement → test matrices (generated) |
+| [`docs/README.md`](docs/README.md) | A map of every document, and the generated part, test and result indexes |
 
 ## Data and licences
 

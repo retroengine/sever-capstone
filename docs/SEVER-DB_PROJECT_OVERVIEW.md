@@ -1043,6 +1043,23 @@ part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the fr
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
 
+#### DB-115 — Each part gets a page; nothing moves (31 October 2026)
+
+**Decision.** Three generated navigation files, written by `scripts/index.py`:
+- `parts/README.md`, plus one page per part (`parts/1-the-idea/`, `2-the-database/`, `3-the-receipt/`, `4-the-erasure/`). Each page lists the part's crates and packages, where its tests live with their counts, every run of it in the ledger with its outcome and result file, and its reports.
+- `tests/README.md`: every test, by part.
+- `docs/RESULTS.md`: every result, by part.
+
+The script reads only `scripts/freeze.sh list N`, the `PART` map of `tests/architecture/test_architecture.py`, `git ls-files` and the run ledger. It writes only these files; `--check` reports a stale page. `docs/README.md` becomes a map of every document, and the README's top section links to the part pages. Closes G-49; spec §19.2 lists `parts/`.
+
+**Why.** The owner wants each part named, with its tests and results in one place (31 October 2026). The pages give that without touching any file that code reads by path.
+
+**Rejected.**
+- Moving each part's code, tests and results into its own folder. Parts 1 and 2 are frozen by path (F-1) and their files hold depth-relative paths (`include_str!("../../../golden/…")`, `parents[3]`). The 413 red-proof patches name `crates/…`. `freeze.sh 2` needs a fair-testing pass on the exact owned paths. The sealed ledger cites `results/…` by path. The move would re-freeze Parts 1 and 2 and rerun every proof; DB-112 already dropped it.
+- Moving or deleting documents or tracked files. `docs/plans/` holds the live plan, `docs/notes/` is where CLAUDE.md §4 puts the explain-back notes, and every test backs a gate or a frozen part.
+
+**Consequence.** No file a freeze list, a gate, a proof patch, `configs/fair.yaml` or the clean room reads changes. The README regions that fair testing copies into the clean room are byte-identical. `sever_report` (Build 3-4 §2.4), named in §19.2, is still not built.
+
 #### DB-114 — The v1.0 laptop run's harness faults are fixed, and only the gates they broke rerun (30 October 2026)
 
 **Decision.** The v1.0 run on the laptop (DB-113, commit `7c445b5`) found three faults in the gate harness, not in the engine. Each is fixed red-test-first on the fix branch, and only the steps they broke rerun once on the fix commit (`ONLY=… FORCE=1`, this entry being the recorded reason); every other step's result stands as recorded.

@@ -1876,7 +1876,10 @@ sever-db/
   golden/                        generator vectors, proof challenge vectors, RFC KATs
   datasets/MANIFEST.sha256       data files are regenerated, not committed
   tests/                         crash/, forensic/, differential/, attack/, property/
-  docs/                          these two documents, RUN_LEDGER.md, SOUNDNESS.md
+  docs/                          these two documents, RUN_LEDGER.md, SOUNDNESS.md; RESULTS.md, every
+                                 result by part (generated, DB-115)
+  parts/                         one page per part: its code, tests, results and reports; generated
+                                 by scripts/index.py, moves nothing (DB-115)
   studio/                        SEVER-DB Studio, the desktop demo of the whole project: own
                                  environment and tests; drives the final build through the SDK,
                                  sever-verify, sever-audit and the parts' own demo programs; a
