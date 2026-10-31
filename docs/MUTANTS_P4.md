@@ -129,6 +129,20 @@ crates/sever-erasure/src/participant.rs:254:28: replace == with !=
 crates/sever-erasure/src/participant.rs:256:50: replace || with &&
 ```
 
+## Timeout of the rerun: `Key::eq` under load
+
+The rerun of 31 October 2026 (commit 96f9370) did not kill this mutant in time: with `Key`'s
+equality inverted, the ten `sever-db` tests took 288 s (median 183 s over the run's other mutants),
+and the 300 s limit ran out in the `sever-erasure` tests, before the `sever-keys` tests ran, so it was
+recorded as a timeout. Applied by hand on 96f9370, it fails two `sever-keys` tests at once
+(`p4_keys_a_key_compares_by_value_prints_redacted_and_zeroizes`, `p4_keys_keys_are_32_fresh_bytes`);
+the 30 October run caught it too. Added after the rerun recorded it; the owner accepted P4-T10 on
+this basis (DB-114).
+
+```
+crates/sever-keys/src/lib.rs:103:25: replace == with !=
+```
+
 ## Other
 
 Timeouts of the first run and survivors not yet grouped.
