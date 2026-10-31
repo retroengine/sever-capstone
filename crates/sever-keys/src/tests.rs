@@ -480,3 +480,87 @@ fn p4_keys_the_key_file_reports_its_path() {
     let (f, _) = KeyFile::open(v, "KEYS").unwrap();
     assert_eq!(f.path(), "KEYS");
 }
+
+#[test]
+// oracle: A §14.7 the header is 4,096 bytes and written once at creation: a key file shorter
+// than its header has lost it, and opening refuses
+fn p4_keys_a_key_file_shorter_than_its_header_is_refused() {
+    let (_, v) = vfs();
+    drop(KeyFile::open(v.clone(), "KEYS").unwrap());
+    let mut raw = v.open("KEYS", OpenMode::Existing).unwrap();
+    raw.truncate(4_095).unwrap();
+    drop(raw);
+    assert!(matches!(
+        KeyFile::open(v, "KEYS"),
+        Err(Error::IntegrityViolation { .. })
+    ));
+}
+
+#[test]
+// oracle: A §14.7 a domain's index is its pair's position and a pair holds slots 0 and 1: a slot
+// of a pair past the file's end, or a third slot, is refused, and the file is left as it was
+fn p4_keys_a_slot_outside_the_key_file_is_refused() {
+    let (_, v) = vfs();
+    let (mut f, _) = KeyFile::open(v.clone(), "KEYS").unwrap();
+    let d = domain(1, 1);
+    f.append(d, 1, &Key::from_bytes(&[0x01; 32])).unwrap();
+    let len = || v.open("KEYS", OpenMode::Existing).unwrap().len().unwrap();
+    assert_eq!(len(), 4_096 + 1_024, "§14.7: 4 KB plus 1 KB per domain");
+    for (index, which) in [(1, 0), (1, 1), (0, 2), (u64::MAX, 0)] {
+        assert!(matches!(
+            f.write_slot(index, which, d, 2, &Key::from_bytes(&[0x02; 32])),
+            Err(Error::IntegrityViolation { .. })
+        ));
+        assert!(matches!(
+            f.erase_slot(index, which),
+            Err(Error::IntegrityViolation { .. })
+        ));
+    }
+    assert_eq!(len(), 4_096 + 1_024);
+    assert!(
+        Arc::ptr_eq(f.vfs(), &v),
+        "the file lives on the disk it was opened on"
+    );
+}
+
+#[test]
+// oracle: A §13.1 a key is never printed (§17: nothing printed carries a key): a slot record
+// prints its domain index and key version, never its key bytes
+fn p4_keys_a_slot_record_prints_without_its_key() {
+    let r = SlotRecord {
+        domain_index: 7,
+        key_version: 9,
+        domain: domain(3, 4),
+        key: Key::from_bytes(&[0xA5; 32]),
+    };
+    let s = format!("{r:?}");
+    assert!(s.starts_with("SlotRecord"), "{s}");
+    assert!(
+        s.contains("domain_index: 7") && s.contains("key_version: 9"),
+        "{s}"
+    );
+    assert!(
+        !s.contains("165") && !s.to_lowercase().contains("a5"),
+        "{s}"
+    );
+}
+
+#[cfg(feature = "key-export")]
+#[test]
+// oracle: A Build 3-4 §2.7 (DB-54): the key-export build also hands each generated key to the
+// sink outside the disk image
+fn p4_keys_the_export_build_hands_every_new_key_to_the_sink() {
+    use std::sync::Mutex;
+    let seen: Arc<Mutex<Vec<Vec<u8>>>> = Arc::default();
+    let s2 = Arc::clone(&seen);
+    export::set_sink(Box::new(move |k| {
+        if let Ok(mut s) = s2.lock() {
+            s.push(k.to_vec());
+        }
+    }));
+    let keys: Vec<Key> = (0..3).map(|_| Key::generate()).collect();
+    let got = seen.lock().unwrap();
+    for k in &keys {
+        assert!(got.iter().any(|g| g.as_slice() == k.as_bytes()));
+    }
+}
