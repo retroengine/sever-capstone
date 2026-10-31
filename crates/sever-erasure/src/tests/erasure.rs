@@ -518,6 +518,17 @@ fn write_keys(disks: &Disks, at: u64, bytes: &[u8]) {
     f.fsync().unwrap();
 }
 
+fn read_key_byte(disks: &Disks, at: u64) -> u8 {
+    use sever_vfs::{OpenMode, Vfs};
+    let f = disks
+        .keys
+        .open(crate::KEYS_PATH, OpenMode::Existing)
+        .unwrap();
+    let mut b = [0u8; 1];
+    f.read_at(at, &mut b).unwrap();
+    b[0]
+}
+
 fn slot_at(pair: u64, slot: u8) -> u64 {
     4_096 + 1_024 * pair + 512 * u64::from(slot)
 }
@@ -530,7 +541,10 @@ fn p4_erasure_startup_refuses_a_missing_or_torn_active_key_slot() {
     for torn in [true, false] {
         let (disks, _, pair, slot, _) = closed_with_slot();
         if torn {
-            write_keys(&disks, slot_at(pair, slot) + 40, &[0xFF]);
+            // Byte 40 lies in the slot's key (bytes 20..52, §13.4), drawn by the OS: flip it, so
+            // the slot is torn whatever its value (writing a fixed 0xFF left 1 run in 256 intact).
+            let at = slot_at(pair, slot) + 40;
+            write_keys(&disks, at, &[!read_key_byte(&disks, at)]);
         } else {
             write_keys(&disks, slot_at(pair, slot), &[0u8; 512]);
         }
