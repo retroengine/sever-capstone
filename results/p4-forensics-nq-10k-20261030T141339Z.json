@@ -1,0 +1,1974 @@
+{
+ "gate": "P4-T1: 0 findings on the raw image after the ingest and every rung, every seed; P4-T2: 100 % of planted secrets found before every scan, each applicable sabotage build >= 1 finding",
+ "data": "nq-10k",
+ "seeds": [
+  {
+   "seed": 42,
+   "data": "nq-10k",
+   "image_gib": 16,
+   "overrides": [
+    "allow_unsafe_fs"
+   ],
+   "scans": [
+    {
+     "after": "ingest",
+     "step": {
+      "inserted": 10000,
+      "refused": 0
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 0,
+      "keys_generated": 23870,
+      "keys_in_slots": 172,
+      "keys_searched": 23698
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 1281,
+       "blocks": 385,
+       "envelopes": 17535,
+       "key_slots": 172,
+       "records": 86923
+      },
+      "controls_recovered": [
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 129.5,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 20,
+     "ok": true
+    },
+    {
+     "after": "rung 1",
+     "step": {
+      "already_absent": 0,
+      "certificates": 995,
+      "deleted": 995
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 995,
+      "keys_generated": 25849,
+      "keys_in_slots": 172,
+      "keys_searched": 25677
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 1468,
+       "blocks": 1418,
+       "envelopes": 16565,
+       "key_slots": 172,
+       "records": 64011
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 338.5,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 2",
+     "step": {
+      "already_absent": 0,
+      "certificates": 1501,
+      "deleted": 1501
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 2496,
+      "keys_generated": 28830,
+      "keys_in_slots": 172,
+      "keys_searched": 28658
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 2518,
+       "blocks": 2850,
+       "envelopes": 15073,
+       "key_slots": 172,
+       "records": 55243
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 408.5,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 3",
+     "step": {
+      "already_absent": 0,
+      "certificates": 2485,
+      "deleted": 2485
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 4981,
+      "keys_generated": 33771,
+      "keys_in_slots": 172,
+      "keys_searched": 33599
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 4276,
+       "blocks": 5085,
+       "envelopes": 20902,
+       "key_slots": 172,
+       "records": 87613
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 373.9,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 4",
+     "step": {
+      "already_absent": 0,
+      "certificates": 2507,
+      "deleted": 2507
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 7488,
+      "keys_generated": 38757,
+      "keys_in_slots": 172,
+      "keys_searched": 38585
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 6077,
+       "blocks": 6987,
+       "envelopes": 19956,
+       "key_slots": 172,
+       "records": 96668
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       true,
+       true,
+       false,
+       true,
+       true,
+       false,
+       true,
+       true
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 535.9,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 6,
+     "ok": true
+    },
+    {
+     "after": "rung 5",
+     "step": {
+      "already_absent": 0,
+      "certificates": 1502,
+      "deleted": 1502
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 8990,
+      "keys_generated": 41738,
+      "keys_in_slots": 172,
+      "keys_searched": 41566
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 5292,
+       "blocks": 6156,
+       "envelopes": 14113,
+       "key_slots": 172,
+       "records": 88334
+      },
+      "controls_recovered": [
+       false,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       false,
+       true,
+       true,
+       true,
+       true,
+       false,
+       true,
+       true,
+       true,
+       true,
+       false,
+       true,
+       true
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 562.0,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 16,
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 5651
+  },
+  {
+   "seed": 123,
+   "data": "nq-10k",
+   "image_gib": 16,
+   "overrides": [
+    "allow_unsafe_fs"
+   ],
+   "scans": [
+    {
+     "after": "ingest",
+     "step": {
+      "inserted": 10000,
+      "refused": 0
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 0,
+      "keys_generated": 23858,
+      "keys_in_slots": 172,
+      "keys_searched": 23686
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 1290,
+       "blocks": 385,
+       "envelopes": 17512,
+       "key_slots": 172,
+       "records": 86912
+      },
+      "controls_recovered": [
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 179.5,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 20,
+     "ok": true
+    },
+    {
+     "after": "rung 1",
+     "step": {
+      "already_absent": 0,
+      "certificates": 997,
+      "deleted": 997
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 997,
+      "keys_generated": 25831,
+      "keys_in_slots": 172,
+      "keys_searched": 25659
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 1472,
+       "blocks": 1394,
+       "envelopes": 16599,
+       "key_slots": 172,
+       "records": 63968
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 391.2,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 2",
+     "step": {
+      "already_absent": 0,
+      "certificates": 1500,
+      "deleted": 1500
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 2497,
+      "keys_generated": 28811,
+      "keys_in_slots": 172,
+      "keys_searched": 28639
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 2504,
+       "blocks": 2822,
+       "envelopes": 14922,
+       "key_slots": 172,
+       "records": 55167
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 407.3,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 3",
+     "step": {
+      "already_absent": 0,
+      "certificates": 2488,
+      "deleted": 2488
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 4985,
+      "keys_generated": 33759,
+      "keys_in_slots": 172,
+      "keys_searched": 33587
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 4319,
+       "blocks": 5066,
+       "envelopes": 21017,
+       "key_slots": 172,
+       "records": 87647
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 341.4,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 4",
+     "step": {
+      "already_absent": 0,
+      "certificates": 2503,
+      "deleted": 2503
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 7488,
+      "keys_generated": 38736,
+      "keys_in_slots": 172,
+      "keys_searched": 38564
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 6118,
+       "blocks": 6978,
+       "envelopes": 20211,
+       "key_slots": 172,
+       "records": 96799
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       true,
+       false,
+       true,
+       true,
+       true,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 443.2,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 4,
+     "ok": true
+    },
+    {
+     "after": "rung 5",
+     "step": {
+      "already_absent": 0,
+      "certificates": 1497,
+      "deleted": 1497
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 8985,
+      "keys_generated": 41711,
+      "keys_in_slots": 172,
+      "keys_searched": 41539
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 5369,
+       "blocks": 6175,
+       "envelopes": 14295,
+       "key_slots": 172,
+       "records": 88671
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       true,
+       false,
+       true,
+       true,
+       false,
+       true,
+       true,
+       true,
+       true,
+       false,
+       true,
+       true,
+       true,
+       true,
+       false,
+       true,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 317.7,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 12,
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 5243
+  },
+  {
+   "seed": 777,
+   "data": "nq-10k",
+   "image_gib": 16,
+   "overrides": [
+    "allow_unsafe_fs"
+   ],
+   "scans": [
+    {
+     "after": "ingest",
+     "step": {
+      "inserted": 10000,
+      "refused": 0
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 0,
+      "keys_generated": 23852,
+      "keys_in_slots": 172,
+      "keys_searched": 23680
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 1318,
+       "blocks": 385,
+       "envelopes": 17506,
+       "key_slots": 172,
+       "records": 86930
+      },
+      "controls_recovered": [
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       false,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 64.1,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 19,
+     "ok": true
+    },
+    {
+     "after": "rung 1",
+     "step": {
+      "already_absent": 0,
+      "certificates": 1000,
+      "deleted": 1000
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 1000,
+      "keys_generated": 25841,
+      "keys_in_slots": 172,
+      "keys_searched": 25669
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 1525,
+       "blocks": 1431,
+       "envelopes": 16428,
+       "key_slots": 172,
+       "records": 64027
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 240.1,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 2",
+     "step": {
+      "already_absent": 0,
+      "certificates": 1505,
+      "deleted": 1505
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 2505,
+      "keys_generated": 28832,
+      "keys_in_slots": 172,
+      "keys_searched": 28660
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 2568,
+       "blocks": 2868,
+       "envelopes": 15066,
+       "key_slots": 172,
+       "records": 55485
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 231.2,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 3",
+     "step": {
+      "already_absent": 0,
+      "certificates": 2472,
+      "deleted": 2472
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 4977,
+      "keys_generated": 33744,
+      "keys_in_slots": 172,
+      "keys_searched": 33572
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 4321,
+       "blocks": 5107,
+       "envelopes": 21194,
+       "key_slots": 172,
+       "records": 87818
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 252.3,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 4",
+     "step": {
+      "already_absent": 0,
+      "certificates": 2511,
+      "deleted": 2511
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 7488,
+      "keys_generated": 38730,
+      "keys_in_slots": 172,
+      "keys_searched": 38558
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 6270,
+       "blocks": 7088,
+       "envelopes": 19950,
+       "key_slots": 172,
+       "records": 99265
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 306.9,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 9,
+     "ok": true
+    },
+    {
+     "after": "rung 5",
+     "step": {
+      "already_absent": 0,
+      "certificates": 1499,
+      "deleted": 1499
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 8987,
+      "keys_generated": 41709,
+      "keys_in_slots": 172,
+      "keys_searched": 41537
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 5386,
+       "blocks": 6338,
+       "envelopes": 14213,
+       "key_slots": 172,
+       "records": 88491
+      },
+      "controls_recovered": [
+       false,
+       false,
+       true,
+       true,
+       false,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 248.1,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 12,
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 3279
+  },
+  {
+   "seed": 2024,
+   "data": "nq-10k",
+   "image_gib": 16,
+   "overrides": [
+    "allow_unsafe_fs"
+   ],
+   "scans": [
+    {
+     "after": "ingest",
+     "step": {
+      "inserted": 10000,
+      "refused": 0
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 0,
+      "keys_generated": 23856,
+      "keys_in_slots": 172,
+      "keys_searched": 23684
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 1295,
+       "blocks": 385,
+       "envelopes": 17494,
+       "key_slots": 172,
+       "records": 86919
+      },
+      "controls_recovered": [
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 63.3,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 20,
+     "ok": true
+    },
+    {
+     "after": "rung 1",
+     "step": {
+      "already_absent": 0,
+      "certificates": 1025,
+      "deleted": 1025
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 1025,
+      "keys_generated": 25895,
+      "keys_in_slots": 172,
+      "keys_searched": 25723
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 1543,
+       "blocks": 1480,
+       "envelopes": 16773,
+       "key_slots": 172,
+       "records": 64052
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 229.0,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 2",
+     "step": {
+      "already_absent": 0,
+      "certificates": 1478,
+      "deleted": 1478
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 2503,
+      "keys_generated": 28834,
+      "keys_in_slots": 172,
+      "keys_searched": 28662
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 2579,
+       "blocks": 2887,
+       "envelopes": 15153,
+       "key_slots": 172,
+       "records": 55395
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 231.0,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 3",
+     "step": {
+      "already_absent": 0,
+      "certificates": 2530,
+      "deleted": 2530
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 5033,
+      "keys_generated": 33867,
+      "keys_in_slots": 172,
+      "keys_searched": 33695
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 4390,
+       "blocks": 5170,
+       "envelopes": 21613,
+       "key_slots": 172,
+       "records": 88184
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 317.2,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 4",
+     "step": {
+      "already_absent": 0,
+      "certificates": 2497,
+      "deleted": 2497
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 7530,
+      "keys_generated": 38820,
+      "keys_in_slots": 172,
+      "keys_searched": 38648
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 6314,
+       "blocks": 7161,
+       "envelopes": 20251,
+       "key_slots": 172,
+       "records": 99786
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       true,
+       true,
+       true,
+       true,
+       true
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 514.6,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 5,
+     "ok": true
+    },
+    {
+     "after": "rung 5",
+     "step": {
+      "already_absent": 0,
+      "certificates": 1482,
+      "deleted": 1482
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 9012,
+      "keys_generated": 41763,
+      "keys_in_slots": 172,
+      "keys_searched": 41591
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 5394,
+       "blocks": 6363,
+       "envelopes": 14369,
+       "key_slots": 172,
+       "records": 88695
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       true,
+       true,
+       true,
+       false,
+       true,
+       true,
+       true,
+       true,
+       true,
+       false,
+       true,
+       true,
+       false,
+       true,
+       true
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 643.9,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 12,
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 5167
+  },
+  {
+   "seed": 9999,
+   "data": "nq-10k",
+   "image_gib": 16,
+   "overrides": [
+    "allow_unsafe_fs"
+   ],
+   "scans": [
+    {
+     "after": "ingest",
+     "step": {
+      "inserted": 10000,
+      "refused": 0
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 0,
+      "keys_generated": 23853,
+      "keys_in_slots": 172,
+      "keys_searched": 23681
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 1301,
+       "blocks": 385,
+       "envelopes": 17497,
+       "key_slots": 172,
+       "records": 86920
+      },
+      "controls_recovered": [
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 184.1,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 20,
+     "ok": true
+    },
+    {
+     "after": "rung 1",
+     "step": {
+      "already_absent": 0,
+      "certificates": 993,
+      "deleted": 993
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 993,
+      "keys_generated": 25828,
+      "keys_in_slots": 172,
+      "keys_searched": 25656
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 1513,
+       "blocks": 1421,
+       "envelopes": 16611,
+       "key_slots": 172,
+       "records": 64119
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 489.7,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 2",
+     "step": {
+      "already_absent": 0,
+      "certificates": 1505,
+      "deleted": 1505
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 2498,
+      "keys_generated": 28815,
+      "keys_in_slots": 172,
+      "keys_searched": 28643
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 2557,
+       "blocks": 2845,
+       "envelopes": 15210,
+       "key_slots": 172,
+       "records": 55339
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 492.9,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 3",
+     "step": {
+      "already_absent": 0,
+      "certificates": 2461,
+      "deleted": 2461
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 4959,
+      "keys_generated": 33704,
+      "keys_in_slots": 172,
+      "keys_searched": 33532
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 4316,
+       "blocks": 5039,
+       "envelopes": 20930,
+       "key_slots": 172,
+       "records": 87450
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 472.6,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 0,
+     "ok": true
+    },
+    {
+     "after": "rung 4",
+     "step": {
+      "already_absent": 0,
+      "certificates": 2515,
+      "deleted": 2515
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 7474,
+      "keys_generated": 38705,
+      "keys_in_slots": 172,
+      "keys_searched": 38533
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 6088,
+       "blocks": 6930,
+       "envelopes": 20398,
+       "key_slots": 172,
+       "records": 96418
+      },
+      "controls_recovered": [
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       false,
+       true,
+       false,
+       true,
+       true,
+       true
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 515.5,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 4,
+     "ok": true
+    },
+    {
+     "after": "rung 5",
+     "step": {
+      "already_absent": 0,
+      "certificates": 1511,
+      "deleted": 1511
+     },
+     "targets": {
+      "controls": 20,
+      "deleted": 8985,
+      "keys_generated": 41710,
+      "keys_in_slots": 172,
+      "keys_searched": 41538
+     },
+     "fs_clean": true,
+     "scan": {
+      "bytes": 17179869184,
+      "carved": {
+       "accumulators": 5346,
+       "blocks": 6158,
+       "envelopes": 14313,
+       "key_slots": 172,
+       "records": 88611
+      },
+      "controls_recovered": [
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       true,
+       false,
+       true,
+       true,
+       false,
+       false,
+       false,
+       true
+      ],
+      "first": [],
+      "reconstructed": [],
+      "seconds": 482.1,
+      "n_findings": 0,
+      "findings_by_kind": {}
+     },
+     "planted_found": {
+      "plaintext_vector": true,
+      "float_vector": true,
+      "passage_text": true,
+      "r_t": true,
+      "retired_key": true
+     },
+     "live_records_recovered": 16,
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 7939
+  }
+ ],
+ "sensitivity": {
+  "items": {
+   "SB-24": {
+    "findings": 2374,
+    "by_kind": {
+     "deleted_payload": 561,
+     "deleted_record_key": 612,
+     "retired_accumulator": 1201
+    },
+    "ok": true
+   },
+   "SB-25": {
+    "findings": 1178,
+    "by_kind": {
+     "deleted_payload": 589,
+     "deleted_record_key": 589
+    },
+    "ok": true
+   },
+   "SB-26": {
+    "findings": 924,
+    "by_kind": {
+     "deleted_payload": 462,
+     "deleted_record_key": 462
+    },
+    "ok": true
+   },
+   "SB-28": {
+    "findings": 4246,
+    "by_kind": {
+     "plaintext_vector": 2122,
+     "r_t": 2124
+    },
+    "ok": true
+   },
+   "SB-29": {
+    "findings": 65738,
+    "by_kind": {
+     "retired_key": 65738
+    },
+    "ok": true
+   },
+   "SB-30": {
+    "findings": 65229,
+    "by_kind": {
+     "nonce_reuse": 65229
+    },
+    "ok": true
+   }
+  },
+  "ok": true
+ },
+ "outcome": "PASS"
+}

@@ -1,0 +1,113 @@
+{
+ "gate": "P4-T3: 0 exactness violations, 0 lost acknowledged operations, 0 undecryptable live records, 0 stale key slots after recovery; 100 % of active-key losses refused",
+ "data": "nq-10k",
+ "seeds": [
+  {
+   "seed": 2024,
+   "outcome": "FAIL",
+   "summary": {
+    "bad_certificates": 0,
+    "bad_retries": 0,
+    "certificates_checked": 11411,
+    "compared": 147,
+    "double": 158,
+    "double_mismatches": 0,
+    "key_loss_injected": 100,
+    "key_loss_refused": 100,
+    "keytear": 1048,
+    "main_mismatches": 0,
+    "method_mismatches": 82,
+    "not_oracle_state": 0,
+    "offset": 33,
+    "ops": 19000,
+    "orphaned_leaves": 0,
+    "random": 22,
+    "refusals": 0,
+    "reopen_mismatches": 0,
+    "rolled_back_certificates": 0,
+    "seconds": 2867,
+    "skipped": 0,
+    "stale_key_slots": 0,
+    "step": 6810,
+    "t": "summary",
+    "unreadable_records": 0
+   },
+   "verdict": {
+    "crash_points": 7913,
+    "not_oracle_state": 0,
+    "lost_acknowledged": 0,
+    "partial_delete_user": 0,
+    "startup_refusals": 0,
+    "bad_retries": 0,
+    "double_crash_mismatch": 0,
+    "by_kind": {
+     "step": 6810,
+     "keytear": 1048,
+     "random": 22,
+     "offset": 33
+    },
+    "failures": 0
+   },
+   "rc": 1,
+   "run": "fresh",
+   "stderr_tail": "",
+   "oracle_sha256": "3b274bf0c4115cddadd3dff4938566093fffa2dc686393853cb8edafa36a768c",
+   "results_sha256": "dbce3d660b9b3646cc837948a2bc9fc886cc88f2102cc4c78aff9d57f112cd0a",
+   "seconds": 2868
+  },
+  {
+   "seed": 9999,
+   "outcome": "FAIL",
+   "summary": {
+    "bad_certificates": 0,
+    "bad_retries": 0,
+    "certificates_checked": 11702,
+    "compared": 180,
+    "double": 181,
+    "double_mismatches": 0,
+    "key_loss_injected": 100,
+    "key_loss_refused": 100,
+    "keytear": 1264,
+    "main_mismatches": 0,
+    "method_mismatches": 82,
+    "not_oracle_state": 0,
+    "offset": 61,
+    "ops": 19000,
+    "orphaned_leaves": 0,
+    "random": 20,
+    "refusals": 0,
+    "reopen_mismatches": 0,
+    "rolled_back_certificates": 0,
+    "seconds": 3119,
+    "skipped": 0,
+    "stale_key_slots": 0,
+    "step": 7708,
+    "t": "summary",
+    "unreadable_records": 0
+   },
+   "verdict": {
+    "crash_points": 9053,
+    "not_oracle_state": 0,
+    "lost_acknowledged": 0,
+    "partial_delete_user": 0,
+    "startup_refusals": 0,
+    "bad_retries": 0,
+    "double_crash_mismatch": 0,
+    "by_kind": {
+     "step": 7708,
+     "keytear": 1264,
+     "random": 20,
+     "offset": 61
+    },
+    "failures": 0
+   },
+   "rc": 1,
+   "run": "fresh",
+   "stderr_tail": "",
+   "oracle_sha256": "da8cde86a9d56d88b620e87bae1d79b725c7d5594d153ef895a7d7108f3b3d5c",
+   "results_sha256": "bcddcc9ca7bfb2b14be8f76336e61478b18f1400f8f699bf2e0a07ba50dd5c70",
+   "seconds": 3120
+  }
+ ],
+ "outcome": "FAIL"
+}

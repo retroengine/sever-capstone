@@ -5,21 +5,29 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
 [`plans/2026-10-23-v1-then-demo.md`](plans/2026-10-23-v1-then-demo.md); nothing is planned after it
 (DB-112).
 
-## Now (29 Oct 2026)
+## Now (31 Oct 2026)
 
 | Part | Status | Tag |
 |---|---|---|
 | 1 The Idea | **frozen** 6 Oct 2026 | `part-1-frozen` |
 | 2 The Database | **frozen** 8 Oct 2026; errata E-1, E-2; three known defects kept as limit L-28 | `part-2-frozen-e2` |
-| 3 The Receipt | **built**; every interim laptop check passes; waits for the laptop run (DB-113), a fair-testing PASS (FT-10), `scripts/freeze.sh 3` | |
-| 4 The Erasure | **built**; interim checks pass, no gate in the ledger yet; waits for the same | |
+| 3 The Receipt | **built; the laptop run's gates all pass** (DB-113, DB-114); waits for a fair-testing PASS (FT-10), `scripts/freeze.sh 3` | |
+| 4 The Erasure | **built; the laptop run's gates pass**, P4-T10 by the owner's acceptance (DB-114); EX-8 not completed (out of memory, a measure); waits for the same | |
+
+- **The laptop run is over (31 Oct, DB-114).** 23 steps:
+  - 16 of the 17 gates pass as recorded;
+  - P4-T10 records FAIL on one untriaged timeout, which the owner accepts as passed;
+  - 5 of the 6 measures are recorded;
+  - EX-8 was killed by the out-of-memory killer at 10.39 GB after 6 h 11 min, and the owner chose not to rerun it.
+
+  The run unit and its helpers are stopped and disabled.
 
 - **Branch:** `main` = `3417b7f` (fast-forwarded from `studio-raw` on 24 Oct; GitHub's fast tier
   and `scripts/ci.sh full-checks` 42/42 green on it). The run is on branch `laptop-final-run`,
   whose engine and test-kit code are identical to `3417b7f` (only `scripts/hpc/` and docs differ).
 - **The HPC is gone (29 Oct, DB-113):** the v1.0 run is on the laptop, every step scoped to fit
   about 29 h of the owner's two days (`scripts/hpc/steps.sh`, `scripts/hpc/LAPTOP_RUN.md`).
-- **Plan stage:** Stages 1 and 2 are done; Stage 3 is the laptop run.
+- **Plan stage:** Stages 1, 2 and 3 are done; Stage 4 (fair testing) is next, on the owner's go.
   - `Db::passage` with 3 tests (`5a655fc`); red proofs PRI-5 … 7 (`37bf88f`; PRI-1 … 7 all red).
   - The SDK's `Database.passage` and `sever_db.Explainer` (`2acd91d`).
   - The erase demo's step 4 (`dc29088`): on SB-24, `S_pre − S_post` is printed next to the
@@ -30,7 +38,7 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
 
 1. **Stage 1 (Claude): done** (above).
 2. **Stage 2 (Claude): done**: `main` = `3417b7f`.
-3. **Stage 3:** the one run of every gate and measure on the laptop at the DB-113 sizes
+3. **Stage 3: done** (31 Oct; DB-114). The one run of every gate and measure on the laptop at the DB-113 sizes
    ([`scripts/hpc/LAPTOP_RUN.md`](../scripts/hpc/LAPTOP_RUN.md)); the owner runs
    `owner-sudo.sh` once before its phase 3 (done 29 Oct, 11:40). A failed gate is a bug: red test first, the
    smallest fix, then that gate and every later one rerun.

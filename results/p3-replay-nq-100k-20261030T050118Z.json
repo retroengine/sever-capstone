@@ -1,0 +1,122 @@
+{
+ "gate": "P3-T5: 0 mismatches on the five-field equivalence and the certificate arithmetic against the model (T-3, complete)",
+ "data": "nq-100k",
+ "runs": [
+  {
+   "seed": 42,
+   "mode": "plain",
+   "outcome": "PASS",
+   "report": {
+    "certificate_failures": 0,
+    "certificates": 90040,
+    "checks": 2576072,
+    "commitment_mismatches": 0,
+    "deleted_returned": 0,
+    "first": [],
+    "five_field_checked": 1902,
+    "five_field_failed": 0,
+    "mismatches": 0,
+    "ops": 146221,
+    "passed": true,
+    "reopen_changed": 0,
+    "reopens": 0
+   },
+   "trace_sha256": "4316193b4f20446663989f0529a27cc4f29ae72d9fb068fddefa2ac236df065b",
+   "stderr_tail": "",
+   "seconds": 9877
+  },
+  {
+   "seed": 123,
+   "mode": "plain",
+   "outcome": "PASS",
+   "report": {
+    "certificate_failures": 0,
+    "certificates": 90083,
+    "checks": 2576004,
+    "commitment_mismatches": 0,
+    "deleted_returned": 0,
+    "first": [],
+    "five_field_checked": 1908,
+    "five_field_failed": 0,
+    "mismatches": 0,
+    "ops": 146221,
+    "passed": true,
+    "reopen_changed": 0,
+    "reopens": 0
+   },
+   "trace_sha256": "d8de4c26f69c5b9d261113d3a0072122972b2a314a9fa115e16873b920f4488d",
+   "stderr_tail": "",
+   "seconds": 13723
+  },
+  {
+   "seed": 777,
+   "mode": "plain",
+   "outcome": "PASS",
+   "report": {
+    "certificate_failures": 0,
+    "certificates": 90093,
+    "checks": 2576448,
+    "commitment_mismatches": 0,
+    "deleted_returned": 0,
+    "first": [],
+    "five_field_checked": 1896,
+    "five_field_failed": 0,
+    "mismatches": 0,
+    "ops": 146221,
+    "passed": true,
+    "reopen_changed": 0,
+    "reopens": 0
+   },
+   "trace_sha256": "074d3ba3292daaaa906e248aa7d3eb54fbd035f16e5d1728b2bd3d1e5239e744",
+   "stderr_tail": "",
+   "seconds": 6369
+  },
+  {
+   "seed": 2024,
+   "mode": "plain",
+   "outcome": "PASS",
+   "report": {
+    "certificate_failures": 0,
+    "certificates": 89846,
+    "checks": 2575539,
+    "commitment_mismatches": 0,
+    "deleted_returned": 0,
+    "first": [],
+    "five_field_checked": 1902,
+    "five_field_failed": 0,
+    "mismatches": 0,
+    "ops": 146221,
+    "passed": true,
+    "reopen_changed": 0,
+    "reopens": 0
+   },
+   "trace_sha256": "0b2e560e1aff1437e87b13d0b5aead4a825ddec8df65901954b4ff62851cf099",
+   "stderr_tail": "",
+   "seconds": 6455
+  },
+  {
+   "seed": 9999,
+   "mode": "plain",
+   "outcome": "PASS",
+   "report": {
+    "certificate_failures": 0,
+    "certificates": 89994,
+    "checks": 2576039,
+    "commitment_mismatches": 0,
+    "deleted_returned": 0,
+    "first": [],
+    "five_field_checked": 1902,
+    "five_field_failed": 0,
+    "mismatches": 0,
+    "ops": 146221,
+    "passed": true,
+    "reopen_changed": 0,
+    "reopens": 0
+   },
+   "trace_sha256": "bbb87be3660b68e4fe27659233f0f38c9cede55fb432bb216213d8853cfe9a2d",
+   "stderr_tail": "",
+   "seconds": 5841
+  }
+ ],
+ "outcome": "PASS"
+}

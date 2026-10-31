@@ -1,0 +1,2496 @@
+{
+ "measure": "P4-T12 (T-5, pre-registered drift <= 0.005 per seed)",
+ "found": {
+  "data": "nq-10k",
+  "seeds": [
+   {
+    "seed": 42,
+    "data": "nq-10k",
+    "queries": 3452,
+    "arms": {
+     "sever_db": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 9821,
+        "recall10": 0.9541135573580534,
+        "recall100": 0.9221610660486675,
+        "ndcg10": 0.9239189956352031,
+        "shape": {
+         "stats": {
+          "N": 9821,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 179,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 4,
+         "cv_frozen": 0.7669937204105037,
+         "cv_spawned": 0.0,
+         "ood_rate": 0.8736,
+         "holding": 179
+        }
+       },
+       {
+        "rung": 1,
+        "records": 8839,
+        "recall10": 0.9528389339513325,
+        "recall100": 0.9210573580533024,
+        "ndcg10": 0.9285532692950422,
+        "shape": {
+         "stats": {
+          "N": 8839,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 166,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 4,
+         "cv_frozen": 0.7704929240910395,
+         "cv_spawned": 0.02368419373523776,
+         "ood_rate": 0.8736,
+         "holding": 166
+        }
+       },
+       {
+        "rung": 2,
+        "records": 7365,
+        "recall10": 0.9504634994206257,
+        "recall100": 0.9194380069524913,
+        "ndcg10": 0.9344648393256967,
+        "shape": {
+         "stats": {
+          "N": 7365,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 139,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 6,
+         "cv_frozen": 0.7826179319694906,
+         "cv_spawned": 0.035337121162788206,
+         "ood_rate": 0.8736,
+         "holding": 139
+        }
+       },
+       {
+        "rung": 3,
+        "records": 4930,
+        "recall10": 0.9456546929316338,
+        "recall100": 0.9153215527230589,
+        "ndcg10": 0.9414539699065474,
+        "shape": {
+         "stats": {
+          "N": 4930,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 89,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 10,
+         "cv_frozen": 0.8262515316444254,
+         "cv_spawned": 0.05486549889775279,
+         "ood_rate": 0.8736,
+         "holding": 89
+        }
+       },
+       {
+        "rung": 4,
+        "records": 2466,
+        "recall10": 0.9367033603707995,
+        "recall100": 0.910388180764774,
+        "ndcg10": 0.9554364404855064,
+        "shape": {
+         "stats": {
+          "N": 2466,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 46,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 27,
+         "cv_frozen": 0.9903283614935736,
+         "cv_spawned": 0.11726971664522176,
+         "ood_rate": 0.8736,
+         "holding": 46
+        }
+       },
+       {
+        "rung": 5,
+        "records": 993,
+        "recall10": 0.9171205098493627,
+        "recall100": 0.8986906141367322,
+        "ndcg10": 0.9569162675961929,
+        "shape": {
+         "stats": {
+          "N": 993,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 17,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 61,
+         "cv_frozen": 1.3105529542736485,
+         "cv_spawned": 0.18289866752554035,
+         "ood_rate": 0.8736,
+         "holding": 17
+        }
+       }
+      ],
+      "drift": {
+       "ddof0": 0.012954464183038068,
+       "ddof1": 0.0144835312626797
+      },
+      "seconds": 2675
+     },
+     "frozen_only": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.9253476245654694,
+        "recall100": 0.8577809965237545,
+        "ndcg10": 0.9262996100734572,
+        "shape": {
+         "stats": {
+          "N": 10000,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 3,
+         "cv_frozen": 2.614330966040834,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 1,
+        "records": 9005,
+        "recall10": 0.922856315179606,
+        "recall100": 0.8546987253765933,
+        "ndcg10": 0.929661750452695,
+        "shape": {
+         "stats": {
+          "N": 9005,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 4,
+         "cv_frozen": 2.6158538339254873,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 2,
+        "records": 7504,
+        "recall10": 0.9183371958285051,
+        "recall100": 0.8485689455388181,
+        "ndcg10": 0.935655036278216,
+        "shape": {
+         "stats": {
+          "N": 7504,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 5,
+         "cv_frozen": 2.5983493933327817,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 3,
+        "records": 5019,
+        "recall10": 0.9054171494785631,
+        "recall100": 0.8318742757821553,
+        "ndcg10": 0.9411011750571147,
+        "shape": {
+         "stats": {
+          "N": 5019,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 5,
+         "cv_frozen": 2.5708450953483863,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 4,
+        "records": 2512,
+        "recall10": 0.889455388180765,
+        "recall100": 0.806717844727694,
+        "ndcg10": 0.9583978727076173,
+        "shape": {
+         "stats": {
+          "N": 2512,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 15,
+         "cv_frozen": 2.591080923660142,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 5,
+        "records": 1010,
+        "recall10": 0.8589803012746234,
+        "recall100": 0.7691135573580533,
+        "ndcg10": 0.9744472760552171,
+        "shape": {
+         "stats": {
+          "N": 1010,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 31,
+         "cv_frozen": 2.729870136411332,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       }
+      ],
+      "drift": {
+       "ddof0": 0.023138306744769552,
+       "ddof1": 0.025869413382773297
+      },
+      "seconds": 2249
+     },
+     "soft_delete_ivf": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.9601100811123987,
+        "recall100": 0.9051535341830822,
+        "ndcg10": 0.9379215563207457
+       },
+       {
+        "rung": 1,
+        "records": 9005,
+        "recall10": 0.9587485515643106,
+        "recall100": 0.9002636152954809,
+        "ndcg10": 0.9409336748446793
+       },
+       {
+        "rung": 2,
+        "records": 7504,
+        "recall10": 0.9557358053302434,
+        "recall100": 0.8909733487833141,
+        "ndcg10": 0.9464321550236381
+       },
+       {
+        "rung": 3,
+        "records": 5019,
+        "recall10": 0.9490440324449595,
+        "recall100": 0.868250289687138,
+        "ndcg10": 0.9535170951656278
+       },
+       {
+        "rung": 4,
+        "records": 2512,
+        "recall10": 0.9350231749710314,
+        "recall100": 0.8142236384704519,
+        "ndcg10": 0.9639473223897564
+       },
+       {
+        "rung": 5,
+        "records": 1010,
+        "recall10": 0.901361529548088,
+        "recall100": 0.6973638470451913,
+        "ndcg10": 0.980386497755031
+       }
+      ],
+      "drift": {
+       "ddof0": 0.020969582512359048,
+       "ddof1": 0.02344470597871283
+      },
+      "nlist": 171,
+      "nprobe": 43,
+      "seconds": 37
+     },
+     "rebuild_ivf": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.9601100811123987,
+        "recall100": 0.9051535341830822,
+        "ndcg10": 0.9379215563207457
+       },
+       {
+        "rung": 1,
+        "records": 9005,
+        "recall10": 0.9598203939745076,
+        "recall100": 0.9000579374275782,
+        "ndcg10": 0.9432063713565358
+       },
+       {
+        "rung": 2,
+        "records": 7504,
+        "recall10": 0.9578505214368482,
+        "recall100": 0.8973551564310545,
+        "ndcg10": 0.9474441346222483
+       },
+       {
+        "rung": 3,
+        "records": 5019,
+        "recall10": 0.9601390498261877,
+        "recall100": 0.8805069524913095,
+        "ndcg10": 0.9564530597672467
+       },
+       {
+        "rung": 4,
+        "records": 2512,
+        "recall10": 0.9501158748551565,
+        "recall100": 0.8360544611819236,
+        "ndcg10": 0.9733278379880403
+       },
+       {
+        "rung": 5,
+        "records": 1010,
+        "recall10": 0.9353997682502897,
+        "recall100": 0.7622479721900348,
+        "ndcg10": 0.9858509049832584
+       }
+      ],
+      "drift": {
+       "ddof0": 0.009365222716070667,
+       "ddof1": 0.010470637308779613
+      },
+      "nlist": 171,
+      "nprobe": 43,
+      "seconds": 37
+     }
+    },
+    "sweep": [
+     {
+      "fraction": 0.25,
+      "streamed": 2500,
+      "recall10": 0.9812862108922364,
+      "shape": {
+       "stats": {
+        "N": 2499,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 1,
+        "k": 139,
+        "spawned": 11
+       },
+       "groups": 139,
+       "spawned": 11,
+       "empty_groups": 27,
+       "cv_frozen": 0.9148425804552471,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.876,
+       "holding": 1
+      }
+     },
+     {
+      "fraction": 0.5,
+      "streamed": 5000,
+      "recall10": 0.9802433371958286,
+      "shape": {
+       "stats": {
+        "N": 4826,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 174,
+        "k": 149,
+        "spawned": 21
+       },
+       "groups": 149,
+       "spawned": 21,
+       "empty_groups": 9,
+       "cv_frozen": 0.7981787289478037,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.8706,
+       "holding": 174
+      }
+     },
+     {
+      "fraction": 0.75,
+      "streamed": 7500,
+      "recall10": 0.9724797219003476,
+      "shape": {
+       "stats": {
+        "N": 7335,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 165,
+        "k": 160,
+        "spawned": 32
+       },
+       "groups": 160,
+       "spawned": 32,
+       "empty_groups": 6,
+       "cv_frozen": 0.7868976234730675,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.8710666666666667,
+       "holding": 165
+      }
+     }
+    ]
+   },
+   {
+    "seed": 123,
+    "data": "nq-10k",
+    "queries": 3452,
+    "arms": {
+     "sever_db": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 9814,
+        "recall10": 0.9537949015063731,
+        "recall100": 0.9228302433371958,
+        "ndcg10": 0.9278692458010005,
+        "shape": {
+         "stats": {
+          "N": 9814,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 186,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 4,
+         "cv_frozen": 0.7448480575572906,
+         "cv_spawned": 0.0,
+         "ood_rate": 0.8743,
+         "holding": 186
+        }
+       },
+       {
+        "rung": 1,
+        "records": 8832,
+        "recall10": 0.9533893395133256,
+        "recall100": 0.9239571263035922,
+        "ndcg10": 0.9319922611810141,
+        "shape": {
+         "stats": {
+          "N": 8832,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 171,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 5,
+         "cv_frozen": 0.7554515674132066,
+         "cv_spawned": 0.020024597642532376,
+         "ood_rate": 0.8743,
+         "holding": 171
+        }
+       },
+       {
+        "rung": 2,
+        "records": 7366,
+        "recall10": 0.951332560834299,
+        "recall100": 0.9208893395133255,
+        "ndcg10": 0.9351231135410085,
+        "shape": {
+         "stats": {
+          "N": 7366,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 137,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 7,
+         "cv_frozen": 0.7365905792498669,
+         "cv_spawned": 0.03921166481192413,
+         "ood_rate": 0.8743,
+         "holding": 137
+        }
+       },
+       {
+        "rung": 3,
+        "records": 4925,
+        "recall10": 0.9452780996523755,
+        "recall100": 0.9168047508690614,
+        "ndcg10": 0.9417507470530898,
+        "shape": {
+         "stats": {
+          "N": 4925,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 90,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 10,
+         "cv_frozen": 0.7796417473100824,
+         "cv_spawned": 0.058986021976224136,
+         "ood_rate": 0.8743,
+         "holding": 90
+        }
+       },
+       {
+        "rung": 4,
+        "records": 2465,
+        "recall10": 0.9363267670915411,
+        "recall100": 0.9116483198146003,
+        "ndcg10": 0.9579682957589944,
+        "shape": {
+         "stats": {
+          "N": 2465,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 47,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 24,
+         "cv_frozen": 0.9665997582061827,
+         "cv_spawned": 0.1135941914762431,
+         "ood_rate": 0.8743,
+         "holding": 47
+        }
+       },
+       {
+        "rung": 5,
+        "records": 999,
+        "recall10": 0.925028968713789,
+        "recall100": 0.9018482039397451,
+        "ndcg10": 0.9742217502069964,
+        "shape": {
+         "stats": {
+          "N": 999,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 16,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 61,
+         "cv_frozen": 1.250421305165764,
+         "cv_spawned": 0.17428034000806117,
+         "ood_rate": 0.8743,
+         "holding": 16
+        }
+       }
+      ],
+      "drift": {
+       "ddof0": 0.01046320748377855,
+       "ddof1": 0.011698221598206684
+      },
+      "seconds": 2193
+     },
+     "frozen_only": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.9337195828505215,
+        "recall100": 0.8752433371958286,
+        "ndcg10": 0.9288504761064192,
+        "shape": {
+         "stats": {
+          "N": 10000,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 1,
+         "cv_frozen": 2.323382912909536,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 1,
+        "records": 9003,
+        "recall10": 0.9309675550405563,
+        "recall100": 0.8732821552723059,
+        "ndcg10": 0.9344124471798869,
+        "shape": {
+         "stats": {
+          "N": 9003,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 1,
+         "cv_frozen": 2.3304107150362903,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 2,
+        "records": 7503,
+        "recall10": 0.9296929316338355,
+        "recall100": 0.8683285052143686,
+        "ndcg10": 0.9368201919460307,
+        "shape": {
+         "stats": {
+          "N": 7503,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 2,
+         "cv_frozen": 2.3430807843026664,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 3,
+        "records": 5015,
+        "recall10": 0.921465816917729,
+        "recall100": 0.8566801853997683,
+        "ndcg10": 0.9472296323085959,
+        "shape": {
+         "stats": {
+          "N": 5015,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 4,
+         "cv_frozen": 2.3442887959968055,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 4,
+        "records": 2512,
+        "recall10": 0.9068076477404404,
+        "recall100": 0.8345915411355737,
+        "ndcg10": 0.9581432972588707,
+        "shape": {
+         "stats": {
+          "N": 2512,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 10,
+         "cv_frozen": 2.3820123251888554,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 5,
+        "records": 1015,
+        "recall10": 0.8809675550405563,
+        "recall100": 0.7966019698725377,
+        "ndcg10": 0.9703392627111251,
+        "shape": {
+         "stats": {
+          "N": 1015,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 26,
+         "cv_frozen": 2.394253070639077,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       }
+      ],
+      "drift": {
+       "ddof0": 0.01861598700253601,
+       "ddof1": 0.020813306202961537
+      },
+      "seconds": 2000
+     },
+     "soft_delete_ivf": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.9605156431054462,
+        "recall100": 0.9063354577056779,
+        "ndcg10": 0.9410058765028998
+       },
+       {
+        "rung": 1,
+        "records": 9003,
+        "recall10": 0.9590092699884125,
+        "recall100": 0.9017786790266511,
+        "ndcg10": 0.9452854546685591
+       },
+       {
+        "rung": 2,
+        "records": 7503,
+        "recall10": 0.9564889918887602,
+        "recall100": 0.8932184241019698,
+        "ndcg10": 0.9484016724412643
+       },
+       {
+        "rung": 3,
+        "records": 5015,
+        "recall10": 0.9522595596755505,
+        "recall100": 0.8698435689455387,
+        "ndcg10": 0.9562340294427032
+       },
+       {
+        "rung": 4,
+        "records": 2512,
+        "recall10": 0.9326187717265355,
+        "recall100": 0.8138441483198144,
+        "ndcg10": 0.9669864615517554
+       },
+       {
+        "rung": 5,
+        "records": 1015,
+        "recall10": 0.9054171494785633,
+        "recall100": 0.7104866743916571,
+        "ndcg10": 0.9755104161060788
+       }
+      ],
+      "drift": {
+       "ddof0": 0.02013593103098343,
+       "ddof1": 0.022512655287763188
+      },
+      "nlist": 171,
+      "nprobe": 43,
+      "seconds": 30
+     },
+     "rebuild_ivf": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.9605156431054462,
+        "recall100": 0.9063354577056779,
+        "ndcg10": 0.9410058765028998
+       },
+       {
+        "rung": 1,
+        "records": 9003,
+        "recall10": 0.9590092699884125,
+        "recall100": 0.9006633835457706,
+        "ndcg10": 0.9413483052364933
+       },
+       {
+        "rung": 2,
+        "records": 7503,
+        "recall10": 0.9585168018539977,
+        "recall100": 0.8991280417149479,
+        "ndcg10": 0.9495458682774724
+       },
+       {
+        "rung": 3,
+        "records": 5015,
+        "recall10": 0.9589513325608343,
+        "recall100": 0.8802752027809966,
+        "ndcg10": 0.9567203994225691
+       },
+       {
+        "rung": 4,
+        "records": 2512,
+        "recall10": 0.9435979142526072,
+        "recall100": 0.833018539976825,
+        "ndcg10": 0.9693831465058991
+       },
+       {
+        "rung": 5,
+        "records": 1015,
+        "recall10": 0.9411355735805331,
+        "recall100": 0.7679345307068366,
+        "ndcg10": 0.9845866469887768
+       }
+      ],
+      "drift": {
+       "ddof0": 0.00810255701460924,
+       "ddof1": 0.00905893413811701
+      },
+      "nlist": 171,
+      "nprobe": 43,
+      "seconds": 30
+     }
+    },
+    "sweep": [
+     {
+      "fraction": 0.25,
+      "streamed": 2500,
+      "recall10": 0.9811703360370799,
+      "shape": {
+       "stats": {
+        "N": 2320,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 180,
+        "k": 138,
+        "spawned": 10
+       },
+       "groups": 138,
+       "spawned": 10,
+       "empty_groups": 21,
+       "cv_frozen": 0.8888194417315589,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.868,
+       "holding": 180
+      }
+     },
+     {
+      "fraction": 0.5,
+      "streamed": 5000,
+      "recall10": 0.9810834298957126,
+      "shape": {
+       "stats": {
+        "N": 4812,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 188,
+        "k": 149,
+        "spawned": 21
+       },
+       "groups": 149,
+       "spawned": 21,
+       "empty_groups": 7,
+       "cv_frozen": 0.8163134424834436,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.8734,
+       "holding": 188
+      }
+     },
+     {
+      "fraction": 0.75,
+      "streamed": 7500,
+      "recall10": 0.9731170336037079,
+      "shape": {
+       "stats": {
+        "N": 7330,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 170,
+        "k": 160,
+        "spawned": 32
+       },
+       "groups": 160,
+       "spawned": 32,
+       "empty_groups": 5,
+       "cv_frozen": 0.753949787528015,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.8717333333333334,
+       "holding": 170
+      }
+     }
+    ]
+   },
+   {
+    "seed": 777,
+    "data": "nq-10k",
+    "queries": 3452,
+    "arms": {
+     "sever_db": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 9835,
+        "recall10": 0.9520857473928158,
+        "recall100": 0.9213789107763616,
+        "ndcg10": 0.9235997916248537,
+        "shape": {
+         "stats": {
+          "N": 9835,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 165,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 6,
+         "cv_frozen": 0.7317934437719125,
+         "cv_spawned": 0.0,
+         "ood_rate": 0.8722,
+         "holding": 165
+        }
+       },
+       {
+        "rung": 1,
+        "records": 8851,
+        "recall10": 0.9507242178447278,
+        "recall100": 0.9195133256083431,
+        "ndcg10": 0.9303200891906452,
+        "shape": {
+         "stats": {
+          "N": 8851,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 149,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 7,
+         "cv_frozen": 0.7265540824150146,
+         "cv_spawned": 0.02667815927622316,
+         "ood_rate": 0.8722,
+         "holding": 149
+        }
+       },
+       {
+        "rung": 2,
+        "records": 7368,
+        "recall10": 0.9487833140208575,
+        "recall100": 0.9170017381228273,
+        "ndcg10": 0.9334415379656019,
+        "shape": {
+         "stats": {
+          "N": 7368,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 127,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 8,
+         "cv_frozen": 0.7482369797916534,
+         "cv_spawned": 0.04253490574949711,
+         "ood_rate": 0.8722,
+         "holding": 127
+        }
+       },
+       {
+        "rung": 3,
+        "records": 4939,
+        "recall10": 0.9437427578215528,
+        "recall100": 0.9109675550405562,
+        "ndcg10": 0.9379471021252197,
+        "shape": {
+         "stats": {
+          "N": 4939,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 84,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 12,
+         "cv_frozen": 0.8281990099003982,
+         "cv_spawned": 0.06707896260673872,
+         "ood_rate": 0.8722,
+         "holding": 84
+        }
+       },
+       {
+        "rung": 4,
+        "records": 2469,
+        "recall10": 0.930909617612978,
+        "recall100": 0.9037630359212051,
+        "ndcg10": 0.9519181728738139,
+        "shape": {
+         "stats": {
+          "N": 2469,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 43,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 33,
+         "cv_frozen": 1.0690352410921475,
+         "cv_spawned": 0.14016051074624739,
+         "ood_rate": 0.8722,
+         "holding": 43
+        }
+       },
+       {
+        "rung": 5,
+        "records": 1000,
+        "recall10": 0.9166280417149478,
+        "recall100": 0.8933632676709153,
+        "ndcg10": 0.967006460338583,
+        "shape": {
+         "stats": {
+          "N": 1000,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 13,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 65,
+         "cv_frozen": 1.4456243764381795,
+         "cv_spawned": 0.23602798462642582,
+         "ood_rate": 0.8722,
+         "holding": 13
+        }
+       }
+      ],
+      "drift": {
+       "ddof0": 0.012791206346796629,
+       "ddof1": 0.014301003452832006
+      },
+      "seconds": 1524
+     },
+     "frozen_only": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.9280127462340674,
+        "recall100": 0.8652752027809965,
+        "ndcg10": 0.9253909235759015,
+        "shape": {
+         "stats": {
+          "N": 10000,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 1,
+         "cv_frozen": 2.636621353171517,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 1,
+        "records": 9000,
+        "recall10": 0.925260718424102,
+        "recall100": 0.8613557358053301,
+        "ndcg10": 0.9299275245034972,
+        "shape": {
+         "stats": {
+          "N": 9000,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 2,
+         "cv_frozen": 2.65058484112469,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 2,
+        "records": 7495,
+        "recall10": 0.9203650057937429,
+        "recall100": 0.8546147161066049,
+        "ndcg10": 0.9326378261374431,
+        "shape": {
+         "stats": {
+          "N": 7495,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 2,
+         "cv_frozen": 2.6216537861650075,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 3,
+        "records": 5023,
+        "recall10": 0.9103707995365007,
+        "recall100": 0.8402636152954809,
+        "ndcg10": 0.9375316160201975,
+        "shape": {
+         "stats": {
+          "N": 5023,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 2,
+         "cv_frozen": 2.6532103445505113,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 4,
+        "records": 2512,
+        "recall10": 0.8879490150637313,
+        "recall100": 0.8099768250289687,
+        "ndcg10": 0.951011553184724,
+        "shape": {
+         "stats": {
+          "N": 2512,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 13,
+         "cv_frozen": 2.645636304566983,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 5,
+        "records": 1013,
+        "recall10": 0.855330243337196,
+        "recall100": 0.7664658169177289,
+        "ndcg10": 0.9530597456106465,
+        "shape": {
+         "stats": {
+          "N": 1013,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 29,
+         "cv_frozen": 2.689272741000138,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       }
+      ],
+      "drift": {
+       "ddof0": 0.025693965592170492,
+       "ddof1": 0.028726726837816928
+      },
+      "seconds": 1101
+     },
+     "soft_delete_ivf": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.9616454229432214,
+        "recall100": 0.9075057937427579,
+        "ndcg10": 0.9418288981413073
+       },
+       {
+        "rung": 1,
+        "records": 9000,
+        "recall10": 0.9605446118192352,
+        "recall100": 0.9021871378910777,
+        "ndcg10": 0.9476077379141236
+       },
+       {
+        "rung": 2,
+        "records": 7495,
+        "recall10": 0.9574739281575898,
+        "recall100": 0.8925984936268829,
+        "ndcg10": 0.9513413987228234
+       },
+       {
+        "rung": 3,
+        "records": 5023,
+        "recall10": 0.9513904982618773,
+        "recall100": 0.8714339513325609,
+        "ndcg10": 0.9584722396675786
+       },
+       {
+        "rung": 4,
+        "records": 2512,
+        "recall10": 0.9350521436848205,
+        "recall100": 0.8169669756662804,
+        "ndcg10": 0.9711010014893374
+       },
+       {
+        "rung": 5,
+        "records": 1013,
+        "recall10": 0.9084878331402086,
+        "recall100": 0.7165672074159908,
+        "ndcg10": 0.9768090162931401
+       }
+      ],
+      "drift": {
+       "ddof0": 0.01918919088864533,
+       "ddof1": 0.021454167630115276
+      },
+      "nlist": 171,
+      "nprobe": 43,
+      "seconds": 18
+     },
+     "rebuild_ivf": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.9616454229432214,
+        "recall100": 0.9075057937427579,
+        "ndcg10": 0.9418288981413073
+       },
+       {
+        "rung": 1,
+        "records": 9000,
+        "recall10": 0.9583719582850522,
+        "recall100": 0.8995393974507532,
+        "ndcg10": 0.9439764037060929
+       },
+       {
+        "rung": 2,
+        "records": 7495,
+        "recall10": 0.9557068366164543,
+        "recall100": 0.8925,
+        "ndcg10": 0.9486098003345348
+       },
+       {
+        "rung": 3,
+        "records": 5023,
+        "recall10": 0.9560544611819236,
+        "recall100": 0.880356315179606,
+        "ndcg10": 0.957260954969617
+       },
+       {
+        "rung": 4,
+        "records": 2512,
+        "recall10": 0.9484646581691774,
+        "recall100": 0.8315092699884125,
+        "ndcg10": 0.9749173180106688
+       },
+       {
+        "rung": 5,
+        "records": 1013,
+        "recall10": 0.9375434530706837,
+        "recall100": 0.7682358053302433,
+        "ndcg10": 0.9824595019182092
+       }
+      ],
+      "drift": {
+       "ddof0": 0.007606493637896423,
+       "ddof1": 0.008504318422378036
+      },
+      "nlist": 171,
+      "nprobe": 43,
+      "seconds": 18
+     }
+    },
+    "sweep": [
+     {
+      "fraction": 0.25,
+      "streamed": 2500,
+      "recall10": 0.9798088064889919,
+      "shape": {
+       "stats": {
+        "N": 2310,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 190,
+        "k": 138,
+        "spawned": 10
+       },
+       "groups": 138,
+       "spawned": 10,
+       "empty_groups": 34,
+       "cv_frozen": 0.9567330815781673,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.872,
+       "holding": 190
+      }
+     },
+     {
+      "fraction": 0.5,
+      "streamed": 5000,
+      "recall10": 0.9798667439165701,
+      "shape": {
+       "stats": {
+        "N": 4835,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 165,
+        "k": 149,
+        "spawned": 21
+       },
+       "groups": 149,
+       "spawned": 21,
+       "empty_groups": 14,
+       "cv_frozen": 0.7841049098437143,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.8688,
+       "holding": 165
+      }
+     },
+     {
+      "fraction": 0.75,
+      "streamed": 7500,
+      "recall10": 0.9721031286210893,
+      "shape": {
+       "stats": {
+        "N": 7335,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 165,
+        "k": 160,
+        "spawned": 32
+       },
+       "groups": 160,
+       "spawned": 32,
+       "empty_groups": 7,
+       "cv_frozen": 0.7473900559139317,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.8710666666666667,
+       "holding": 165
+      }
+     }
+    ]
+   },
+   {
+    "seed": 2024,
+    "data": "nq-10k",
+    "queries": 3452,
+    "arms": {
+     "sever_db": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 9807,
+        "recall10": 0.9522016222479722,
+        "recall100": 0.9228302433371959,
+        "ndcg10": 0.9231492481049905,
+        "shape": {
+         "stats": {
+          "N": 9807,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 193,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 5,
+         "cv_frozen": 0.7746186455809375,
+         "cv_spawned": 0.0,
+         "ood_rate": 0.875,
+         "holding": 193
+        }
+       },
+       {
+        "rung": 1,
+        "records": 8803,
+        "recall10": 0.9515643105446119,
+        "recall100": 0.9218742757821553,
+        "ndcg10": 0.9252944898280433,
+        "shape": {
+         "stats": {
+          "N": 8803,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 172,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 5,
+         "cv_frozen": 0.7734341335977862,
+         "cv_spawned": 0.02944706531021506,
+         "ood_rate": 0.875,
+         "holding": 172
+        }
+       },
+       {
+        "rung": 2,
+        "records": 7357,
+        "recall10": 0.9491309385863268,
+        "recall100": 0.9193887601390498,
+        "ndcg10": 0.9301645361602761,
+        "shape": {
+         "stats": {
+          "N": 7357,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 140,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 5,
+         "cv_frozen": 0.7733240996678663,
+         "cv_spawned": 0.0502212201225026,
+         "ood_rate": 0.875,
+         "holding": 140
+        }
+       },
+       {
+        "rung": 3,
+        "records": 4879,
+        "recall10": 0.944872537659328,
+        "recall100": 0.9147943221320973,
+        "ndcg10": 0.9404253401117458,
+        "shape": {
+         "stats": {
+          "N": 4879,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 88,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 11,
+         "cv_frozen": 0.8563588154379758,
+         "cv_spawned": 0.09096481823658588,
+         "ood_rate": 0.875,
+         "holding": 88
+        }
+       },
+       {
+        "rung": 4,
+        "records": 2427,
+        "recall10": 0.9375144843568947,
+        "recall100": 0.9088470451911935,
+        "ndcg10": 0.9585726090034675,
+        "shape": {
+         "stats": {
+          "N": 2427,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 43,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 22,
+         "cv_frozen": 0.9327105330473137,
+         "cv_spawned": 0.1403845216734214,
+         "ood_rate": 0.875,
+         "holding": 43
+        }
+       },
+       {
+        "rung": 5,
+        "records": 975,
+        "recall10": 0.9300115874855155,
+        "recall100": 0.9132763615295482,
+        "ndcg10": 0.970341234560975,
+        "shape": {
+         "stats": {
+          "N": 975,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 13,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 71,
+         "cv_frozen": 1.3959693824063686,
+         "cv_spawned": 0.22426213040550674,
+         "ood_rate": 0.875,
+         "holding": 13
+        }
+       }
+      ],
+      "drift": {
+       "ddof0": 0.007905761024394675,
+       "ddof1": 0.008838909532207433
+      },
+      "seconds": 1014
+     },
+     "frozen_only": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.9330822711471612,
+        "recall100": 0.8748986095017381,
+        "ndcg10": 0.9244773879995137,
+        "shape": {
+         "stats": {
+          "N": 10000,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 3,
+         "cv_frozen": 2.4926731675051186,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 1,
+        "records": 8975,
+        "recall10": 0.9311123986095019,
+        "recall100": 0.8723957126303593,
+        "ndcg10": 0.9284357742476145,
+        "shape": {
+         "stats": {
+          "N": 8975,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 3,
+         "cv_frozen": 2.49677951926382,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 2,
+        "records": 7497,
+        "recall10": 0.9282155272305911,
+        "recall100": 0.8668945538818078,
+        "ndcg10": 0.9350868820206114,
+        "shape": {
+         "stats": {
+          "N": 7497,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 3,
+         "cv_frozen": 2.509469691793115,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 3,
+        "records": 4967,
+        "recall10": 0.9201622247972192,
+        "recall100": 0.8526303592120512,
+        "ndcg10": 0.9462585150076281,
+        "shape": {
+         "stats": {
+          "N": 4967,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 5,
+         "cv_frozen": 2.496616105983859,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 4,
+        "records": 2470,
+        "recall10": 0.9038818076477405,
+        "recall100": 0.8291599073001159,
+        "ndcg10": 0.9547229320892685,
+        "shape": {
+         "stats": {
+          "N": 2470,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 10,
+         "cv_frozen": 2.4767428098192945,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 5,
+        "records": 988,
+        "recall10": 0.8739571263035922,
+        "recall100": 0.8027491309385864,
+        "ndcg10": 0.9666576406673946,
+        "shape": {
+         "stats": {
+          "N": 988,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 35,
+         "cv_frozen": 2.6265258243319707,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       }
+      ],
+      "drift": {
+       "ddof0": 0.021007558382339756,
+       "ddof1": 0.023487164292103607
+      },
+      "seconds": 996
+     },
+     "soft_delete_ivf": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.962630359212051,
+        "recall100": 0.9087977983777521,
+        "ndcg10": 0.9400011777606201
+       },
+       {
+        "rung": 1,
+        "records": 8975,
+        "recall10": 0.9617902665121669,
+        "recall100": 0.9037514484356894,
+        "ndcg10": 0.9435789185668632
+       },
+       {
+        "rung": 2,
+        "records": 7497,
+        "recall10": 0.9591830822711472,
+        "recall100": 0.8949130938586326,
+        "ndcg10": 0.9480325540530721
+       },
+       {
+        "rung": 3,
+        "records": 4967,
+        "recall10": 0.9519409038238703,
+        "recall100": 0.8704924681344148,
+        "ndcg10": 0.9568572517796092
+       },
+       {
+        "rung": 4,
+        "records": 2470,
+        "recall10": 0.9359791425260718,
+        "recall100": 0.8187195828505215,
+        "ndcg10": 0.9736971832508943
+       },
+       {
+        "rung": 5,
+        "records": 988,
+        "recall10": 0.9050695249130939,
+        "recall100": 0.7136819235225956,
+        "ndcg10": 0.9796124505733962
+       }
+      ],
+      "drift": {
+       "ddof0": 0.020893560259573982,
+       "ddof1": 0.023359710516197788
+      },
+      "nlist": 171,
+      "nprobe": 43,
+      "seconds": 16
+     },
+     "rebuild_ivf": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.962630359212051,
+        "recall100": 0.9087977983777521,
+        "ndcg10": 0.9400011777606201
+       },
+       {
+        "rung": 1,
+        "records": 8975,
+        "recall10": 0.9605735805330243,
+        "recall100": 0.9025926998841252,
+        "ndcg10": 0.9434542471920346
+       },
+       {
+        "rung": 2,
+        "records": 7497,
+        "recall10": 0.9583719582850522,
+        "recall100": 0.8929750869061415,
+        "ndcg10": 0.9470713053090033
+       },
+       {
+        "rung": 3,
+        "records": 4967,
+        "recall10": 0.9570973348783316,
+        "recall100": 0.8788151796060255,
+        "ndcg10": 0.9577217845798759
+       },
+       {
+        "rung": 4,
+        "records": 2470,
+        "recall10": 0.9506083429895713,
+        "recall100": 0.8407415990730011,
+        "ndcg10": 0.9816856107055292
+       },
+       {
+        "rung": 5,
+        "records": 988,
+        "recall10": 0.9326477404403246,
+        "recall100": 0.7594524913093859,
+        "ndcg10": 0.9873227216623548
+       }
+      ],
+      "drift": {
+       "ddof0": 0.010163063765244468,
+       "ddof1": 0.011362650719375799
+      },
+      "nlist": 171,
+      "nprobe": 43,
+      "seconds": 16
+     }
+    },
+    "sweep": [
+     {
+      "fraction": 0.25,
+      "streamed": 2500,
+      "recall10": 0.9830822711471611,
+      "shape": {
+       "stats": {
+        "N": 2314,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 186,
+        "k": 138,
+        "spawned": 10
+       },
+       "groups": 138,
+       "spawned": 10,
+       "empty_groups": 22,
+       "cv_frozen": 0.8911508649447912,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.8704,
+       "holding": 186
+      }
+     },
+     {
+      "fraction": 0.5,
+      "streamed": 5000,
+      "recall10": 0.9822711471610661,
+      "shape": {
+       "stats": {
+        "N": 4820,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 180,
+        "k": 149,
+        "spawned": 21
+       },
+       "groups": 149,
+       "spawned": 21,
+       "empty_groups": 9,
+       "cv_frozen": 0.8292016897279326,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.8718,
+       "holding": 180
+      }
+     },
+     {
+      "fraction": 0.75,
+      "streamed": 7500,
+      "recall10": 0.9741019698725377,
+      "shape": {
+       "stats": {
+        "N": 7320,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 180,
+        "k": 160,
+        "spawned": 32
+       },
+       "groups": 160,
+       "spawned": 32,
+       "empty_groups": 5,
+       "cv_frozen": 0.8182696483380673,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.8730666666666667,
+       "holding": 180
+      }
+     }
+    ]
+   },
+   {
+    "seed": 9999,
+    "data": "nq-10k",
+    "queries": 3452,
+    "arms": {
+     "sever_db": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 9819,
+        "recall10": 0.9535341830822711,
+        "recall100": 0.9230822711471609,
+        "ndcg10": 0.9235159776702878,
+        "shape": {
+         "stats": {
+          "N": 9819,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 181,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 5,
+         "cv_frozen": 0.8298153060914125,
+         "cv_spawned": 0.0,
+         "ood_rate": 0.8738,
+         "holding": 181
+        }
+       },
+       {
+        "rung": 1,
+        "records": 8843,
+        "recall10": 0.9519698725376594,
+        "recall100": 0.9219872537659327,
+        "ndcg10": 0.9238502756564346,
+        "shape": {
+         "stats": {
+          "N": 8843,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 164,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 6,
+         "cv_frozen": 0.8280033286685697,
+         "cv_spawned": 0.023213108635376314,
+         "ood_rate": 0.8738,
+         "holding": 164
+        }
+       },
+       {
+        "rung": 2,
+        "records": 7359,
+        "recall10": 0.9500289687137891,
+        "recall100": 0.9196581691772885,
+        "ndcg10": 0.927741509992435,
+        "shape": {
+         "stats": {
+          "N": 7359,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 143,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 6,
+         "cv_frozen": 0.8301365521544748,
+         "cv_spawned": 0.036168041760877054,
+         "ood_rate": 0.8738,
+         "holding": 143
+        }
+       },
+       {
+        "rung": 3,
+        "records": 4948,
+        "recall10": 0.9446407879490151,
+        "recall100": 0.9184994206257242,
+        "ndcg10": 0.9415288551392411,
+        "shape": {
+         "stats": {
+          "N": 4948,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 93,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 13,
+         "cv_frozen": 0.9471017309088277,
+         "cv_spawned": 0.06714660357686401,
+         "ood_rate": 0.8738,
+         "holding": 93
+        }
+       },
+       {
+        "rung": 4,
+        "records": 2475,
+        "recall10": 0.9361529548088066,
+        "recall100": 0.9143221320973348,
+        "ndcg10": 0.9484031512141916,
+        "shape": {
+         "stats": {
+          "N": 2475,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 51,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 32,
+         "cv_frozen": 1.1439589045541112,
+         "cv_spawned": 0.1257588218038504,
+         "ood_rate": 0.8738,
+         "holding": 51
+        }
+       },
+       {
+        "rung": 5,
+        "records": 1002,
+        "recall10": 0.9236964078794903,
+        "recall100": 0.904252607184241,
+        "ndcg10": 0.9618085168094062,
+        "shape": {
+         "stats": {
+          "N": 1002,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 13,
+          "k": 171,
+          "spawned": 43
+         },
+         "groups": 171,
+         "spawned": 43,
+         "empty_groups": 60,
+         "cv_frozen": 1.3110835073012221,
+         "cv_spawned": 0.23569664230366985,
+         "ood_rate": 0.8738,
+         "holding": 13
+        }
+       }
+      ],
+      "drift": {
+       "ddof0": 0.010368996522385845,
+       "ddof1": 0.011592890541256834
+      },
+      "seconds": 982
+     },
+     "frozen_only": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.9407879490150638,
+        "recall100": 0.8881083429895713,
+        "ndcg10": 0.9304003327655336,
+        "shape": {
+         "stats": {
+          "N": 10000,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 3,
+         "cv_frozen": 3.7394023051819394,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 1,
+        "records": 9007,
+        "recall10": 0.9378621089223639,
+        "recall100": 0.8843974507531865,
+        "ndcg10": 0.9323504631557217,
+        "shape": {
+         "stats": {
+          "N": 9007,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 4,
+         "cv_frozen": 3.747867440401882,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 2,
+        "records": 7502,
+        "recall10": 0.9342989571263035,
+        "recall100": 0.8789571263035921,
+        "ndcg10": 0.9359890685164318,
+        "shape": {
+         "stats": {
+          "N": 7502,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 4,
+         "cv_frozen": 3.7402417647077595,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 3,
+        "records": 5041,
+        "recall10": 0.9250289687137891,
+        "recall100": 0.8643800695249131,
+        "ndcg10": 0.9474909425171458,
+        "shape": {
+         "stats": {
+          "N": 5041,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 5,
+         "cv_frozen": 3.7388263368336005,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 4,
+        "records": 2526,
+        "recall10": 0.909385863267671,
+        "recall100": 0.8424130938586326,
+        "ndcg10": 0.9607969566511564,
+        "shape": {
+         "stats": {
+          "N": 2526,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 11,
+         "cv_frozen": 3.721633970155039,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       },
+       {
+        "rung": 5,
+        "records": 1015,
+        "recall10": 0.8866164542294324,
+        "recall100": 0.8088847045191193,
+        "ndcg10": 0.9640972708436811,
+        "shape": {
+         "stats": {
+          "N": 1015,
+          "checkpoint_id": 1,
+          "frozen": 128,
+          "holding": 0,
+          "k": 128,
+          "spawned": 0
+         },
+         "groups": 128,
+         "spawned": 0,
+         "empty_groups": 32,
+         "cv_frozen": 3.686890517493133,
+         "cv_spawned": null,
+         "ood_rate": 0.0,
+         "holding": 0
+        }
+       }
+      ],
+      "drift": {
+       "ddof0": 0.01879711600014802,
+       "ddof1": 0.02101581457863996
+      },
+      "seconds": 986
+     },
+     "soft_delete_ivf": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.9589513325608343,
+        "recall100": 0.9025231749710312,
+        "ndcg10": 0.9383950346507167
+       },
+       {
+        "rung": 1,
+        "records": 9007,
+        "recall10": 0.9583140208574741,
+        "recall100": 0.8976013904982617,
+        "ndcg10": 0.9412339157397409
+       },
+       {
+        "rung": 2,
+        "records": 7502,
+        "recall10": 0.9547508690614137,
+        "recall100": 0.8891975666280416,
+        "ndcg10": 0.9453937412713699
+       },
+       {
+        "rung": 3,
+        "records": 5041,
+        "recall10": 0.9477114716106605,
+        "recall100": 0.8658864426419467,
+        "ndcg10": 0.9555731517842188
+       },
+       {
+        "rung": 4,
+        "records": 2526,
+        "recall10": 0.9332850521436848,
+        "recall100": 0.811981460023175,
+        "ndcg10": 0.9671684983078884
+       },
+       {
+        "rung": 5,
+        "records": 1015,
+        "recall10": 0.8996813441483199,
+        "recall100": 0.7007329084588644,
+        "ndcg10": 0.9761837581464551
+       }
+      ],
+      "drift": {
+       "ddof0": 0.02133219262476454,
+       "ddof1": 0.023850116409046586
+      },
+      "nlist": 171,
+      "nprobe": 43,
+      "seconds": 16
+     },
+     "rebuild_ivf": {
+      "rungs": [
+       {
+        "rung": 0,
+        "records": 10000,
+        "recall10": 0.9589513325608343,
+        "recall100": 0.9025231749710312,
+        "ndcg10": 0.9383950346507167
+       },
+       {
+        "rung": 1,
+        "records": 9007,
+        "recall10": 0.9597045191193512,
+        "recall100": 0.903183661645423,
+        "ndcg10": 0.9420108366823804
+       },
+       {
+        "rung": 2,
+        "records": 7502,
+        "recall10": 0.9562572421784473,
+        "recall100": 0.8906749710312861,
+        "ndcg10": 0.9458287762211806
+       },
+       {
+        "rung": 3,
+        "records": 5041,
+        "recall10": 0.954577056778679,
+        "recall100": 0.875518539976825,
+        "ndcg10": 0.9597656272338138
+       },
+       {
+        "rung": 4,
+        "records": 2526,
+        "recall10": 0.9488702201622248,
+        "recall100": 0.8411181923522596,
+        "ndcg10": 0.9712119939784815
+       },
+       {
+        "rung": 5,
+        "records": 1015,
+        "recall10": 0.9412224797219004,
+        "recall100": 0.7721668597914253,
+        "ndcg10": 0.9802507751764683
+       }
+      ],
+      "drift": {
+       "ddof0": 0.0064806735708229125,
+       "ddof1": 0.007245613322173165
+      },
+      "nlist": 171,
+      "nprobe": 43,
+      "seconds": 16
+     }
+    },
+    "sweep": [
+     {
+      "fraction": 0.25,
+      "streamed": 2500,
+      "recall10": 0.9800115874855156,
+      "shape": {
+       "stats": {
+        "N": 2335,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 165,
+        "k": 138,
+        "spawned": 10
+       },
+       "groups": 138,
+       "spawned": 10,
+       "empty_groups": 23,
+       "cv_frozen": 0.9250408647569364,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.862,
+       "holding": 165
+      }
+     },
+     {
+      "fraction": 0.5,
+      "streamed": 5000,
+      "recall10": 0.9807358053302433,
+      "shape": {
+       "stats": {
+        "N": 4828,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 172,
+        "k": 149,
+        "spawned": 21
+       },
+       "groups": 149,
+       "spawned": 21,
+       "empty_groups": 12,
+       "cv_frozen": 0.87609143835872,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.8702,
+       "holding": 172
+      }
+     },
+     {
+      "fraction": 0.75,
+      "streamed": 7500,
+      "recall10": 0.9737543453070684,
+      "shape": {
+       "stats": {
+        "N": 7338,
+        "checkpoint_id": 1,
+        "frozen": 128,
+        "holding": 162,
+        "k": 160,
+        "spawned": 32
+       },
+       "groups": 160,
+       "spawned": 32,
+       "empty_groups": 8,
+       "cv_frozen": 0.8467342649521759,
+       "cv_spawned": 0.0,
+       "ood_rate": 0.8706666666666667,
+       "holding": 162
+      }
+     }
+    ]
+   }
+  ],
+  "statistics": {
+   "t5_per_seed": {
+    "42": {
+     "ddof0": 0.012954464183038068,
+     "ddof1": 0.0144835312626797
+    },
+    "123": {
+     "ddof0": 0.01046320748377855,
+     "ddof1": 0.011698221598206684
+    },
+    "777": {
+     "ddof0": 0.012791206346796629,
+     "ddof1": 0.014301003452832006
+    },
+    "2024": {
+     "ddof0": 0.007905761024394675,
+     "ddof1": 0.008838909532207433
+    },
+    "9999": {
+     "ddof0": 0.010368996522385845,
+     "ddof1": 0.011592890541256834
+    }
+   },
+   "t5_met": false,
+   "welch": {
+    "t": -9.570522849699275,
+    "p": 0.00015000062306656675,
+    "alpha": 0.005
+   },
+   "tost": {
+    "delta": 0.005,
+    "p": 0.9974696929884848
+   },
+   "bootstrap_mean_drift_95": {
+    "sever_db": [
+     0.009383702323189377,
+     0.012404719083659334
+    ],
+    "frozen_only": [
+     0.019166752877541566,
+     0.02380346390428581
+    ],
+    "soft_delete_ivf": [
+     0.01975723497404819,
+     0.021092940306008317
+    ],
+    "rebuild_ivf": [
+     0.007255378286409582,
+     0.009431825995447903
+    ]
+   }
+  }
+ },
+ "outcome": "RECORDED"
+}
