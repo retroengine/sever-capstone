@@ -256,3 +256,88 @@ fn p4_erasure_recovery_loads_the_store_into_the_merged_state() {
     <KeyRotationParticipant as TxnParticipant<sever_index::NoExtension>>::recover(&mut p).unwrap();
     assert!(p.durable().dropped.contains(&cid));
 }
+
+#[test]
+// oracle: A §14.8 the three value kinds and their exact lengths: an empty value, an unknown kind,
+// a value with a trailing byte and an envelope count larger than its entries are all refused
+fn p4_erasure_parse_refuses_every_value_outside_section_14_8() {
+    let d = dom();
+    let block = block_value(&d, 3, &[0x42u8; 4_352]);
+    let one = envelopes_value(&d, &[([0x55; 64], 7, [0x66; 60])]);
+    let drop = drop_value(&[0xC1; 16]);
+    let refused = |v: &[u8]| matches!(parse(v), Err(sever_types::Error::IntegrityViolation { .. }));
+    assert!(refused(&[]), "a value has a kind byte");
+    for kind in [0x00, 0x04, 0xFF] {
+        let mut v = drop.clone();
+        v[0] = kind;
+        assert!(refused(&v), "kind {kind:#04x} is not in §14.8");
+    }
+    for v in [&block, &one, &drop] {
+        let mut longer = v.clone();
+        longer.push(0);
+        assert!(refused(&longer), "a trailing byte");
+    }
+    let mut two = one.clone();
+    two[1 + 48..1 + 48 + 4].copy_from_slice(&2u32.to_be_bytes());
+    assert!(refused(&two), "a count of 2 with one entry");
+    let mut none = one[..1 + 48 + 4].to_vec();
+    none[1 + 48..].copy_from_slice(&0u32.to_be_bytes());
+    assert_eq!(
+        parse(&none),
+        Ok(Value::Envelopes(d, vec![])),
+        "zero entries"
+    );
+}
+
+#[test]
+// oracle: A §14.8 "a drop is final": dropping a collection forgets its blocks and envelopes, keeps
+// the other collections', and a later value of the dropped collection is not merged back
+fn p4_erasure_a_drop_forgets_only_its_collections_blocks_and_envelopes() {
+    let (a, mut b) = (dom(), dom());
+    b.collection_id = [0xC2; 16];
+    let mut s = Durable::default();
+    for d in [a, b] {
+        s.merge(Value::Block(d, 1, vec![1; 4_352]));
+        s.merge(Value::Envelopes(d, vec![([9; 64], 1, [1; 60])]));
+    }
+    s.merge(Value::Drop(a.collection_id));
+    assert_eq!(s.blocks.keys().copied().collect::<Vec<_>>(), [b]);
+    assert_eq!(s.envelopes.keys().map(|(d, _)| *d).collect::<Vec<_>>(), [b]);
+    s.merge(Value::Block(a, 2, vec![2; 4_352]));
+    s.merge(Value::Envelopes(a, vec![([9; 64], 2, [2; 60])]));
+    assert!(
+        !s.blocks.contains_key(&a) && s.envelopes.keys().all(|(d, _)| *d == b),
+        "a dropped collection's values stay gone"
+    );
+    assert!(s.dropped.contains(&a.collection_id) && !s.dropped.contains(&b.collection_id));
+}
+
+#[test]
+// oracle: A §14.6 the participant's WAL records are BUCKET_BLOCK and EXTENSION: replay passes over
+// every other record type, and refuses one of its own that is not a §14.8 value
+fn p4_erasure_replay_reads_only_bucket_block_and_extension_records() {
+    use sever_format::{RecordType, WalRecord};
+    let (mut p, _) = bare();
+    let rec = |ty, payload: Vec<u8>| WalRecord {
+        ty,
+        wal_seq: 1,
+        txn_id: 1,
+        payload,
+    };
+    let replay = |p: &mut KeyRotationParticipant, r: &WalRecord| {
+        <KeyRotationParticipant as TxnParticipant<NoExt>>::replay(p, r)
+    };
+    for ty in [RecordType::Begin, RecordType::Commit, RecordType::SlotPut] {
+        assert!(replay(&mut p, &rec(ty, vec![0xEE; 7])).is_ok(), "{ty:?}");
+    }
+    let block = block_value(&dom(), 3, &[0x42u8; 4_352]);
+    assert!(replay(&mut p, &rec(RecordType::BucketBlock, block[1..].to_vec())).is_ok());
+    assert!(
+        replay(
+            &mut p,
+            &rec(RecordType::BucketBlock, block[1..100].to_vec())
+        )
+        .is_err(),
+        "a short bucket block is refused"
+    );
+}

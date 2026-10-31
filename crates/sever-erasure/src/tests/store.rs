@@ -216,3 +216,25 @@ fn p4_erasure_store_counts_its_bytes_as_overhead_plus_value_for_each_record() {
         format!("WrappedStore({} bytes)", 2 * each)
     );
 }
+
+// oracle: A §12.2 (only synced data survives a crash; a cut-off tail is not data): a record whose
+// length runs past the end of the newest segment is a cut-off append, dropped with what follows
+#[test]
+fn p4_erasure_store_drops_a_record_whose_length_runs_past_the_end_of_the_file() {
+    let v = SimVfs::new();
+    let (mut s, _) = WrappedStore::open(Arc::new(v.clone()), 1 << 20).unwrap();
+    s.append(&values(2)).unwrap();
+    drop(s);
+    let last = segments(&v).last().cloned().unwrap();
+    let mut f = v
+        .open(&format!("{DIR}/{last}"), OpenMode::Existing)
+        .unwrap();
+    let mut rec = 99u64.to_be_bytes().to_vec();
+    rec.extend_from_slice(&1_000u32.to_be_bytes()); // claims 1,000 bytes of value
+    rec.extend_from_slice(&[0x11; 10]); // the crash kept 10
+    f.append(&rec).unwrap();
+    f.fsync().unwrap();
+    drop(f);
+    let (_, got) = WrappedStore::open(Arc::new(v.clone()), 1 << 20).unwrap();
+    assert_eq!(got, values(2));
+}
