@@ -52,10 +52,11 @@ Each finished run in [the run ledger](../docs/RUN_LEDGER.jsonl), grouped by part
 | 2026-10-07 19:43 | `p2-fuzz` | – | P2-T6 | `893f71d` | FAIL | [p2-fuzz-20261007T194333Z.json](../results/p2-fuzz-20261007T194333Z.json) |
 | 2026-10-07 19:26 | `p2-crash` | nq-10k, seeds 42 | P2-T1, P2-T2, P2-T3 | `f7d6362` | PASS | [p2-crash-nq-10k-20261007T192621Z.json](../results/p2-crash-nq-10k-20261007T192621Z.json) |
 
-## Part 3: The Receipt (28 runs)
+## Part 3: The Receipt (29 runs)
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-10-31 23:38 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `1479019` | FAIL | [fair-20261031T225306Z-p3-1479019b.json](../results/fair-20261031T225306Z-p3-1479019b.json) |
 | 2026-10-30 23:20 | `p3-measures` | nq-10k | P3-T13 (measure) | `7c445b5` | RECORDED | [p3-measures-nq-10k-20261030T232049Z.json](../results/p3-measures-nq-10k-20261030T232049Z.json) |
 | 2026-10-30 23:05 | `p3-coverage` | – | P3-T9 coverage | `7c445b5` | PASS | [p3-coverage-20261030T230521Z.json](../results/p3-coverage-20261030T230521Z.json) |
 | 2026-10-30 22:32 | `p3-checks` | – | Full-tier checks (P3-T3, P3-T6, P3-T7, P3-T8, P3-T9 sabotage, P3-T11, P3-T12) | `7c445b5` | PASS | [p3-checks-20261030T223245Z.json](../results/p3-checks-20261030T223245Z.json) |

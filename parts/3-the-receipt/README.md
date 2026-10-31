@@ -56,6 +56,7 @@ The latest outcome of each step:
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-10-31 23:38 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `1479019` | FAIL | [fair-20261031T225306Z-p3-1479019b.json](../../results/fair-20261031T225306Z-p3-1479019b.json) |
 | 2026-10-30 23:20 | `p3-measures` | nq-10k | P3-T13 (measure) | `7c445b5` | RECORDED | [p3-measures-nq-10k-20261030T232049Z.json](../../results/p3-measures-nq-10k-20261030T232049Z.json) |
 | 2026-10-30 23:05 | `p3-coverage` | – | P3-T9 coverage | `7c445b5` | PASS | [p3-coverage-20261030T230521Z.json](../../results/p3-coverage-20261030T230521Z.json) |
 | 2026-10-30 22:32 | `p3-checks` | – | Full-tier checks (P3-T3, P3-T6, P3-T7, P3-T8, P3-T9 sabotage, P3-T11, P3-T12) | `7c445b5` | PASS | [p3-checks-20261030T223245Z.json](../../results/p3-checks-20261030T223245Z.json) |
@@ -65,14 +66,14 @@ The latest outcome of each step:
 | 2026-10-30 05:01 | `p3-replay` | nq-100k, seeds 42 123 777 2024 9999 | P3-T5 | `7c445b5` | PASS | [p3-replay-nq-100k-20261030T050118Z.json](../../results/p3-replay-nq-100k-20261030T050118Z.json) |
 | 2026-10-29 22:53 | `p3-crash` | nq-10k, seeds 42 123 777 2024 9999 | P3-T4 | `7c445b5` | PASS | [p3-crash-nq-10k-20261029T225309Z.json](../../results/p3-crash-nq-10k-20261029T225309Z.json) |
 | 2026-10-29 11:49 | `p3-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P3-T1, P3-T2 | `4dcfbe0` | PASS | [p3-attacks-nq-10k-20261029T114936Z.json](../../results/p3-attacks-nq-10k-20261029T114936Z.json) |
-| 2026-10-20 14:58 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `4ecbd6c` | FAIL | [fair-20261020T141335Z-p3-3f2aef5b.json](../../results/fair-20261020T141335Z-p3-3f2aef5b.json) |
 | 2026-10-20 09:02 | `fair dry-run` | – | fair testing (docs/FAIR_TESTING.md) | `1954b93` | DRY | [fair-20261020T085456Z-p3-1954b937-dry.json](../../results/fair-20261020T085456Z-p3-1954b937-dry.json) |
 | 2026-10-19 03:32 | `p3-replay` | nq-100k, seeds 42 | P3-T5 | `30e4497` | PASS | [p3-replay-nq-100k-20261019T033241Z.json](../../results/p3-replay-nq-100k-20261019T033241Z.json) |
 
-Every run of this part, newest first (28; the full record is [the run ledger](../../docs/RUN_LEDGER.jsonl)):
+Every run of this part, newest first (29; the full record is [the run ledger](../../docs/RUN_LEDGER.jsonl)):
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-10-31 23:38 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `1479019` | FAIL | [fair-20261031T225306Z-p3-1479019b.json](../../results/fair-20261031T225306Z-p3-1479019b.json) |
 | 2026-10-30 23:20 | `p3-measures` | nq-10k | P3-T13 (measure) | `7c445b5` | RECORDED | [p3-measures-nq-10k-20261030T232049Z.json](../../results/p3-measures-nq-10k-20261030T232049Z.json) |
 | 2026-10-30 23:05 | `p3-coverage` | – | P3-T9 coverage | `7c445b5` | PASS | [p3-coverage-20261030T230521Z.json](../../results/p3-coverage-20261030T230521Z.json) |
 | 2026-10-30 22:32 | `p3-checks` | – | Full-tier checks (P3-T3, P3-T6, P3-T7, P3-T8, P3-T9 sabotage, P3-T11, P3-T12) | `7c445b5` | PASS | [p3-checks-20261030T223245Z.json](../../results/p3-checks-20261030T223245Z.json) |

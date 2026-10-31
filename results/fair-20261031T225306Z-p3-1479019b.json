@@ -1,0 +1,209 @@
+{
+ "run_id": "20261031T225306Z-p3-1479019b",
+ "part": 3,
+ "module": null,
+ "commit": "1479019bb2caa35d5f6abcd34441c51daefac7a7",
+ "outcome": "FAIL",
+ "config_sha256": "231bb3fb123fee16c62fcc8cfa97b28811a5dbafccced9792d478ac1a49836ca",
+ "seal_digest": "5de3e5b8b9df423e9b9022c23ee415528908d4a8cec907d24381140b3c6e68af",
+ "owned_sha256": "0abe57d3d24e43c207135215f554c516384e6ac63abe0eb51740e652b4fa2276",
+ "rows": [
+  {
+   "check": "own suite green on the unpatched build",
+   "value": "True",
+   "ok": true
+  },
+  {
+   "check": "engine bugs (triage)",
+   "value": "2",
+   "ok": false
+  },
+  {
+   "check": "spec gaps (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "test gaps (escaped real bugs)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "oracle disagreements",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "planted bugs: cargo-mutants gate PASS in the ledger (DB-75)",
+   "value": "fd40dfed1c8b",
+   "ok": true
+  },
+  {
+   "check": "judge outputs complete",
+   "value": "yes",
+   "ok": true
+  }
+ ],
+ "tests": 140,
+ "failing": 2,
+ "triage": {
+  "test_corruption::test_flipped_byte_is_detected_or_harmless[log/checkpoints/*]": {
+   "verdict": "ENGINE_BUG",
+   "section": "\u00a714.9",
+   "reason": "\u00a714.9 says every parser rejects a wrong CRC, and \u00a717 requires stored data that cannot be read back to be reported as IntegrityViolation. INV-15 (\u00a721) checks every checkpoint's root at startup. After one flipped byte in the checkpoint store, the engine opened and answered latest_log_checkpoint with tree_size 0 (the genesis checkpoint) instead of the committed size 3. It silently dropped the damaged record, which is a wrong answer where an error was required. The G-39 limit in \u00a712 covers only a damaged COMMIT or a cut-off tail of the log stores, not a CRC-failing record. The test allows both refusal and an intact result, so it exercised the rule correctly."
+  },
+  "test_log::test_consistency_proofs_equal_rfc9162_proofs": {
+   "verdict": "ENGINE_BUG",
+   "section": "\u00a710.1",
+   "reason": "\u00a710.1 says consistency proofs use RFC 9162's own algorithms. RFC 9162 defines PROOF(m, D[n]) for 0 < m \u2264 n, and the m = n case is the empty proof. The test asks only for sizes within the 6 committed leaves, 1 \u2264 m \u2264 n. The engine returned None for one of them, though the API reserves None for out-of-range sizes. The sibling test for inclusion proofs passes at the same tree sizes, so the range itself is not the cause. The failure output does not name the failing (m, n) pair, so this verdict rests on that reasoning. The spec does not contradict it."
+  }
+ },
+ "planted": [],
+ "escapes": {},
+ "oracle": {
+  "pool": 93,
+  "verdicts": {
+   "01.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a79.5",
+    "reason": "Preimage is DST_POSK(15) \u2016 C_S_post(32) \u2016 A(32) \u2016 ctx(152) = 231 bytes in that order, reduced wide from SHA-512, exactly as \u00a79.5 gives. The by-hand recomputation and the swap-changes-c check match Appendix B vector 3. The hex of c comes from the golden file, which I can't see, but the test derives it by the spec's formula."
+   },
+   "02.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a710.4, \u00a711.3 step 4",
+    "reason": "Five witnesses, threshold four: 5 and 4 valid cosignatures witness the checkpoint and 3 do not. \u00a711.3 step 4 requires distinct witnesses, so a duplicate (3 distinct) fails. An invalid signature leaves 3 valid. An unknown epoch or witness index is not in the anchors, and cosignatures over a different checkpoint do not verify. Every expectation follows."
+   },
+   "03.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a79.2, \u00a721 INV-10",
+    "reason": "The spec requires the self-check to compare H, G_0 and G_383 at every d, derive G_383 when d \u2264 383, compare gdigest at d = 384, and refuse on mismatch. The test passes at d = 16 and 384, refuses a drift in each golden field, and catches G_383 drift at d = 16. The flip always changes the first hex digit. The exact SelfCheck message strings are implementation details."
+   },
+   "04.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a79.9, \u00a72.1",
+    "reason": "\u00a79.9 requires non-canonical scalars to be rejected. \u2113, \u2113+1 and 2^255\u22121 are \u2265 \u2113 and so rejected, and the little-endian bytes of \u2113 (edd3f5\u202610) are correct. \u2113\u22121 and 0 round-trip. The wrong-length cases are rejected; the specific error variants are not named in the spec but the rejections are required."
+   },
+   "05.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a79.9, \u00a79.2",
+    "reason": "\u00a79.9 requires canonical decoding and rejection of non-canonical points. Appendix B of the RFC 9496 test vectors, which the spec names as the basis for primitive correctness, supplies the valid multiples (round-trip) and the invalid encodings, all of which must be rejected. The count of 29 and the vector contents live in the golden file, which I can't see. The error variant name is an implementation detail."
+   },
+   "06.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a79.8, \u00a72.2",
+    "reason": "90 days = 90\u00b786,400,000 ms = 7,776,000,000 ms. Epoch e covers [g+90e d, g+90(e+1) d), so g and g+EPOCH\u22121 are in epoch 0, g+EPOCH is epoch 1, and g+3\u00b7EPOCH+5 is epoch 3. A time before genesis lies in no epoch (e \u2265 0), so None is consistent, though the spec does not say what the function returns there."
+   },
+   "07.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a711.1",
+    "reason": "The certificate ends with u8 0xFF \u2016 u32be 64 \u2016 64-byte signature, so the trailer is 69 bytes, starts with 0xFF, and the length field is 64 as u32 big-endian. All three assertions follow."
+   },
+   "08.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a710.5, \u00a715.1, \u00a77.4, \u00a710.2",
+    "reason": "Each leaf's placement is the group the record joined or left, plus the spawned group a flush created in that transaction. The 8th holding insert flushes at the spawn target (configurable, \u00a72.2, DB-62), so its group and flush are both the spawned group. Deletions record the group left and flush none, and the leaf order is chronological. The fixture routing (which vectors go to the holding area) is hidden but not contradicted by the spec."
+   },
+   "09.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a79.5, \u00a79.9",
+    "reason": "The verifier must accept an honest proof and reject a different statement or context (neither is the identity), a changed z_r, a replaced A, and a non-canonical z (\u2113) before arithmetic. z_0 sits at bytes 64..96 after A and z_r. A wrong-length proof is rejected. The error variant names are implementation choices."
+   },
+   "10.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a710.2, \u00a715.1 step 9",
+    "reason": "Derivable: 6 inserts give 6 leaves, the 7th insert has database_lsn 6, the leaf is 209 bytes with the stated fields, the user signature verifies over DST_INSERT \u2016 collection_id \u2016 C_t, and the leaf hash is leaf_hash(leaf bytes). But the assertion that receipt.outputs equals [(LOG_PARTICIPANT_ID, 6 as u64 big-endian bytes)] depends on the Part 2 participant-output encoding, which this spec does not fix."
+   }
+  },
+  "picked": [
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_challenge_matches_section_9_5_and_golden_vector_3"
+   ],
+   [
+    "crates/sever-log/src/tests.rs",
+    "p3_log_a_checkpoint_is_witnessed_by_four_distinct_valid_cosignatures"
+   ],
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_self_check_passes_honestly_and_refuses_any_drift"
+   ],
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_decode_scalar_rejects_values_at_or_above_the_group_order"
+   ],
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_decode_point_accepts_canonical_and_rejects_rfc9496_invalid_encodings"
+   ],
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_epochs_are_90_day_windows_from_genesis"
+   ],
+   [
+    "crates/sever-cert/tests/log_participant.rs",
+    "p3_log_txn_a_certificate_ends_in_the_section_11_1_trailer"
+   ],
+   [
+    "crates/sever-cert/tests/log_participant.rs",
+    "p3_log_txn_every_leaf_records_its_placement"
+   ],
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_verifier_accepts_the_honest_proof_and_rejects_every_change"
+   ],
+   [
+    "crates/sever-cert/tests/log_participant.rs",
+    "p3_log_txn_every_insert_appends_its_insert_leaf"
+   ]
+  ]
+ },
+ "findings": [
+  {
+   "kind": "ENGINE_BUG",
+   "test": "test_corruption::test_flipped_byte_is_detected_or_harmless[log/checkpoints/*]",
+   "section": "\u00a714.9",
+   "reason": "\u00a714.9 says every parser rejects a wrong CRC, and \u00a717 requires stored data that cannot be read back to be reported as IntegrityViolation. INV-15 (\u00a721) checks every checkpoint's root at startup. After one flipped byte in the checkpoint store, the engine opened and answered latest_log_checkpoint with tree_size 0 (the genesis checkpoint) instead of the committed size 3. It silently dropped the damaged record, which is a wrong answer where an error was required. The G-39 limit in \u00a712 covers only a damaged COMMIT or a cut-off tail of the log stores, not a CRC-failing record. The test allows both refusal and an intact result, so it exercised the rule correctly.",
+   "output": "assert (0, b\"\\xe3\\xb...9\\x1bxR\\xb8U\") == (3, b'\\x04c\\x...xfb\\x1b#\\x0f')\n  \n  At index 0 diff: 0 != 3\n  Use -v to get more diff\nart = Artefact(d=16, k=4, tau=5.560874445713804, encoder=b'test-encoder@0', mu=array([[-0.19686774, -0.30948404,  0.23649618...1.09684239e+01, -7.72474251e-02,\n         3.36967011e+00, -2.29654731e+01,  8.34668557e-01,\n         7.42072956e+02]]))\nuser = UserKey(<secret>), where = 'data', pattern = 'log/checkpoints/*'\n\n    @pytest.mark.req(\"SR-17-7\", \"SR-10.5-1\")\n    @pytest.mark.parametrize(\"where,pattern\", TARGETS, ids=[t[1] for t in TARGETS])\n    def test_flipped_byte_is_detected_or_harmless(art, user, where, pattern):\n        \"\"\"\u00a717: \"When stored data cannot be read back or does not match what was committed \u2026, the error\n        MUST name that check\" (IntegrityViolation); \u00a714.9: \"Every parser rejects a wrong magic, version,\n        sealer_id, CRC \u2026\". A byte flipped in the middle of each file never yields a wrong answer.\"\"\"\n        data, keys, ex = _build(art, user)\n        for f in _files(data, keys, where, pattern):\n            with open(f, \"r+b\") as fh:\n                size = os.path.getsize(f)\n                fh.seek(size // 2)\n                byte = fh.read(1)\n                fh.seek(size // 2)\n                fh.write(bytes([byte[0] ^ 0x5A]))\n>       assert _iv_or_intact(data, keys, ex) in (\"refused at open\", \"refused at use\", \"intact\")\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n/room/work/tests/test_corruption.py:112: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ndata = '/scratch/tmp7apwx6p4', keys = '/scratch/tmpqcqlyrec'\nex = {'cid': 'f87ca844b20d3577898583662a7fa00e', 'cert': b'\\x01\\x00\\x00\\x00 \\x02v?\\x03\\xfc\\xe6\\xbd\\xb0\\x9fx\\xc3\\xdaB\\xa7\\x8...1\\xfe\\x9f\\xf7s\\xe8\\xf4\\x96\\xd2\\xee\\xd2\\xf6\\x8fT\\xdb\\xadI\\x1f\\xda\\x03\\x92Z$\\xe8ET5\\xe0\\xf4y\\x14\\xd1M;\\xab%\\x0e'))), ...}\n\n    def _iv_or_intact(data, keys, ex):\n        \"\"\"Allowed: IntegrityViolation (at open or at first use), or every answer equal to the undamaged\n        database's (computed above, before the damage).\"\"\"\n        sdk = h.sdk()\n        try:\n            db = h.open_db(data, keys)\n        except sdk.IntegrityViolation:\n            return \"refused at open\"\n        try:\n            cid = ex[\"cid\"]\n            assert bytes(db.certificate(ex[\"lsn\"])) == ex[\"cert\"]\n            cp = db.latest_log_checkpoint()\n>           assert (cp.tree_size, bytes(cp.root)) == (ex[\"cp\"].tree_size, bytes(ex[\"cp\"].root))\nE           assert (0, b\"\\xe3\\xb...9\\x1bxR\\xb8U\") == (3, b'\\x04c\\x...xfb\\x1b#\\x0f')\nE             \nE             At index 0 diff: 0 != 3\nE             Use -v to get more diff\n\n/room/work/tests/test_corruption.py:48: AssertionError",
+   "source": "\"\"\"Corruption of files on disk (flipped bytes, truncation) after a clean close. \u00a715.7 step 6 and \u00a717:\nthe engine refuses to serve on any violation with IntegrityViolation, naming the check; it never\nserves wrong data. So after a corruption the only allowed outcomes are: IntegrityViolation when\nopening or when the damaged data is first read, or a state identical to the undamaged one.\"\"\"\n\nimport glob\nimport os\n\nimport pytest\n\nimport sevhelp as h\nimport sevref as s\n\n\ndef _build(art, user):\n    data, keys = h.mkdirs()\n    with h.open_db(data, keys) as db:\n        cid = db.create_collection(h.SMALL)\n        a = h.put(db, cid, \"a\", s.in_dist_vector(art, 0, 1), user)\n        b = h.put(db, cid, \"b\", s.in_dist_vector(art, 0, 2), user)\n        c = h.put(db, cid, \"c\", s.in_dist_vector(art, 1, 3), user)\n        d1 = db.delete(cid, \"b\")\n        q = s.in_dist_vector(art, 0, 9)\n        expect = {\n            \"cid\": cid,\n            \"cert\": bytes(d1.certificate),\n            \"lsn\": d1.database_lsn,\n            \"cp\": db.latest_log_checkpoint(),\n            \"sizes\": db.group_sizes(cid),\n            \"search\": (q, db.search(cid, q, 5)),\n            \"recs\": (a, c),\n        }\n    return data, keys, expect\n\n\ndef _iv_or_intact(data, keys, ex):\n    \"\"\"Allowed: IntegrityViolation (at open or at first use), or every answer equal to the undamaged\n    database's (computed above, before the damage).\"\"\"\n    sdk = h.sdk()\n    try:\n        db = h.open_db(data, keys)\n    except sdk.IntegrityViolation:\n        return \"refused at open\"\n    try:\n        cid = ex[\"cid\"]\n        assert bytes(db.certificate(ex[\"lsn\"])) == ex[\"cert\"]\n        cp = db.latest_log_checkpoint()\n        assert (cp.tree_size, bytes(cp.root)) == (ex[\"cp\"].tree_size, bytes(ex[\"cp\"].root))\n        assert db.group_sizes(cid) == ex[\"sizes\"]\n        q, res = ex[\"search\"]\n        assert db.search(cid, q, 5) == res\n        a, c = ex[\"recs\"]\n        out = db.delete(cid, \"a\")\n        assert out.outcome == \"deleted\" and out.database_lsn == 4  # leaves 0\u20133 existed\n        cert = h.assert_verifies(db, out.certificate)\n        assert cert.c_s_pre == a.c_t and cert.leaf_index == a.lsn  # b's deletion left only a\n        return \"intact\"\n    except sdk.IntegrityViolation:\n        return \"refused at use\"\n    finally:\n        try:\n            db.close()\n        except Exception:\n            pass\n\n\nTARGETS = [\n    (\"data\", \"MANIFEST\"),\n    (\"data\", \"checkpoint/*/meta.bin\"),\n    (\"data\", \"checkpoint/*/collections.bin\"),\n    (\"data\", \"checkpoint/*/groups.bin\"),\n    (\"data\", \"checkpoint/*/slots.bin\"),\n    (\"data\", \"checkpoint/*/locator.bin\"),\n    (\"data\", \"checkpoint/*/partitions/*\"),\n    (\"data\", \"log/leaves/*\"),\n    (\"data\", \"log/hashes/*\"),\n    (\"data\", \"log/checkpoints/*\"),\n    (\"data\", \"certs/*\"),\n    (\"keys\", \"SECRETS\"),\n]\n\n\n# Truncation only of files whose own format fixes their length (\u00a714.9: page streams with\n# stream_len, MANIFEST, SECRETS with count and CRC). Cutting the tail of an append store after a\n# clean close is the stated limit of G-39/DB-99 (\"the stores are the record and such damage is not\n# seen\"), so it is a candidate gap (NOTES.md), not a test.\nTRUNC_TARGETS = [t for t in TARGETS if not t[1].startswith((\"log/\", \"certs/\"))]\n\n\ndef _files(data, keys, where, pattern):\n    root = data if where == \"data\" else keys\n    files = sorted(f for f in glob.glob(os.path.join(root, pattern)) if os.path.isfile(f) and os.path.getsize(f) > 0)\n    if not files:\n        pytest.skip(f\"no file matches {pattern} (layout \u00a714.1 is outside this test's scope)\")\n    return files\n\n\n@pytest.mark.req(\"SR-17-7\", \"SR-10.5-1\")\n@pytest.mark.parametrize(\"where,pattern\", TARGETS, ids=[t[1] for t in TARGETS])\ndef test_flipped_byte_is_detected_or_harmless(art, user, where, pattern):\n    \"\"\"\u00a717: \"When stored data cannot be read back or does not match what was committed \u2026, the error\n    MUST name that check\" (IntegrityViolation); \u00a714.9: \"Every parser rejects a wrong magic, version,\n    sealer_id, CRC \u2026\". A byte flipped in the middle of each file never yields a wrong answer.\"\"\"\n    data, keys, ex = _build(art, user)\n    for f in _files(data, keys, where, pattern):\n        with open(f, \"r+b\") as fh:\n            size = os.path.getsize(f)\n            fh.seek(size // 2)\n            byte = fh.read(1)\n            fh.seek(size // 2)\n            fh.write(bytes([byte[0] ^ 0x5A]))\n    assert _iv_or_intact(data, keys, ex) in (\"refused at open\", \"refused at use\", \"intact\")\n\n\n@pytest.mark.req(\"SR-17-7\")\n@pytest.mark.parametrize(\"where,pattern\", TRUNC_TARGETS, ids=[t[1] for t in TRUNC_TARGETS])\ndef test_truncated_file_is_detected_or_harmless(art, user, where, pattern):\n    \"\"\"\u00a717 and \u00a714.9 (\"Every parser rejects a wrong \u2026 count \u2026 or any trailing byte\"): a storage\n    checkpoint file, MANIFEST or SECRETS cut in half cannot be read back as committed; the engine\n    refuses (IntegrityViolation) rather than serve a different state.\"\"\"\n    data, keys, ex = _build(art, user)\n    for f in _files(data, keys, where, pattern):\n        os.truncate(f, os.path.getsize(f) // 2)\n    assert _iv_or_intact(data, keys, ex) in (\"refused at open\", \"refused at use\", \"intact\")\n\n\n@pytest.mark.req(\"SR-17-7\")\ndef test_flipped_checkpoint_header_byte_refuses_open(art, user):\n    \"\"\"\u00a714.9: \"Every parser rejects a wrong magic \u2026\"; \u00a715.7 step 3 reads MANIFEST before serving.\n    A flipped first byte of MANIFEST's magic can never be read as valid, so opening is refused with\n    IntegrityViolation (an IntegrityViolation is the \u00a717 error for unreadable stored data).\"\"\"\n    data, keys, _ = _build(art, user)\n    f = os.path.join(data, \"MANIFEST\")\n    if not os.path.exists(f):\n        pytest.skip(\"no MANIFEST (layout \u00a714.1 is outside this test's scope)\")\n    with open(f, \"r+b\") as fh:\n        b = fh.read(1)\n        fh.seek(0)\n        fh.write(bytes([b[0] ^ 0xFF]))\n    with pytest.raises(h.sdk().IntegrityViolation):\n        h.open_db(data, keys).close()\n",
+   "id": "F-1"
+  },
+  {
+   "kind": "ENGINE_BUG",
+   "test": "test_log::test_consistency_proofs_equal_rfc9162_proofs",
+   "section": "\u00a710.1",
+   "reason": "\u00a710.1 says consistency proofs use RFC 9162's own algorithms. RFC 9162 defines PROOF(m, D[n]) for 0 < m \u2264 n, and the m = n case is the empty proof. The test asks only for sizes within the 6 committed leaves, 1 \u2264 m \u2264 n. The engine returned None for one of them, though the API reserves None for out-of-range sizes. The sibling test for inclusion proofs passes at the same tree sizes, so the range itself is not the cause. The failure output does not name the failing (m, n) pair, so this verdict rests on that reasoning. The spec does not contradict it.",
+   "output": "assert None is not None\ndb = <sever_db_p3.Database object at 0x77b5b3a16760>\ncid = 'c36db9943099b5e99b6578840f3b5a7f', user = UserKey(<secret>)\nart = Artefact(d=16, k=4, tau=5.560874445713804, encoder=b'test-encoder@0', mu=array([[-0.19686774, -0.30948404,  0.23649618...1.09684239e+01, -7.72474251e-02,\n         3.36967011e+00, -2.29654731e+01,  8.34668557e-01,\n         7.42072956e+02]]))\n\n    @pytest.mark.req(\"SR-10.1-2\", \"SR-10.4-1\")\n    def test_consistency_proofs_equal_rfc9162_proofs(db, cid, user, art):\n        \"\"\"RFC 9162 \u00a72.1.4.1 PROOF(m, D[n]) for every 0 < m \u2264 n \u2264 6, as \u00a710.1 requires; each also\n        verifies between the two RFC 9162 roots.\"\"\"\n        hashes, _ = _all_deleted_log(db, cid, user, art)\n        for n in range(1, len(hashes) + 1):\n            for m in range(1, n + 1):\n                got = db.consistency_proof(m, n)\n>               assert got is not None\nE               assert None is not None\n\n/room/work/tests/test_log.py:56: AssertionError",
+   "source": "\"\"\"\u00a710 transparency log: RFC 9162 tree, leaves and proofs, recomputed by hand once every leaf is\nknown (each insert leaf is revealed by its record's certificate, each delete leaf is 0x02 \u2016 cert).\"\"\"\n\nimport pytest\n\nimport sevhelp as h\nimport sevref as s\n\n\ndef _all_deleted_log(db, cid, user, art, n=3):\n    \"\"\"Inserts n records, then deletes them one by one. Returns the leaf hashes 0 \u2026 2n\u22121 and\n    the certificates; every leaf is known: insert leaves from tag 6, delete leaves 0x02 \u2016 cert.\"\"\"\n    for i in range(n):\n        h.put(db, cid, f\"r{i}\", s.in_dist_vector(art, i % 4, 30 + i), user)\n    certs = [bytes(db.delete(cid, f\"r{i}\").certificate) for i in range(n)]\n    parsed = [s.parse_cert(c, 16) for c in certs]\n    leaves: dict[int, bytes] = {}\n    for c, raw in zip(parsed, certs, strict=True):\n        leaves[c.leaf_index] = s.leaf_hash(c.insert_leaf)\n        leaves[c.database_lsn] = s.leaf_hash(b\"\\x02\" + raw)  # \u00a710.2 delete leaf\n    assert sorted(leaves) == list(range(2 * n))  # leaf indexes are dense, 0-based (\u00a710.2)\n    return [leaves[i] for i in range(2 * n)], parsed\n\n\n@pytest.mark.req(\"SR-10.1-1\", \"SR-10.2-2\", \"SR-10.2-3\")\ndef test_checkpoint_roots_equal_rfc9162_roots(db, cid, user, art):\n    \"\"\"\u00a710.1: \"leaf_hash = SHA-256(0x00 \u2016 leaf), node_hash = SHA-256(0x01 \u2016 left \u2016 right), the\n    left-heavy tree\"; \u00a710.2: the delete leaf is \"0x02 \u2016 certificate bytes\" at database_lsn. Every\n    checkpoint root equals the RFC 9162 root of the first tree_size leaves.\"\"\"\n    hashes, certs = _all_deleted_log(db, cid, user, art)\n    for c in certs:\n        assert c.checkpoint.root == s.mth(hashes[: c.checkpoint.tree_size])\n    assert [c.checkpoint.tree_size for c in certs] == [3, 4, 5]  # \u00a710.3 on demand, at the current size\n\n\n@pytest.mark.req(\"SR-10.1-2\", \"SR-10.1-1\")\ndef test_inclusion_proofs_equal_rfc9162_paths(db, cid, user, art):\n    \"\"\"\u00a710.1: \"Inclusion and consistency proofs use RFC 9162's own algorithms.\" For every leaf and\n    tree size the engine's proof equals PATH(m, D[n]) (RFC 9162 \u00a72.1.3.1).\"\"\"\n    hashes, _ = _all_deleted_log(db, cid, user, art)\n    for n in range(1, len(hashes) + 1):\n        for m in range(n):\n            got = db.inclusion_proof(m, n)\n            assert got is not None\n            assert [bytes(x) for x in got] == s.path(m, hashes[:n]), (m, n)\n\n\n@pytest.mark.req(\"SR-10.1-2\", \"SR-10.4-1\")\ndef test_consistency_proofs_equal_rfc9162_proofs(db, cid, user, art):\n    \"\"\"RFC 9162 \u00a72.1.4.1 PROOF(m, D[n]) for every 0 < m \u2264 n \u2264 6, as \u00a710.1 requires; each also\n    verifies between the two RFC 9162 roots.\"\"\"\n    hashes, _ = _all_deleted_log(db, cid, user, art)\n    for n in range(1, len(hashes) + 1):\n        for m in range(1, n + 1):\n            got = db.consistency_proof(m, n)\n            assert got is not None\n            got = [bytes(x) for x in got]\n            assert got == s.consistency(m, hashes[:n]), (m, n)\n            assert s.verify_consistency(m, n, s.mth(hashes[:m]), s.mth(hashes[:n]), got)\n\n\n@pytest.mark.req(\"SR-10.2-2\", \"SR-10.2-3\")\ndef test_delete_leaf_is_included_at_its_database_lsn(db, cid, user, art):\n    \"\"\"\u00a710.2: the delete leaf `0x02 \u2016 certificate bytes` sits at database_lsn. After a later\n    checkpoint covers it, the engine's inclusion proof for that index verifies that exact leaf\n    against the later checkpoint's root (what the auditor checks, \u00a711.3).\"\"\"\n    for i in range(2):\n        h.put(db, cid, f\"x{i}\", s.in_dist_vector(art, 1, 40 + i), user)\n    d1 = db.delete(cid, \"x0\")\n    c2 = s.parse_cert(bytes(db.delete(cid, \"x1\").certificate), 16)\n    cp = c2.checkpoint\n    assert cp.tree_size > d1.database_lsn\n    pr = [bytes(x) for x in db.inclusion_proof(d1.database_lsn, cp.tree_size)]\n    assert s.verify_inclusion(d1.database_lsn, cp.tree_size, s.leaf_hash(b\"\\x02\" + bytes(d1.certificate)), pr, cp.root)\n\n\n@pytest.mark.req(\"SR-10.1-2\")\ndef test_out_of_range_proofs_are_none(db, cid, user, art):\n    \"\"\"API (\u00a716.1): inclusion and consistency proofs for sizes out of range return None (RFC 9162\n    defines PATH only for m < n \u2264 the tree's size, PROOF for m \u2264 n).\"\"\"\n    for i in range(3):\n        h.put(db, cid, f\"y{i}\", s.in_dist_vector(art, 0, 50 + i), user)\n    assert db.inclusion_proof(3, 3) is None  # leaf index must be < tree size\n    assert db.inclusion_proof(0, 4) is None  # only 3 leaves exist\n    assert db.consistency_proof(3, 2) is None  # old size after new size\n    assert db.consistency_proof(1, 9) is None  # new size beyond the log\n\n\n@pytest.mark.req(\"SR-10.2-1\", \"SR-10.2-3\")\ndef test_lsns_are_dense_across_inserts_holding_and_deletes(db, cid, user, art):\n    \"\"\"\u00a710.2: every insert (holding included) and every deletion that removes a record appends one\n    leaf; database_lsn is its 0-based index, in append order.\"\"\"\n    seq = []\n    seq.append(h.put(db, cid, \"a\", s.in_dist_vector(art, 0, 60), user).lsn)\n    seq.append(h.put(db, cid, \"b\", s.ood_vector(art, 6), user).lsn)\n    seq.append(db.delete(cid, \"a\").database_lsn)\n    assert db.delete(cid, \"a\").outcome == \"absent\"\n    seq.append(db.delete(cid, \"b\").database_lsn)\n    seq.append(h.put(db, cid, \"c\", s.in_dist_vector(art, 3, 61), user).lsn)\n    assert seq == [0, 1, 2, 3, 4]\n",
+   "id": "F-2"
+  }
+ ],
+ "sessions": [
+  {
+   "role": "tester",
+   "name": "1-tester",
+   "model": "opus",
+   "rc": 0,
+   "cost_usd": 6.766611600000002,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261031T225306Z-p3-1479019b/logs/1-tester.json"
+  },
+  {
+   "role": "triage",
+   "name": "4-triage",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.2208353,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261031T225306Z-p3-1479019b/logs/4-triage.json"
+  },
+  {
+   "role": "oracle",
+   "name": "8-oracle",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.3233034000000001,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261031T225306Z-p3-1479019b/logs/8-oracle.json"
+  }
+ ]
+}
