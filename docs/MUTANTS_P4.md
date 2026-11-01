@@ -208,3 +208,16 @@ crates/sever-seal/src/ring.rs:555:9: replace KeyRing::finish_recovery with ()
 ```
 
 **Lines moved (1 Nov 2026, DB-116).** The November fixes added lines to `sever-log/src/store.rs`, `sever-cert/src/participant.rs` and `sever-erasure/src/store.rs`, so the survivors triaged above in those files moved. Each entry was renamed to its new line by matching the same function, replacement and order in `cargo mutants --list` before (`cecd26e`) and after; no reason changed. The fixes' own new mutants (30 on the changed lines) are all caught, except the BH-6 check that was redundant and was removed (`09ecb78`).
+
+## Timeout of the 1 November run: `parse_wal` guard inverted
+
+The p4-mutants run of 1 November 2026 (commit e00e31d) recorded this mutant as a timeout: with
+`parse_wal`'s participant check inverted, the `sever-db` test binary ran first and used the whole time
+limit, so the `sever-erasure` tests never ran. Applied by hand on e00e31d, it fails
+`p4_erasure_parse_wal_reads_only_the_participants_own_records` at once (the `sever-erasure` tests
+finish in 6 s). The same pattern as the `Key::eq` timeout above (DB-114). Added on 1 November, after
+the run recorded it and before the gate scored it.
+
+```
+crates/sever-erasure/src/participant.rs:465:35: replace == with !=
+```
