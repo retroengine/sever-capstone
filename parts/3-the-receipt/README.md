@@ -56,7 +56,7 @@ The latest outcome of each step:
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
-| 2026-11-01 13:39 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `5fee0df` | FAIL | [fair-20261101T130254Z-p3-5fee0df5.json](../../results/fair-20261101T130254Z-p3-5fee0df5.json) |
+| 2026-11-01 14:20 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `bb4bac5` | PASS | [fair-20261101T134211Z-p3-bb4bac5e.json](../../results/fair-20261101T134211Z-p3-bb4bac5e.json) |
 | 2026-11-01 08:57 | `p3-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P3-T1, P3-T2 | `94d0b24` | PASS | [p3-attacks-nq-10k-20261101T085746Z.json](../../results/p3-attacks-nq-10k-20261101T085746Z.json) |
 | 2026-11-01 02:32 | `p3-spikes` | – | Part 3 proof spike (Build 3-4 §1.11) | `94d0b24` | PASS | [p3-spikes-20261101T023213Z.json](../../results/p3-spikes-20261101T023213Z.json) |
 | 2026-11-01 02:26 | `p3-coverage` | – | P3-T9 coverage | `94d0b24` | PASS | [p3-coverage-20261101T022656Z.json](../../results/p3-coverage-20261101T022656Z.json) |
@@ -69,10 +69,11 @@ The latest outcome of each step:
 | 2026-10-20 09:02 | `fair dry-run` | – | fair testing (docs/FAIR_TESTING.md) | `1954b93` | DRY | [fair-20261020T085456Z-p3-1954b937-dry.json](../../results/fair-20261020T085456Z-p3-1954b937-dry.json) |
 | 2026-10-19 03:32 | `p3-replay` | nq-100k, seeds 42 | P3-T5 | `30e4497` | PASS | [p3-replay-nq-100k-20261019T033241Z.json](../../results/p3-replay-nq-100k-20261019T033241Z.json) |
 
-Every run of this part, newest first (34; the full record is [the run ledger](../../docs/RUN_LEDGER.jsonl)):
+Every run of this part, newest first (35; the full record is [the run ledger](../../docs/RUN_LEDGER.jsonl)):
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-11-01 14:20 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `bb4bac5` | PASS | [fair-20261101T134211Z-p3-bb4bac5e.json](../../results/fair-20261101T134211Z-p3-bb4bac5e.json) |
 | 2026-11-01 13:39 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `5fee0df` | FAIL | [fair-20261101T130254Z-p3-5fee0df5.json](../../results/fair-20261101T130254Z-p3-5fee0df5.json) |
 | 2026-11-01 08:57 | `p3-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P3-T1, P3-T2 | `94d0b24` | PASS | [p3-attacks-nq-10k-20261101T085746Z.json](../../results/p3-attacks-nq-10k-20261101T085746Z.json) |
 | 2026-11-01 02:32 | `p3-spikes` | – | Part 3 proof spike (Build 3-4 §1.11) | `94d0b24` | PASS | [p3-spikes-20261101T023213Z.json](../../results/p3-spikes-20261101T023213Z.json) |

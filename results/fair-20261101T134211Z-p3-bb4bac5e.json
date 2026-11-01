@@ -1,0 +1,170 @@
+{
+ "run_id": "20261101T134211Z-p3-bb4bac5e",
+ "part": 3,
+ "module": null,
+ "commit": "bb4bac5e1eb2dd4c261dff2f270a102454cd0e69",
+ "outcome": "PASS",
+ "config_sha256": "231bb3fb123fee16c62fcc8cfa97b28811a5dbafccced9792d478ac1a49836ca",
+ "seal_digest": "855c5135cf58d42d0b4cdc4b84ff27b2a86ce7e3cae775b2e5e176840d1a7803",
+ "owned_sha256": "bd7faf59707d585d7d2bc2c1925adb62240b60d80e80d13b209ffa75db56d109",
+ "rows": [
+  {
+   "check": "own suite green on the unpatched build",
+   "value": "True",
+   "ok": true
+  },
+  {
+   "check": "engine bugs (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "spec gaps (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "test gaps (escaped real bugs)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "oracle disagreements",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "planted bugs: cargo-mutants gate PASS in the ledger (DB-75)",
+   "value": "fd40dfed1c8b",
+   "ok": true
+  },
+  {
+   "check": "judge outputs complete",
+   "value": "yes",
+   "ok": true
+  }
+ ],
+ "tests": 180,
+ "failing": 0,
+ "triage": {},
+ "planted": [],
+ "escapes": {},
+ "oracle": {
+  "pool": 93,
+  "verdicts": {
+   "01.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a79.8, \u00a710.2, \u00a716.2",
+    "reason": "DST_INSERT (17 bytes) \u2016 collection_id (16) \u2016 C_t (32) is 65 bytes. The user signature verifies over it and the public key is the one published (\u00a79.8, \u00a710.2). The first insert into a fresh log is leaf 0, so database_lsn is 0. The Ed25519 public key depends only on the secret (RFC 8032). The name `retried` for the receipt flag is an SDK detail, but a first insert not being a retry is consistent with \u00a715.1 and \u00a716.2."
+   },
+   "02.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a73.3, \u00a76.3",
+    "reason": "\u00a73.3 requires the backend to embed with the encoder named in the artefact's encoder field. It does not define a `check_encoder` function, its error type, or exact-string matching of revisions. The test's artefact is a JSON file, whereas \u00a76.3 defines a binary `.svp` with a length-prefixed encoder field. So the expected values rest on demo-specific behaviour the spec does not fix."
+   },
+   "03.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a710.5, \u00a711.3 (log export, DB-86), \u00a716.2",
+    "reason": "DB-86 and SR-10.5-3 define a placement as the group the record 'joined' (insert) or 'left' (deletion), plus the spawned group a flush created. The test records the flush-triggering insert as group = the spawned group, with flush = that group. The record is first routed to the holding area (\u00a77.4) and the flush then moves it, so 'joined' could equally mean holding. \u00a716.2/G-38 fix 'the group after the transaction' only for the receipt, not for the log placement. The other entries (deletions, 'held' in holding) follow from the spec. The fixture routing is not visible."
+   },
+   "04.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a714.6, \u00a75.1, \u00a710.5, DB-86",
+    "reason": "A LOG_LEAF placement is 64 bytes: the group ID zero-padded to 32, then the flush-created group zero-padded or 32 zero bytes. `holding` and `spawn-` plus 16 hex characters are the \u00a75.1 forms, and `frozen-0012` is the 4-digit form. The refused inputs are non-canonical (`frozen-12`), malformed, or a flush into a frozen or holding group, when a flush creates a spawned group (\u00a77.4). A missing group and a wrong length are also refused. Holding with a flush group is a consistent case."
+   },
+   "05.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a710.1",
+    "reason": "\u00a710.1 adopts RFC 9162 \u00a72.1 proofs and verification. A wrong leaf, index, index >= size, short or long path, or wrong root cannot verify. The consistency cases follow too: wrong first or second root, an empty path (\u00a72.1.4.2 step 1), first = 0, and first = second with a non-empty proof, which G-50 says has no proof. The valid proofs for tree size 7 match the RFC worked example."
+   },
+   "06.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a79.1, \u00a720.1",
+    "reason": "The primitive crates and their versions (curve25519-dalek 4.1.3, ed25519-dalek 2.2.0, merlin 3.0.0, sha2 0.10.9, hmac 0.12.1, rand_core 0.6.4, zeroize 1.9.0) match the tables. The test also requires the `=x.y.z` requirement string and limits sever-crypto's dependencies to exactly those crates, so it would reject any other dependency, such as a workspace crate. Neither is in the spec, which says only 'pinned' and 'frozen in a lockfile'. The no-own-primitive-trait scan fits \u00a79.1."
+   },
+   "07.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a711.1, \u00a711.3, \u00a716.3, DB-85",
+    "reason": "A deletion from a frozen group has deletion_kind 0 (tag 12). \u00a711.3 step 5 requires database_lsn > leaf_index, and the delete leaf comes after the insert's. An honest certificate verifies against the anchors with exit 0 (\u00a716.3). The verifier's JSON output has accepted, deletion_kind, database_lsn and leaf_index (DB-85)."
+   },
+   "08.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a711.3, \u00a716.3, DB-86",
+    "reason": "Removing a delete leaf should be reported by the auditor, and exit 1 means findings (\u00a716.3). Which finding kind appears is only loosely fixed (AF-1 skipped leaf, AF-4 leaf not matching a held certificate). The shape of the findings output (`kind` and `at` fields) and the meaning of `at` as the removed index are not in the spec. Whether a finding lands exactly at that index also depends on whether later leaves follow, which the hidden cohort fixture decides."
+   },
+   "09.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a73.3, \u00a79.3, \u00a79.4",
+    "reason": "\u00a79.4 and \u00a73.3 have r_t drawn fresh from the OS CSPRNG for every record, 64 bytes reduced mod the group order. So eight requests for the same vector give eight distinct C_t, with collision probability negligible. A C_t equal to the identity would need r_t\u00b7H to cancel the vector term, with negligible probability."
+   },
+   "10.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a710.2, \u00a715.1",
+    "reason": "The leaf contents follow from the spec: 209-byte insert leaf, collection_id, user public key, valid DST_INSERT signature, one leaf per insert, and leaf hash = SHA-256(0x00 \u2016 leaf). The seventh insert getting database_lsn 6 follows too. The assertion on `receipt.outputs == [(LOG_PARTICIPANT_ID, 6 as u64be)]` depends on the Part 2 participant-output encoding and on the participant ID constant, neither of which the spec fixes. The `base()` helper is also not visible."
+   }
+  },
+  "picked": [
+   [
+    "python/sever_db_p3/tests/test_sdk_p3.py",
+    "test_p3_sdk_prepare_insert_signs_the_collection_and_commitment"
+   ],
+   [
+    "python/sever_demo_p3/tests/test_receipt_p3.py",
+    "test_p3_demo_backend_uses_the_artefacts_encoder"
+   ],
+   [
+    "crates/sever-cert/tests/log_participant.rs",
+    "p3_log_txn_every_leaf_records_its_placement"
+   ],
+   [
+    "crates/sever-log/src/store_tests.rs",
+    "p3_log_store_placement_layout_and_strict_parse"
+   ],
+   [
+    "crates/sever-log/src/tests.rs",
+    "p3_log_verifiers_reject_altered_proofs"
+   ],
+   [
+    "tests/architecture/test_architecture_p3.py",
+    "test_p3_arch_crypto_uses_only_the_pinned_primitives"
+   ],
+   [
+    "tests/e2e_p3/test_p3_e2e.py",
+    "test_p3_e2e_3_1_the_verifier_accepts_a_deletion_in_another_process"
+   ],
+   [
+    "tests/e2e_p3/test_p3_e2e.py",
+    "test_p3_e2e_3_6_a_missing_deletion_leaf_is_reported"
+   ],
+   [
+    "python/sever_db_p3/tests/test_sdk_p3.py",
+    "test_p3_sdk_draws_a_fresh_r_t_for_every_request"
+   ],
+   [
+    "crates/sever-cert/tests/log_participant.rs",
+    "p3_log_txn_every_insert_appends_its_insert_leaf"
+   ]
+  ]
+ },
+ "findings": [],
+ "sessions": [
+  {
+   "role": "tester",
+   "name": "1-tester",
+   "model": "opus",
+   "rc": 0,
+   "cost_usd": 5.871801,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261101T134211Z-p3-bb4bac5e/logs/1-tester.json"
+  },
+  {
+   "role": "oracle",
+   "name": "8-oracle",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.5079831,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261101T134211Z-p3-bb4bac5e/logs/8-oracle.json"
+  }
+ ]
+}
