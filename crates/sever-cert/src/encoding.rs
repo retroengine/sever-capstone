@@ -157,6 +157,17 @@ fn tlv(out: &mut Vec<u8>, tag: u8, value: &[u8]) {
 }
 
 /// Reads one TLV that must carry `expected`.
+/// The log checkpoint in tag 6 of a certificate (§11.2): the checkpoint that covered the deleted
+/// record's insert leaf, which E-2 commits before the certificate. Reads tags 1–6 only, so it
+/// needs no vector dimension.
+pub fn covering_checkpoint(bytes: &[u8]) -> Result<LogCheckpoint, ParseError> {
+    let mut b = bytes;
+    for tag in 1u8..6 {
+        take(&mut b, tag)?;
+    }
+    Ok(InsertInclusion::parse(take(&mut b, 6)?)?.checkpoint)
+}
+
 fn take<'a>(b: &mut &'a [u8], expected: u8) -> Result<&'a [u8], ParseError> {
     let (&tag, rest) = b.split_first().ok_or(ParseError::Truncated)?;
     if tag != expected {

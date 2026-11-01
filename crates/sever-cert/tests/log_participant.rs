@@ -744,3 +744,35 @@ fn p3_log_txn_a_flush_folds_every_founder_into_the_new_group() {
     let c = accept(&o, &w.gens, &cert_of(&o.db.delete(cid, "live-5").unwrap()));
     assert_eq!(c.group.as_ref().unwrap().c_s_pre, encode_point(&sum));
 }
+
+#[test]
+// oracle: A §17 ("stored data that … does not match what was committed" is IntegrityViolation), §14.9 (every parser rejects a wrong CRC), E-2: a deletion's certificate carries a log checkpoint committed before it
+fn p3_log_txn_a_damaged_checkpoint_store_refuses_to_open() {
+    use sever_vfs::{OpenMode, Vfs};
+    let w = World::new();
+    let (o, cid, placed) = base(&w, 8);
+    let ids = in_group(&placed);
+    o.db.delete(cid, &ids[0]).unwrap();
+    o.db.close().unwrap(); // a storage checkpoint: only the stores hold the log now
+    let dir = "log/checkpoints";
+    let name = w.data.list(dir).unwrap().into_iter().max().unwrap();
+    let path = format!("{dir}/{name}");
+    let f = w.data.open(&path, OpenMode::Existing).unwrap();
+    let len = f.len().unwrap();
+    let mut b = [0u8; 1];
+    f.read_at(len / 2, &mut b).unwrap();
+    let mut f = w.data.open(&path, OpenMode::Existing).unwrap();
+    f.write_at(len / 2, &[b[0] ^ 0x5A]).unwrap();
+    f.fsync().unwrap();
+    w.data.restart(CrashPolicy::DropAll);
+    w.keys.restart(CrashPolicy::DropAll);
+    match w.open() {
+        Err(Error::IntegrityViolation { .. }) => {}
+        Err(e) => panic!("refused, but not as IntegrityViolation: {e:?}"),
+        Ok(o) => panic!(
+            "opened on a damaged checkpoint store; latest log checkpoint size {:?}",
+            o.log
+                .with(|l| l.checkpoints().last().map(|c| c.checkpoint.tree_size))
+        ),
+    }
+}

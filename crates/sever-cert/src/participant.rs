@@ -47,6 +47,24 @@ const OWNED: [RecordType; 3] = [
     RecordType::CertRef,
 ];
 
+/// §17, §14.9 (F-1 of fair run 20261031T225306Z): every committed certificate carries, in tag 6,
+/// a log checkpoint committed before it (E-2), so that checkpoint must be in the log. A damaged
+/// checkpoint store that the append store cut at its first bad record (Part 2's torn-tail rule)
+/// would otherwise open as an older log, silently.
+fn certificates_have_checkpoints(log: &LogStore) -> Result<(), Error> {
+    for lsn in log.certificate_lsns() {
+        let bytes = log
+            .certificate(lsn)?
+            .ok_or(inv("INV-15 certificate store"))?;
+        let cp = crate::encoding::covering_checkpoint(&bytes)
+            .map_err(|_| inv("§11.1 stored certificate"))?;
+        if !log.checkpoints().iter().any(|w| w.checkpoint == cp) {
+            return Err(inv("INV-15 a certificate's log checkpoint is missing"));
+        }
+    }
+    Ok(())
+}
+
 fn inv(rule: &'static str) -> Error {
     Error::IntegrityViolation { invariant: rule }
 }
@@ -522,13 +540,16 @@ impl TxnParticipant<CommitmentExtension> for LogParticipant {
         for r in &replayed {
             log.replay(r)?;
         }
-        log.recover()
+        log.recover()?;
+        certificates_have_checkpoints(log)
     }
 
     fn check_invariants(&self) -> Result<(), Error> {
-        lock(&self.0)
-            .log
-            .as_ref()
-            .map_or(Ok(()), LogStore::check_invariants)
+        let g = lock(&self.0);
+        let Some(log) = g.log.as_ref() else {
+            return Ok(());
+        };
+        log.check_invariants()?;
+        certificates_have_checkpoints(log)
     }
 }

@@ -489,6 +489,11 @@ impl LogStore {
             .map_err(|_| inv("§10.5 insert leaf store"))
     }
 
+    /// The `database_lsn` of every committed certificate, ascending.
+    pub fn certificate_lsns(&self) -> impl Iterator<Item = u64> + '_ {
+        self.certs.keys().copied()
+    }
+
     /// The committed certificate of the deletion at `database_lsn`, checked against its leaf hash.
     pub fn certificate(&self, lsn: u64) -> Result<Option<Vec<u8>>, Error> {
         let Some(at) = self.certs.get(&lsn) else {
