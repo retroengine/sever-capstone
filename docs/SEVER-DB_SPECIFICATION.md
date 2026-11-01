@@ -774,7 +774,10 @@ them would reintroduce malleability. `C_t` MUST NOT be the identity.
 One append-only Merkle log per database, exactly as RFC 9162 §2.1 specifies: SHA-256,
 `leaf_hash = SHA-256(0x00 ‖ leaf)`, `node_hash = SHA-256(0x01 ‖ left ‖ right)`, the left-heavy tree
 built from the largest complete left subtree. Inclusion and consistency proofs use RFC 9162's own
-algorithms. It is not a Merkle Mountain Range.
+algorithms. A consistency proof exists only for `0 < old_size < new_size ≤ tree_size` (RFC 9162
+§2.1.4.1 defines `PROOF(m, D[n])` for `0 < m < n`, and §2.1.4.2 step 1 rejects an empty path):
+`consistency_proof` returns none for any other pair, `old_size = new_size` included (G-50). It is
+not a Merkle Mountain Range.
 
 ### 10.2 Leaves
 

@@ -1043,6 +1043,19 @@ part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the fr
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
 
+#### DB-116 — The November bug hunt before the Part 3 and Part 4 freezes (1 November 2026)
+
+**Decision.** Fair run `20261031T225306Z-p3-1479019b` (FAIL, two findings) is followed by a bug hunt before any fix is rerun (owner, 1 November 2026): search extensively, fix every finding red-test-first, rerun the gates the fixes touch once, then fair testing, then the freezes. Findings are tracked in `docs/notes/BUG_HUNT_2026-11.md` (BH-6 onward). So far:
+- **BH-7 (fair F-1):** a log checkpoint store damaged in the middle opened as an older log. Part 2's `FileStore::open` cuts a store at its first bad record (its torn-tail rule), and Part 3's log stores had no committed reference to check against. Fixed in `sever-cert`: every stored certificate's tag-6 checkpoint (committed before it, E-2) must be in the log, else `IntegrityViolation`.
+- **BH-6:** both store scanners (`sever-log`, `sever-erasure`) ended a scan silently on a partial record in an older segment. Only the newest segment can have a torn tail, so an older one cut short is now `IntegrityViolation`.
+- **BH-8 (fair F-2):** a judge's misreading of RFC 9162. The engine is right; §10.1 now states the range (G-50).
+
+**Why.** The fair run found two real faults of one kind (damage read as a shorter store). Fixing one at a time would rerun the slow gates each time.
+
+**Rejected.** Declaring F-1 a stated limit (the owner chose the engine fix). Checking due checkpoints at startup: a due checkpoint is legitimately missing after a crash until the next operation (§10.3), so it would refuse healthy databases. What it leaves (a damaged checkpoint-store tail that loses only checkpoints no certificate names) is recorded beside G-39's limit.
+
+**Consequence.** `sever-log`, `sever-cert` and `sever-erasure` change after the laptop run. Every gate those crates feed reruns once on the final commit before the freezes, and the fair runs follow.
+
 #### DB-115 — Each part gets a page; nothing moves (31 October 2026)
 
 **Decision.** Three generated navigation files, written by `scripts/index.py`:
