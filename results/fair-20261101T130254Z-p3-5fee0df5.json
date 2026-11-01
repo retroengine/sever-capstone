@@ -1,0 +1,209 @@
+{
+ "run_id": "20261101T130254Z-p3-5fee0df5",
+ "part": 3,
+ "module": null,
+ "commit": "5fee0df54e4c5aa476a10df612f6d558d31e61f0",
+ "outcome": "FAIL",
+ "config_sha256": "231bb3fb123fee16c62fcc8cfa97b28811a5dbafccced9792d478ac1a49836ca",
+ "seal_digest": "b0eec58d74f710b307980a5c53dbd66fcf77283e310e1b1fbaaa83286acfb89d",
+ "owned_sha256": "bd7faf59707d585d7d2bc2c1925adb62240b60d80e80d13b209ffa75db56d109",
+ "rows": [
+  {
+   "check": "own suite green on the unpatched build",
+   "value": "True",
+   "ok": true
+  },
+  {
+   "check": "engine bugs (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "spec gaps (triage)",
+   "value": "2",
+   "ok": false
+  },
+  {
+   "check": "test gaps (escaped real bugs)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "oracle disagreements",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "planted bugs: cargo-mutants gate PASS in the ledger (DB-75)",
+   "value": "fd40dfed1c8b",
+   "ok": true
+  },
+  {
+   "check": "judge outputs complete",
+   "value": "yes",
+   "ok": true
+  }
+ ],
+ "tests": 178,
+ "failing": 2,
+ "triage": {
+  "test_insert::test_artefact_of_another_dimension_is_refused": {
+   "verdict": "SPEC_GAP",
+   "section": "\u00a76.3, \u00a717",
+   "reason": "The test's pytest.raises(IntegrityViolation) was satisfied; the failure is the context-manager close() raising 'the engine stopped serving'. \u00a76.3 says a failed artefact check is rejected with IntegrityViolation, and the \u00a717 row for IntegrityViolation says 'the engine stops serving', but \u00a717 ties that row to invariant (\u00a721) failures and G-12 only says \u00a76.3 names IntegrityViolation. The spec does not say whether a rejected artefact stops the engine, nor whether close() raises after a stop (G-42 only says no checkpoint is written), so neither the engine nor the test is wrong."
+  },
+  "test_insert::test_damaged_artefact_is_integrity_violation": {
+   "verdict": "SPEC_GAP",
+   "section": "\u00a76.3, \u00a717",
+   "reason": "The bad-hash artefact was correctly rejected with IntegrityViolation as \u00a76.3 requires; the test then failed only because close() on exit raised after the engine stopped serving. The spec does not decide whether an artefact-check IntegrityViolation counts as the \u00a717 'stops serving' kind, nor what close() does after a stop (G-42 requires only that no checkpoint be written). The test assumes a clean close that the spec does not promise, and the engine's behaviour is a permitted reading, so this is a gap."
+  }
+ },
+ "planted": [],
+ "escapes": {},
+ "oracle": {
+  "pool": 93,
+  "verdicts": {
+   "01.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a711.1, \u00a711.2, \u00a79.8",
+    "reason": "The spec fixes the TLV layout (tags 1-13 ascending, then 0xFF/64/signature over DST_CERT \u2016 preceding bytes) and the \u00a711.2 nested field. But every expected value (body, signature, full certificate, and the key_period=1 / emptied=false inputs) comes from golden/p3_certificates.json, which I cannot see. I cannot check those bytes against the spec."
+   },
+   "02.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a710.2, \u00a715.1",
+    "reason": "Six inserts giving tree size 6, the seventh insert's database_lsn being 6 (leaf index, \u00a710.2), and the leaf contents and signature all follow from the spec. The assertion on receipt.outputs, a (LOG_PARTICIPANT_ID, 8-byte big-endian lsn) pair, depends on a participant-output format that the spec does not define. The setup helper base() is also not shown."
+   },
+   "03.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a716.2, \u00a75.1, \u00a77.4",
+    "reason": "The placement grammar (frozen-NNNN, spawn- plus 16 lowercase hex, holding) and the rule that it names the record's group after the transaction are fixed by \u00a716.2 and G-38. The final assertions need at least one of 40 fixture vectors to land in frozen groups and one in holding at some point. That depends on the fixture data and the artefact's routing, which the spec cannot settle."
+   },
+   "04.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a79.9, \u00a72.1",
+    "reason": "\u00a79.9 requires non-canonical scalars to be rejected. I recomputed \u2113 = 2^252 + 27742317777372353535851937790883648493 in little-endian bytes, and \u2113, \u2113+1 and 2^255-1 match the test's hex. \u2113-1 and zero are canonical and round-trip. Wrong-length input is rejected. The error variant names are implementation detail, but the accept/reject outcomes are all spec-conformant."
+   },
+   "05.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a710.4, \u00a710.1, \u00a710.3",
+    "reason": "\u00a710.4 has each witness remember the last checkpoint it cosigned and cosign only after a verified consistency proof. After the deletion's on-demand checkpoint (\u00a710.3), all five honest witnesses hold it, and that persists across restart. A checkpoint of the same size with a different root has no consistency proof (\u00a710.1, G-50), so it must be refused. The name Refusal::Fork is the implementation's label for that refusal."
+   },
+   "06.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a710.3",
+    "reason": "\u00a710.3 issues a cadence checkpoint at every multiple of 10,000 of tree_size, at exactly that size. 10,000, 20,000, 30,000 and 1,900,000 are due. 1, 9,999 and 10,001 are not multiples. Size 0 is covered by the genesis checkpoint (\u00a710.3), so treating it as not due is consistent."
+   },
+   "07.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a715.3, \u00a710.3",
+    "reason": "\u00a715.3 steps 1 and 3 fix that an absent record touches nothing and that the on-demand checkpoint is its own committed transaction before the deletion. These support the pre-transaction ordering and the transaction counts (2 pre, 4 main). The exact hook sequence (pre, after_commit, prepare, after_commit, abort) is the frozen Part 2 TxnParticipant contract. That contract is not in the spec, so I cannot confirm those call strings."
+   },
+   "08.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a79.8",
+    "reason": "Epoch e covers [genesis + 90e days, genesis + 90(e+1) days), so g+10 is epoch 0 and g+3\u00b7EPOCH_MS+10 is epoch 3. \u00a79.8 says old public keys stay resolvable forever, so both checkpoints verify against the keyring. Distinct keys per epoch follows from keys being per-epoch (a new key each epoch)."
+   },
+   "09.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a79.5",
+    "reason": "With z = k + c\u00b7s and the same nonces, two proofs under different challenges give s = (z1-z2)/(c1-c2) and r likewise, as the test computes. The challenge is SHA-512(DST_POSK \u2016 C_S_post \u2016 A \u2016 ctx) reduced wide, and changing database_lsn changes ctx and hence c. The test correctly uses nonce reuse only to demonstrate the \u00a79.5 soundness note, and A matches across the two proofs."
+   },
+   "10.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a79.3",
+    "reason": "\u00a79.3 defines C_t = r\u00b7H + \u03a3 x\u0303_i\u00b7G_i and C_S likewise, with d = 384 for records. The test's expected points come from a golden commitments file produced by the reference model, which I cannot see. The group half also uses d = 16 generators. I cannot verify any expected encoding against the spec."
+   }
+  },
+  "picked": [
+   [
+    "crates/sever-cert/src/tests.rs",
+    "p3_cert_golden_certificates_encode_and_sign_byte_for_byte"
+   ],
+   [
+    "crates/sever-cert/tests/log_participant.rs",
+    "p3_log_txn_every_insert_appends_its_insert_leaf"
+   ],
+   [
+    "python/sever_db_p3/tests/test_sdk_p3.py",
+    "test_p3_sdk_reports_the_placement_as_the_groups_text_form"
+   ],
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_decode_scalar_rejects_values_at_or_above_the_group_order"
+   ],
+   [
+    "crates/sever-p3/src/tests.rs",
+    "p3_root_witnesses_remember_what_they_cosigned_across_restarts"
+   ],
+   [
+    "crates/sever-log/src/tests.rs",
+    "p3_log_checkpoint_cadence_is_every_10000_leaves"
+   ],
+   [
+    "crates/sever-engine/tests/errata_e2.rs",
+    "p2_errata_e2_a_pre_transaction_commits_on_its_own_before_the_deletion"
+   ],
+   [
+    "crates/sever-log/src/tests.rs",
+    "p3_log_old_epoch_keys_stay_resolvable"
+   ],
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_soundness_extractor_recovers_the_opening"
+   ],
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_record_and_group_commitments_match_the_model"
+   ]
+  ]
+ },
+ "findings": [
+  {
+   "kind": "SPEC_GAP",
+   "test": "test_insert::test_artefact_of_another_dimension_is_refused",
+   "section": "\u00a76.3, \u00a717",
+   "reason": "The test's pytest.raises(IntegrityViolation) was satisfied; the failure is the context-manager close() raising 'the engine stopped serving'. \u00a76.3 says a failed artefact check is rejected with IntegrityViolation, and the \u00a717 row for IntegrityViolation says 'the engine stops serving', but \u00a717 ties that row to invariant (\u00a721) failures and G-12 only says \u00a76.3 names IntegrityViolation. The spec does not say whether a rejected artefact stops the engine, nor whether close() raises after a stop (G-42 only says no checkpoint is written), so neither the engine nor the test is wrong.",
+   "output": "sever_db_p3_native.IntegrityViolation: integrity violation: \u00a717 the engine stopped serving\npaths = <conftest.Paths object at 0x7d74f09bca10>\n\n    @pytest.mark.req(\"SR-17-1\")\n    def test_artefact_of_another_dimension_is_refused(paths):\n        \"\"\"\u00a76.3: create_collection verifies `d`: the d = 384 artefact in a d = 16 database is\n        IntegrityViolation.\"\"\"\n        from conftest import LARGE, inputs\n    \n>       with open_db(paths) as db:\n             ^^^^^^^^^^^^^^\n\n/room/work/tests/test_insert.py:420: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/room/site/sever_db_p3/__init__.py:320: in __exit__\n    self.close()\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <sever_db_p3.Database object at 0x7d74f09e3a70>\n\n    def close(self) -> None:\n        \"\"\"Clean shutdown (a storage checkpoint) and release of the lock.\"\"\"\n>       self._e.close()\nE       sever_db_p3_native.IntegrityViolation: integrity violation: \u00a717 the engine stopped serving\n\n/room/site/sever_db_p3/__init__.py:309: IntegrityViolation",
+   "source": "\"\"\"\u00a715.1 insert: \u00a74.1 vector validation, \u00a73.2 record-ID rules, \u00a79.3 commitment check, \u00a79.8\nsignature check, \u00a715.1 retries, \u00a716.2 placement, \u00a717 errors (typed, and leaking nothing).\"\"\"\n\nfrom __future__ import annotations\n\nimport numpy as np\nimport pytest\nfrom hypothesis import HealthCheck, given, settings\nfrom hypothesis import strategies as st\n\nfrom conftest import (\n    frozen_id,\n    in_dist,\n    no_leak,\n    ood,\n    open_db,\n    put,\n    scratch,\n    sdk,\n    small_collection,\n    Paths,\n)\n\n\ndef expect_insert_error(db, cid, rid, x, user, exc):\n    \"\"\"The SDK may reject in prepare_insert or the engine in insert (\u00a716.2 leaves the split\n    open; NOTES.md): the pair as a whole must raise `exc`.\"\"\"\n    s = sdk()\n    with pytest.raises(exc) as ei:\n        req = s.prepare_insert(cid, rid, [float(v) for v in x], user)\n        db.insert(cid, req)\n    return ei.value\n\n\ndef axis_vector(a: float, d: int = 16) -> np.ndarray:\n    x = np.zeros(d, dtype=np.float32)\n    x[5] = np.float32(a)\n    return x\n\n\n# ---------------------------------------------------------------- \u00a74.1\n\n\n@pytest.mark.req(\"SR-4.1-0\")\n@pytest.mark.parametrize(\"dim\", [15, 17, 384, 1])\ndef test_wrong_dimension(paths, art_small, user, dim):\n    \"\"\"\u00a74.1 step 0: \"The input MUST have exactly d components. Otherwise reject with\n    WrongDimension.\" \u00a716.2: \"prepare_insert takes the dimension from the vector's length; the\n    engine refuses another (WrongDimension)\". The collection has d = 16 (artefact).\"\"\"\n    rng = np.random.default_rng(dim)\n    x = rng.standard_normal(dim)\n    x = (x / np.linalg.norm(x)).astype(np.float32)  # normalised: only the dimension is wrong\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        expect_insert_error(db, cid, \"doc-dim\", x, user, sdk().WrongDimension)\n        # Nothing was stored: the next accepted insert gets leaf index 0 (\u00a710.2).\n        _, rc = put(db, cid, \"doc-ok\", in_dist(art_small, 0, 1), user)\n        assert rc.database_lsn == 0\n\n\n@pytest.mark.req(\"SR-4.1-1\")\n@pytest.mark.parametrize(\"bad\", [float(\"nan\"), float(\"inf\"), float(\"-inf\")])\ndef test_non_finite(paths, art_small, user, bad):\n    \"\"\"\u00a74.1 step 1: \"Every component MUST be finite. Otherwise reject with NonFinite.\" Step 1\n    comes before step 3, so NonFinite (not NotNormalised) is the error.\"\"\"\n    x = in_dist(art_small, 1, 2).astype(np.float64)\n    x[3] = bad\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        expect_insert_error(db, cid, \"doc-nf\", x, user, sdk().NonFinite)\n\n\n@pytest.mark.req(\"SR-4.1-3\", \"SR-4.1-2\")\n@pytest.mark.parametrize(\n    \"a\",\n    [\n        1.0 + 9 * 2.0**-23,  # |norm \u2212 1| = 9\u00b72^\u221223 > 8\u00b72^\u221223\n        1.0 - 17 * 2.0**-24,  # |norm \u2212 1| = 8.5\u00b72^\u221223 (float32 spacing below 1.0 is 2^\u221224)\n        2.0,\n        0.5,\n        -(1.0 + 9 * 2.0**-23),\n    ],\n)\ndef test_not_normalised_just_outside(paths, user, a):\n    \"\"\"\u00a74.1 step 3: \"|norm \u2212 1| \u2264 8 \u00b7 2^\u221223 MUST hold. Otherwise reject with NotNormalised.\"\n    A single non-zero component a (exactly representable in float32) has norm |a| by step 2.\"\"\"\n    x = axis_vector(a)\n    assert float(x[5]) == a  # exact in float32, so the norm is exactly |a|\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        e = expect_insert_error(db, cid, \"doc-nn\", x, user, sdk().NotNormalised)\n        no_leak(e, \"doc-nn\")\n\n\n@pytest.mark.req(\"SR-4.1-3\", \"SR-4.1-2\")\n@pytest.mark.parametrize(\n    \"a\",\n    [\n        1.0,\n        1.0 + 8 * 2.0**-23,  # |norm \u2212 1| = 8\u00b72^\u221223 exactly: the bound is inclusive (\u2264)\n        1.0 - 16 * 2.0**-24,  # 1 \u2212 8\u00b72^\u221223 exactly\n        -(1.0 + 8 * 2.0**-23),\n    ],\n)\ndef test_normalised_at_the_tolerance_is_accepted(paths, user, a):\n    \"\"\"\u00a74.1 step 3: \"|norm \u2212 1| \u2264 8 \u00b7 2^\u221223\" \u2014 equality passes. \u00a74.2: x\u0303 = round(a\u00b72^24) \u2264 2^24 + 16,\n    which still fits i32, so the insert succeeds.\"\"\"\n    x = axis_vector(a)\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        _, rc = put(db, cid, \"doc-edge\", x, user)\n        assert rc.database_lsn == 0  # the first leaf of a new database (\u00a710.2)\n\n\n# ---------------------------------------------------------------- \u00a73.2\n\n\n@pytest.mark.req(\"SR-3.2-2\", \"SR-17-2\")\n@pytest.mark.parametrize(\n    \"rid\", [\"1\", \"007\", \"-3\", \"+3\", \"0\", \"000000000000000000000000000000001\", \"-0\", \"4242424242\"]\n)\ndef test_bare_integer_ids_rejected(paths, art_small, user, rid):\n    \"\"\"\u00a73.2 rule 2: \"It MUST NOT match ^[+-]?[0-9]+$ ... 1, 007, -3 and +3 are rejected\"; \u00a717:\n    InvalidRecordId, and the message must not contain the record ID.\"\"\"\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        e = expect_insert_error(db, cid, rid, in_dist(art_small, 0, 3), user, sdk().InvalidRecordId)\n        if len(rid) >= 4:  # long enough that an accidental match in the text is not plausible\n            no_leak(e, rid)\n\n\n@pytest.mark.req(\"SR-3.2-1\", \"SR-3.2-2\")\n@pytest.mark.parametrize(\n    \"rid\",\n    [\n        \"doc0\",\n        \"nq-1234\",\n        \"6f1c9a52-3b7e-4a43-9e1d-2a5f0c7b8d11\",\n        \"+\",\n        \"-\",\n        \"1.5\",\n        \"1e3\",\n        \" 1\",\n        \"0x1F\",\n        \"12a\",\n        \"a\",  # 1 byte: the minimum\n        \"x\" * 256,  # 256 bytes: the maximum\n        \"\u00e9\" * 128,  # 128 two-byte characters = 256 bytes\n        \"\u0663\u0664\",  # Arabic-Indic digits are not [0-9]\n    ],\n)\ndef test_valid_ids_accepted(paths, art_small, user, rid):\n    \"\"\"\u00a73.2 rule 1: \"A UTF-8 string of 1 to 256 bytes\"; rule 2 rejects only ^[+-]?[0-9]+$\n    (\"doc0, nq-1234 and UUIDs are accepted\").\"\"\"\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        _, rc = put(db, cid, rid, in_dist(art_small, 2, 4), user)\n        assert rc.database_lsn == 0\n        assert db.delete(cid, rid).outcome == \"deleted\"  # the same ID names the live record\n\n\n@pytest.mark.req(\"SR-3.2-1\", \"SR-17-2\")\n@pytest.mark.parametrize(\"rid\", [\"\", \"y\" * 257, \"\u00e9\" * 129, \"\u20ac\" * 86])\ndef test_id_length_out_of_range(paths, art_small, user, rid):\n    \"\"\"\u00a73.2 rule 1: 1 to 256 *bytes* (UTF-8): \"\" is 0 bytes, 'y'\u00d7257 is 257, '\u00e9'\u00d7129 is 258 and\n    '\u20ac'\u00d786 is 258 bytes, so each is InvalidRecordId (\u00a717).\"\"\"\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        e = expect_insert_error(db, cid, rid, in_dist(art_small, 3, 5), user, sdk().InvalidRecordId)\n        if rid:\n            no_leak(e, rid[:40])\n\n\n@pytest.mark.req(\"SR-3.2-1\")\ndef test_id_not_utf8_rejected(paths, art_small, user):\n    \"\"\"\u00a73.2 rule 1: a record ID is a UTF-8 string; a lone surrogate has no UTF-8 encoding, so it\n    is InvalidRecordId (\u00a717).\"\"\"\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        expect_insert_error(db, cid, \"doc\\ud800\", in_dist(art_small, 0, 6), user, sdk().InvalidRecordId)\n\n\n@settings(max_examples=25, deadline=None, suppress_health_check=list(HealthCheck))\n@given(\n    sign=st.sampled_from([\"\", \"+\", \"-\"]),\n    digits=st.text(alphabet=\"0123456789\", min_size=1, max_size=40),\n    letter=st.sampled_from([\"a\", \"Z\", \"_\", \".\", \"-x\", \" \"]),\n    pos=st.integers(min_value=0, max_value=41),\n)\n@pytest.mark.req(\"SR-3.2-2\")\ndef test_id_rule_property(art_small, sign, digits, letter, pos):\n    \"\"\"\u00a73.2 rule 2 as a property: every sign+digits string matches ^[+-]?[0-9]+$ and is rejected;\n    inserting one non-digit character anywhere makes it accepted.\"\"\"\n    s = sdk()\n    p = Paths()\n    user = s.UserKey.generate()\n    bare = sign + digits\n    pos = min(pos, len(bare))\n    mixed = bare[:pos] + letter + bare[pos:]\n    with open_db(p) as db:\n        cid = small_collection(db)\n        expect_insert_error(db, cid, bare, in_dist(art_small, 1, 7), user, s.InvalidRecordId)\n        _, rc = put(db, cid, mixed, in_dist(art_small, 1, 7), user)\n        assert rc.database_lsn == 0  # the rejected insert left no leaf (\u00a710.2)\n\n\n@pytest.mark.req(\"SR-3.2-3\", \"SR-17-2\")\ndef test_duplicate_live_id_with_new_request(paths, art_small, user):\n    \"\"\"\u00a73.2 rule 3: an ID \"MUST NOT equal the ID of a record currently live in the same\n    collection\"; \u00a717: DuplicateRecord { same_commitment } \u2014 a new request carries a new r_t, so a\n    new C_t (\u00a716.2): same_commitment is false and the SDK raises (it returns success only for\n    true, \u00a715.1).\"\"\"\n    s = sdk()\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        put(db, cid, \"dup-secret-id\", in_dist(art_small, 0, 8), user)\n        req2 = s.prepare_insert(cid, \"dup-secret-id\", [float(v) for v in in_dist(art_small, 0, 9)], user)\n        with pytest.raises(s.DuplicateRecord) as ei:\n            db.insert(cid, req2)\n        no_leak(ei.value, \"dup-secret-id\")\n        # No leaf for the refused insert: the next insert is leaf 1 (\u00a710.2).\n        _, rc = put(db, cid, \"other\", in_dist(art_small, 1, 9), user)\n        assert rc.database_lsn == 1\n\n\n@pytest.mark.req(\"SR-15.1-6\", \"SR-15.1-2\", \"SR-3.2-3\")\ndef test_retry_same_request_is_success_without_new_leaf(paths, art_small, user):\n    \"\"\"\u00a715.1: after a committed insert, \"a retry fails with DuplicateRecord { same_commitment:\n    true }, which the SDK treats as success\" (Receipt.retried). A retry adds no leaf, so the next\n    insert gets database_lsn 1 (leaf 0 is the first insert, \u00a710.2).\"\"\"\n    s = sdk()\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        req = s.prepare_insert(cid, \"doc-retry\", [float(v) for v in in_dist(art_small, 2, 10)], user)\n        first = db.insert(cid, req)\n        assert first.database_lsn == 0 and not first.retried\n        again = db.insert(cid, req)\n        assert again.retried is True\n        assert again.database_lsn is None and again.placement is None\n        _, rc = put(db, cid, \"doc-next\", in_dist(art_small, 2, 11), user)\n        assert rc.database_lsn == 1\n\n\n@pytest.mark.req(\"SR-3.2-3\")\ndef test_same_id_in_two_collections_is_allowed(paths, art_small, user):\n    \"\"\"\u00a73.2 rule 3 forbids a duplicate live ID \"in the same collection\" only; collections are\n    independent (\u00a73.1) and share one log (\u00a73.1), so the two inserts are leaves 0 and 1.\"\"\"\n    with open_db(paths) as db:\n        a = small_collection(db)\n        b = small_collection(db)\n        assert a != b\n        _, ra = put(db, a, \"shared-id\", in_dist(art_small, 0, 12), user)\n        _, rb = put(db, b, \"shared-id\", in_dist(art_small, 0, 12), user)\n        assert (ra.database_lsn, rb.database_lsn) == (0, 1)\n\n\n@pytest.mark.req(\"SR-3.2-4\")\ndef test_reinsert_after_delete_is_a_new_insert(paths, art_small, user):\n    \"\"\"\u00a73.2: \"A record ID MAY be inserted again after its record has been deleted. The new record\n    is a new insert, with a new log leaf.\" Leaves: insert 0, delete 1, insert 2.\"\"\"\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        _, r0 = put(db, cid, \"doc-again\", in_dist(art_small, 3, 13), user)\n        dl = db.delete(cid, \"doc-again\")\n        _, r2 = put(db, cid, \"doc-again\", in_dist(art_small, 3, 14), user)\n        assert (r0.database_lsn, dl.database_lsn, r2.database_lsn) == (0, 1, 2)\n\n\n@pytest.mark.req(\"SR-3.2-4\", \"SR-15.1-2\")\ndef test_old_request_after_delete_inserts_again(paths, art_small, user):\n    \"\"\"\u00a715.1 retry semantics apply only while the record is live (\u00a73.2 rule 3); after a deletion\n    the same request is a normal insert (\u00a73.2: \"MAY be inserted again\"), with a new leaf.\"\"\"\n    s = sdk()\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        req = s.prepare_insert(cid, \"doc-old\", [float(v) for v in in_dist(art_small, 0, 15)], user)\n        assert db.insert(cid, req).database_lsn == 0\n        assert db.delete(cid, \"doc-old\").database_lsn == 1\n        rc = db.insert(cid, req)\n        assert rc.retried is False and rc.database_lsn == 2\n\n\n# ---------------------------------------------------------------- \u00a79.3, \u00a79.8, \u00a717\n\n\n@pytest.mark.req(\"SR-15.1-3\", \"SR-17-4\", \"SR-9.8-1\")\ndef test_request_for_another_collection_is_bad_signature(paths, art_small, user):\n    \"\"\"\u00a716.2: \"The engine verifies the signature over the collection inserted into (\u00a715.1 step 2),\n    whatever collection the request names (DB-84).\" The signature covers collection A's id, so in\n    B the message DS",
+   "id": "F-1"
+  },
+  {
+   "kind": "SPEC_GAP",
+   "test": "test_insert::test_damaged_artefact_is_integrity_violation",
+   "section": "\u00a76.3, \u00a717",
+   "reason": "The bad-hash artefact was correctly rejected with IntegrityViolation as \u00a76.3 requires; the test then failed only because close() on exit raised after the engine stopped serving. The spec does not decide whether an artefact-check IntegrityViolation counts as the \u00a717 'stops serving' kind, nor what close() does after a stop (G-42 requires only that no checkpoint be written). The test assumes a clean close that the spec does not promise, and the engine's behaviour is a permitted reading, so this is a gap.",
+   "output": "sever_db_p3_native.IntegrityViolation: integrity violation: \u00a717 the engine stopped serving\npaths = <conftest.Paths object at 0x7d74f09bf590>, user = UserKey(<secret>)\n\n    @pytest.mark.req(\"SR-17-1\")\n    def test_damaged_artefact_is_integrity_violation(paths, user):\n        \"\"\"\u00a76.3: \"create_collection MUST verify sha256_artefact, d, and that P has finite entries; a\n        failed check is rejected with IntegrityViolation naming the check\". One flipped byte inside the\n        centroids breaks the trailing SHA-256; no collection is created.\"\"\"\n        import os\n    \n        from conftest import SMALL, inputs\n    \n        raw = bytearray(open(inputs(SMALL), \"rb\").read())\n        raw[200] ^= 0x01\n        bad = os.path.join(paths.root, \"bad.svp\")\n        open(bad, \"wb\").write(bytes(raw))\n>       with open_db(paths) as db:\n             ^^^^^^^^^^^^^^\n\n/room/work/tests/test_insert.py:409: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/room/site/sever_db_p3/__init__.py:320: in __exit__\n    self.close()\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <sever_db_p3.Database object at 0x7d74f09e30c0>\n\n    def close(self) -> None:\n        \"\"\"Clean shutdown (a storage checkpoint) and release of the lock.\"\"\"\n>       self._e.close()\nE       sever_db_p3_native.IntegrityViolation: integrity violation: \u00a717 the engine stopped serving\n\n/room/site/sever_db_p3/__init__.py:309: IntegrityViolation",
+   "source": "\"\"\"\u00a715.1 insert: \u00a74.1 vector validation, \u00a73.2 record-ID rules, \u00a79.3 commitment check, \u00a79.8\nsignature check, \u00a715.1 retries, \u00a716.2 placement, \u00a717 errors (typed, and leaking nothing).\"\"\"\n\nfrom __future__ import annotations\n\nimport numpy as np\nimport pytest\nfrom hypothesis import HealthCheck, given, settings\nfrom hypothesis import strategies as st\n\nfrom conftest import (\n    frozen_id,\n    in_dist,\n    no_leak,\n    ood,\n    open_db,\n    put,\n    scratch,\n    sdk,\n    small_collection,\n    Paths,\n)\n\n\ndef expect_insert_error(db, cid, rid, x, user, exc):\n    \"\"\"The SDK may reject in prepare_insert or the engine in insert (\u00a716.2 leaves the split\n    open; NOTES.md): the pair as a whole must raise `exc`.\"\"\"\n    s = sdk()\n    with pytest.raises(exc) as ei:\n        req = s.prepare_insert(cid, rid, [float(v) for v in x], user)\n        db.insert(cid, req)\n    return ei.value\n\n\ndef axis_vector(a: float, d: int = 16) -> np.ndarray:\n    x = np.zeros(d, dtype=np.float32)\n    x[5] = np.float32(a)\n    return x\n\n\n# ---------------------------------------------------------------- \u00a74.1\n\n\n@pytest.mark.req(\"SR-4.1-0\")\n@pytest.mark.parametrize(\"dim\", [15, 17, 384, 1])\ndef test_wrong_dimension(paths, art_small, user, dim):\n    \"\"\"\u00a74.1 step 0: \"The input MUST have exactly d components. Otherwise reject with\n    WrongDimension.\" \u00a716.2: \"prepare_insert takes the dimension from the vector's length; the\n    engine refuses another (WrongDimension)\". The collection has d = 16 (artefact).\"\"\"\n    rng = np.random.default_rng(dim)\n    x = rng.standard_normal(dim)\n    x = (x / np.linalg.norm(x)).astype(np.float32)  # normalised: only the dimension is wrong\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        expect_insert_error(db, cid, \"doc-dim\", x, user, sdk().WrongDimension)\n        # Nothing was stored: the next accepted insert gets leaf index 0 (\u00a710.2).\n        _, rc = put(db, cid, \"doc-ok\", in_dist(art_small, 0, 1), user)\n        assert rc.database_lsn == 0\n\n\n@pytest.mark.req(\"SR-4.1-1\")\n@pytest.mark.parametrize(\"bad\", [float(\"nan\"), float(\"inf\"), float(\"-inf\")])\ndef test_non_finite(paths, art_small, user, bad):\n    \"\"\"\u00a74.1 step 1: \"Every component MUST be finite. Otherwise reject with NonFinite.\" Step 1\n    comes before step 3, so NonFinite (not NotNormalised) is the error.\"\"\"\n    x = in_dist(art_small, 1, 2).astype(np.float64)\n    x[3] = bad\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        expect_insert_error(db, cid, \"doc-nf\", x, user, sdk().NonFinite)\n\n\n@pytest.mark.req(\"SR-4.1-3\", \"SR-4.1-2\")\n@pytest.mark.parametrize(\n    \"a\",\n    [\n        1.0 + 9 * 2.0**-23,  # |norm \u2212 1| = 9\u00b72^\u221223 > 8\u00b72^\u221223\n        1.0 - 17 * 2.0**-24,  # |norm \u2212 1| = 8.5\u00b72^\u221223 (float32 spacing below 1.0 is 2^\u221224)\n        2.0,\n        0.5,\n        -(1.0 + 9 * 2.0**-23),\n    ],\n)\ndef test_not_normalised_just_outside(paths, user, a):\n    \"\"\"\u00a74.1 step 3: \"|norm \u2212 1| \u2264 8 \u00b7 2^\u221223 MUST hold. Otherwise reject with NotNormalised.\"\n    A single non-zero component a (exactly representable in float32) has norm |a| by step 2.\"\"\"\n    x = axis_vector(a)\n    assert float(x[5]) == a  # exact in float32, so the norm is exactly |a|\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        e = expect_insert_error(db, cid, \"doc-nn\", x, user, sdk().NotNormalised)\n        no_leak(e, \"doc-nn\")\n\n\n@pytest.mark.req(\"SR-4.1-3\", \"SR-4.1-2\")\n@pytest.mark.parametrize(\n    \"a\",\n    [\n        1.0,\n        1.0 + 8 * 2.0**-23,  # |norm \u2212 1| = 8\u00b72^\u221223 exactly: the bound is inclusive (\u2264)\n        1.0 - 16 * 2.0**-24,  # 1 \u2212 8\u00b72^\u221223 exactly\n        -(1.0 + 8 * 2.0**-23),\n    ],\n)\ndef test_normalised_at_the_tolerance_is_accepted(paths, user, a):\n    \"\"\"\u00a74.1 step 3: \"|norm \u2212 1| \u2264 8 \u00b7 2^\u221223\" \u2014 equality passes. \u00a74.2: x\u0303 = round(a\u00b72^24) \u2264 2^24 + 16,\n    which still fits i32, so the insert succeeds.\"\"\"\n    x = axis_vector(a)\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        _, rc = put(db, cid, \"doc-edge\", x, user)\n        assert rc.database_lsn == 0  # the first leaf of a new database (\u00a710.2)\n\n\n# ---------------------------------------------------------------- \u00a73.2\n\n\n@pytest.mark.req(\"SR-3.2-2\", \"SR-17-2\")\n@pytest.mark.parametrize(\n    \"rid\", [\"1\", \"007\", \"-3\", \"+3\", \"0\", \"000000000000000000000000000000001\", \"-0\", \"4242424242\"]\n)\ndef test_bare_integer_ids_rejected(paths, art_small, user, rid):\n    \"\"\"\u00a73.2 rule 2: \"It MUST NOT match ^[+-]?[0-9]+$ ... 1, 007, -3 and +3 are rejected\"; \u00a717:\n    InvalidRecordId, and the message must not contain the record ID.\"\"\"\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        e = expect_insert_error(db, cid, rid, in_dist(art_small, 0, 3), user, sdk().InvalidRecordId)\n        if len(rid) >= 4:  # long enough that an accidental match in the text is not plausible\n            no_leak(e, rid)\n\n\n@pytest.mark.req(\"SR-3.2-1\", \"SR-3.2-2\")\n@pytest.mark.parametrize(\n    \"rid\",\n    [\n        \"doc0\",\n        \"nq-1234\",\n        \"6f1c9a52-3b7e-4a43-9e1d-2a5f0c7b8d11\",\n        \"+\",\n        \"-\",\n        \"1.5\",\n        \"1e3\",\n        \" 1\",\n        \"0x1F\",\n        \"12a\",\n        \"a\",  # 1 byte: the minimum\n        \"x\" * 256,  # 256 bytes: the maximum\n        \"\u00e9\" * 128,  # 128 two-byte characters = 256 bytes\n        \"\u0663\u0664\",  # Arabic-Indic digits are not [0-9]\n    ],\n)\ndef test_valid_ids_accepted(paths, art_small, user, rid):\n    \"\"\"\u00a73.2 rule 1: \"A UTF-8 string of 1 to 256 bytes\"; rule 2 rejects only ^[+-]?[0-9]+$\n    (\"doc0, nq-1234 and UUIDs are accepted\").\"\"\"\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        _, rc = put(db, cid, rid, in_dist(art_small, 2, 4), user)\n        assert rc.database_lsn == 0\n        assert db.delete(cid, rid).outcome == \"deleted\"  # the same ID names the live record\n\n\n@pytest.mark.req(\"SR-3.2-1\", \"SR-17-2\")\n@pytest.mark.parametrize(\"rid\", [\"\", \"y\" * 257, \"\u00e9\" * 129, \"\u20ac\" * 86])\ndef test_id_length_out_of_range(paths, art_small, user, rid):\n    \"\"\"\u00a73.2 rule 1: 1 to 256 *bytes* (UTF-8): \"\" is 0 bytes, 'y'\u00d7257 is 257, '\u00e9'\u00d7129 is 258 and\n    '\u20ac'\u00d786 is 258 bytes, so each is InvalidRecordId (\u00a717).\"\"\"\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        e = expect_insert_error(db, cid, rid, in_dist(art_small, 3, 5), user, sdk().InvalidRecordId)\n        if rid:\n            no_leak(e, rid[:40])\n\n\n@pytest.mark.req(\"SR-3.2-1\")\ndef test_id_not_utf8_rejected(paths, art_small, user):\n    \"\"\"\u00a73.2 rule 1: a record ID is a UTF-8 string; a lone surrogate has no UTF-8 encoding, so it\n    is InvalidRecordId (\u00a717).\"\"\"\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        expect_insert_error(db, cid, \"doc\\ud800\", in_dist(art_small, 0, 6), user, sdk().InvalidRecordId)\n\n\n@settings(max_examples=25, deadline=None, suppress_health_check=list(HealthCheck))\n@given(\n    sign=st.sampled_from([\"\", \"+\", \"-\"]),\n    digits=st.text(alphabet=\"0123456789\", min_size=1, max_size=40),\n    letter=st.sampled_from([\"a\", \"Z\", \"_\", \".\", \"-x\", \" \"]),\n    pos=st.integers(min_value=0, max_value=41),\n)\n@pytest.mark.req(\"SR-3.2-2\")\ndef test_id_rule_property(art_small, sign, digits, letter, pos):\n    \"\"\"\u00a73.2 rule 2 as a property: every sign+digits string matches ^[+-]?[0-9]+$ and is rejected;\n    inserting one non-digit character anywhere makes it accepted.\"\"\"\n    s = sdk()\n    p = Paths()\n    user = s.UserKey.generate()\n    bare = sign + digits\n    pos = min(pos, len(bare))\n    mixed = bare[:pos] + letter + bare[pos:]\n    with open_db(p) as db:\n        cid = small_collection(db)\n        expect_insert_error(db, cid, bare, in_dist(art_small, 1, 7), user, s.InvalidRecordId)\n        _, rc = put(db, cid, mixed, in_dist(art_small, 1, 7), user)\n        assert rc.database_lsn == 0  # the rejected insert left no leaf (\u00a710.2)\n\n\n@pytest.mark.req(\"SR-3.2-3\", \"SR-17-2\")\ndef test_duplicate_live_id_with_new_request(paths, art_small, user):\n    \"\"\"\u00a73.2 rule 3: an ID \"MUST NOT equal the ID of a record currently live in the same\n    collection\"; \u00a717: DuplicateRecord { same_commitment } \u2014 a new request carries a new r_t, so a\n    new C_t (\u00a716.2): same_commitment is false and the SDK raises (it returns success only for\n    true, \u00a715.1).\"\"\"\n    s = sdk()\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        put(db, cid, \"dup-secret-id\", in_dist(art_small, 0, 8), user)\n        req2 = s.prepare_insert(cid, \"dup-secret-id\", [float(v) for v in in_dist(art_small, 0, 9)], user)\n        with pytest.raises(s.DuplicateRecord) as ei:\n            db.insert(cid, req2)\n        no_leak(ei.value, \"dup-secret-id\")\n        # No leaf for the refused insert: the next insert is leaf 1 (\u00a710.2).\n        _, rc = put(db, cid, \"other\", in_dist(art_small, 1, 9), user)\n        assert rc.database_lsn == 1\n\n\n@pytest.mark.req(\"SR-15.1-6\", \"SR-15.1-2\", \"SR-3.2-3\")\ndef test_retry_same_request_is_success_without_new_leaf(paths, art_small, user):\n    \"\"\"\u00a715.1: after a committed insert, \"a retry fails with DuplicateRecord { same_commitment:\n    true }, which the SDK treats as success\" (Receipt.retried). A retry adds no leaf, so the next\n    insert gets database_lsn 1 (leaf 0 is the first insert, \u00a710.2).\"\"\"\n    s = sdk()\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        req = s.prepare_insert(cid, \"doc-retry\", [float(v) for v in in_dist(art_small, 2, 10)], user)\n        first = db.insert(cid, req)\n        assert first.database_lsn == 0 and not first.retried\n        again = db.insert(cid, req)\n        assert again.retried is True\n        assert again.database_lsn is None and again.placement is None\n        _, rc = put(db, cid, \"doc-next\", in_dist(art_small, 2, 11), user)\n        assert rc.database_lsn == 1\n\n\n@pytest.mark.req(\"SR-3.2-3\")\ndef test_same_id_in_two_collections_is_allowed(paths, art_small, user):\n    \"\"\"\u00a73.2 rule 3 forbids a duplicate live ID \"in the same collection\" only; collections are\n    independent (\u00a73.1) and share one log (\u00a73.1), so the two inserts are leaves 0 and 1.\"\"\"\n    with open_db(paths) as db:\n        a = small_collection(db)\n        b = small_collection(db)\n        assert a != b\n        _, ra = put(db, a, \"shared-id\", in_dist(art_small, 0, 12), user)\n        _, rb = put(db, b, \"shared-id\", in_dist(art_small, 0, 12), user)\n        assert (ra.database_lsn, rb.database_lsn) == (0, 1)\n\n\n@pytest.mark.req(\"SR-3.2-4\")\ndef test_reinsert_after_delete_is_a_new_insert(paths, art_small, user):\n    \"\"\"\u00a73.2: \"A record ID MAY be inserted again after its record has been deleted. The new record\n    is a new insert, with a new log leaf.\" Leaves: insert 0, delete 1, insert 2.\"\"\"\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        _, r0 = put(db, cid, \"doc-again\", in_dist(art_small, 3, 13), user)\n        dl = db.delete(cid, \"doc-again\")\n        _, r2 = put(db, cid, \"doc-again\", in_dist(art_small, 3, 14), user)\n        assert (r0.database_lsn, dl.database_lsn, r2.database_lsn) == (0, 1, 2)\n\n\n@pytest.mark.req(\"SR-3.2-4\", \"SR-15.1-2\")\ndef test_old_request_after_delete_inserts_again(paths, art_small, user):\n    \"\"\"\u00a715.1 retry semantics apply only while the record is live (\u00a73.2 rule 3); after a deletion\n    the same request is a normal insert (\u00a73.2: \"MAY be inserted again\"), with a new leaf.\"\"\"\n    s = sdk()\n    with open_db(paths) as db:\n        cid = small_collection(db)\n        req = s.prepare_insert(cid, \"doc-old\", [float(v) for v in in_dist(art_small, 0, 15)], user)\n        assert db.insert(cid, req).database_lsn == 0\n        assert db.delete(cid, \"doc-old\").database_lsn == 1\n        rc = db.insert(cid, req)\n        assert rc.retried is False and rc.database_lsn == 2\n\n\n# ---------------------------------------------------------------- \u00a79.3, \u00a79.8, \u00a717\n\n\n@pytest.mark.req(\"SR-15.1-3\", \"SR-17-4\", \"SR-9.8-1\")\ndef test_request_for_another_collection_is_bad_signature(paths, art_small, user):\n    \"\"\"\u00a716.2: \"The engine verifies the signature over the collection inserted into (\u00a715.1 step 2),\n    whatever collection the request names (DB-84).\" The signature covers collection A's id, so in\n    B the message DS",
+   "id": "F-2"
+  }
+ ],
+ "sessions": [
+  {
+   "role": "tester",
+   "name": "1-tester",
+   "model": "opus",
+   "rc": 0,
+   "cost_usd": 5.464266599999999,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261101T130254Z-p3-5fee0df5/logs/1-tester.json"
+  },
+  {
+   "role": "triage",
+   "name": "4-triage",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.0775021,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261101T130254Z-p3-5fee0df5/logs/4-triage.json"
+  },
+  {
+   "role": "oracle",
+   "name": "8-oracle",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.3838304999999999,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261101T130254Z-p3-5fee0df5/logs/8-oracle.json"
+  }
+ ]
+}
