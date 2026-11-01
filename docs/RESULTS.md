@@ -92,13 +92,14 @@ Each finished run in [the run ledger](../docs/RUN_LEDGER.jsonl), grouped by part
 | 2026-10-19 03:32 | `p3-replay` | nq-100k, seeds 42 | P3-T5 | `30e4497` | PASS | [p3-replay-nq-100k-20261019T033241Z.json](../results/p3-replay-nq-100k-20261019T033241Z.json) |
 | 2026-10-19 01:46 | `p3-crash` | nq-10k, seeds 42 123 777 2024 9999 | P3-T4 | `30e4497` | PASS | [p3-crash-nq-10k-20261019T014621Z.json](../results/p3-crash-nq-10k-20261019T014621Z.json) |
 
-## Part 4: The Erasure (26 runs)
+## Part 4: The Erasure (27 runs)
 
 > P4-T10 (`p4-mutants`, 31 Oct 2026) is recorded as FAIL on one untriaged timeout; every score clears 0.90 and the owner accepts it as passed (DB-114).
 > P4-T15 (EX-8, a measure) did not complete: out of memory at 10.39 GB after 6 h 11 min, so it has no result file (DB-114).
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-11-01 19:51 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `36291ae` | PASS | [fair-20261101T192712Z-p4-36291aec.json](../results/fair-20261101T192712Z-p4-36291aec.json) |
 | 2026-11-01 19:23 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `587aa09` | FAIL | [fair-20261101T175539Z-p4-587aa09b.json](../results/fair-20261101T175539Z-p4-587aa09b.json) |
 | 2026-11-01 17:50 | `p4-mutants` | – | P4-T10 mutants | `77ca977` | PASS | [p4-mutants-20261101T175053Z.json](../results/p4-mutants-20261101T175053Z.json) |
 | 2026-11-01 14:50 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `a304014` | FAIL | [fair-20261101T142251Z-p4-a3040146.json](../results/fair-20261101T142251Z-p4-a3040146.json) |

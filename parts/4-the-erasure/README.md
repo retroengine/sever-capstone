@@ -63,7 +63,7 @@ The latest outcome of each step:
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
-| 2026-11-01 19:23 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `587aa09` | FAIL | [fair-20261101T175539Z-p4-587aa09b.json](../../results/fair-20261101T175539Z-p4-587aa09b.json) |
+| 2026-11-01 19:51 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `36291ae` | PASS | [fair-20261101T192712Z-p4-36291aec.json](../../results/fair-20261101T192712Z-p4-36291aec.json) |
 | 2026-11-01 17:50 | `p4-mutants` | – | P4-T10 mutants | `77ca977` | PASS | [p4-mutants-20261101T175053Z.json](../../results/p4-mutants-20261101T175053Z.json) |
 | 2026-11-01 09:35 | `p4-replay` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-3) | `94d0b24` | PASS | [p4-replay-nq-10k-20261101T093555Z.json](../../results/p4-replay-nq-10k-20261101T093555Z.json) |
 | 2026-11-01 09:08 | `p4-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-4) | `94d0b24` | PASS | [p4-attacks-nq-10k-20261101T090800Z.json](../../results/p4-attacks-nq-10k-20261101T090800Z.json) |
@@ -79,10 +79,11 @@ The latest outcome of each step:
 | 2026-10-30 06:32 | `p4-fuzz` | – | P4-T10 fuzz | `7c445b5` | PASS | [p4-fuzz-20261030T063228Z.json](../../results/p4-fuzz-20261030T063228Z.json) |
 | 2026-10-20 09:10 | `fair dry-run` | – | fair testing (docs/FAIR_TESTING.md) | `1954b93` | DRY | [fair-20261020T090255Z-p4-1954b937-dry.json](../../results/fair-20261020T090255Z-p4-1954b937-dry.json) |
 
-Every run of this part, newest first (26; the full record is [the run ledger](../../docs/RUN_LEDGER.jsonl)):
+Every run of this part, newest first (27; the full record is [the run ledger](../../docs/RUN_LEDGER.jsonl)):
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-11-01 19:51 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `36291ae` | PASS | [fair-20261101T192712Z-p4-36291aec.json](../../results/fair-20261101T192712Z-p4-36291aec.json) |
 | 2026-11-01 19:23 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `587aa09` | FAIL | [fair-20261101T175539Z-p4-587aa09b.json](../../results/fair-20261101T175539Z-p4-587aa09b.json) |
 | 2026-11-01 17:50 | `p4-mutants` | – | P4-T10 mutants | `77ca977` | PASS | [p4-mutants-20261101T175053Z.json](../../results/p4-mutants-20261101T175053Z.json) |
 | 2026-11-01 14:50 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `a304014` | FAIL | [fair-20261101T142251Z-p4-a3040146.json](../../results/fair-20261101T142251Z-p4-a3040146.json) |

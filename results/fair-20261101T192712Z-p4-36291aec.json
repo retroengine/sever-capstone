@@ -1,0 +1,170 @@
+{
+ "run_id": "20261101T192712Z-p4-36291aec",
+ "part": 4,
+ "module": null,
+ "commit": "36291aecc497bc49ab3721c85be06ae44830ebc2",
+ "outcome": "PASS",
+ "config_sha256": "231bb3fb123fee16c62fcc8cfa97b28811a5dbafccced9792d478ac1a49836ca",
+ "seal_digest": "a040ebdc54257ab79a981bd355b770279f02f123a18c2e49a9e5f12277d1dd14",
+ "owned_sha256": "b10f7f8cd505a81507e649c625f47cc1750a39964d53983924ef22d2d1d02fb5",
+ "rows": [
+  {
+   "check": "own suite green on the unpatched build",
+   "value": "True",
+   "ok": true
+  },
+  {
+   "check": "engine bugs (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "spec gaps (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "test gaps (escaped real bugs)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "oracle disagreements",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "planted bugs: cargo-mutants gate PASS in the ledger (DB-75)",
+   "value": "77ca977027a8",
+   "ok": true
+  },
+  {
+   "check": "judge outputs complete",
+   "value": "yes",
+   "ok": true
+  }
+ ],
+ "tests": 101,
+ "failing": 0,
+ "triage": {},
+ "planted": [],
+ "escapes": {},
+ "oracle": {
+  "pool": 60,
+  "verdicts": {
+   "01.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a712.8, \u00a712.9, DB-93(5)",
+    "reason": "The spec fixes that a probe which cannot answer fails its check closed (overview DB-93 item 5), so both calls must refuse with PlatformUnsafe. It names only '\u00a712.8 core dumps' and '\u00a712.8 mlock' as check strings. The strings '\u00a712.8 swap not encrypted' and '\u00a712.9 data filesystem not ext4 or XFS' come from a register (registers_p4.yaml) that is not in the spec, so the expected values cannot be derived from it."
+   },
+   "02.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.4, \u00a714.7",
+    "reason": "Active version is 1 and slot 0 holds it. Phase A is fsynced before commit, so the version-2 orphan in slot 1 survives the crash. Recovery keeps slot 0 and erases every other slot of the domain, which gives erase [(0,1)]. Corrupting a byte of the active slot makes it fail its CRC, so no valid slot holds v and startup must refuse (INV-14)."
+   },
+   "03.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a713.4, \u00a714.7",
+    "reason": "Rows with no valid active slot refuse, and rows with one active slot keep it and erase the other, which follows from the recovery rule. The meanings of the letters s, n and t come from a helper (slot_of) that is not shown. The ('a','a') row, with both slots holding the active version, is expected to refuse, but the spec does not say what happens when two slots hold v. That row cannot be derived."
+   },
+   "04.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.3",
+    "reason": "Records joining a domain never rotate anything and are wrapped under the destination's current keys. So next_version without a departure returns the same version, no rotation is staged, and the committed block keeps its bucket keys and versions after the join."
+   },
+   "05.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.1",
+    "reason": "b(t) = scrambled_id[0] mod 64. 0x00\u21920, 0x01\u21921, 0x3F\u219263, 0x40\u21920, 0x85 (133)\u21925 and 0xFF (255)\u219263 are all correct."
+   },
+   "06.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.4",
+    "reason": "Only the live domain is active. Every non-zero slot of the two other domains belongs to no domain and must be erased: pair 1 slots 0 and 1, and pair 2 slot 1. Slots that are already zero need no erase, and the live domain's other slot is already zero. Only the live domain's key is kept. The meaning of the letters in slot_of is not visible, but any reading consistent with the other tests gives this result."
+   },
+   "07.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a714.4, \u00a714.5, \u00a713.2, App. A",
+    "reason": "The wrapped key is 12+32+16 = 60 bytes. The bucket block is 64\u00d7(8+60) = 4,352 bytes and starts with the u64be bucket_version. Decoding under another group key version must fail because the AD includes it. A 3,104-byte plaintext sealed gives 3,104+28 = 3,132 bytes."
+   },
+   "08.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a712.8, DB-93(4)",
+    "reason": "Turning core dumps off runs first (DB-93 item 4), and a failure refuses with 'core dumps', a string the spec names. Only allow_unsafe_memory overrides it, so allow_unsafe_fs still refuses. With the memory flag the start succeeds and records that single override."
+   },
+   "09.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.2",
+    "reason": "The AD of a slot payload is collection_id \u2016 scrambled_id \u2016 0x01 and of a passage 0x02, which matches the expected bytes. Opening under the other kind's AD or with another scrambled_id must fail, as the AD binds the ciphertext to its owner and kind."
+   },
+   "10.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.2, \u00a713.3",
+    "reason": "Record-level ciphertexts carry no group, so a flush moves a record without decrypting the payload, and the same sealed payload opens in the new group. The wrapped record key's AD includes the group_id, and the encryption uses a random nonce, so the re-wrapped envelope differs from the old one."
+   }
+  },
+  "picked": [
+   [
+    "crates/sever-platform/src/tests.rs",
+    "p4_platform_a_probe_that_cannot_answer_fails_closed"
+   ],
+   [
+    "crates/sever-keys/src/tests.rs",
+    "p4_keys_recovery_from_a_file_after_a_crash_in_phase_a"
+   ],
+   [
+    "crates/sever-keys/src/tests.rs",
+    "p4_keys_recovery_rule_for_every_combination_of_slot_states"
+   ],
+   [
+    "crates/sever-seal/src/tests.rs",
+    "p4_seal_joining_a_domain_rotates_nothing"
+   ],
+   [
+    "crates/sever-keys/src/tests.rs",
+    "p4_keys_a_bucket_is_the_first_scrambled_byte_mod_64"
+   ],
+   [
+    "crates/sever-keys/src/tests.rs",
+    "p4_keys_recovery_erases_the_slots_of_no_domain"
+   ],
+   [
+    "crates/sever-seal/src/tests.rs",
+    "p4_seal_envelope_block_and_accumulator_have_the_section_14_sizes"
+   ],
+   [
+    "crates/sever-platform/src/tests.rs",
+    "p4_platform_startup_turns_core_dumps_off_before_anything_else"
+   ],
+   [
+    "crates/sever-seal/src/tests.rs",
+    "p4_seal_record_associated_data_is_section_13_2_rows_1_and_2"
+   ],
+   [
+    "crates/sever-seal/src/tests.rs",
+    "p4_seal_a_flush_moves_a_record_without_touching_its_payload_ciphertext"
+   ]
+  ]
+ },
+ "findings": [],
+ "sessions": [
+  {
+   "role": "tester",
+   "name": "1-tester",
+   "model": "opus",
+   "rc": 0,
+   "cost_usd": 3.4492038000000007,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261101T192712Z-p4-36291aec/logs/1-tester.json"
+  },
+  {
+   "role": "oracle",
+   "name": "8-oracle",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.2593777,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261101T192712Z-p4-36291aec/logs/8-oracle.json"
+  }
+ ]
+}
