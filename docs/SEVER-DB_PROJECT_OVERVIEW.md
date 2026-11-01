@@ -1060,6 +1060,16 @@ a later crate with the same name (two crates in one workspace cannot both produc
 
 **What ran (1 November).** On the final commit 94d0b24, `scripts/hpc/rerun-final.sh` passed p3-checks, p4-checks, p3-coverage, p4-coverage, p3-spikes, p3-attacks, p4-attacks and p4-replay (`traces/final-*.log`, the run ledger). p4-crash-a ran 1.9 h, about a third of its range (seeds 42, 123, 777; about 4,900 crash points each; 0 mismatches, 0 bad certificates), before the owner stopped the rerun: the BH-7 check reads every certificate at each recovery, which made the crash campaigns about three times slower, and the remaining steps would have taken about two more days. **Not rerun on the final commit:** the rest of p4-crash-a, p4-crash-b, p3-mutants, p4-mutants, p3-replay and p3-crash; their last results are on 7c3c313 (DB-114), before the November changes. The changed code is covered by the full suites above and the red-first regression tests. The fair runs and the freezes follow on 94d0b24. Making the certificate check cheaper is left for after v1.0.
 
+#### DB-117 — Every IntegrityViolation stops the engine, and close() after a stop fails (1 November 2026)
+
+**Decision.** §17's `IntegrityViolation` row now says that any `IntegrityViolation`, including the artefact check of §6.3, stops the engine serving, and that each later call, `close()` included, fails with `IntegrityViolation` (`§17 the engine stopped serving`) and writes nothing (G-52).
+
+**Why.** The Part 3 fair run `20261101T130254Z-p3-5fee0df5` failed on two spec gaps and no engine bug (F-1, F-2 in `docs/audit/FAIRNESS_P3.md`): the spec did not decide whether a refused artefact stops the engine or what `close()` does then. G-42 already says no later call is served and closing writes no checkpoint; this states it for every check. The engines of Parts 2–4 already behave so, so no code changes.
+
+**Rejected.** Letting `close()` succeed silently after a stop: a caller would not learn that the engine had stopped, and G-42 forbids the closing checkpoint anyway.
+
+**Consequence.** A fresh Part 3 fair run (FT-9); Part 4's run sees the same text.
+
 #### DB-115 — Each part gets a page; nothing moves (31 October 2026)
 
 **Decision.** Three generated navigation files, written by `scripts/index.py`:

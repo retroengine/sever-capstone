@@ -1660,7 +1660,7 @@ database writes no storage checkpoint over the state the violation was found in 
 | `UnknownCollection` | No such collection |
 | `SeededNonceForbidden` | Any attempt to supply randomness to proof generation |
 | `PlatformUnsafe` | A §12.8 or §12.9 check fails |
-| `IntegrityViolation` | Any invariant (§21) fails, or the delete-time `C_t` check (§15.3 step 2) fails, or four witnesses refuse a deletion's log checkpoint (DB-82); the engine stops serving |
+| `IntegrityViolation` | Any invariant (§21) fails, or the delete-time `C_t` check (§15.3 step 2) fails, or four witnesses refuse a deletion's log checkpoint (DB-82), or any other check names it (for example the artefact check of §6.3); every `IntegrityViolation` stops the engine serving: each later call, `close()` included, fails with `IntegrityViolation` (`§17 the engine stopped serving`) and writes nothing (G-42, G-52) |
 | `DurabilityFailure` | `fsync` failed; the process aborts |
 
 ---

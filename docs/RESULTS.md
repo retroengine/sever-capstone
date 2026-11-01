@@ -52,10 +52,11 @@ Each finished run in [the run ledger](../docs/RUN_LEDGER.jsonl), grouped by part
 | 2026-10-07 19:43 | `p2-fuzz` | – | P2-T6 | `893f71d` | FAIL | [p2-fuzz-20261007T194333Z.json](../results/p2-fuzz-20261007T194333Z.json) |
 | 2026-10-07 19:26 | `p2-crash` | nq-10k, seeds 42 | P2-T1, P2-T2, P2-T3 | `f7d6362` | PASS | [p2-crash-nq-10k-20261007T192621Z.json](../results/p2-crash-nq-10k-20261007T192621Z.json) |
 
-## Part 3: The Receipt (33 runs)
+## Part 3: The Receipt (34 runs)
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-11-01 13:39 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `5fee0df` | FAIL | [fair-20261101T130254Z-p3-5fee0df5.json](../results/fair-20261101T130254Z-p3-5fee0df5.json) |
 | 2026-11-01 08:57 | `p3-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P3-T1, P3-T2 | `94d0b24` | PASS | [p3-attacks-nq-10k-20261101T085746Z.json](../results/p3-attacks-nq-10k-20261101T085746Z.json) |
 | 2026-11-01 02:32 | `p3-spikes` | – | Part 3 proof spike (Build 3-4 §1.11) | `94d0b24` | PASS | [p3-spikes-20261101T023213Z.json](../results/p3-spikes-20261101T023213Z.json) |
 | 2026-11-01 02:26 | `p3-coverage` | – | P3-T9 coverage | `94d0b24` | PASS | [p3-coverage-20261101T022656Z.json](../results/p3-coverage-20261101T022656Z.json) |
