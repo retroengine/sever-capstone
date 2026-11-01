@@ -993,7 +993,11 @@ storage checkpoint directories, §15.6; overview DB-65). There are two backends:
   has no committed transaction behind it (its `COMMIT` was damaged after the leaf was stored,
   §10.5), and recovery refuses with `IntegrityViolation` (INV-15) rather than open a log that
   disagrees with the records. When the WAL holds no committed log leaf, the stores are the record
-  (G-39).
+  (G-39). A store's last record that is cut short or fails its CRC is indistinguishable from an
+  append a crash tore, so it is dropped as one (§14.8); damage confined to that last record after a
+  storage checkpoint is therefore not always seen. Damage anywhere before it, a lost or emptied store
+  file, and a checkpoint that a stored certificate names but the log lacks are `IntegrityViolation`
+  (G-51).
 - The WAL MUST NOT contain plaintext vectors, record IDs, passage text, `r_t`, `S`, `r_agg` or
   unwrapped keys (INV-11). It MAY contain `scrambled_id`s, `n`, `C_S`, centroids and public log leaves.
 - WAL positions are called `wal_seq`. They are unrelated to `database_lsn` (§10.2).

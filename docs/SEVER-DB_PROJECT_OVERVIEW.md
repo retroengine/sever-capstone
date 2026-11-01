@@ -1049,6 +1049,8 @@ a later crate with the same name (two crates in one workspace cannot both produc
 - **BH-7 (fair F-1):** a log checkpoint store damaged in the middle opened as an older log. Part 2's `FileStore::open` cuts a store at its first bad record (its torn-tail rule), and Part 3's log stores had no committed reference to check against. Fixed in `sever-cert`: every stored certificate's tag-6 checkpoint (committed before it, E-2) must be in the log, else `IntegrityViolation`.
 - **BH-6:** both store scanners (`sever-log`, `sever-erasure`) ended a scan silently on a partial record in an older segment. Only the newest segment can have a torn tail, so an older one cut short is now `IntegrityViolation`.
 - **BH-8 (fair F-2):** a judge's misreading of RFC 9162. The engine is right; §10.1 now states the range (G-50).
+- **BH-9 (corruption sweep):** a missing or emptied log checkpoint store was taken for a half-created log, and re-creating it erased every leaf and certificate. The log is now re-created only when all its stores are empty.
+- **The line that stays (G-51):** damage confined to a store's last record, cut or failing its CRC, looks exactly like an append a crash tore. It is dropped as one, so after a storage checkpoint it is not always seen. §12.3 says so.
 
 **Why.** The fair run found two real faults of one kind (damage read as a shorter store). Fixing one at a time would rerun the slow gates each time.
 
