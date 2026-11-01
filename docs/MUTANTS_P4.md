@@ -40,7 +40,7 @@ crates/sever-erasure/src/records.rs:177:74: replace < with <=
 `WrappedStore::append` numbers each value with `next_key`; the store orders entries by their position in the file, never by that number (`next_key *= 1` repeats key 0 and the store accepts it), so no read of the store depends on it.
 
 ```
-crates/sever-erasure/src/store.rs:157:27: replace += with *=
+crates/sever-erasure/src/store.rs:164:27: replace += with *=
 ```
 
 ## Equivalent in the measured build: feature switches
@@ -178,8 +178,8 @@ crates/sever-erasure/src/records.rs:160:48: replace < with ==
 crates/sever-erasure/src/records.rs:160:48: replace < with >
 crates/sever-erasure/src/records.rs:160:48: replace < with <=
 crates/sever-erasure/src/records.rs:162:33: delete !
-crates/sever-erasure/src/store.rs:115:9: replace <impl core::fmt::Debug for WrappedStore>::fmt -> core::fmt::Result with Ok(Default::default())
-crates/sever-erasure/src/store.rs:176:45: replace + with *
+crates/sever-erasure/src/store.rs:122:9: replace <impl core::fmt::Debug for WrappedStore>::fmt -> core::fmt::Result with Ok(Default::default())
+crates/sever-erasure/src/store.rs:183:45: replace + with *
 crates/sever-keys/src/lib.rs:94:9: replace <impl Zeroize for Key>::zeroize with ()
 crates/sever-keys/src/lib.rs:111:9: replace <impl fmt::Debug for Key>::fmt -> fmt::Result with Ok(Default::default())
 crates/sever-keys/src/file.rs:241:9: replace KeyFile::path -> &str with ""
@@ -206,3 +206,5 @@ crates/sever-seal/src/ring.rs:547:37: replace < with ==
 crates/sever-seal/src/ring.rs:547:37: replace < with >
 crates/sever-seal/src/ring.rs:555:9: replace KeyRing::finish_recovery with ()
 ```
+
+**Lines moved (1 Nov 2026, DB-116).** The November fixes added lines to `sever-log/src/store.rs`, `sever-cert/src/participant.rs` and `sever-erasure/src/store.rs`, so the survivors triaged above in those files moved. Each entry was renamed to its new line by matching the same function, replacement and order in `cargo mutants --list` before (`cecd26e`) and after; no reason changed. The fixes' own new mutants (30 on the changed lines) are all caught, except the BH-6 check that was redundant and was removed (`09ecb78`).

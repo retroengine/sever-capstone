@@ -41,8 +41,8 @@ crates/sever-cert/src/builder.rs:96:29: replace > with >=
 The log participant's `id()` is compared only with itself: the log keeps its records in its own owned types and its outputs use the constant. The spec does not fix the value 3 (a note for after v1.0).
 
 ```
-crates/sever-cert/src/participant.rs:459:9: replace <impl TxnParticipant<CommitmentExtension> for LogParticipant>::id -> u16 with 0
-crates/sever-cert/src/participant.rs:459:9: replace <impl TxnParticipant<CommitmentExtension> for LogParticipant>::id -> u16 with 1
+crates/sever-cert/src/participant.rs:477:9: replace <impl TxnParticipant<CommitmentExtension> for LogParticipant>::id -> u16 with 0
+crates/sever-cert/src/participant.rs:477:9: replace <impl TxnParticipant<CommitmentExtension> for LogParticipant>::id -> u16 with 1
 ```
 
 ## Equivalent: a deletion always has a fresh witnessed checkpoint at `size`
@@ -50,8 +50,8 @@ crates/sever-cert/src/participant.rs:459:9: replace <impl TxnParticipant<Commitm
 A deletion issues only after a fresh witnessed checkpoint at `size` (line 228, §10.3), so the newest checkpoint covers every leaf and is witnessed; the search at lines 367 and 368 for the newest witnessed checkpoint beyond the insert leaf finds that same checkpoint under either `>`/`>=` or `&&`/`||`.
 
 ```
-crates/sever-cert/src/participant.rs:367:44: replace > with >=
-crates/sever-cert/src/participant.rs:368:25: replace && with ||
+crates/sever-cert/src/participant.rs:385:44: replace > with >=
+crates/sever-cert/src/participant.rs:386:25: replace && with ||
 ```
 
 ## Equivalent: the new record's `Put` is first
@@ -59,8 +59,8 @@ crates/sever-cert/src/participant.rs:368:25: replace && with ||
 Part 1's frozen ChangeSet puts the new record's `Put` first, and a flush moves every holding record into the one new group, so the guards at lines 256 and 283 are true whenever they are reached.
 
 ```
-crates/sever-cert/src/participant.rs:256:45: replace match guard slot.ext.insert_leaf_index == index with true
-crates/sever-cert/src/participant.rs:283:52: replace match guard slot.ext.insert_leaf_index == index with true
+crates/sever-cert/src/participant.rs:274:45: replace match guard slot.ext.insert_leaf_index == index with true
+crates/sever-cert/src/participant.rs:301:52: replace match guard slot.ext.insert_leaf_index == index with true
 ```
 
 ## Defensive checks the engine cannot trip through its API
@@ -68,14 +68,14 @@ crates/sever-cert/src/participant.rs:283:52: replace match guard slot.ext.insert
 Only a corrupted transaction reaches these: `check_invariants` (reached by tests directly on `LogStore`, never through a broken log) and `abort` (on every refusal path nothing is staged in the log before it). Risk: low; a test that builds a corrupted participant state would kill them.
 
 ```
-crates/sever-cert/src/participant.rs:317:32: replace < with >
-crates/sever-cert/src/participant.rs:317:42: replace || with &&
-crates/sever-cert/src/participant.rs:357:17: replace || with &&
-crates/sever-cert/src/participant.rs:358:17: replace || with &&
-crates/sever-cert/src/participant.rs:440:17: replace || with &&
-crates/sever-cert/src/participant.rs:441:17: replace || with &&
-crates/sever-cert/src/participant.rs:488:9: replace <impl TxnParticipant<CommitmentExtension> for LogParticipant>::abort with ()
-crates/sever-cert/src/participant.rs:529:9: replace <impl TxnParticipant<CommitmentExtension> for LogParticipant>::check_invariants -> Result<(), Error> with Ok(())
+crates/sever-cert/src/participant.rs:335:32: replace < with >
+crates/sever-cert/src/participant.rs:335:42: replace || with &&
+crates/sever-cert/src/participant.rs:375:17: replace || with &&
+crates/sever-cert/src/participant.rs:376:17: replace || with &&
+crates/sever-cert/src/participant.rs:458:17: replace || with &&
+crates/sever-cert/src/participant.rs:459:17: replace || with &&
+crates/sever-cert/src/participant.rs:506:9: replace <impl TxnParticipant<CommitmentExtension> for LogParticipant>::abort with ()
+crates/sever-cert/src/participant.rs:548:9: replace <impl TxnParticipant<CommitmentExtension> for LogParticipant>::check_invariants -> Result<(), Error> with Ok(())
 ```
 
 ## Equivalent: negating zero
@@ -197,18 +197,18 @@ crates/sever-log/src/witness.rs:233:31: replace ^= with |= in ep10_contract
 These refuse a store whose files disagree with each other (`load`, `insert_leaf`, `certificate`, `replay`, `check_invariants`) or check the order of checkpoints (`push_checkpoint`, `stage_checkpoint`: an equal size is allowed, so `<` to `<=` is a test gap: no test pushes two checkpoints of one size). No test corrupts these fields one at a time; the crash campaign (P3-T4) reaches the recovery paths at scale but is not run per mutant. Risk: low.
 
 ```
-crates/sever-log/src/store.rs:411:40: replace || with &&
-crates/sever-log/src/store.rs:449:39: replace < with <=
-crates/sever-log/src/store.rs:449:39: replace < with ==
-crates/sever-log/src/store.rs:484:29: replace || with &&
-crates/sever-log/src/store.rs:498:27: replace || with &&
-crates/sever-log/src/store.rs:592:60: replace < with <=
-crates/sever-log/src/store.rs:658:67: replace && with ||
-crates/sever-log/src/store.rs:671:32: replace match guard self .stores .leaves .read(&at) .is_ok_and(|rec| rec.bytes == bytes) with false
-crates/sever-log/src/store.rs:671:32: replace match guard self .stores .leaves .read(&at) .is_ok_and(|rec| rec.bytes == bytes) with true
-crates/sever-log/src/store.rs:675:60: replace == with !=
-crates/sever-log/src/store.rs:699:35: replace || with &&
-crates/sever-log/src/store.rs:752:58: replace || with &&
+crates/sever-log/src/store.rs:426:40: replace || with &&
+crates/sever-log/src/store.rs:464:39: replace < with <=
+crates/sever-log/src/store.rs:464:39: replace < with ==
+crates/sever-log/src/store.rs:499:29: replace || with &&
+crates/sever-log/src/store.rs:518:27: replace || with &&
+crates/sever-log/src/store.rs:612:60: replace < with <=
+crates/sever-log/src/store.rs:678:67: replace && with ||
+crates/sever-log/src/store.rs:691:32: replace match guard self .stores .leaves .read(&at) .is_ok_and(|rec| rec.bytes == bytes) with false
+crates/sever-log/src/store.rs:691:32: replace match guard self .stores .leaves .read(&at) .is_ok_and(|rec| rec.bytes == bytes) with true
+crates/sever-log/src/store.rs:695:60: replace == with !=
+crates/sever-log/src/store.rs:719:35: replace || with &&
+crates/sever-log/src/store.rs:772:58: replace || with &&
 ```
 
 ## Verifier (own workspace; forecast 30 Oct 2026 on this branch: 219 caught, 5 missed, 1 timeout, 13 unviable = 219 / 225 = 97.3 %)
@@ -227,3 +227,5 @@ verifier/src/xmd.rs:17:34: replace > with ==
 verifier/src/xmd.rs:17:34: replace > with >=
 verifier/src/merkle.rs:50:34: replace && with ||
 ```
+
+**Lines moved (1 Nov 2026, DB-116).** The November fixes added lines to `sever-log/src/store.rs`, `sever-cert/src/participant.rs` and `sever-erasure/src/store.rs`, so the survivors triaged above in those files moved. Each entry was renamed to its new line by matching the same function, replacement and order in `cargo mutants --list` before (`cecd26e`) and after; no reason changed. The fixes' own new mutants (30 on the changed lines) are all caught, except the BH-6 check that was redundant and was removed (`09ecb78`).
