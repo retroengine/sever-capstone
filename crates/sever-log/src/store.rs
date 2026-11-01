@@ -301,12 +301,7 @@ fn scan(vfs: &dyn Vfs, dir: &str, values: bool) -> Result<Vec<Scanned>, Error> {
             let len = u32::from_be_bytes(len.try_into().map_err(|_| inv("§14.8 store record"))?);
             let total = StoreRecord::OVERHEAD as u64 + u64::from(len);
             if off + total > size {
-                if Some(seq) != newest {
-                    // §14.9, §17 (BH-6): only the newest segment can end in a torn tail; a
-                    // sealed one that lost bytes is damage, not an uncommitted append.
-                    return Err(inv("§14.8 store segment cut short"));
-                }
-                break; // a torn tail (FileStore::open cuts it on the newest segment)
+                break; // a torn tail (FileStore::open cuts it on the newest segment); BH-6 below
             }
             let value = if values {
                 let mut buf = vec![0u8; usize::try_from(total).map_err(|_| inv("§14.8"))?];
@@ -328,7 +323,9 @@ fn scan(vfs: &dyn Vfs, dir: &str, values: bool) -> Result<Vec<Scanned>, Error> {
             off += total;
         }
         if Some(seq) != newest && off != size {
-            return Err(inv("§14.8 store segment cut short")); // BH-6: bytes left after the last record
+            // §14.9, §17 (BH-6): only the newest segment can end in a torn tail; a sealed one with
+            // bytes after its last whole record lost them, which is damage, not an append.
+            return Err(inv("§14.8 store segment cut short"));
         }
     }
     Ok(out)
