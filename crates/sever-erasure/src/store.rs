@@ -81,6 +81,10 @@ fn scan(vfs: &dyn Vfs, dir: &str) -> Result<(Vec<Vec<u8>>, u64), Error> {
             );
             let total = StoreRecord::OVERHEAD as u64 + u64::from(len);
             if off + total > size {
+                if Some(seq) != newest {
+                    // §14.9, §17 (BH-6): only the newest segment can end in a torn tail
+                    return Err(bad());
+                }
                 break; // a torn tail: FileStore::open cuts it on the newest segment
             }
             let mut buf = vec![0u8; usize::try_from(total).map_err(|_| bad())?];
@@ -96,6 +100,9 @@ fn scan(vfs: &dyn Vfs, dir: &str) -> Result<(Vec<Vec<u8>>, u64), Error> {
             out.push(rec.bytes);
             bytes += total;
             off += total;
+        }
+        if Some(seq) != newest && off != size {
+            return Err(bad()); // BH-6: bytes left after the last record of a sealed segment
         }
     }
     Ok((out, bytes))

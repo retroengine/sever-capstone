@@ -518,3 +518,38 @@ fn p3_log_store_export_holds_every_leaf_with_its_placement() {
         .collect();
     assert_eq!(sizes, [0, 3]);
 }
+
+#[test]
+// oracle: A §14.9 (a parser rejects a wrong length and any trailing byte) and §17 (stored data that does not match what was committed is IntegrityViolation); only the newest segment may end in a torn tail (§14.8, Part 2's FileStore rule)
+fn p3_log_store_an_older_segment_cut_short_is_refused() {
+    let v = SimVfs::new();
+    let mut s = open(&v);
+    for k in 0..12 {
+        s.stage_insert(&leaf(k), at(k)).unwrap();
+        s.sync().unwrap();
+        s.commit().unwrap();
+    }
+    drop(s);
+    v.restart(CrashPolicy::DropAll);
+    let dir = "log/leaves";
+    let mut segs = v.list(dir).unwrap();
+    segs.sort();
+    assert!(
+        segs.len() >= 2,
+        "the workload rolls the leaf store over: {segs:?}"
+    );
+    let path = format!("{dir}/{}", segs[0]);
+    let mut f = v.open(&path, sever_vfs::OpenMode::Existing).unwrap();
+    let len = f.len().unwrap();
+    f.truncate(len - 3).unwrap();
+    f.fsync().unwrap();
+    drop(f);
+    v.restart(CrashPolicy::DropAll);
+    assert!(
+        matches!(
+            LogStore::open(Arc::new(v.clone()), CFG, &genesis()),
+            Err(Error::IntegrityViolation { .. })
+        ),
+        "a sealed segment that lost its last bytes must not open"
+    );
+}

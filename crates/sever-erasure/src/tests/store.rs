@@ -238,3 +238,26 @@ fn p4_erasure_store_drops_a_record_whose_length_runs_past_the_end_of_the_file() 
     let (_, got) = WrappedStore::open(Arc::new(v.clone()), 1 << 20).unwrap();
     assert_eq!(got, values(2));
 }
+
+// oracle: A §14.9 (a parser rejects a wrong length and any trailing byte), §17: only the newest
+// segment may end in a torn tail (§12.2); an older segment that lost its last bytes is damage
+#[test]
+fn p4_erasure_store_refuses_an_older_segment_cut_short() {
+    let v = SimVfs::new();
+    let (mut s, _) = WrappedStore::open(Arc::new(v.clone()), 64).unwrap();
+    s.append(&values(6)).unwrap();
+    drop(s);
+    let segs = segments(&v);
+    assert!(segs.len() >= 2, "64-byte segments roll over: {segs:?}");
+    let mut f = v
+        .open(&format!("{DIR}/{}", segs[0]), OpenMode::Existing)
+        .unwrap();
+    let len = f.len().unwrap();
+    f.truncate(len - 3).unwrap();
+    f.fsync().unwrap();
+    drop(f);
+    assert!(matches!(
+        WrappedStore::open(Arc::new(v.clone()), 64),
+        Err(Error::IntegrityViolation { .. })
+    ));
+}
