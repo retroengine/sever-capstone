@@ -1070,6 +1070,14 @@ a later crate with the same name (two crates in one workspace cannot both produc
 
 **Consequence.** A fresh Part 3 fair run (FT-9); Part 4's run sees the same text.
 
+#### DB-118 — `prepare_insert` refuses an empty vector as WrongDimension (1 November 2026)
+
+**Decision.** The Part 4 SDK's `prepare_insert` takes the dimension from the vector's length (DB-84), so an empty vector passed §4.1 step 0 with d = 0 and failed the norm check as `NotNormalised`. No collection has d = 0, so an empty vector is now refused with `WrongDimension` before quantising (`crates/sever-py`, one check).
+
+**Why.** The Part 4 fair run `20261101T175539Z-p4-587aa09b` found it (F-1, ENGINE_BUG, §4.1 step 0). FT-9: the red test `test_p4_sdk_an_empty_vector_is_wrong_dimension` came first; the SDK tests, `ruff`, `clippy` and the Part 4 oracle check pass after the fix.
+
+**Consequence.** A fresh Part 4 fair run before the freeze. `crates/sever-py` is Part 4's; no frozen file changes.
+
 #### DB-115 — Each part gets a page; nothing moves (31 October 2026)
 
 **Decision.** Three generated navigation files, written by `scripts/index.py`:

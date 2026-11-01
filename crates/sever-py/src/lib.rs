@@ -272,6 +272,10 @@ fn prepare_insert(
     let public = user.public;
     py.detach(move || {
         let d = vector.len();
+        // §4.1 step 0: no collection has d = 0, so an empty vector is the wrong dimension.
+        if d == 0 {
+            return Err(Error::WrongDimension);
+        }
         let x = sever_quant::quantise(&vector, d)?;
         let mut wide = Zeroizing::new([0u8; 64]);
         OsRng.fill_bytes(wide.as_mut());

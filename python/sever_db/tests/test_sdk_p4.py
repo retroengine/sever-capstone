@@ -186,6 +186,15 @@ def test_p4_sdk_r_t_and_keys_never_reach_python_text(db: tuple[Database, str]) -
         pickle.dumps(req)
 
 
+@pytest.mark.oracle("A", "§4.1 step 0 (exactly d components, else WrongDimension, first)")
+def test_p4_sdk_an_empty_vector_is_wrong_dimension(db: tuple[Database, str]) -> None:
+    # No collection has d = 0, so an empty vector fails step 0 before any norm check (fair run
+    # 20261101T175539Z-p4-587aa09b, F-1).
+    _, cid = db
+    with pytest.raises(WrongDimension):
+        prepare_insert(cid, "a", [], UserKey.generate())
+
+
 def test_p4_sdk_errors_are_typed(db: tuple[Database, str]) -> None:
     d, cid = db
     user = UserKey.generate()

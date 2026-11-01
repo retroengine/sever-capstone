@@ -70,7 +70,7 @@ Part page: [parts/3-the-receipt/README.md](../parts/3-the-receipt/README.md).
 | [tests/proofs/p3](../tests/proofs/p3) | red proofs (one patch per rule) | 170 files |
 | [tests/cleanroom/p3](../tests/cleanroom/p3) | clean-room tests (fair testing, sealed) | 99 Python |
 
-## Part 4: The Erasure (125 Rust, 35 Python)
+## Part 4: The Erasure (125 Rust, 36 Python)
 
 Part page: [parts/4-the-erasure/README.md](../parts/4-the-erasure/README.md).
 
@@ -85,7 +85,7 @@ Part page: [parts/4-the-erasure/README.md](../parts/4-the-erasure/README.md).
 | [crates/sever-platform](../crates/sever-platform) | crate tests (unit, property, integration) | 17 Rust |
 | [crates/sever-scan](../crates/sever-scan) | crate tests (unit, property, integration) | 6 Rust |
 | [crates/sever-seal](../crates/sever-seal) | crate tests (unit, property, integration) | 17 Rust |
-| [python/sever_db/tests](../python/sever_db/tests) | Python package tests | 15 Python |
+| [python/sever_db/tests](../python/sever_db/tests) | Python package tests | 16 Python |
 | [python/sever_experiments/tests](../python/sever_experiments/tests) | Python package tests | 2 Python |
 | [python/sever_testkit_p4/tests](../python/sever_testkit_p4/tests) | Python package tests | 15 Python |
 | [tests/architecture/test_key_export.py](../tests/architecture/test_key_export.py) | spec, end-to-end and architecture tests | 2 Python |
@@ -102,4 +102,4 @@ Part page: [parts/4-the-erasure/README.md](../parts/4-the-erasure/README.md).
 | [tests/cleanroom](../tests/cleanroom) | 99 test functions, 18 files |
 | [studio/tests](../studio/tests) | 116 test functions, 20 files |
 
-**Total in the parts:** 550 Rust and 311 Python test functions.
+**Total in the parts:** 550 Rust and 312 Python test functions.
