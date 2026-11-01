@@ -70,7 +70,7 @@ Part page: [parts/3-the-receipt/README.md](../parts/3-the-receipt/README.md).
 | [tests/proofs/p3](../tests/proofs/p3) | red proofs (one patch per rule) | 170 files |
 | [tests/cleanroom/p3](../tests/cleanroom/p3) | clean-room tests (fair testing, sealed) | 99 Python |
 
-## Part 4: The Erasure (125 Rust, 36 Python)
+## Part 4: The Erasure (125 Rust, 108 Python)
 
 Part page: [parts/4-the-erasure/README.md](../parts/4-the-erasure/README.md).
 
@@ -92,6 +92,7 @@ Part page: [parts/4-the-erasure/README.md](../parts/4-the-erasure/README.md).
 | [tests/architecture/test_p4_pins.py](../tests/architecture/test_p4_pins.py) | spec, end-to-end and architecture tests | 1 Python |
 | [fuzz-p4/fuzz_targets](../fuzz-p4/fuzz_targets) | fuzz targets | 5 files |
 | [tests/proofs/p4](../tests/proofs/p4) | red proofs (one patch per rule) | 92 files |
+| [tests/cleanroom/p4](../tests/cleanroom/p4) | clean-room tests (fair testing, sealed) | 72 Python |
 
 ## Shared (no part owns them)
 
@@ -99,7 +100,7 @@ Part page: [parts/4-the-erasure/README.md](../parts/4-the-erasure/README.md).
 |---|---|
 | [python/sever_fair](../python/sever_fair) | 12 test functions, 20 files |
 | [tests/sabotage](../tests/sabotage) | 0 test functions, 1 files |
-| [tests/cleanroom](../tests/cleanroom) | 99 test functions, 18 files |
+| [tests/cleanroom](../tests/cleanroom) | 171 test functions, 29 files |
 | [studio/tests](../studio/tests) | 116 test functions, 20 files |
 
-**Total in the parts:** 550 Rust and 312 Python test functions.
+**Total in the parts:** 550 Rust and 384 Python test functions.

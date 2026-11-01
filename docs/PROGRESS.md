@@ -5,14 +5,14 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
 [`plans/2026-10-23-v1-then-demo.md`](plans/2026-10-23-v1-then-demo.md); nothing is planned after it
 (DB-112).
 
-## Now (31 Oct 2026)
+## Now (1 Nov 2026): v1.0.0, all four parts frozen
 
 | Part | Status | Tag |
 |---|---|---|
 | 1 The Idea | **frozen** 6 Oct 2026 | `part-1-frozen` |
 | 2 The Database | **frozen** 8 Oct 2026; errata E-1, E-2; three known defects kept as limit L-28 | `part-2-frozen-e2` |
-| 3 The Receipt | **built; the laptop run's gates all pass** (DB-113, DB-114); waits for a fair-testing PASS (FT-10), `scripts/freeze.sh 3` | |
-| 4 The Erasure | **built; the laptop run's gates pass**, P4-T10 by the owner's acceptance (DB-114); EX-8 not completed (out of memory, a measure); waits for the same | |
+| 3 The Receipt | **frozen** 1 Nov 2026 after the November bug hunt (BH-6, BH-7, BH-9 fixed; DB-116) and fair run `20261101T134211Z-p3-bb4bac5e` PASS (G-52, DB-117) | `part-3-frozen` |
+| 4 The Erasure | **frozen** 1 Nov 2026: p4-mutants PASS (P4-T10), fair run `20261101T192712Z-p4-36291aec` PASS after one SDK fix (DB-118) | `part-4-frozen`, `v1.0.0` |
 
 - **The laptop run is over (31 Oct, DB-114).** 23 steps:
   - 16 of the 17 gates pass as recorded;

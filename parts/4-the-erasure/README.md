@@ -5,7 +5,7 @@
 **The claim it adds.** After a deletion is acknowledged, nothing deleted can be recovered from raw storage.
 
 - **Spec:** §12.8–12.9, §13, §14.5, §14.7, §15.3–15.4, §15.8–15.9 ([specification](../../docs/SEVER-DB_SPECIFICATION.md))
-- **Status:** built, not frozen yet
+- **Status:** frozen, tag `part-4-frozen`
 - **Owned files:** 191 (`scripts/freeze.sh list 4`)
 - **Demo:** `scripts/demo-p4.sh`
 
@@ -56,6 +56,7 @@ Other files it owns: [fuzz-p4/Cargo.lock](../../fuzz-p4/Cargo.lock), [fuzz-p4/Ca
 | [tests/architecture/test_p4_pins.py](../../tests/architecture/test_p4_pins.py) | spec, end-to-end and architecture tests | 1 Python |
 | [fuzz-p4/fuzz_targets](../../fuzz-p4/fuzz_targets) | fuzz targets | 5 files |
 | [tests/proofs/p4](../../tests/proofs/p4) | red proofs (one patch per rule) | 92 files |
+| [tests/cleanroom/p4](../../tests/cleanroom/p4) | clean-room tests (fair testing, sealed) | 72 Python |
 
 ## Results
 
