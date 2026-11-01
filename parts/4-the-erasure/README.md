@@ -63,13 +63,13 @@ The latest outcome of each step:
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-11-01 17:50 | `p4-mutants` | – | P4-T10 mutants | `77ca977` | PASS | [p4-mutants-20261101T175053Z.json](../../results/p4-mutants-20261101T175053Z.json) |
 | 2026-11-01 14:50 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `a304014` | FAIL | [fair-20261101T142251Z-p4-a3040146.json](../../results/fair-20261101T142251Z-p4-a3040146.json) |
 | 2026-11-01 09:35 | `p4-replay` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-3) | `94d0b24` | PASS | [p4-replay-nq-10k-20261101T093555Z.json](../../results/p4-replay-nq-10k-20261101T093555Z.json) |
 | 2026-11-01 09:08 | `p4-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-4) | `94d0b24` | PASS | [p4-attacks-nq-10k-20261101T090800Z.json](../../results/p4-attacks-nq-10k-20261101T090800Z.json) |
 | 2026-11-01 02:32 | `p4-coverage` | – | P4-T10 coverage | `94d0b24` | PASS | [p4-coverage-20261101T023206Z.json](../../results/p4-coverage-20261101T023206Z.json) |
 | 2026-11-01 02:21 | `p4-checks` | – | Full-tier checks (P4-T4 … P4-T8, P4-T10 sabotage and traceability, P4-T11) | `94d0b24` | PASS | [p4-checks-20261101T022137Z.json](../../results/p4-checks-20261101T022137Z.json) |
 | 2026-10-31 12:48 | `p4-crash` | nq-10k, seeds 2024 9999 | P4-T3 | `9e11156` | PASS | [p4-crash-nq-10k-20261031T124815Z.json](../../results/p4-crash-nq-10k-20261031T124815Z.json) |
-| 2026-10-31 11:33 | `p4-mutants` | – | P4-T10 mutants | `96f9370` | FAIL | [p4-mutants-20261031T113316Z.json](../../results/p4-mutants-20261031T113316Z.json) |
 | 2026-10-31 07:37 | `p4-ex7` | nq-100k | P4-T14 (EX-7) | `7c445b5` | RECORDED | [p4-ex7-nq-100k-20261031T073714Z.json](../../results/p4-ex7-nq-100k-20261031T073714Z.json) |
 | 2026-10-31 02:10 | `p4-ex7` | nq-10k | P4-T14 (EX-7) | `7c445b5` | RECORDED | [p4-ex7-nq-10k-20261031T021052Z.json](../../results/p4-ex7-nq-10k-20261031T021052Z.json) |
 | 2026-10-30 23:20 | `p1-quant-recall` | nq-1m | – | `7c445b5` | measured | [p1-quant-recall-nq-1m-20261030T232039Z.json](../../results/p1-quant-recall-nq-1m-20261030T232039Z.json) |
@@ -79,10 +79,11 @@ The latest outcome of each step:
 | 2026-10-30 06:32 | `p4-fuzz` | – | P4-T10 fuzz | `7c445b5` | PASS | [p4-fuzz-20261030T063228Z.json](../../results/p4-fuzz-20261030T063228Z.json) |
 | 2026-10-20 09:10 | `fair dry-run` | – | fair testing (docs/FAIR_TESTING.md) | `1954b93` | DRY | [fair-20261020T090255Z-p4-1954b937-dry.json](../../results/fair-20261020T090255Z-p4-1954b937-dry.json) |
 
-Every run of this part, newest first (24; the full record is [the run ledger](../../docs/RUN_LEDGER.jsonl)):
+Every run of this part, newest first (25; the full record is [the run ledger](../../docs/RUN_LEDGER.jsonl)):
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-11-01 17:50 | `p4-mutants` | – | P4-T10 mutants | `77ca977` | PASS | [p4-mutants-20261101T175053Z.json](../../results/p4-mutants-20261101T175053Z.json) |
 | 2026-11-01 14:50 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `a304014` | FAIL | [fair-20261101T142251Z-p4-a3040146.json](../../results/fair-20261101T142251Z-p4-a3040146.json) |
 | 2026-11-01 09:35 | `p4-replay` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-3) | `94d0b24` | PASS | [p4-replay-nq-10k-20261101T093555Z.json](../../results/p4-replay-nq-10k-20261101T093555Z.json) |
 | 2026-11-01 09:08 | `p4-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-4) | `94d0b24` | PASS | [p4-attacks-nq-10k-20261101T090800Z.json](../../results/p4-attacks-nq-10k-20261101T090800Z.json) |
