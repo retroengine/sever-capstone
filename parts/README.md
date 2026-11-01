@@ -8,7 +8,7 @@ SEVER-DB is built in four parts. Each one adds one claim and is then frozen ([CL
 |---|---|---|---|
 | 1 The Idea | Deleting a vector returns its group, bit for bit, to the state it would have had if the vector had never arrived. | frozen (`part-1-frozen`) | [1-the-idea](1-the-idea/README.md) |
 | 2 The Database | Exactness survives a crash at any point; no acknowledged operation is lost; a multi-group deletion is all-or-nothing. | frozen (`part-2-frozen-e2`) | [2-the-database](2-the-database/README.md) |
-| 3 The Receipt | Every deletion yields a certificate that anyone can verify offline, with no database access. | built, not frozen | [3-the-receipt](3-the-receipt/README.md) |
+| 3 The Receipt | Every deletion yields a certificate that anyone can verify offline, with no database access. | frozen (`part-3-frozen`) | [3-the-receipt](3-the-receipt/README.md) |
 | 4 The Erasure | After a deletion is acknowledged, nothing deleted can be recovered from raw storage. | built, not frozen | [4-the-erasure](4-the-erasure/README.md) |
 
 Every test: [tests/README.md](../tests/README.md). Every result: [docs/RESULTS.md](../docs/RESULTS.md).

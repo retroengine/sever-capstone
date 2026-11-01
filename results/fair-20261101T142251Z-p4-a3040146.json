@@ -1,0 +1,170 @@
+{
+ "run_id": "20261101T142251Z-p4-a3040146",
+ "part": 4,
+ "module": null,
+ "commit": "a30401462ffc1a82a08fbfd94ff1a248f1317de5",
+ "outcome": "FAIL",
+ "config_sha256": "231bb3fb123fee16c62fcc8cfa97b28811a5dbafccced9792d478ac1a49836ca",
+ "seal_digest": "f1946da42a1349b3c12699df1c49815e999c713542a3a22745383a66c994bba8",
+ "owned_sha256": "a91648164b32db7f19f902a7e92ba7284c45735438c980928bb6f7199611daa3",
+ "rows": [
+  {
+   "check": "own suite green on the unpatched build",
+   "value": "True",
+   "ok": true
+  },
+  {
+   "check": "engine bugs (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "spec gaps (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "test gaps (escaped real bugs)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "oracle disagreements",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "planted bugs: cargo-mutants gate PASS in the ledger (DB-75)",
+   "value": "none",
+   "ok": false
+  },
+  {
+   "check": "judge outputs complete",
+   "value": "yes",
+   "ok": true
+  }
+ ],
+ "tests": 110,
+ "failing": 0,
+ "triage": {},
+ "planted": [],
+ "escapes": {},
+ "oracle": {
+  "pool": 60,
+  "verdicts": {
+   "01.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a714.7",
+    "reason": "Pairs are appended in creation order and never reused, so four appends return 0..3 and a fifth after an erase returns 4. Pair 2's second slot starts at 4096+1024\u00b72+512. The bytes there follow the slot layout: magic SVKS at 0..4, domain_index at 4..12, key at 20..52."
+   },
+   "02.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.4",
+    "reason": "With active version 1, the slot holding v=1 is kept and the other slot (the phase-A orphan, v=2) is erased. Flipping a byte at offset 30 of pair 0 slot 0 lands in the key field (20..52), so the CRC fails. The active slot is then absent and the engine must refuse. The `(0,1)` pair/slot tuple is an implementation convention, but it follows from the rule."
+   },
+   "03.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a712.8",
+    "reason": "Hibernation is enabled when the state lists `disk` and resume is not `0:0`. Every case follows: disk with a real resume device is true; 0:0, no disk, and `diskette` are false. The state file is a list of words, so a word match is the natural reading. Absent data lists no `disk`, so it is false."
+   },
+   "04.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.2",
+    "reason": "Sealer 1 is AES-256-GCM-SIV (\u00a714, \u00a713.2), with 28 bytes of overhead (12 nonce + 16 tag). The wrapped record key is 32+28 = 60 bytes (\u00a714.4 slot layout, \u00a714.6 envelope (60)). sealer_id is 1. The frozen EP-6 contract itself is outside the spec, but the asserted constants all follow from it."
+   },
+   "05.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a716.3",
+    "reason": "The spec fixes only that the scanner finds planted secrets and that deleted data yields no findings. Overview DB-96 says live records recovered by carving are 'reported, not gated', because after a storage checkpoint their only copy may be in checkpoint pages. So `controls_recovered == [true, true]` is not fixed by the spec. The result also depends on the hidden `world_with` setup."
+   },
+   "06.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.4",
+    "reason": "Phase A fsyncs the new key slot before the WAL commit, so a power cut at that point leaves versions {v, v+1}. The old key is overwritten only in phase C, after the commit. At the Committed step both versions are therefore still durable, and the INV-13 ordering is what is asserted. This assumes `Step::Committed` precedes phase C, which the step name suggests."
+   },
+   "07.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a712.3",
+    "reason": "Under sealer 1 only the \u00a713.2 plaintext list may appear on disk. The vector x\u0303, r_t, passage text, record IDs and all keys are therefore forbidden. The only permitted key is a live group key, which lives in plaintext in KEYS (\u00a713.1). Retired keys must have been erased by phase C. The assertions check exactly that."
+   },
+   "08.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a712.8",
+    "reason": "The refusal conditions and the outcomes of PL-1, 2, 6, 7, 9 and 10 follow from \u00a712.8: unencrypted swap, hibernation, a failed mlock, a dm CRYPT- device, and zram. But the test also asserts exact check names, 'swap not encrypted' and 'hibernation enabled'. The spec fixes only 'core dumps' and 'mlock' as names. The names live in the PL register (`registers_p4.yaml`), which is not in the spec set."
+   },
+   "09.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a715.4",
+    "reason": "Crash row 3 (after COMMIT, before phase C): the record is deleted, the old key is still in its slot, recovery erases it as version \u2260 active, and a retry returns AlreadyAbsent. The asserted slots are `[v+1]` only, which matches. This assumes `Step::Applied` lies between the COMMIT and phase C, as the name implies."
+   },
+   "10.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a715.3",
+    "reason": "Delete step 7 requires zeroing the old keys and removing the mirror entry, and \u00a712.6 requires zeroed buffers before acknowledgement. The test requires old keys to be released (count rises) with none released non-zero, and that the deleted record is no longer found. It also requires no dirty release after drop. All of this follows from the spec."
+   }
+  },
+  "picked": [
+   [
+    "crates/sever-keys/src/tests.rs",
+    "p4_keys_a_domain_index_is_its_pair_position_in_creation_order"
+   ],
+   [
+    "crates/sever-keys/src/tests.rs",
+    "p4_keys_recovery_from_a_file_after_a_crash_in_phase_a"
+   ],
+   [
+    "crates/sever-platform/src/tests.rs",
+    "p4_platform_hibernation_needs_disk_listed_and_a_resume_device"
+   ],
+   [
+    "crates/sever-seal/src/tests.rs",
+    "p4_seal_aead_sealer_passes_the_frozen_ep6_contract"
+   ],
+   [
+    "crates/sever-scan/src/tests.rs",
+    "p4_scan_recovers_live_records_from_a_checkpointed_image"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_the_new_key_is_durable_before_the_commit_and_the_old_one_outlives_it"
+   ],
+   [
+    "crates/sever-db/src/tests.rs",
+    "p4_db_no_forbidden_plaintext_reaches_either_disk"
+   ],
+   [
+    "crates/sever-platform/src/tests.rs",
+    "p4_platform_memory_rows_of_the_register_refuse_and_start_as_listed"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_crash_table_row_3_crash_after_the_commit_before_phase_c"
+   ],
+   [
+    "crates/sever-db/tests/zeroize_delete.rs",
+    "p4_db_a_deletion_releases_its_old_keys_as_zeros_and_removes_the_mirror_entry"
+   ]
+  ]
+ },
+ "findings": [],
+ "sessions": [
+  {
+   "role": "tester",
+   "name": "1-tester",
+   "model": "opus",
+   "rc": 0,
+   "cost_usd": 4.608829599999999,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261101T142251Z-p4-a3040146/logs/1-tester.json"
+  },
+  {
+   "role": "oracle",
+   "name": "8-oracle",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.3052231,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261101T142251Z-p4-a3040146/logs/8-oracle.json"
+  }
+ ]
+}

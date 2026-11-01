@@ -5,7 +5,7 @@
 **The claim it adds.** Every deletion yields a certificate that anyone can verify offline, with no database access.
 
 - **Spec:** §9, §10, §11, §16.2–16.3 ([specification](../../docs/SEVER-DB_SPECIFICATION.md))
-- **Status:** built, not frozen yet
+- **Status:** frozen, tag `part-3-frozen`
 - **Owned files:** 342 (`scripts/freeze.sh list 3`)
 - **Demo:** `scripts/p3-demo.sh --data synthetic`
 
@@ -49,6 +49,7 @@ Other files it owns: [audit/Cargo.lock](../../audit/Cargo.lock), [audit/Cargo.to
 | [fuzz-p3/fuzz_targets](../../fuzz-p3/fuzz_targets) | fuzz targets | 4 files |
 | [verifier/fuzz/fuzz_targets](../../verifier/fuzz/fuzz_targets) | fuzz targets | 1 files |
 | [tests/proofs/p3](../../tests/proofs/p3) | red proofs (one patch per rule) | 170 files |
+| [tests/cleanroom/p3](../../tests/cleanroom/p3) | clean-room tests (fair testing, sealed) | 99 Python |
 
 ## Results
 

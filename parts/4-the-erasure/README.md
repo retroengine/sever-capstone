@@ -63,6 +63,7 @@ The latest outcome of each step:
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-11-01 14:50 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `a304014` | FAIL | [fair-20261101T142251Z-p4-a3040146.json](../../results/fair-20261101T142251Z-p4-a3040146.json) |
 | 2026-11-01 09:35 | `p4-replay` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-3) | `94d0b24` | PASS | [p4-replay-nq-10k-20261101T093555Z.json](../../results/p4-replay-nq-10k-20261101T093555Z.json) |
 | 2026-11-01 09:08 | `p4-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-4) | `94d0b24` | PASS | [p4-attacks-nq-10k-20261101T090800Z.json](../../results/p4-attacks-nq-10k-20261101T090800Z.json) |
 | 2026-11-01 02:32 | `p4-coverage` | – | P4-T10 coverage | `94d0b24` | PASS | [p4-coverage-20261101T023206Z.json](../../results/p4-coverage-20261101T023206Z.json) |
@@ -76,13 +77,13 @@ The latest outcome of each step:
 | 2026-10-30 15:41 | `p4-ex6` | nq-10k | P4-T12 (T-5, pre-registered drift <= 0.005 per seed) | `4810d8f` | RECORDED | [p4-ex6-nq-10k-20261030T154119Z.json](../../results/p4-ex6-nq-10k-20261030T154119Z.json) |
 | 2026-10-30 14:13 | `p4-forensics` | nq-10k, seeds 42 123 777 2024 9999 | P4-T1, P4-T2 | `7c445b5` | PASS | [p4-forensics-nq-10k-20261030T141339Z.json](../../results/p4-forensics-nq-10k-20261030T141339Z.json) |
 | 2026-10-30 06:32 | `p4-fuzz` | – | P4-T10 fuzz | `7c445b5` | PASS | [p4-fuzz-20261030T063228Z.json](../../results/p4-fuzz-20261030T063228Z.json) |
-| 2026-10-20 19:05 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `0f9fedb` | FAIL | [fair-20261020T145844Z-p4-4ecbd6cf.json](../../results/fair-20261020T145844Z-p4-4ecbd6cf.json) |
 | 2026-10-20 09:10 | `fair dry-run` | – | fair testing (docs/FAIR_TESTING.md) | `1954b93` | DRY | [fair-20261020T090255Z-p4-1954b937-dry.json](../../results/fair-20261020T090255Z-p4-1954b937-dry.json) |
 
-Every run of this part, newest first (23; the full record is [the run ledger](../../docs/RUN_LEDGER.jsonl)):
+Every run of this part, newest first (24; the full record is [the run ledger](../../docs/RUN_LEDGER.jsonl)):
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-11-01 14:50 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `a304014` | FAIL | [fair-20261101T142251Z-p4-a3040146.json](../../results/fair-20261101T142251Z-p4-a3040146.json) |
 | 2026-11-01 09:35 | `p4-replay` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-3) | `94d0b24` | PASS | [p4-replay-nq-10k-20261101T093555Z.json](../../results/p4-replay-nq-10k-20261101T093555Z.json) |
 | 2026-11-01 09:08 | `p4-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-4) | `94d0b24` | PASS | [p4-attacks-nq-10k-20261101T090800Z.json](../../results/p4-attacks-nq-10k-20261101T090800Z.json) |
 | 2026-11-01 02:32 | `p4-coverage` | – | P4-T10 coverage | `94d0b24` | PASS | [p4-coverage-20261101T023206Z.json](../../results/p4-coverage-20261101T023206Z.json) |
