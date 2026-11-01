@@ -375,6 +375,15 @@ impl LogStore {
         let complete = exists(vfs.as_ref(), CHECKPOINTS_DIR)?
             && !scan(vfs.as_ref(), CHECKPOINTS_DIR, false)?.is_empty();
         if !complete {
+            // A half-created log (a crash before its genesis checkpoint was durable) has nothing
+            // committed in it. A log whose other stores hold records lost its checkpoint store:
+            // that is damage (§17, BH-9), and re-creating it would erase every leaf and
+            // certificate.
+            for dir in [LEAVES_DIR, HASHES_DIR, CERTS_DIR] {
+                if exists(vfs.as_ref(), dir)? && !scan(vfs.as_ref(), dir, false)?.is_empty() {
+                    return Err(inv("§14.8 the log checkpoint store is lost"));
+                }
+            }
             Self::create(&vfs, &cfg, genesis)?;
         }
         let stores = Stores {

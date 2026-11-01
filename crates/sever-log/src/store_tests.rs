@@ -553,3 +553,34 @@ fn p3_log_store_an_older_segment_cut_short_is_refused() {
         "a sealed segment that lost its last bytes must not open"
     );
 }
+
+#[test]
+// oracle: A §17 (stored data that does not match what was committed is IntegrityViolation, never served or replaced) and §10.5 (the log is append-only): a log is re-created only when no transaction ever committed to it
+fn p3_log_store_a_lost_checkpoint_store_is_refused_not_recreated() {
+    for cut in [true, false] {
+        let v = SimVfs::new();
+        let mut s = open(&v);
+        workload(&mut s);
+        drop(s);
+        v.restart(CrashPolicy::DropAll);
+        for name in v.list("log/checkpoints").unwrap() {
+            let path = format!("log/checkpoints/{name}");
+            if cut {
+                // only the header survives: the store reads as empty
+                let mut f = v.open(&path, sever_vfs::OpenMode::Existing).unwrap();
+                f.truncate(16).unwrap();
+                f.fsync().unwrap();
+            } else {
+                v.unlink(&path).unwrap();
+                v.fsync_dir("log/checkpoints").unwrap(); // a durable removal
+            }
+        }
+        v.restart(CrashPolicy::DropAll);
+        let got = LogStore::open(Arc::new(v.clone()), CFG, &genesis());
+        assert!(
+            matches!(got, Err(Error::IntegrityViolation { .. })),
+            "cut={cut}: a log with committed leaves and certificates must not be re-created: {:?}",
+            got.as_ref().map(|s| s.tree().size())
+        );
+    }
+}
