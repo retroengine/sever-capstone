@@ -47,16 +47,16 @@ Part page: [parts/2-the-database/README.md](../parts/2-the-database/README.md).
 | [fuzz-p2/fuzz_targets](../fuzz-p2/fuzz_targets) | fuzz targets | 4 files |
 | [tests/proofs/p2](../tests/proofs/p2) | red proofs (one patch per rule) | 140 files |
 
-## Part 3: The Receipt (107 Rust, 77 Python)
+## Part 3: The Receipt (110 Rust, 77 Python)
 
 Part page: [parts/3-the-receipt/README.md](../parts/3-the-receipt/README.md).
 
 | Where | Kind | Count |
 |---|---|---|
-| [crates/sever-cert](../crates/sever-cert) | crate tests (unit, property, integration) | 24 Rust |
+| [crates/sever-cert](../crates/sever-cert) | crate tests (unit, property, integration) | 25 Rust |
 | [crates/sever-commit](../crates/sever-commit) | crate tests (unit, property, integration) | 11 Rust |
 | [crates/sever-crypto](../crates/sever-crypto) | crate tests (unit, property, integration) | 35 Rust |
-| [crates/sever-log](../crates/sever-log) | crate tests (unit, property, integration) | 22 Rust |
+| [crates/sever-log](../crates/sever-log) | crate tests (unit, property, integration) | 24 Rust |
 | [crates/sever-p3](../crates/sever-p3) | crate tests (unit, property, integration) | 15 Rust |
 | [python/sever_db_p3/tests](../python/sever_db_p3/tests) | Python package tests | 13 Python |
 | [python/sever_demo_p3/tests](../python/sever_demo_p3/tests) | Python package tests | 2 Python |
@@ -69,7 +69,7 @@ Part page: [parts/3-the-receipt/README.md](../parts/3-the-receipt/README.md).
 | [verifier/fuzz/fuzz_targets](../verifier/fuzz/fuzz_targets) | fuzz targets | 1 files |
 | [tests/proofs/p3](../tests/proofs/p3) | red proofs (one patch per rule) | 170 files |
 
-## Part 4: The Erasure (124 Rust, 35 Python)
+## Part 4: The Erasure (125 Rust, 35 Python)
 
 Part page: [parts/4-the-erasure/README.md](../parts/4-the-erasure/README.md).
 
@@ -77,7 +77,7 @@ Part page: [parts/4-the-erasure/README.md](../parts/4-the-erasure/README.md).
 |---|---|---|
 | [crates/sever-crashkit-p4](../crates/sever-crashkit-p4) | crate tests (unit, property, integration) | 1 Rust |
 | [crates/sever-db](../crates/sever-db) | crate tests (unit, property, integration) | 20 Rust |
-| [crates/sever-erasure](../crates/sever-erasure) | crate tests (unit, property, integration) | 35 Rust |
+| [crates/sever-erasure](../crates/sever-erasure) | crate tests (unit, property, integration) | 36 Rust |
 | [crates/sever-eval](../crates/sever-eval) | crate tests (unit, property, integration) | 2 Rust |
 | [crates/sever-explain](../crates/sever-explain) | crate tests (unit, property, integration) | 4 Rust |
 | [crates/sever-keys](../crates/sever-keys) | crate tests (unit, property, integration) | 22 Rust |
@@ -101,4 +101,4 @@ Part page: [parts/4-the-erasure/README.md](../parts/4-the-erasure/README.md).
 | [tests/cleanroom](../tests/cleanroom) | 0 test functions, 1 files |
 | [studio/tests](../studio/tests) | 116 test functions, 20 files |
 
-**Total in the parts:** 546 Rust and 212 Python test functions.
+**Total in the parts:** 550 Rust and 212 Python test functions.

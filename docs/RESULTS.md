@@ -52,10 +52,14 @@ Each finished run in [the run ledger](../docs/RUN_LEDGER.jsonl), grouped by part
 | 2026-10-07 19:43 | `p2-fuzz` | – | P2-T6 | `893f71d` | FAIL | [p2-fuzz-20261007T194333Z.json](../results/p2-fuzz-20261007T194333Z.json) |
 | 2026-10-07 19:26 | `p2-crash` | nq-10k, seeds 42 | P2-T1, P2-T2, P2-T3 | `f7d6362` | PASS | [p2-crash-nq-10k-20261007T192621Z.json](../results/p2-crash-nq-10k-20261007T192621Z.json) |
 
-## Part 3: The Receipt (29 runs)
+## Part 3: The Receipt (33 runs)
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-11-01 08:57 | `p3-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P3-T1, P3-T2 | `94d0b24` | PASS | [p3-attacks-nq-10k-20261101T085746Z.json](../results/p3-attacks-nq-10k-20261101T085746Z.json) |
+| 2026-11-01 02:32 | `p3-spikes` | – | Part 3 proof spike (Build 3-4 §1.11) | `94d0b24` | PASS | [p3-spikes-20261101T023213Z.json](../results/p3-spikes-20261101T023213Z.json) |
+| 2026-11-01 02:26 | `p3-coverage` | – | P3-T9 coverage | `94d0b24` | PASS | [p3-coverage-20261101T022656Z.json](../results/p3-coverage-20261101T022656Z.json) |
+| 2026-11-01 01:49 | `p3-checks` | – | Full-tier checks (P3-T3, P3-T6, P3-T7, P3-T8, P3-T9 sabotage, P3-T11, P3-T12) | `94d0b24` | PASS | [p3-checks-20261101T014906Z.json](../results/p3-checks-20261101T014906Z.json) |
 | 2026-10-31 23:38 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `1479019` | FAIL | [fair-20261031T225306Z-p3-1479019b.json](../results/fair-20261031T225306Z-p3-1479019b.json) |
 | 2026-10-30 23:20 | `p3-measures` | nq-10k | P3-T13 (measure) | `7c445b5` | RECORDED | [p3-measures-nq-10k-20261030T232049Z.json](../results/p3-measures-nq-10k-20261030T232049Z.json) |
 | 2026-10-30 23:05 | `p3-coverage` | – | P3-T9 coverage | `7c445b5` | PASS | [p3-coverage-20261030T230521Z.json](../results/p3-coverage-20261030T230521Z.json) |
@@ -86,13 +90,17 @@ Each finished run in [the run ledger](../docs/RUN_LEDGER.jsonl), grouped by part
 | 2026-10-19 03:32 | `p3-replay` | nq-100k, seeds 42 | P3-T5 | `30e4497` | PASS | [p3-replay-nq-100k-20261019T033241Z.json](../results/p3-replay-nq-100k-20261019T033241Z.json) |
 | 2026-10-19 01:46 | `p3-crash` | nq-10k, seeds 42 123 777 2024 9999 | P3-T4 | `30e4497` | PASS | [p3-crash-nq-10k-20261019T014621Z.json](../results/p3-crash-nq-10k-20261019T014621Z.json) |
 
-## Part 4: The Erasure (19 runs)
+## Part 4: The Erasure (23 runs)
 
 > P4-T10 (`p4-mutants`, 31 Oct 2026) is recorded as FAIL on one untriaged timeout; every score clears 0.90 and the owner accepts it as passed (DB-114).
 > P4-T15 (EX-8, a measure) did not complete: out of memory at 10.39 GB after 6 h 11 min, so it has no result file (DB-114).
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-11-01 09:35 | `p4-replay` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-3) | `94d0b24` | PASS | [p4-replay-nq-10k-20261101T093555Z.json](../results/p4-replay-nq-10k-20261101T093555Z.json) |
+| 2026-11-01 09:08 | `p4-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-4) | `94d0b24` | PASS | [p4-attacks-nq-10k-20261101T090800Z.json](../results/p4-attacks-nq-10k-20261101T090800Z.json) |
+| 2026-11-01 02:32 | `p4-coverage` | – | P4-T10 coverage | `94d0b24` | PASS | [p4-coverage-20261101T023206Z.json](../results/p4-coverage-20261101T023206Z.json) |
+| 2026-11-01 02:21 | `p4-checks` | – | Full-tier checks (P4-T4 … P4-T8, P4-T10 sabotage and traceability, P4-T11) | `94d0b24` | PASS | [p4-checks-20261101T022137Z.json](../results/p4-checks-20261101T022137Z.json) |
 | 2026-10-31 12:48 | `p4-crash` | nq-10k, seeds 2024 9999 | P4-T3 | `9e11156` | PASS | [p4-crash-nq-10k-20261031T124815Z.json](../results/p4-crash-nq-10k-20261031T124815Z.json) |
 | 2026-10-31 11:38 | `p4-coverage` | – | P4-T10 coverage | `96f9370` | PASS | [p4-coverage-20261031T113813Z.json](../results/p4-coverage-20261031T113813Z.json) |
 | 2026-10-31 11:33 | `p4-mutants` | – | P4-T10 mutants | `96f9370` | FAIL | [p4-mutants-20261031T113316Z.json](../results/p4-mutants-20261031T113316Z.json) |

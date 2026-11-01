@@ -42,7 +42,7 @@ Other files it owns: [fuzz-p4/Cargo.lock](../../fuzz-p4/Cargo.lock), [fuzz-p4/Ca
 |---|---|---|
 | [crates/sever-crashkit-p4](../../crates/sever-crashkit-p4) | crate tests (unit, property, integration) | 1 Rust |
 | [crates/sever-db](../../crates/sever-db) | crate tests (unit, property, integration) | 20 Rust |
-| [crates/sever-erasure](../../crates/sever-erasure) | crate tests (unit, property, integration) | 35 Rust |
+| [crates/sever-erasure](../../crates/sever-erasure) | crate tests (unit, property, integration) | 36 Rust |
 | [crates/sever-eval](../../crates/sever-eval) | crate tests (unit, property, integration) | 2 Rust |
 | [crates/sever-explain](../../crates/sever-explain) | crate tests (unit, property, integration) | 4 Rust |
 | [crates/sever-keys](../../crates/sever-keys) | crate tests (unit, property, integration) | 22 Rust |
@@ -63,26 +63,30 @@ The latest outcome of each step:
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-11-01 09:35 | `p4-replay` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-3) | `94d0b24` | PASS | [p4-replay-nq-10k-20261101T093555Z.json](../../results/p4-replay-nq-10k-20261101T093555Z.json) |
+| 2026-11-01 09:08 | `p4-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-4) | `94d0b24` | PASS | [p4-attacks-nq-10k-20261101T090800Z.json](../../results/p4-attacks-nq-10k-20261101T090800Z.json) |
+| 2026-11-01 02:32 | `p4-coverage` | – | P4-T10 coverage | `94d0b24` | PASS | [p4-coverage-20261101T023206Z.json](../../results/p4-coverage-20261101T023206Z.json) |
+| 2026-11-01 02:21 | `p4-checks` | – | Full-tier checks (P4-T4 … P4-T8, P4-T10 sabotage and traceability, P4-T11) | `94d0b24` | PASS | [p4-checks-20261101T022137Z.json](../../results/p4-checks-20261101T022137Z.json) |
 | 2026-10-31 12:48 | `p4-crash` | nq-10k, seeds 2024 9999 | P4-T3 | `9e11156` | PASS | [p4-crash-nq-10k-20261031T124815Z.json](../../results/p4-crash-nq-10k-20261031T124815Z.json) |
-| 2026-10-31 11:38 | `p4-coverage` | – | P4-T10 coverage | `96f9370` | PASS | [p4-coverage-20261031T113813Z.json](../../results/p4-coverage-20261031T113813Z.json) |
 | 2026-10-31 11:33 | `p4-mutants` | – | P4-T10 mutants | `96f9370` | FAIL | [p4-mutants-20261031T113316Z.json](../../results/p4-mutants-20261031T113316Z.json) |
 | 2026-10-31 07:37 | `p4-ex7` | nq-100k | P4-T14 (EX-7) | `7c445b5` | RECORDED | [p4-ex7-nq-100k-20261031T073714Z.json](../../results/p4-ex7-nq-100k-20261031T073714Z.json) |
 | 2026-10-31 02:10 | `p4-ex7` | nq-10k | P4-T14 (EX-7) | `7c445b5` | RECORDED | [p4-ex7-nq-10k-20261031T021052Z.json](../../results/p4-ex7-nq-10k-20261031T021052Z.json) |
 | 2026-10-30 23:20 | `p1-quant-recall` | nq-1m | – | `7c445b5` | measured | [p1-quant-recall-nq-1m-20261030T232039Z.json](../../results/p1-quant-recall-nq-1m-20261030T232039Z.json) |
-| 2026-10-30 23:00 | `p4-checks` | – | Full-tier checks (P4-T4 … P4-T8, P4-T10 sabotage and traceability, P4-T11) | `7c445b5` | PASS | [p4-checks-20261030T230021Z.json](../../results/p4-checks-20261030T230021Z.json) |
 | 2026-10-30 17:51 | `p4-crash` | nq-10k, seeds 42 123 777 | P4-T3 | `7c445b5` | PASS | [p4-crash-nq-10k-20261030T175146Z.json](../../results/p4-crash-nq-10k-20261030T175146Z.json) |
 | 2026-10-30 15:41 | `p4-ex6` | nq-10k | P4-T12 (T-5, pre-registered drift <= 0.005 per seed) | `4810d8f` | RECORDED | [p4-ex6-nq-10k-20261030T154119Z.json](../../results/p4-ex6-nq-10k-20261030T154119Z.json) |
 | 2026-10-30 14:13 | `p4-forensics` | nq-10k, seeds 42 123 777 2024 9999 | P4-T1, P4-T2 | `7c445b5` | PASS | [p4-forensics-nq-10k-20261030T141339Z.json](../../results/p4-forensics-nq-10k-20261030T141339Z.json) |
-| 2026-10-30 06:53 | `p4-replay` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-3) | `7c445b5` | PASS | [p4-replay-nq-10k-20261030T065302Z.json](../../results/p4-replay-nq-10k-20261030T065302Z.json) |
 | 2026-10-30 06:32 | `p4-fuzz` | – | P4-T10 fuzz | `7c445b5` | PASS | [p4-fuzz-20261030T063228Z.json](../../results/p4-fuzz-20261030T063228Z.json) |
-| 2026-10-29 11:49 | `p4-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-4) | `7c445b5` | PASS | [p4-attacks-nq-10k-20261029T114951Z.json](../../results/p4-attacks-nq-10k-20261029T114951Z.json) |
 | 2026-10-20 19:05 | `fair run` | – | fair testing (docs/FAIR_TESTING.md) | `0f9fedb` | FAIL | [fair-20261020T145844Z-p4-4ecbd6cf.json](../../results/fair-20261020T145844Z-p4-4ecbd6cf.json) |
 | 2026-10-20 09:10 | `fair dry-run` | – | fair testing (docs/FAIR_TESTING.md) | `1954b93` | DRY | [fair-20261020T090255Z-p4-1954b937-dry.json](../../results/fair-20261020T090255Z-p4-1954b937-dry.json) |
 
-Every run of this part, newest first (19; the full record is [the run ledger](../../docs/RUN_LEDGER.jsonl)):
+Every run of this part, newest first (23; the full record is [the run ledger](../../docs/RUN_LEDGER.jsonl)):
 
 | Date (UTC) | Step | Data, seeds | Gate | Commit | Outcome | Result |
 |---|---|---|---|---|---|---|
+| 2026-11-01 09:35 | `p4-replay` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-3) | `94d0b24` | PASS | [p4-replay-nq-10k-20261101T093555Z.json](../../results/p4-replay-nq-10k-20261101T093555Z.json) |
+| 2026-11-01 09:08 | `p4-attacks` | nq-10k, seeds 42 123 777 2024 9999 | P4-T9 (T-4) | `94d0b24` | PASS | [p4-attacks-nq-10k-20261101T090800Z.json](../../results/p4-attacks-nq-10k-20261101T090800Z.json) |
+| 2026-11-01 02:32 | `p4-coverage` | – | P4-T10 coverage | `94d0b24` | PASS | [p4-coverage-20261101T023206Z.json](../../results/p4-coverage-20261101T023206Z.json) |
+| 2026-11-01 02:21 | `p4-checks` | – | Full-tier checks (P4-T4 … P4-T8, P4-T10 sabotage and traceability, P4-T11) | `94d0b24` | PASS | [p4-checks-20261101T022137Z.json](../../results/p4-checks-20261101T022137Z.json) |
 | 2026-10-31 12:48 | `p4-crash` | nq-10k, seeds 2024 9999 | P4-T3 | `9e11156` | PASS | [p4-crash-nq-10k-20261031T124815Z.json](../../results/p4-crash-nq-10k-20261031T124815Z.json) |
 | 2026-10-31 11:38 | `p4-coverage` | – | P4-T10 coverage | `96f9370` | PASS | [p4-coverage-20261031T113813Z.json](../../results/p4-coverage-20261031T113813Z.json) |
 | 2026-10-31 11:33 | `p4-mutants` | – | P4-T10 mutants | `96f9370` | FAIL | [p4-mutants-20261031T113316Z.json](../../results/p4-mutants-20261031T113316Z.json) |

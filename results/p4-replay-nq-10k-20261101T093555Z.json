@@ -1,0 +1,117 @@
+{
+ "gate": "P4-T9: 0 mismatches on the five-field equivalence and the certificate arithmetic against the model, on the final build (T-3)",
+ "data": "nq-10k",
+ "runs": [
+  {
+   "seed": 42,
+   "outcome": "PASS",
+   "report": {
+    "certificate_failures": 0,
+    "certificates": 8990,
+    "checks": 2138762,
+    "commitment_mismatches": 0,
+    "deleted_returned": 0,
+    "first": [],
+    "five_field_checked": 1026,
+    "five_field_failed": 0,
+    "mismatches": 0,
+    "ops": 17849,
+    "passed": true,
+    "reopen_changed": 0,
+    "reopens": 0
+   },
+   "trace_sha256": "469b769edaf7b85ee93f376c8ba6942a5e68a634ce04dc4dd26a8e4d6cfab6eb",
+   "stderr_tail": "",
+   "seconds": 962
+  },
+  {
+   "seed": 123,
+   "outcome": "PASS",
+   "report": {
+    "certificate_failures": 0,
+    "certificates": 8985,
+    "checks": 2138733,
+    "commitment_mismatches": 0,
+    "deleted_returned": 0,
+    "first": [],
+    "five_field_checked": 1026,
+    "five_field_failed": 0,
+    "mismatches": 0,
+    "ops": 17849,
+    "passed": true,
+    "reopen_changed": 0,
+    "reopens": 0
+   },
+   "trace_sha256": "dbac37a8e4f28009a8a0d33d7c5f03e410041ff00ff634ab4f1eb3a5d16ffa76",
+   "stderr_tail": "",
+   "seconds": 962
+  },
+  {
+   "seed": 777,
+   "outcome": "PASS",
+   "report": {
+    "certificate_failures": 0,
+    "certificates": 8987,
+    "checks": 2138777,
+    "commitment_mismatches": 0,
+    "deleted_returned": 0,
+    "first": [],
+    "five_field_checked": 1026,
+    "five_field_failed": 0,
+    "mismatches": 0,
+    "ops": 17849,
+    "passed": true,
+    "reopen_changed": 0,
+    "reopens": 0
+   },
+   "trace_sha256": "6871d03bdb8c99f424a8d806aa03eca87e5a70b702ac684b504296c6d12a6b9d",
+   "stderr_tail": "",
+   "seconds": 960
+  },
+  {
+   "seed": 2024,
+   "outcome": "PASS",
+   "report": {
+    "certificate_failures": 0,
+    "certificates": 9012,
+    "checks": 2138771,
+    "commitment_mismatches": 0,
+    "deleted_returned": 0,
+    "first": [],
+    "five_field_checked": 1026,
+    "five_field_failed": 0,
+    "mismatches": 0,
+    "ops": 17849,
+    "passed": true,
+    "reopen_changed": 0,
+    "reopens": 0
+   },
+   "trace_sha256": "a64139f5675c9953bd645e2c5ec66f612e627c2ebd84b70325c0554002c73f2c",
+   "stderr_tail": "",
+   "seconds": 712
+  },
+  {
+   "seed": 9999,
+   "outcome": "PASS",
+   "report": {
+    "certificate_failures": 0,
+    "certificates": 8985,
+    "checks": 2138744,
+    "commitment_mismatches": 0,
+    "deleted_returned": 0,
+    "first": [],
+    "five_field_checked": 1026,
+    "five_field_failed": 0,
+    "mismatches": 0,
+    "ops": 17849,
+    "passed": true,
+    "reopen_changed": 0,
+    "reopens": 0
+   },
+   "trace_sha256": "13e4423108aa094db243524843cd03697949f2709d8218105d139b36732f6baf",
+   "stderr_tail": "",
+   "seconds": 712
+  }
+ ],
+ "outcome": "PASS"
+}
