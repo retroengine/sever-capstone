@@ -40,6 +40,9 @@ PATHS = {
     'M4 7l3 3M20 7l-3 3M4 20l3-3M20 20l-3-3M9 5l1 3M15 5l-1 3"/>',
     "text": '<path d="M5 6h14M12 6v13"/>',
     "spark": '<path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/>',
+    "users": '<circle cx="8" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/>'
+    '<path d="M2 20c0-3 3-5 6-5s6 2 6 5"/><path d="M14 15c3 0 7 1 7 5"/>',
+    "chat": '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
     "eye": '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/>'
     '<circle cx="12" cy="12" r="3"/>',
 }

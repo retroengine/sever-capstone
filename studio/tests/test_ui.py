@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from conftest import WORK, screen_config
+from conftest import CFG, STUDIO, WORK, screen_config
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
@@ -31,7 +31,6 @@ from sever_studio.ui.main_window import MainWindow
 from sever_studio.ui.map_view import paint
 from sever_studio.ui.tour import CHAPTERS
 
-ROOT = Path(__file__).resolve().parents[2]
 SIZES = [(1280, 800, 2.0), (1024, 640, 1.0), (1366, 768, 1.0), (1920, 1080, 1.0)]
 
 
@@ -78,7 +77,7 @@ def test_ui_layout_fits_the_screen(size: tuple[int, int, float], report: dict[st
 def win(qapp: QApplication) -> Iterator[MainWindow]:
     work = WORK / "test-ui"
     shutil.rmtree(work, ignore_errors=True)
-    s = Studio(ROOT, "synthetic", work, dev=True, rows=120)
+    s = Studio(CFG, "synthetic", work, dev=True, rows=120)
     s.open()
     s.backend.insert_next(120)
     w = MainWindow(s)
@@ -235,14 +234,14 @@ def test_ui_a_second_studio_on_the_same_data_says_who_holds_it(win: MainWindow) 
     held = lock(work, "prepare")
     try:
         code = (
-            "import sys; sys.path[:0] = ['studio', 'python']\n"
+            "import sys; sys.path[:0] = ['.']\n"
             "from pathlib import Path\n"
             "from sever_studio.backend import lock, WorkInUseError\n"
             f"try:\n    lock(Path({str(work)!r}), 'run')\n"
             "except WorkInUseError as e:\n    print(e)\n"
         )
         out = subprocess.run(
-            [sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, check=True
+            [sys.executable, "-c", code], cwd=STUDIO, capture_output=True, text=True, check=True
         )
         msg = out.stdout.strip()
         assert "busy" in msg
@@ -264,8 +263,8 @@ def test_ui_smoke_on_the_real_display(report: dict[str, Any]) -> None:
     if REAL_DISPLAY:
         env["QT_QPA_PLATFORM"] = REAL_DISPLAY
     p = subprocess.run(
-        ["bash", "studio/studio.sh", "smoke", "--data", "synthetic"],
-        cwd=ROOT,
+        ["bash", "studio.sh", "smoke", "--data", "synthetic"],
+        cwd=STUDIO,
         capture_output=True,
         text=True,
         env=env,
@@ -508,3 +507,49 @@ def test_ui_groups_made_measures_the_clusters_in_384_d(win: MainWindow) -> None:
     settle(win)
     assert tab.plot.isVisible()
     assert not tab.sep.isVisible()
+
+
+def test_ui_the_assistant_story_store_ask_forget(win: MainWindow, tmp_path: Path) -> None:
+    # oracle: A Stage 6.3 (the story's screens) with B sever-verify (§11.3) for the receipts
+    a = win.sections["assistant"]
+    press(win.nav["assistant"])
+    settle(win)
+    a.name.setText("Ula")
+    a.notes.setPlainText("Ula's first note about bees.\nUla's second note about hives.")
+    press(a.b_store)
+    settle(win)
+    assert a.stored.text().count("log #") == 2
+    a.others()
+    settle(win)
+    a.question.setText("Ula's first note about bees.")
+    QTest.keyClick(a.question, Qt.Key.Key_Return)
+    settle(win)
+    assert "[1]" in a.cites.text()
+    assert "passage()" in a.cites.text()
+    assert a.calls.rowCount() > 0  # the live call log
+    press(a.b_forget)
+    settle(win)
+    r = a.report
+    assert r is not None
+    assert r.isVisible()
+    cols = [r.table.horizontalHeaderItem(i).text() for i in range(3)]
+    assert cols[1] == "SEVER-DB"
+    assert cols[2].startswith("Chroma")
+    rows = {r.table.item(i, 0).text(): r.table.item(i, 1).text() for i in range(r.table.rowCount())}
+    assert rows["Search with her own words"] == "not found"
+    assert rows["The app can still read her text"] == "passage() → absent"
+    assert rows["Her text in the files, before → after"].startswith("0 → 0")
+    r.verify()
+    settle(win)
+    assert "ACCEPT × 2 of 2" in r.verdict.text()
+    r.flip()
+    settle(win)
+    assert "REJECT (step" in r.verdict.text()
+    commands = r.save_to(tmp_path / "receipts")
+    assert len(commands) == 2
+    for line in commands:  # the printed command, run as the person would run it
+        args = line.split()
+        out = subprocess.run(args, cwd=tmp_path / "receipts", capture_output=True, text=True)
+        assert out.returncode == 0, out.stdout + out.stderr
+        assert "ACCEPT" in out.stdout
+    r.close()

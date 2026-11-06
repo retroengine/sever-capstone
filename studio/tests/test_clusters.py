@@ -7,21 +7,19 @@ with a sequential sum, worked again here with ``np.cumsum``; the centres are the
 """
 
 from collections.abc import Iterator
-from pathlib import Path
 
 import numpy as np
 import pytest
+from conftest import CFG, WORK
 
 from sever_studio import kmeans
 from sever_studio.actions import Studio
 
-ROOT = Path(__file__).resolve().parents[2]
-
 
 @pytest.fixture(scope="module")
 def studio(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Studio]:
-    work = ROOT / "studio/work" / f"test-clusters-{tmp_path_factory.getbasetemp().name}"
-    s = Studio(ROOT, "synthetic", work, dev=True, rows=120)
+    work = WORK / f"test-clusters-{tmp_path_factory.getbasetemp().name}"
+    s = Studio(CFG, "synthetic", work, dev=True, rows=120)
     s.open()
     s.backend.insert_next(120)
     s.fill_bucket("flush")

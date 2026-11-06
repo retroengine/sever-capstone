@@ -7,24 +7,22 @@ independent computation in the test, never from the code under test.
 import hashlib
 import json
 from collections.abc import Iterator
-from pathlib import Path
 
 import numpy as np
 import pytest
+from conftest import CFG, DATA, WORK
 
-from sever_studio import evidence, proofs, sabotage
+from sever_studio import evidence
 from sever_studio.actions import Studio
 from sever_studio.checklist import ROWS
-
-ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.fixture(scope="module")
 def studio(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Studio]:
     # The work directory must be on a file system that overwrites in place (§12.9): /tmp is often
     # tmpfs, so it goes under studio/work/.
-    work = ROOT / "studio/work" / f"test-{tmp_path_factory.getbasetemp().name}"
-    s = Studio(ROOT, "synthetic", work, dev=True, rows=120)
+    work = WORK / f"test-{tmp_path_factory.getbasetemp().name}"
+    s = Studio(CFG, "synthetic", work, dev=True, rows=120)
     s.open()
     s.backend.insert_next(120)
     yield s
@@ -53,8 +51,10 @@ def test_studio_your_record_lands_where_its_receipt_says(studio: Studio) -> None
     assert studio.backend.index.records[a.rid].group == a.result.placement
     assert studio.backend.index.records[a.rid].mine
     assert studio.backend.mismatches() == []
-    for key in ("insert", "freetext", "routing"):
+    for key in ("insert", "routing"):
         assert studio.checklist.verdicts[key].ok, key
+    # audit 2, H1: offline the text goes through a stand-in, so "your own text" never ticks
+    assert "freetext" not in studio.checklist.verdicts
 
 
 def test_studio_a_waiting_record_is_stored_but_never_found(studio: Studio) -> None:
@@ -155,18 +155,6 @@ def test_studio_disk_holds_no_id_text_or_vector_in_the_clear(studio: Studio) -> 
     assert all(found == 0 for found, _ in d.sever.values())
 
 
-def test_studio_restart_and_a_killed_writer_lose_nothing(studio: Studio) -> None:
-    before, after, gone = studio.restart()
-    assert before == after
-    assert gone
-    assert studio.backend.mismatches() == []
-    c = studio.crash(count=40)
-    assert c.killed
-    assert c.acked > 0
-    assert c.missing == 0
-    assert studio.backend.mismatches() == []
-
-
 def test_studio_search_finds_each_fixture_answer(studio: Studio) -> None:
     n, _, at10, _ = studio.search_quality()
     assert n > 0
@@ -180,22 +168,18 @@ def test_studio_every_row_can_be_ticked(studio: Studio) -> None:
     studio.hover(next(iter(studio.backend.index.records)))
     studio.limits()
     studio.evidence()
-    for name in ("idea", "durable", "receipt"):
-        if proofs.recorded(ROOT, name):
-            studio.proof(name, None)
-        else:
-            studio.proof(name, "synthetic")
     shown = {k for k, v in studio.checklist.verdicts.items() if v.ok}
     missing = {r.key for r in ROWS} - shown
-    # the erase proof and the sabotage lab build release binaries: covered by their own tests
-    # these build release binaries or run second processes: covered by test_live.py and full tier
-    slow = {"shred", "leak", "phasec", "sabotage", "climb", "attacks", "crashdelete", "race"}
+    # the attack lab and the assistant's story are covered by test_live.py and test_company.py
+    slow = {"attacks", "assistant", "gone", "compare"}
+    # offline there is no encoder: these two never tick on the fixture (audit 2, H1)
+    slow |= {"encoder", "freetext"}
     assert missing <= slow, missing
     report = studio.report()
     doc = json.loads(report.read_text("utf-8"))
-    # DB-109: the report counts the 34 checks; 3 rows only show something
-    assert len(ROWS) == 37
-    assert doc["of"] == 34
+    # DB-109: the report counts the 24 checks; 3 rows only show something
+    assert len(ROWS) == 27
+    assert doc["of"] == 24
 
 
 def test_studio_no_screen_shows_a_secret(studio: Studio) -> None:
@@ -210,8 +194,8 @@ def test_studio_no_screen_shows_a_secret(studio: Studio) -> None:
     w.show()
     for section, tab in (
         [("home", None), ("explore", None), ("receipts", None)]
-        + [("hood", t) for t in ("log", "disk", "crash", "rules")]
-        + [("proof", t) for t in ("parts", "sabotage", "evidence")]
+        + [("hood", t) for t in ("log", "disk", "rules")]
+        + [("proof", t) for t in ("evidence",)]
     ):
         w.go(section, tab)
         w.worker.wait()
@@ -230,46 +214,9 @@ def test_studio_no_screen_shows_a_secret(studio: Studio) -> None:
     w.close()
 
 
-def test_studio_reads_the_recorded_proofs() -> None:
-    for name in ("idea", "durable", "receipt"):
-        p = proofs.load_recorded(ROOT, name)
-        if p is None:
-            pytest.skip("no recorded nq-10k runs in artefacts/demo/")
-        assert p.ok, (name, p.checks)
-
-
-def test_studio_reads_the_erase_output() -> None:
-    text = (Path(__file__).parent / "data/demo-p4.out").read_text("utf-8")
-    p = proofs.read("erase", {}, text, "captured")
-    assert p.ok, p.checks
-    r = p.report
-    assert "RECOVERS" in r["normal"]["1"]
-    assert "0 findings" in r["normal"]["3"]
-    assert "7 findings" in r["sb24"]["3"]
-
-
-def test_studio_erase_parser_catches_a_leak_in_the_real_build() -> None:
-    text = (Path(__file__).parent / "data/demo-p4.out").read_text("utf-8")
-    broken = text.replace(
-        "scan the image for the deleted records: 0 findings", "scan: 3 findings", 1
-    )
-    assert not proofs.read("erase", {}, broken, "captured").ok
-
-
-def test_studio_sabotage_commands_match_the_runner() -> None:
-    run_sh = (ROOT / "tests/sabotage/run.sh").read_text("utf-8")
-    for item in sabotage.ITEMS:
-        assert item.id in run_sh, item.id
-        cmd, env = sabotage.command(item)
-        if item.kind == "python":
-            assert env["SEVER_SABOTAGE"] == item.id
-        else:
-            assert any(f"sabotage-{item.id}" in a for a in cmd)
-    assert len(sabotage.ITEMS) == 30
-
-
 def test_studio_evidence_is_read_from_the_generated_reports() -> None:
-    lines = evidence.headlines(ROOT)
+    assert CFG.evidence is not None
+    lines = evidence.headlines(CFG.evidence)
     assert {ln.source for ln in lines} >= {"TRACE_PART_1.md", "PROOFS_P2.md"}
     assert all(any(ch.isdigit() for ch in ln.claim) for ln in lines)
 
@@ -277,8 +224,8 @@ def test_studio_evidence_is_read_from_the_generated_reports() -> None:
 def test_studio_encoder_matches_the_dataset_vectors() -> None:
     from sever_studio.encoder import Encoder, EncoderError
 
-    models = ROOT / "studio/work/models"
-    emb = ROOT / "datasets/processed/nq_1m/embeddings.npy"
+    models = WORK / "models"
+    emb = DATA / "datasets/processed/nq_1m/embeddings.npy"
     try:
         enc = Encoder(models)
     except EncoderError:
@@ -288,7 +235,7 @@ def test_studio_encoder_matches_the_dataset_vectors() -> None:
     import pyarrow.parquet as pq
 
     batch = next(
-        pq.ParquetFile(ROOT / "datasets/processed/nq_1m/passages.parquet").iter_batches(
+        pq.ParquetFile(DATA / "datasets/processed/nq_1m/passages.parquet").iter_batches(
             batch_size=20, columns=["text"]
         )
     )

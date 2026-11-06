@@ -53,7 +53,13 @@ ROWS = [
         "§7.4, §8",
         "Search",
     ),
-    Row(10, "search", "Search with real questions; judged answers found", "§8", "Search"),
+    Row(
+        10,
+        "search",
+        "Search with real questions: half or more find a judged answer in the top 10",
+        "§8",
+        "Search",
+    ),
     Row(
         11, "hover", "Each point: its account, group, passage and encoding", "§3, §4", "Map", False
     ),
@@ -82,42 +88,36 @@ ROWS = [
         21, "audit", "An auditor checks the whole log and every certificate", "§11.3, §15.4", "Log"
     ),
     Row(22, "disk", "Encrypted at rest: no ID, text or vector on the disk", "§13.2", "Disk"),
-    Row(23, "restart", "A restart keeps every record; deleted stays deleted", "§12", "Crash"),
+    Row(23, "attacks", "Every forgery of a receipt is caught", "§11.3", "Attack lab"),
     Row(
         24,
-        "crash",
-        "A writer killed mid-stream: every acknowledged insert survives",
-        "§12, §15.1",
-        "Crash",
-    ),
-    Row(25, "exact", "Deletion returns each group to its survivors-only state", "§5", "Proofs"),
-    Row(26, "ghost", "Float means and soft deletes are not exact", "P1-T14", "Proofs"),
-    Row(27, "durable", "A crash before or after the commit point: all or nothing", "§12", "Proofs"),
-    Row(28, "chain", "A person's certificates chain; the audit finds nothing", "§11.3", "Proofs"),
-    Row(
-        29, "shred", "A scanner with the whole disk and keys finds nothing deleted", "§13", "Proofs"
+        "assistant",
+        "The assistant answers from passages the engine returned",
+        "§8, §16.1",
+        "Assistant",
     ),
     Row(
-        30,
-        "leak",
-        "Skip key rotation (SB-24) and the scan finds the deleted data",
-        "§13.3, SB-24",
-        "Proofs",
+        25,
+        "gone",
+        "Forget me: receipts verify; not found, not readable, not in the files",
+        "§11.3, §13.2",
+        "Assistant",
     ),
-    Row(31, "phasec", "A crash between commit and key erase: recovery erases", "§13.4", "Proofs"),
-    Row(32, "sabotage", "A planted bug turns a test red", "Build §2.6", "Sabotage"),
     Row(
-        33,
+        26,
+        "compare",
+        "The same app on an ordinary vector store, side by side",
+        "§13.2",
+        "Assistant",
+    ),
+    Row(
+        27,
         "evidence",
         "Traceability, proofs, oracles, gate runs, fairness runs",
         "Build §2.2, §2.5",
         "Evidence",
         False,
     ),
-    Row(34, "climb", "A receipt climbs the log tree to the signed root", "§10, §11.2", "Live"),
-    Row(35, "attacks", "Every forgery of a receipt is caught", "§11.3", "Live"),
-    Row(36, "crashdelete", "A deletion killed part-way: all or nothing", "§12.5", "Live"),
-    Row(37, "race", "Float means drift; integer sums stay identical", "§4.2, §5", "Live"),
 ]
 BY_KEY = {r.key: r for r in ROWS}
 CHECKS = [r for r in ROWS if r.check]

@@ -1,19 +1,17 @@
-"""The beginner diagrams, as data: each step's title and the real numbers for the record shown.
+"""Words for what the engine did: the certificate's fields, one observed line per deletion, the
+glossary.
 
-Every number comes from the engine (its receipts, events and sizes), its routing code
-(``Studio.why``, DB-108) or the dataset, never from arithmetic of Studio's own. The window draws
-these with ``widgets.Flow``; the tests read them directly.
+Every number comes from the engine (its receipts and sizes), never from arithmetic of Studio's own
+(audit 2, H4: nothing is stated that was not observed).
 """
 
 import math
 from typing import TYPE_CHECKING
 
-from .backend import HOLDING, cert_field
+from .backend import HOLDING
 
 if TYPE_CHECKING:
-    from .actions import Deleted, Studio
-
-Steps = list[tuple[str, str]]
+    from .actions import Deleted
 
 #: §11.1, the certificate's fields by tag.
 FIELDS = {
@@ -34,78 +32,26 @@ FIELDS = {
 }
 
 
-def insert_flow(studio: "Studio", rid: str) -> Steps:
-    """How a stored record got to its group: encode, quantise, nearest frozen centre, drift test,
-    destination (§3.3, §4.2, §7.1–7.3)."""
-    b = studio.backend
-    rec = b.index.records[rid]
-    why = studio.why(rid)
-    text = " ".join(b.text_of(rid).split())
-    x = b.vector_of(rid)
-    steps: Steps = [
-        ("The passage", (text[:70] + "…") if len(text) > 70 else text),
-        (
-            "Encoded: x",
-            f"{len(x)} numbers of length 1: [{x[0]:.5f}, {x[1]:.5f}, …] (the pinned encoder, §3.3)",
-        ),
-    ]
-    if why is None:
-        return steps
-    xt = why["x_tilde"]
-    (j, d), *rest = why["nearest"]
-    near = f"; next frozen-{rest[0][0]:04d}: {rest[0][1]:.4f}" if rest else ""
-    inside = why["in_distribution"]
-    steps += [
-        ("Quantised: x̃ = round(x · 2²⁴)", f"[{xt[0]:,}, {xt[1]:,}, …] whole numbers (§4.2)"),
-        ("Nearest frozen centre (§7.1)", f"frozen-{j:04d}: D = Σ(x̂ − μ)² = {d:.4f}{near}"),
-        (
-            "Drift test (§7.2)",
-            f"d_M = {why['d_m']:.3f} {'≤' if inside else '>'} τ = {why['tau']:.3f}: "
-            + ("in distribution" if inside else "out of distribution"),
-        ),
-        (
-            "Where the engine put it (§7.3)",
-            rec.group
-            + (
-                ""
-                if inside
-                else " (out of distribution: the nearest spawned group with room, else the bucket)"
-            ),
-        ),
-    ]
-    return steps
-
-
-def delete_flow(studio: "Studio", d: "Deleted") -> Steps:
-    """What one deletion did inside the engine and what it published (§5.3, §10, §11, §13.3)."""
-    b = studio.backend
-    if not d.lsns:
-        return []
-    lsn = d.lsns[0]
-    cert = (b.receipts / f"{lsn}.cert").read_bytes()
-    pre, post = cert_field(cert, 2), cert_field(cert, 3)
-    group = next(iter(d.groups_before), HOLDING)
-    n0, n1 = d.groups_before.get(group, 0), d.groups_after.get(group, 0)
-    if group == HOLDING or not post:
-        first = ("Removed from the bucket", "it was in no group: no sum to change (§7.4)")
-        commit = ("Commitment", "none: a bucket deletion's receipt has no C_S (§11.3 step 7)")
-    else:
-        first = (f"Removed from {group}", f"S − x̃ and n {n0} → {n1}, exactly (§5.3)")
-        commit = (
-            "Its commitment",
-            f"C_S {pre.hex()[:12]}… → {post.hex()[:12]}…: moved by exactly C_t (§9.3)",
-        )
-    return [
-        first,
-        commit,
-        (f"Receipt #{lsn}", "signed by the operator; checkable offline by anyone (§11)"),
-        ("Public log", f"leaf #{lsn} appended; witnesses cosign the checkpoint (§10)"),
-        (
-            "Keys",
-            "the group's and the record's bucket key replaced, the old ones overwritten: the "
-            "deleted bytes can no longer be decrypted (§13.3–13.4)",
-        ),
-    ]
+def deleted_line(d: "Deleted") -> str:
+    """One line of what a deletion was observed to do: each touched group's ``n`` before and after
+    (the engine's ``group_sizes``) and the receipt numbers. Nothing Studio did not observe."""
+    if not d.rids:
+        return "nothing deleted"
+    groups = sorted(set(d.groups_before) | set(d.groups_after))
+    sizes = "; ".join(
+        f"{g} n {d.groups_before.get(g, 0)} → {d.groups_after.get(g, 0)}"
+        for g in groups
+        if g != HOLDING
+    )
+    held = sum(1 for g in groups if g == HOLDING)
+    parts = [f"deleted {len(d.rids)} record{'s' if len(d.rids) != 1 else ''}"]
+    if sizes:
+        parts.append(sizes)
+    if held:
+        parts.append("from the holding area: no group sum to change (§7.4)")
+    if d.lsns:
+        parts.append("receipt " + ", ".join(f"#{n}" for n in d.lsns))
+    return "; ".join(parts)
 
 
 def cert_field_at(cert: bytes, offset: int) -> tuple[int, str]:
@@ -123,27 +69,6 @@ def levels(tree_size: int) -> int:
     """How many hashes an inclusion path needs at most: ⌈log₂ n⌉ (RFC 9162 §2.1.3)."""
     return math.ceil(math.log2(tree_size)) if tree_size > 1 else 0
 
-
-#: §12.3, §15.1: an insert's way to durable (kills before COMMIT store nothing, after it store all).
-COMMIT = [
-    ("Request", "the insert arrives, checked and planned in memory (§15.1)"),
-    ("WAL records", "written to the write-ahead log and fsynced (§12.3)"),
-    ("COMMIT", "the commit record, fsynced: the commit point. Before it nothing happened"),
-    ("Applied", "the change goes into memory; the engine may now answer"),
-    ("Acknowledged", "the answer reaches you. Killed between COMMIT and here: stored, unanswered"),
-]
-
-#: §13.1–13.4: the key hierarchy and what a deletion destroys.
-KEYS = [
-    ("Group key GK_g", "one per group; wraps the group's bucket keys and seals S and r_agg"),
-    ("Bucket key BK_g,b", "one per bucket (64 per group); wraps its records' keys"),
-    ("Record key RK_t", "one per record; encrypts its x̃, r_t and text (§13.2)"),
-    (
-        "On delete",
-        "new GK and BK are written, the old ones overwritten in the key file: the deleted "
-        "record's RK cannot be unwrapped any more (§13.3–13.4)",
-    ),
-]
 
 GLOSSARY = [
     ("x, x̃, x̂", "the vector; x̃ = round(x · 2²⁴) as whole numbers (Q24, §4.2); x̂ = x̃ / 2²⁴"),

@@ -99,9 +99,10 @@ TEXT: dict[str, tuple[str, str]] = {
         "encrypted. It lands where the routing rule sends it (§7.3).",
     ),
     "hover.source": (
-        "Text from the dataset; stored encrypted.",
-        "The database never hands text back (§13.2): what you read here comes from the dataset, or "
-        "from what you typed.",
+        "Text from the dataset; the database stores it encrypted.",
+        "The database keeps every passage encrypted on disk (§13.2) and hands it back only through "
+        "passage() (§16.1, the inspect build). The map's text comes from the dataset; the "
+        "Assistant reads every passage it shows with passage().",
     ),
     "group.frozen": (
         "Frozen group: its centre was fitted once by k-means and never moves (§6).",
@@ -121,9 +122,9 @@ TEXT: dict[str, tuple[str, str]] = {
         "",
     ),
     "hover.source.mine": (
-        "Text you typed; stored encrypted.",
-        "The database never hands text back (§13.2): what you read here is what Studio kept of "
-        "what you typed.",
+        "Text you typed; the database stores it encrypted.",
+        "What you read here is Studio's own copy of what you typed; the database keeps it "
+        "encrypted (§13.2) and the Assistant reads it back with passage() (§16.1).",
     ),
     "route.frozen": ("Joined a frozen group", "Close to a frozen group's centroid (§7.1–7.3)."),
     "route.spawn": (
@@ -155,8 +156,11 @@ TEXT: dict[str, tuple[str, str]] = {
     "log.about": (
         "Every change, in a signed public log.",
         "Each insert and deletion is a leaf of an append-only Merkle tree (RFC 9162), signed by "
-        "the operator and cosigned by independent witnesses, so no one is shown a different "
-        "history (§10).",
+        "the operator and cosigned by five witnesses, so no one is shown a different history "
+        "(§10). In v1 the witnesses are simulated: the database itself holds their keys and "
+        "cosigns (§10.4); real independent witnesses are future work (overview L-7). The ✓ "
+        "beside each witness means it is listed in the checkpoint; the auditor checks the "
+        "signatures (§11.3).",
     ),
     "disk.about": (
         "What a thief with the disk would find.",
@@ -164,16 +168,6 @@ TEXT: dict[str, tuple[str, str]] = {
         "its float vector, and the integers x̃ = round(x · 2²⁴) the database actually stores "
         "(§4.2), in either byte order. First over an ordinary store of the same records, to show "
         "the search can see each form. Only public values are stored in the clear (§13.2).",
-    ),
-    "disk.keys": (
-        "Why a deleted record cannot be read back: the keys that opened it are gone.",
-        "",
-    ),
-    "crash.about": (
-        "Pull the plug mid-write.",
-        "A second process inserts records and is killed with SIGKILL half-way, as a power cut "
-        "would "
-        "stop it. Every insert it was told was stored must be there after recovery (§12, §15.1).",
     ),
     "rules.about": (
         "Bad input is refused, never repaired.",
@@ -185,54 +179,11 @@ TEXT: dict[str, tuple[str, str]] = {
         "An insert whose answer was lost is sent again with the same request; the database "
         "recognises it (§15.1).",
     ),
-    "proof.about": (
-        "Each part proves its claim from inside.",
-        "Some claims cannot be seen through the SDK, by design. Each part ships a program that "
-        "shows its claim from inside; Studio runs it and reads its report.",
-    ),
-    "proof.idea": (
-        "Exact deletion",
-        "A cohort is deleted; each touched group equals the state rebuilt from its survivors "
-        "alone, "
-        "bit for bit (§5). A float running mean and a soft-delete index, given the same deletion, "
-        "do not (sever-demo idea).",
-    ),
-    "proof.durable": (
-        "All or nothing",
-        "A multi-group deletion crashed just before and just after its commit point, on a "
-        "simulated "
-        "disk and with a real SIGKILL: after recovery, all deleted or none (§12; sever-demo-p2).",
-    ),
-    "proof.receipt": (
-        "Receipts chain",
-        "A person's certificates chain, each starting where the previous ended, and the auditor "
-        "finds nothing wrong (§11.3; sever_demo_p3.receipt).",
-    ),
-    "proof.erase": (
-        "Nothing to recover",
-        "A forensic scanner with the whole disk and every key it can carve recovers a live record "
-        "but nothing deleted. Built with key rotation skipped (SB-24), it finds the deleted data "
-        "(§13; scripts/demo-p4.sh). The program counts what it decrypts; it does not yet print the "
-        "rebuilt vector (Build 3-4 §2.11 step 4).",
-    ),
-    "sabotage.about": (
-        "Plant a bug; a test must go red.",
-        "Each item is the real code with exactly one deliberate bug, switched on by a build flag. "
-        "A test that never fails proves nothing (Build §2.6). Compiling takes a few minutes.",
-    ),
     "evidence.about": (
         "Read from the project's generated files.",
         "Traceability, proofs that each test can fail, where each expected value comes from, every "
         "gate run with its commit, and the clean-room fairness runs as they ended, failures "
         "included.",
-    ),
-    "live.tree": (
-        "Your receipt climbs the public log.",
-        "The receipt carries your record's insert leaf, its place in the log, and the hashes "
-        "beside "
-        "it on the way up (RFC 9162, §11.2). Studio hashes them itself, with its own code: the top "
-        "must equal the root that the operator signed and 4 or more independent witnesses cosigned "
-        "(§10.3–10.4). So your insert is provably in the same log everyone else sees.",
     ),
     "live.attacks": (
         "Try to cheat with a receipt.",
@@ -246,33 +197,13 @@ TEXT: dict[str, tuple[str, str]] = {
         "cheats\" runs Part 3's own forgeries made with it (P3-T2). A valid receipt is not proof "
         "it is yours: check the key inside against your own.",
     ),
-    "live.kill": (
-        "Kill a deletion mid-way.",
-        "A person with many records is deleted in one transaction by a second process, which is "
-        "killed with SIGKILL at a random moment. After recovery the database holds all of their "
-        "records or none, never some (§12.5). Most kills land before the commit point; Part 2's "
-        "own "
-        "proof shows a crash just after it (Proof tab).",
-    ),
-    "live.kill.timeline": (
-        "Where each kill landed in the deletion's time: blue, none deleted (before its commit "
-        "point); green, all deleted (after it). A half deletion would be red.",
-        "",
-    ),
-    "live.race": (
-        "Floats drift; integers don’t.",
-        "200 real vectors. One is removed and put back, again and again, so the members never "
-        "change. A float32 running mean, as most indexes keep it, slowly changes anyway. SEVER's "
-        "sum of Q24 integers (§4.2, §5) returns to exactly the same bits every time. This is a "
-        "model "
-        "of the arithmetic in Studio; the engine's own proof is Part 1's (Proof tab).",
-    ),
     "live.kmeans": (
         "How the frozen groups were made.",
-        "k-means, as the partition builder (C-15) runs it: start from k centres chosen by "
-        "k-means++, then repeat two steps until nothing changes. Assignment: each row joins its "
+        "The same algorithm as the partition builder (C-15), one start: k centres chosen by "
+        "k-means++, then two steps repeated until nothing changes. Assignment: each row joins its "
         "nearest centre, by Σ(x̂ − μ)². Update: each centre moves to the mean of its rows. The real "
-        "partition used k = 128, 10 starts and up to 300 steps on all 13,679 SciQ rows (§6.2).",
+        "partition used k = 128, the best of 10 starts and up to 300 steps on all 13,679 SciQ "
+        "rows (§6.2).",
     ),
     "live.kmeans.offline": (
         "",
@@ -281,10 +212,57 @@ TEXT: dict[str, tuple[str, str]] = {
         "(quantised as §6.2 step 1 says). The picture is one fixed 2-D projection; every distance "
         "is measured in all the dimensions.",
     ),
-    "live.race.model": (
-        "A model, computed by Studio in numpy, of the arithmetic of §4.2 and §5: not the engine. "
-        "The button beside it runs the engine's own proof of the same claim.",
+    "assistant.about": (
+        "Acme Notes: a company app on SEVER-DB.",
+        "A notes app with an AI assistant, built the way a company would build it: its own code, "
+        "the SEVER-DB SDK, and nothing else. Store your notes, ask about them, then ask to be "
+        "forgotten and check what is left. Every number on this screen is the result of a real "
+        "call, listed under SEVER-DB calls.",
+    ),
+    "assistant.you": (
         "",
+        "Each note is encoded by the pinned model, signed with your account's key and stored with "
+        "its text, encrypted (§3.4, §13.2). It goes where the routing rule sends it (§7.3). "
+        "A note far from every group waits in the holding area: stored, not searchable, until "
+        "enough gather to become a new group (§7.4). Let other users write fills it.",
+    ),
+    "assistant.ask": (
+        "",
+        "Your question is encoded and searched (§8); the engine opens the groups nearest it and "
+        "returns the best matches. Each passage is read from the database with passage() (§16.1), "
+        "so text that was deleted cannot be shown.",
+    ),
+    "assistant.groq": (
+        "",
+        "With GROQ_API_KEY set, your question and the retrieved passages are sent to Groq "
+        "(llama-3.1-8b-instant), which writes the answer. What Groq receives is outside the "
+        "database: SEVER-DB can neither delete it nor prove anything about it. Without a key the "
+        "passages are shown as they are (AI off).",
+    ),
+    "assistant.forget": (
+        "",
+        "All your notes are deleted in one transaction, all or nothing (§12.5), and you get one "
+        "receipt per note (§11). The report then checks what is left, and runs the same steps on "
+        "an ordinary vector store (Chroma) holding the same notes.",
+    ),
+    "assistant.map": (
+        "Your notes ★ among everyone's; after a question, lines to the passages it found.",
+        "",
+    ),
+    "forget.notes": (
+        "",
+        "What this shows and what it does not. The files searched are the database's own (and "
+        "Chroma's folder), byte by byte, for your notes' IDs, text and vectors. The raw-disk "
+        "result, with deleted blocks carved from the whole device, is gate P4-T1 (see Evidence). "
+        "The witnesses that cosign the log are simulated in v1 (§10.4, overview L-7). A receipt "
+        "cannot prove the operator kept no copy (L-2). What Groq received is outside the "
+        "database.",
+    ),
+    "disk.raw": (
+        "",
+        "This searches the database's files. Carving deleted blocks from the whole raw device, "
+        "with every key the scanner can find, is gate P4-T1 (forensic erasure, §13), run on a "
+        "16 GiB image: see Evidence for its result.",
     ),
     "welcome": (
         "Three things to try",
@@ -304,6 +282,14 @@ def long(key: str) -> str:
 #: The checklist: each row's short title (≤ 6 words), grouped by the claim it supports.
 GROUPS: list[tuple[str, list[tuple[str, str]]]] = [
     (
+        "The company app",
+        [
+            ("assistant", "Answers from passages"),
+            ("gone", "Forget me: nothing left"),
+            ("compare", "Beside an ordinary store"),
+        ],
+    ),
+    (
         "Exact deletion",
         [
             ("data", "Data pinned"),
@@ -320,9 +306,6 @@ GROUPS: list[tuple[str, list[tuple[str, str]]]] = [
             ("delete", "Delete: dot gone"),
             ("absent", "Delete again: absent"),
             ("forget", "Forget an account"),
-            ("exact", "Survivors-only state"),
-            ("ghost", "Floats leave a ghost"),
-            ("race", "Floats drift, integers don’t"),
         ],
     ),
     (
@@ -330,10 +313,6 @@ GROUPS: list[tuple[str, list[tuple[str, str]]]] = [
         [
             ("refusals", "Bad input refused"),
             ("retry", "Retry stored once"),
-            ("restart", "Restart loses nothing"),
-            ("crash", "Kill mid-write"),
-            ("crashdelete", "Kill mid-delete"),
-            ("durable", "All or nothing"),
         ],
     ),
     (
@@ -344,20 +323,10 @@ GROUPS: list[tuple[str, list[tuple[str, str]]]] = [
             ("limits", "Limits stated"),
             ("log", "Signed log"),
             ("audit", "Audit: clean"),
-            ("chain", "Receipts chain"),
-            ("climb", "Receipt climbs the log"),
             ("attacks", "Forgeries caught"),
         ],
     ),
-    (
-        "Really gone",
-        [
-            ("disk", "Encrypted on disk"),
-            ("shred", "Scan finds nothing"),
-            ("leak", "Skip rotation: leaks"),
-            ("phasec", "Crash, then erased"),
-        ],
-    ),
-    ("Evidence", [("sabotage", "Planted bug caught"), ("evidence", "Generated evidence")]),
+    ("Really gone", [("disk", "Encrypted on disk")]),
+    ("Evidence", [("evidence", "Generated evidence")]),
 ]
 CHECK_SHORT = {key: title for _, rows in GROUPS for key, title in rows}

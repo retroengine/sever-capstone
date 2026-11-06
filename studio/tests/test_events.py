@@ -8,21 +8,19 @@ log does.
 
 import json
 from collections.abc import Iterator
-from pathlib import Path
 
 import numpy as np
 import pytest
+from conftest import CFG, WORK
 
 from sever_studio.actions import Studio
 from sever_studio.backend import HOLDING, cert_field
 
-ROOT = Path(__file__).resolve().parents[2]
-
 
 @pytest.fixture(scope="module")
 def studio(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Studio]:
-    work = ROOT / "studio/work" / f"test-events-{tmp_path_factory.getbasetemp().name}"
-    s = Studio(ROOT, "synthetic", work, dev=True, rows=120)
+    work = WORK / f"test-events-{tmp_path_factory.getbasetemp().name}"
+    s = Studio(CFG, "synthetic", work, dev=True, rows=120)
     s.open()
     s.backend.insert_next(120)
     yield s

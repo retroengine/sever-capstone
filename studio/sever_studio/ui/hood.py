@@ -1,17 +1,16 @@
-"""Under the hood: the public log, the disk, crashes, and what the database refuses."""
+"""Under the hood: the public log, the disk, and what the database refuses."""
 
 import json
 from typing import Any
 
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QSpinBox, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QTabWidget, QVBoxLayout, QWidget
 
-from .. import explain
-from ..actions import Crashed, Disk
+from ..actions import Disk
 from ..backend import Inserted
 from . import copy, theme
 from .host import Host
-from .widgets import Flow, Tile, Verdict, button, chip, clear, info, label
+from .widgets import Tile, Verdict, button, chip, clear, info, label
 
 LEFT = Qt.AlignmentFlag.AlignLeft
 
@@ -37,7 +36,7 @@ class LogTab(QWidget):
         QVBoxLayout(self).addWidget(w)
         tiles = QHBoxLayout()
         self.t_size = Tile("leaves")
-        self.t_wit = Tile("witnesses signed")
+        self.t_wit = Tile("witnesses listed (simulated, L-7)")
         self.t_path = Tile("hashes in a proof")
         for t in (self.t_size, self.t_wit, self.t_path):
             tiles.addWidget(t)
@@ -58,7 +57,12 @@ class LogTab(QWidget):
             self.t_path.set(str(log["inclusion_path"]))
             clear(self.witnesses)
             for idx, _ in log["cosignatures"]:
-                self.witnesses.addWidget(chip(f"✓ witness {idx}", theme.OK))
+                c = chip(f"witness {idx} listed", theme.OK)
+                c.setToolTip(
+                    "Listed in the checkpoint; the signature is checked by the auditor (Audit), "
+                    "not here. In v1 the witnesses are simulated by the database (§10.4, L-7)."
+                )
+                self.witnesses.addWidget(c)
             self.witnesses.addStretch(1)
             self.host.changed()
 
@@ -106,10 +110,7 @@ class DiskTab(QWidget):
         lay.addLayout(grid)
         self.files = label("", "small")
         lay.addWidget(self.files)
-        lay.addWidget(label(copy.short("disk.keys"), "strong"))
-        keys = Flow(vertical=False)
-        keys.set(explain.KEYS)
-        lay.addWidget(keys)
+        lay.addWidget(label(copy.long("disk.raw"), "small", wrap=True))
         lay.addStretch(1)
 
     def arrive(self) -> None:
@@ -127,90 +128,6 @@ class DiskTab(QWidget):
             self.host.changed()
 
         self.host.worker.submit(self.host.studio.disk, done, self.host.error)
-
-
-class CrashTab(QWidget):
-    def __init__(self, host: Host) -> None:
-        super().__init__()
-        self.host = host
-        w, lay = page(copy.short("crash.about"), "crash.about")
-        QVBoxLayout(self).addWidget(w)
-        row = QHBoxLayout()
-        row.addWidget(label("Writes to attempt"))
-        self.count = QSpinBox()
-        self.count.setRange(20, 2000)
-        self.count.setValue(200 if host.studio.data == "nq" else 40)
-        row.addWidget(self.count)
-        row.addWidget(button("Pull the plug", "danger", self.crash, "zap"))
-        row.addStretch(1)
-        lay.addLayout(row)
-        self.phase = Verdict()
-        lay.addWidget(self.phase)
-        tiles = QHBoxLayout()
-        self.t_acked = Tile("confirmed before the kill")
-        self.t_missing = Tile("missing after recovery")
-        self.t_flight = Tile("the write in flight landed")
-        for t in (self.t_acked, self.t_missing, self.t_flight):
-            tiles.addWidget(t)
-        lay.addLayout(tiles)
-        flow = Flow(vertical=False)
-        flow.set(explain.COMMIT)
-        lay.addWidget(flow)
-        restart = QHBoxLayout()
-        restart.addWidget(button("Restart the database", "", self.restart, "refresh"))
-        self.r_res = Verdict()
-        restart.addWidget(self.r_res, 1)
-        lay.addLayout(restart)
-        lay.addStretch(1)
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self._poll)
-
-    def arrive(self) -> None:
-        pass
-
-    def restart(self) -> None:
-        def done(out: tuple[int, int, bool]) -> None:
-            before, after, gone = out
-            self.r_res.set(
-                before == after and gone,
-                f"{before:,} records before, {after:,} after; deleted stay deleted",
-            )
-            self.host.changed()
-
-        self.r_res.set(None, "closing and reopening…")
-        self.host.worker.submit(self.host.studio.restart, done, self.host.error)
-
-    def _poll(self) -> None:
-        acks = self.host.studio.work / "acks.txt"
-        n = len(acks.read_text("utf-8").splitlines()) if acks.exists() else 0
-        self.t_acked.set(str(n), theme.ACCENT)
-        if n >= self.count.value() // 2:
-            self.phase.set(None, "killed · recovering · checking…")
-
-    def crash(self) -> None:
-        count = self.count.value()
-        self.phase.set(None, "writing…")
-        self.t_missing.set("—")
-        self.t_flight.set("—")
-        (self.host.studio.work / "acks.txt").unlink(missing_ok=True)
-        self.timer.start(60)
-
-        def done(c: Crashed) -> None:
-            self.timer.stop()
-            ok = c.killed and c.missing == 0 and c.acked > 0
-            self.t_acked.set(str(c.acked))
-            self.t_missing.set(str(c.missing), theme.OK if c.missing == 0 else theme.BAD)
-            self.t_flight.set("—" if c.committed is None else ("yes" if c.committed else "no"))
-            self.phase.set(
-                ok, "nothing confirmed was lost" if ok else "a confirmed write is missing"
-            )
-            self.host.changed()
-
-        def failed(msg: str) -> None:
-            self.timer.stop()
-            self.host.error(msg)
-
-        self.host.worker.submit(lambda: self.host.studio.crash(count), done, failed)
 
 
 class RulesTab(QWidget):
@@ -265,7 +182,7 @@ class RulesTab(QWidget):
 
 
 class Hood(QTabWidget):
-    TABS = ("log", "disk", "crash", "rules")
+    TABS = ("log", "disk", "rules")
 
     def __init__(self, host: Host) -> None:
         super().__init__()
@@ -273,10 +190,9 @@ class Hood(QTabWidget):
         self.tabs: dict[str, Any] = {
             "log": LogTab(host),
             "disk": DiskTab(host),
-            "crash": CrashTab(host),
             "rules": RulesTab(host),
         }
-        names = {"log": "Public log", "disk": "Disk", "crash": "Crash", "rules": "Bad input"}
+        names = {"log": "Public log", "disk": "Disk", "rules": "Bad input"}
         for k in self.TABS:
             self.addTab(self.tabs[k], names[k])
         self.currentChanged.connect(lambda i: self.tabs[self.TABS[i]].arrive())

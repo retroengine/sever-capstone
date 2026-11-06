@@ -174,3 +174,31 @@ Kept, because they show the real thing:
 - The four part programs run live.
 - The 384-D separation (§8.1, bit for bit).
 - The Evidence screen, which shows the FAIL fairness runs as FAIL.
+
+## 5. After (6 Nov 2026, Stage 6, DB-119)
+
+Studio now runs on the frozen v1.0.0 engine, through the SDK and the programs named in
+`config.toml` only (`tests/test_boundary.py`). Each finding's fix, and the test that fails without
+it:
+
+| Finding | Now | Test |
+|---|---|---|
+| C1 "independent witnesses" | Wherever witnesses appear, they are called five simulated witnesses: the database holds their keys and cosigns itself (§10.4, L-7). The attack lab's line reads "needs 4 of the 5 witnesses (simulated in v1, L-7)" | E3 below |
+| C2 claims stated as facts | Each Home claim card shows its part's freeze tag and its gate's latest ledger run: P1-T2, P2-T1, P3-T1, P4-T1 (all PASS) and `part-N-frozen` (`evidence.claim_status`) | `test_studio_evidence_is_read_from_the_generated_reports` |
+| H1 stand-in encoder ticks | Offline, `freetext` and `encoder` are never marked; Home says "not available offline" | `test_studio_your_record_lands_where_its_receipt_says`, E1, E2 |
+| H2 the climb never checks a signature | The climb is removed; `sever-verify` judges every receipt | E4 |
+| H3 Part 4's proof card, a check that cannot fail | The part programs are removed from Studio; P4-T1's raw-disk result is cited from the ledger | E5 |
+| H4 the deletion diagram | One observed line: each group's `n` before → after and the receipt numbers (`explain.deleted_line`) | `test_explain_the_deleted_line_states_only_the_engines_n_and_receipt`, E6 |
+| M1 Float vs exact | Removed | — |
+| M2 stale words | The tour is rewritten (10 chapters); the forgery counts now come from the run | — |
+| M3 sabotage without a control | The sabotage lab is removed | — |
+| M4 a silent resend after a crash | The crash demos and the resend are removed | — |
+| M5 "as C-15 runs it" | "The same algorithm as the partition builder (C-15), one start" | — |
+| L1 search ticks on one hit | Ticks only when at least half the questions find a judged answer in their top 10 | `test_studio_search_finds_each_fixture_answer` |
+| L2 Replay | Labelled "Replay (recorded)", with a tooltip saying it is not a live run | — |
+| L3 witness chips | "witness n listed"; the tooltip says the auditor checks the signatures | — |
+
+Section 3's simpler demonstrations are done too. The Assistant (Acme Notes) is the main screen. Its
+Forget-me report checks, after the deletion, a search with her own words, `passage()` of each ID, a
+byte search of the database's files, and `sever-verify` on every receipt. It runs the same steps on
+Chroma beside it.

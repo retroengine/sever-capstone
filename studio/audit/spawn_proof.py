@@ -1,13 +1,13 @@
-"""Run: uv run --project studio --no-sync python studio/audit/spawn_proof.py COPY_OF_studio-nq (on ext4).
+"""Run: PYTHONPATH=studio/vendor/site:studio uv run --project studio --no-sync \
+    python studio/audit/spawn_proof.py COPY_OF_studio-nq   (on ext4; paths from config.toml, DB-119)
 Is a spawned group the engine's? Every value below is read from the engine (receipt, export_log,
 group_sizes, events) or worked out here from §7.5 and the dataset; nothing comes from Studio's math."""
 import hashlib, json, sys
 from pathlib import Path
 import numpy as np
-ROOT = Path.home() / "sever-db"
-sys.path[:0] = [str(ROOT / "python"), str(ROOT / "studio")]
+from sever_studio import config
 from sever_studio.actions import Studio
-s = Studio(ROOT, "nq", Path(sys.argv[1]), dev=True, rows=10_000); s.open()
+s = Studio(config.load(), "nq", Path(sys.argv[1]), dev=True, rows=10_000); s.open()
 b, db, cid = s.backend, s.backend.live, s.backend.cid
 seen = len(db.events(0))
 out = s.fill_bucket("flush")

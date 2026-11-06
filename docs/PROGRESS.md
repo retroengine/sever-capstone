@@ -26,17 +26,26 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
   `scripts/index.py`. Nothing moved.
 
 - **Branch:** the release is on `bughunt-2026-11` (freeze commit `7942c1d`, tags `part-3-frozen`,
-  `part-4-frozen`, `v1.0.0`). On 6 Nov 2026 it was pushed with its tags and `main` was fast-forwarded
-  to it once GitHub's fast tier and `scripts/ci.sh full-checks` were green.
+  `part-4-frozen`, `v1.0.0`). On 6 Nov 2026 it was pushed with its tags, and `main` was
+  fast-forwarded to `0d6482b` on the owner's word. GitHub's fast tier was green on `69a33f4`.
+  `scripts/ci.sh full-checks` passed 42 of its 43 steps there; the 43rd, the new per-run step for
+  the kept clean-room tests, was fixed in `0d6482b` and passes on its own (281 tests), but the
+  whole of `full-checks` was not rerun.
+- **Stage 6 (6 Nov 2026, DB-119):** Studio's company demo is on branch `p6-studio-company`,
+  pushed and not merged into `main`; see Studio below.
 - **The HPC is gone (29 Oct, DB-113):** the v1.0 run is on the laptop, every step scoped to fit
   about 29 h of the owner's two days (`scripts/hpc/steps.sh`, `scripts/hpc/LAPTOP_RUN.md`).
-- **Plan stage:** Stages 1 to 5 are done (Stage 4: fair runs PASS for Parts 3 and 4; Stage 5: the
-  freeze and the tags, 1 Nov). Stage 6 (Studio's company demo) is the only planned work left.
+- **Plan stage:** Stages 1 to 6 are done. Stage 4: fair runs PASS for Parts 3 and 4. Stage 5: the
+  freeze and the tags, 1 Nov. Stage 6: Studio's company demo, 6 Nov, waiting for the owner's
+  hands-on check and merge.
 
 ## Next
 
-1. **Stage 6:** Studio's company demo on the frozen engine; its to-do list is
-   `studio/audit/AUDIT2.md`. New work goes on new branches; frozen files change only by erratum (F-6).
+1. **Stage 6, the owner's part:**
+   - set `GROQ_API_KEY`, then walk the Assistant on NQ by hand (plan Stage 6.6, item 2);
+   - merge `p6-studio-company` into `main`.
+
+   New work goes on new branches; frozen files change only by erratum (F-6).
 2. **Known follow-up:** the BH-7 certificate check reads every certificate at each recovery, so the
    crash campaigns run about 3× slower. A performance change to a frozen part needs an erratum.
 3. **Not rerun:** what the stopped final rerun (p4-crash-a) left out is recorded in DB-116.
@@ -58,15 +67,18 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
 
 ## Studio
 
-`studio/` (DB-106 … DB-109) is the desktop demo of every feature: `studio/studio.sh setup |
-prepare | run | test`. Audit 1 (`studio/audit/REPORT.md`) is fixed, each finding with a test that
-fails without its fix; verified on `d3cdbc4` (`studio.sh test --full` 131 passed, NQ smoke PASS).
-Audit 2 (`studio/audit/AUDIT2.md`) lists what is still overstated; it is fixed in Stage 6.
-On `3417b7f`, `studio.sh test --full` gave 129 passed, 2 failed: the no-freeze test (677 ms
-against 250 ms on a busy laptop; it passed on rerun) and the UI smoke, which timed out after
-900 s, probably because the part demos' `cargo run --release` builds were cold after
-`cargo clean`. The owner deferred this to Stage 6 (24 Oct); it does not affect the engine or
-the HPC run.
+`studio/` (DB-106 … DB-109, DB-119) is the company demo on the frozen engine: `studio/studio.sh
+setup | prepare | run | test`.
+- **The boundary.** Studio imports only the SDK and runs the programs named in `config.toml`,
+  which `setup` writes; `tests/test_boundary.py` guards this.
+- **The main screen** is the Assistant, Acme Notes. Store notes, ask (Groq when `GROQ_API_KEY` is
+  set, otherwise "AI off"), then Forget me. Its report checks what is left in SEVER-DB and in
+  Chroma, the same app beside it. Verify, Flip a byte and Save receipts are buttons on the report.
+- **Removed:** the crash, kill, race, climb, part-program and sabotage demos, and the key and
+  commit diagrams.
+- **Audit 2** (`studio/audit/AUDIT2.md`) is fixed; its "after" table names each fix and its test.
+- **Chroma, measured on 6 Nov:** after `delete()` its API returns nothing, but its files still hold
+  every ID, text window and vector of the deleted notes.
 
 ## Working setup
 
@@ -99,6 +111,10 @@ the HPC run.
 - Why a valid WAL record after a bad one means corruption, not a torn tail.
 
 ## Session log
+
+- **6 Nov 2026 (later):** Stage 6 built on `p6-studio-company`, deciding alone while the owner was
+  away (DB-119): the boundary, Acme Notes, Chroma, Groq, the removals, audit 2's fixes, 10
+  chapters, claim status on Home.
 
 - **6 Nov 2026:** `project_report/` committed; the v1.0.0 branch and its tags pushed; `main`
   fast-forwarded to the release.

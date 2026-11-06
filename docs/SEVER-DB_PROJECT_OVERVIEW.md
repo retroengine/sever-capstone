@@ -1078,6 +1078,22 @@ a later crate with the same name (two crates in one workspace cannot both produc
 
 **Consequence.** A fresh Part 4 fair run before the freeze. `crates/sever-py` is Part 4's; no frozen file changes.
 
+#### DB-119 — Studio's company demo on the frozen engine: one boundary, Acme Notes, Chroma beside it (6 November 2026)
+
+**Decision.** Stage 6 of the v1 plan (`docs/plans/2026-10-23-v1-then-demo.md`), on branch `p6-studio-company`; amends DB-106 and DB-109.
+- **The boundary.** Studio uses SEVER-DB only as a company's application would. It imports only `sever_db`. It runs `sever-verify`, `sever-audit` and Part 3's attack generator from the paths in `studio/config.toml`, and reads its data and evidence from there too. `studio/studio.sh setup` is the one bridge: it builds the SDK wheel (`--features inspect`) and the programs into the git-ignored `studio/vendor/`, links `datasets/`, `artefacts/` and `golden/`, hashes the committed golden files from git, links the generated evidence, and writes `config.toml`. `studio/tests/test_boundary.py` fails on a forbidden import, on `cargo`, on a repository path or on `parents[2]` in Studio's code, and proves it can fail. Groups made quantises with Studio's own §4.2 (`q24.py`), labelled; frozen centres come from `Explainer.frozen_centroids()`.
+- **Acme Notes.** A new main screen, the Assistant (`company.py`, `ui/assistant.py`): store notes (placement, log position, the routing code's agreement), ask (search, the groups opened, then `passage()` for every hit), and Forget me (`delete_user`, receipts, `n` before and after). The Forget-me report checks a search with her own words, `passage()` of each ID, a byte search of the database's files for her text and vectors, and `sever-verify` on every receipt. Every call is logged with its real result.
+- **The assistant.** Groq's `llama-3.1-8b-instant` over stdlib `urllib`, 20 s timeout, the key from `GROQ_API_KEY` only and never logged or shown. With no key or on an error, the passages are shown labelled "AI off". The screen says the question and the passages go to Groq.
+- **Chroma beside it** (`ordinary.py`): the same notes in `chromadb.PersistentClient` with default storage (usage telemetry off), deleted with its own `delete`, its folder searched the same way. The spike (6 Nov, 3 notes, 384-D) measured: after `delete()`, `get` and `query` return nothing, and the scan still finds 3/3 IDs, 6/6 text windows and 3/3 vectors. Studio shows what it finds and never asserts it.
+- **Removed** (audit 2 and the plan's 6.4): the crash, kill-a-delete and restart demos, the race and Float vs exact, the log-tree climb, the part programs and the sabotage lab, and the key and commit diagrams. Explore's deletion sheet now states one observed line (`explain.deleted_line`). The checklist has 27 rows, 24 of them checks, with `assistant`, `gone` and `compare` added. The tour has 10 one-action chapters. Home's claim cards show each part's freeze tag and its gate's latest ledger run.
+- **Audit 2's remaining fixes.** C1: witnesses are called simulated (§10.4, L-7) wherever they appear. H1: offline, `freetext` and `encoder` never tick. M5: "the same algorithm, one start". L1: search ticks only when at least half the questions find a judged answer in their top 10. L2: Replay is labelled recorded. L3: the witness chips say "listed", and leave checking to the auditor.
+
+**Why.** The owner's approved order (23 Oct): the demo shows proven, frozen claims and runs on the frozen engine. The owner chose the full Stage 6, with Groq added once a key is set (6 Nov).
+
+**Rejected.** Keeping the crash and sabotage tabs: they built the engine with `cargo` from inside Studio, which breaks the boundary, and the plan removes them. Keeping the stand-in encoder ticking offline: comparing three names proves nothing (H1).
+
+**Consequence.** No file in `crates/`, `python/`, `spec/` or a frozen part changes (the freeze guard). `studio/README.md` describes the company demo; `studio/audit/AUDIT2.md` gains an "after" table.
+
 #### DB-115 — Each part gets a page; nothing moves (31 October 2026)
 
 **Decision.** Three generated navigation files, written by `scripts/index.py`:

@@ -4,8 +4,9 @@ This is the **offline build step**, not the database: the engine never runs k-me
 frozen partition was fitted once on a public reference set, SciQ's science passages (the offline
 fixture's 240 vectors here), and only its result, the artefact, reaches the engine.
 
-``Run`` repeats it small enough to watch: the rows are quantised and dequantised with C-15's own
-``sever_partition.arith`` (§6.2 step 1), the start is scikit-learn's k-means++ (C-15's ``init``),
+``Run`` repeats it small enough to watch: the rows are quantised and dequantised with Studio's own
+§4.2 (``q24``, §6.2 step 1), the start is scikit-learn's k-means++ (C-15's ``init``, one start
+where C-15 keeps the best of ten: the same algorithm, one start; audit 2, M5),
 then each ``step`` is Lloyd's two halves made visible: every row joins its nearest centre, then
 every centre moves to its rows' mean. The test proves stepping reaches scikit-learn's own Lloyd
 result. ``real_partition`` shows the 128 centres the engine actually uses, each row coloured by its
@@ -21,9 +22,9 @@ from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
-from sever_partition import arith
 from sklearn.cluster import kmeans_plusplus
 
+from . import q24
 from .corpus import FIXTURE_VECTORS
 
 F64 = npt.NDArray[np.float64]
@@ -77,7 +78,7 @@ class Run(Partition):
 
     def __init__(self, root: Path, data: str, k: int, rows: int, seed: int = 42) -> None:
         raw = reference(root, data, rows)
-        xhat = arith.dequantise(arith.quantise(raw))  # §6.2 step 1, C-15's own code
+        xhat = q24.dequantise(q24.quantise(raw))  # §6.2 step 1, Studio's own §4.2
         centres, _ = kmeans_plusplus(xhat, k, random_state=seed)
         mean, axes = _projection(xhat)
         super().__init__(raw, xhat, np.asarray(centres, np.float64), self._nearest(xhat, centres))
@@ -125,7 +126,7 @@ def real_partition(root: Path, data: str, rows: int) -> Partition:
     )
     e = Explainer(artefact.read_bytes())
     raw = reference(root, data, rows)
-    xhat = arith.dequantise(arith.quantise(raw))
+    xhat = q24.dequantise(q24.quantise(raw))
     centres = np.asarray(e.frozen_centroids(), np.float64)
     labels = np.array([e.route([float(v) for v in x], [], 1, 1)["j_star"] for x in raw], np.int64)
     mean, axes = _projection(xhat)

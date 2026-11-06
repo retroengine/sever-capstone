@@ -18,8 +18,13 @@ from typing import Any
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[2]
-WORK = ROOT / "studio/work"
+from sever_studio.config import load
+
+STUDIO = Path(__file__).resolve().parents[1]
+WORK = STUDIO / "work"
+#: where Studio finds the SDK, the programs and the data (``studio.sh setup``, DB-119)
+CFG = load()
+DATA = CFG.data
 FULL = os.environ.get("SEVER_STUDIO_FULL") == "1"
 REAL_DISPLAY = os.environ.get("QT_QPA_PLATFORM", "")
 

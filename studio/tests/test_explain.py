@@ -1,4 +1,4 @@
-"""The beginner diagrams carry the engine's own numbers for the record shown (Phase 4).
+"""Studio's words carry the engine's own numbers, and nothing it did not observe (audit 2, H4).
 
 Oracle A: §4.2 (x̃ = round(x·2²⁴), ties to even), §7.1–7.3 (the record's group is where routing put
 it), §11.1 (the certificate's TLV layout, walked again here by hand: u8 tag ‖ u32be length ‖ value,
@@ -6,21 +6,18 @@ tags 1 … 13 then 0xFF and the signature). Oracle E: the engine's events and re
 """
 
 from collections.abc import Iterator
-from pathlib import Path
 
-import numpy as np
 import pytest
+from conftest import CFG, WORK
 
 from sever_studio import explain
 from sever_studio.actions import Studio
 
-ROOT = Path(__file__).resolve().parents[2]
-
 
 @pytest.fixture(scope="module")
 def studio(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Studio]:
-    work = ROOT / "studio/work" / f"test-explain-{tmp_path_factory.getbasetemp().name}"
-    s = Studio(ROOT, "synthetic", work, dev=True, rows=120)
+    work = WORK / f"test-explain-{tmp_path_factory.getbasetemp().name}"
+    s = Studio(CFG, "synthetic", work, dev=True, rows=120)
     s.open()
     s.backend.insert_next(120)
     yield s
@@ -28,35 +25,17 @@ def studio(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Studio]:
     s.backend.wipe()
 
 
-def test_explain_the_insert_flow_is_the_records_own_route(studio: Studio) -> None:
-    b = studio.backend
-    rid = next(r for r, v in b.index.records.items() if v.group.startswith("frozen-"))
-    flow = explain.insert_flow(studio, rid)
-    text = "\n".join(f"{t}: {body}" for t, body in flow)
-    xt = np.rint(b.vector_of(rid).astype(np.float64) * 2.0**24).astype(np.int64)
-    assert f"{xt[0]:,}" in text
-    assert b.index.records[rid].group in flow[-1][1]
-    assert b.index.records[rid].group in flow[3][1]  # in distribution: its nearest frozen centre
-    assert "≤ τ" in flow[4][1]
-
-
-def test_explain_the_delete_flow_carries_the_engines_n_and_commitment(studio: Studio) -> None:
+def test_explain_the_deleted_line_states_only_the_engines_n_and_receipt(studio: Studio) -> None:
     b = studio.backend
     rid = next(r for r, v in b.index.records.items() if v.group.startswith("frozen-"))
     g = b.index.records[rid].group
-    n = dict(b.live.group_sizes(b.cid))[g]
+    n = dict(b.live.group_sizes(b.cid))[g]  # the engine's own count before (§5.2)
     d = studio.delete([rid])
-    flow = explain.delete_flow(studio, d)
-    text = "\n".join(f"{t}: {body}" for t, body in flow)
-    assert f"n {n} → {n - 1}" in text
-    cert = (b.receipts / f"{d.lsns[0]}.cert").read_bytes()
-    at, tags = 0, {}
-    while cert[at] != 0xFF:
-        t, ln = cert[at], int.from_bytes(cert[at + 1 : at + 5], "big")
-        tags[t] = cert[at + 5 : at + 5 + ln]
-        at += 5 + ln
-    assert tags[3].hex()[:12] in text
-    assert f"#{d.lsns[0]}" in text
+    line = explain.deleted_line(d)
+    assert f"{g} n {n} → {n - 1}" in line  # §5.3: n − 1, exactly
+    assert f"#{d.lsns[0]}" in line
+    for unobserved in ("key", "overwritten", "witness", "C_S"):  # audit 2, H4
+        assert unobserved not in line
 
 
 def test_explain_names_the_certificate_field_a_byte_is_in(studio: Studio) -> None:

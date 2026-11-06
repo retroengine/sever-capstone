@@ -1,7 +1,7 @@
 # SEVER-DB Studio (DB-106): the desktop demo of the whole project, in its own environment so the
-# repository's .venv and uv.lock stay as they are. The SDK's native module is built into this
-# environment by `studio/studio.sh setup` (maturin develop of crates/sever-py); the SDK package
-# itself is python/sever_db, reached through PYTHONPATH.
+# repository's .venv and uv.lock stay as they are. `studio/studio.sh setup` installs the SDK wheel
+# into this environment and copies the SDK package into vendor/site (on PYTHONPATH); Studio reads
+# every other path from config.toml (DB-119).
 [project]
 name = "sever-studio"
 version = "0.1.0"
@@ -15,6 +15,7 @@ dependencies = [
     "onnxruntime",
     "tokenizers",
     "pyopengl>=3.1.10",
+    "chromadb>=1.5.9",
 ]
 
 [dependency-groups]
@@ -28,7 +29,7 @@ link-mode = "copy"
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-extend-exclude = ["work", "audit"]
+extend-exclude = ["work", "audit", "vendor"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "PT"]
@@ -37,7 +38,7 @@ allowed-confusables = ["ℓ", "–", "−", "×", "’"]
 [tool.mypy]
 strict = true
 python_version = "3.13"
-mypy_path = "../python:."
+mypy_path = "vendor/site:."
 
 [[tool.mypy.overrides]]
 module = ["sklearn.*", "pyarrow.*", "pyqtgraph.*", "onnxruntime.*"]

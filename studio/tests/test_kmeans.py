@@ -6,24 +6,21 @@ reach the same centres. Oracle E: in the real partition each reference row's col
 frozen centre by the engine's own routing code.
 """
 
-from pathlib import Path
-
 import numpy as np
+from conftest import DATA
 from sklearn.cluster import KMeans
 
 from sever_studio import kmeans
 
-ROOT = Path(__file__).resolve().parents[2]
-
 
 def test_kmeans_runs_on_the_quantised_reference_rows() -> None:
-    run = kmeans.Run(ROOT, "synthetic", k=4, rows=240)
+    run = kmeans.Run(DATA, "synthetic", k=4, rows=240)
     x = run.raw.astype(np.float64)
     assert np.array_equal(run.xhat, np.rint(x * 2.0**24) / 2.0**24)
 
 
 def test_kmeans_stepping_reaches_the_one_shot_centres() -> None:
-    run = kmeans.Run(ROOT, "synthetic", k=4, rows=240)
+    run = kmeans.Run(DATA, "synthetic", k=4, rows=240)
     start = run.centres.copy()
     while not run.done:
         run.step()
@@ -35,7 +32,7 @@ def test_kmeans_stepping_reaches_the_one_shot_centres() -> None:
 
 
 def test_kmeans_each_step_assigns_to_the_nearest_centre_then_moves_it_to_the_mean() -> None:
-    run = kmeans.Run(ROOT, "synthetic", k=4, rows=240)
+    run = kmeans.Run(DATA, "synthetic", k=4, rows=240)
     before = run.centres.copy()
     run.step()
     d = ((run.xhat[:, None, :] - before[None]) ** 2).sum(axis=2)
@@ -45,10 +42,10 @@ def test_kmeans_each_step_assigns_to_the_nearest_centre_then_moves_it_to_the_mea
 
 
 def test_kmeans_the_real_partition_colours_rows_by_the_engines_nearest_centre() -> None:
-    real = kmeans.real_partition(ROOT, "synthetic", rows=240)
-    from sever_db_native import Explainer
+    real = kmeans.real_partition(DATA, "synthetic", rows=240)
+    from sever_db import Explainer
 
-    e = Explainer((ROOT / "golden/p1_partition_small.svp").read_bytes())
+    e = Explainer((DATA / "golden/p1_partition_small.svp").read_bytes())
     for i in range(0, 240, 17):
         want = e.route([float(v) for v in real.raw[i]], [], 100, 4)["j_star"]
         assert real.labels[i] == want

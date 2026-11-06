@@ -1,4 +1,4 @@
-"""Home: the four claims, a few checks before starting, and the way in."""
+"""Home: the four claims with their status, a few checks before starting, and the way in."""
 
 from collections.abc import Callable
 from typing import Any
@@ -6,6 +6,7 @@ from typing import Any
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QMessageBox, QVBoxLayout, QWidget
 
+from .. import evidence
 from . import copy, theme
 from .host import Host
 from .icons import icon
@@ -35,17 +36,25 @@ class Home(QWidget):
 
         grid = QGridLayout()
         grid.setSpacing(12)
+        #: each claim's status from the evidence: its freeze tag and its gate's last run (C2)
+        status = evidence.claim_status(host.studio.cfg.evidence)
         for i, (key, ico) in enumerate(CLAIMS):
             card = Card(copy.short(key), key, "card2")
             pic = QLabel()
             pic.setPixmap(icon(ico, theme.ACCENT, 28).pixmap(28, 28))
             card.body.insertWidget(0, pic)
             card.add(label(f"Part {i + 1}", "small"))
+            st = status[i]
+            proven = bool(st.tag) and st.outcome == "PASS"
+            line = label(("✓ proven · " if proven else "") + st.line, "small", wrap=True)
+            line.setStyleSheet(f"color: {theme.OK if proven else theme.WARN}")
+            card.add(line)
             grid.addWidget(card, 0, i)
         lay.addLayout(grid)
 
         go = QHBoxLayout()
         go.addWidget(button("  Start the guided tour", "primary", start_tour, "play"))
+        go.addWidget(button("  Try the assistant", "", lambda: host.go("assistant"), "chat"))
         go.addWidget(button("  Explore the map", "", lambda: host.go("explore"), "map"))
         go.addStretch(1)
         lay.addLayout(go)
@@ -143,8 +152,12 @@ class Home(QWidget):
     def encoder(self) -> None:
         def done(out: tuple[str, str, str]) -> None:
             art, data, mine = out
-            ok = art == data == mine
             v = self.host.studio.checklist.verdicts.get("encoder")
+            if v is None and self.host.studio.data == "synthetic":
+                self.v["encoder"].set(None, "not available offline: the fixture has no encoder")
+                self.host.changed()
+                return
+            ok = art == data == mine
             self.v["encoder"].set(ok and bool(v and v.ok), v.detail if v else "Encoders differ")
             self.v["encoder"].setToolTip(f"partition: {art}\nvectors: {data}\nyour text: {mine}")
             self.host.changed()

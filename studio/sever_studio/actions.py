@@ -5,13 +5,8 @@ draws what these return; the tests call them directly.
 
 import hashlib
 import json
-import os
-import random
 import re
 import shutil
-import signal
-import subprocess
-import sys
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -31,9 +26,10 @@ from sever_db import (
     prepare_insert,
 )
 
-from . import evidence, layout, proofs, sabotage, tools, wow
+from . import evidence, layout, tools, wow
 from .backend import HOLDING, Backend, Flush, Inserted
 from .checklist import Checklist
+from .config import Config
 from .corpus import FIXTURE_ENCODER, Corpus, fixture_encode, load
 
 #: Rows kept unstored after the stored ones, for the live demos (filling the holding area, the
@@ -94,16 +90,6 @@ class Verified:
 
 
 @dataclass
-class Crashed:
-    acked: int
-    in_flight: str | None
-    committed: bool | None
-    killed: bool
-    missing: int
-    grew: int
-
-
-@dataclass
 class Disk:
     files: int
     size: int
@@ -112,8 +98,10 @@ class Disk:
 
 
 class Studio:
-    def __init__(self, root: Path, data: str, work: Path, dev: bool, rows: int) -> None:
-        self.root = root.resolve()
+    def __init__(self, cfg: Config, data: str, work: Path, dev: bool, rows: int) -> None:
+        self.cfg = cfg
+        #: the data folder of ``config.toml``: datasets/, artefacts/, golden/ beneath it (DB-119)
+        root = self.root = cfg.data.resolve()
         self.data = data
         self.work = work.resolve()
         self.rows = rows
@@ -149,9 +137,7 @@ class Studio:
         process. Studio never computes one."""
         if group.startswith("frozen-"):
             if self._frozen is None:
-                from sever_partition.artefact import decode
-
-                self._frozen = decode(self.corpus.artefact.read_bytes()).centroids
+                self._frozen = np.asarray(self.explainer().frozen_centroids(), np.float64)
             k = int(group.split("-")[1])
             return self._frozen[k] if k < len(self._frozen) else None
         mu = self.backend.centroids().get(group)
@@ -405,17 +391,16 @@ class Studio:
         """Re-hashes every pinned data file against ``datasets/MANIFEST.sha256`` (P0); for the
         offline fixture, checks the golden files match the committed ones."""
         if self.data == "synthetic":
-            code = subprocess.run(
-                ["git", "diff", "--quiet", "HEAD", "--", "golden/"], cwd=self.root, check=False
-            ).returncode
-            self.checklist.mark("data", code == 0, "golden/ fixture matches the commit")
-            return (1, 0) if code == 0 else (0, 1)
-        lines = (self.root / "datasets/MANIFEST.sha256").read_text("utf-8").splitlines()
+            # setup hashed the committed golden files (git HEAD) into golden.sha256
+            manifest, base = self.root / "golden.sha256", self.root
+        else:
+            manifest, base = self.root / "datasets/MANIFEST.sha256", self.root / "datasets"
+        lines = manifest.read_text("utf-8").splitlines()
         ok = bad = 0
         for k, line in enumerate(lines, 1):
             want, name = line.split(maxsplit=1)
             h = hashlib.sha256()
-            with (self.root / "datasets" / name.lstrip("*")).open("rb") as f:
+            with (base / name.lstrip("*")).open("rb") as f:
                 while chunk := f.read(1 << 22):
                     h.update(chunk)
             if h.hexdigest() == want:
@@ -424,7 +409,8 @@ class Studio:
                 bad += 1
             if progress:
                 progress(k, len(lines))
-        self.checklist.mark("data", bad == 0 and ok > 0, f"{ok} files re-hashed, {bad} mismatches")
+        what = "golden fixture files" if self.data == "synthetic" else "files"
+        self.checklist.mark("data", bad == 0 and ok > 0, f"{ok} {what} re-hashed, {bad} mismatches")
         return ok, bad
 
     def encoder_check(self) -> tuple[str, str, str]:
@@ -433,12 +419,9 @@ class Studio:
         cosine ≥ 0.9999 with its stored vector (H6). The fixture has no encoder."""
         art, data = self.corpus.artefact_encoder(), self.corpus.encoder
         if self.data == "synthetic":
-            mine = FIXTURE_ENCODER
-            ok = art == data == mine
-            self.checklist.mark(
-                "encoder", ok, f"artefact {art}; data {data}; the fixture has no encoder"
-            )
-            return art, data, mine
+            # the fixture has no encoder: comparing three names proves nothing, so the row is
+            # left unticked offline (audit 2, H1)
+            return art, data, FIXTURE_ENCODER
         from .encoder import NAME
 
         mine = NAME
@@ -496,11 +479,14 @@ class Studio:
             "insert", res.lsn is not None and grew, f"acknowledged at log position {res.lsn}"
         )
         norm = float(np.linalg.norm(vec.astype(np.float64)))
-        self.checklist.mark(
-            "freetext",
-            abs(norm - 1) < 1e-6,
-            f"{len(vec)} numbers from {self.corpus.encoder}, length {norm:.7f}",
-        )
+        if self.data != "synthetic":
+            # offline the text goes through a stand-in (fixture_encode), not the pinned model:
+            # the row is left unticked (audit 2, H1)
+            self.checklist.mark(
+                "freetext",
+                abs(norm - 1) < 1e-6,
+                f"{len(vec)} numbers from {self.corpus.encoder}, length {norm:.7f}",
+            )
         self._routed(res)
         return Added(rid, xy, res)
 
@@ -686,8 +672,13 @@ class Studio:
             at10 += bool(set(top) & c.answers[q])
         ms = (time.perf_counter() - t0) * 1000 / max(1, len(qs))
         self.numbers.update(questions=len(qs), hit_at_1=at1, hit_at_10=at10, search_ms=round(ms, 3))
+        # audit 2, L1: the row ticks only when at least half the questions find a judged answer
+        # in their top 10 (one lucky question is not "search works")
         self.checklist.mark(
-            "search", at10 > 0, f"{len(qs)} questions: first {at1}, top 10 {at10}, {ms:.2f} ms each"
+            "search",
+            bool(qs) and 2 * at10 >= len(qs),
+            f"{len(qs)} questions: judged answer first {at1}, in the top 10 {at10} "
+            f"(needs at least half); {ms:.2f} ms each",
         )
         return len(qs), at1, at10, ms
 
@@ -780,7 +771,7 @@ class Studio:
 
     def verify(self, lsn: int) -> Verified:
         folder = self._hand_over(lsn)
-        t = tools.build(self.root)
+        t = tools.of(self.cfg)
         code, out = tools.run(
             [t.verify, "certificate.bin", "--anchors", "anchors.json", "--explain"], folder
         )
@@ -797,7 +788,7 @@ class Studio:
         old = cert[at]
         cert[at] ^= 0x01
         (folder / "certificate.bin").write_bytes(bytes(cert))
-        t = tools.build(self.root)
+        t = tools.of(self.cfg)
         code, out = tools.run(
             [t.verify, "certificate.bin", "--anchors", "anchors.json", "--explain"], folder
         )
@@ -838,7 +829,7 @@ class Studio:
         auditor.mkdir(parents=True)
         (auditor / "log.json").write_text(b.live.export_log(), "utf-8")
         (auditor / "anchors.json").write_text(b.live.anchors(), "utf-8")
-        t = tools.build(self.root)
+        t = tools.of(self.cfg)
         args: list[str | Path] = [t.audit, "log.json", "--anchors", "anchors.json"]
         for lsn in b.index.receipts:
             p = b.receipts / f"{lsn}.cert"
@@ -875,137 +866,15 @@ class Studio:
         )
         return Disk(len(files), sum(p.stat().st_size for p in files), naive, sever)
 
-    # -- restart and crash ------------------------------------------------------------------------
-
-    def restart(self) -> tuple[int, int, bool]:
-        b = self.backend
-        before = b.total()
-        b.close()
-        b.open()
-        after = b.total()
-        live = b.replay().groups
-        gone = all(n not in live for _, n in self.deleted_this_session[-20:])
-        self.checklist.mark(
-            "restart",
-            before == after and gone and not b.mismatches(),
-            f"{before} records before, {after} after; deleted ones still absent: {gone}",
-        )
-        return before, after, gone
-
-    def crash(self, count: int = 200) -> Crashed:
-        """Closes the database; a second process inserts the next ``count`` passages, writing each
-        acknowledged one down; once half are acknowledged it is killed with SIGKILL. Recovery,
-        then every acknowledged insert is looked for."""
-        self.ensure_spares(count)
-        b, c = self.backend, self.corpus
-        before = b.total()
-        b.close()
-        acks = self.work / "acks.txt"
-        acks.unlink(missing_ok=True)
-        start = b.index.loaded
-        count = min(count, len(c.ids) - start)
-        cmd = [sys.executable, "-m", "sever_studio", "crash-child", "--data", self.data]
-        cmd += ["--rows", str(len(c.ids)), "--work", str(self.work)]
-        cmd += ["--start", str(start), "--count", str(count)]
-        cmd += ["--dev"] if b.dev else []
-        paths = [str(self.root / "python"), str(Path(__file__).resolve().parents[1])]
-        env = {**os.environ, "PYTHONPATH": os.pathsep.join(paths)}
-        child = subprocess.Popen(cmd, cwd=self.root, env=env)
-        deadline = time.monotonic() + 600
-        first: float | None = None
-        while time.monotonic() < deadline and child.poll() is None:
-            n = len(acks.read_text("utf-8").splitlines()) if acks.exists() else 0
-            if n and first is None:
-                first = time.monotonic()
-            if n >= count // 2 and first is not None:
-                # M5: at a random moment within one average insert, so the kill can land inside
-                # an insert, before or after its commit, not only between two inserts
-                per = (time.monotonic() - first) / max(1, n - 1)
-                time.sleep(random.uniform(0.0, per))
-                os.kill(child.pid, signal.SIGKILL)
-                break
-            time.sleep(0.002)
-        killed = child.wait() == -signal.SIGKILL
-        acked = [
-            (f[0], f[1], int(f[2]))
-            for ln in (acks.read_text("utf-8").splitlines() if acks.exists() else [])
-            if len(f := ln.split("\t")) == 3
-        ]
-        nxt = start + len(acked)
-        in_flight = c.ids[nxt] if killed and nxt < start + count else None
-        b.open()
-        committed = b.reconcile(acked, in_flight)
-        live = b.replay().groups
-        missing = [r for r, _, lsn in acked if lsn not in live]
-        grew = b.total() - before
-        ok = killed and bool(acked) and not missing and not b.mismatches()
-        self.numbers.update(crash_acked=len(acked), crash_missing=len(missing), crash_killed=killed)
-        self.checklist.mark(
-            "crash",
-            ok,
-            f"killed after {len(acked)} acknowledged inserts; after recovery all there: "
-            f"{not missing}; the insert in flight had committed: {committed}",
-        )
-        return Crashed(len(acked), in_flight, committed, killed, len(missing), grew)
-
-    # -- proofs, sabotage, evidence ---------------------------------------------------------------
-
-    def proof(self, name: str, live: str | None) -> proofs.Proof | None:
-        """``live``: ``synthetic`` or ``nq-10k`` to run it now; ``None`` for the recorded run."""
-        p = (
-            proofs.run(self.root, name, live, self.work / "proofs")
-            if live
-            else proofs.load_recorded(self.root, name)
-        )
-        if p is None:
-            return None
-        checks = dict(p.checks)
-        src = f" ({p.source})"
-        how = "live" if live else "recorded"
-        if name == "idea":
-            first = [c for c in checks if c.startswith("every touched group")]
-            self.checklist.mark(
-                "exact",
-                all(checks[c] for c in first) and checks.get("no untouched group changed", False),
-                (first[0] if first else "") + src,
-                how,
-            )
-            ghost = [c for c in checks if "SEVER's sum" in c or "float" in c or "soft delete" in c]
-            self.checklist.mark(
-                "ghost",
-                all(checks[c] for c in ghost),
-                "SEVER 0; float ≠; soft delete keeps" + src,
-                how,
-            )
-            # the race's claim, shown by the engine's own program (C3): its sum is bit-identical
-            # to the survivors-only sum and the float running mean is not
-            drift = [c for c in checks if "SEVER's sum" in c or "float running mean" in c]
-            self.checklist.mark(
-                "race",
-                bool(drift) and all(checks[c] for c in drift),
-                "sever-demo idea: integer sum bit-identical, float mean not" + src,
-                how,
-            )
-        elif name == "durable":
-            self.checklist.mark("durable", p.ok, f"{len(p.checks)} checks" + src, how)
-        elif name == "receipt":
-            self.checklist.mark("chain", p.ok, f"{len(p.checks)} checks" + src, how)
-        elif name == "erase":
-            ch = list(checks.items())
-            self.checklist.mark("shred", all(ok for _, ok in ch[:3]), ch[2][0] + src)
-            self.checklist.mark("phasec", ch[3][1], ch[3][0] + src)
-            self.checklist.mark("leak", ch[4][1], ch[4][0] + src)
-        return p
-
-    def sabotage(self, sb: str, on_line: Callable[[str], None] | None = None) -> sabotage.Outcome:
-        out = sabotage.run(self.root, sb, on_line)
-        self.checklist.mark("sabotage", out.caught, f"{sb}: {out.summary}")
-        return out
+    # -- evidence ---------------------------------------------------------------------------------
 
     def evidence(self) -> tuple[list[evidence.Line], list[dict[str, Any]], list[dict[str, Any]]]:
-        lines = evidence.headlines(self.root)
-        led = evidence.ledger(self.root)
-        fair = evidence.fairness(self.root)
+        folder = self.cfg.evidence
+        if folder is None:
+            return [], [], []
+        lines = evidence.headlines(folder)
+        led = evidence.ledger(folder)
+        fair = evidence.fairness(folder)
         self.checklist.mark(
             "evidence",
             len(lines) >= 4 and bool(led),
@@ -1014,20 +883,6 @@ class Studio:
         return lines, led, fair
 
     # -- the live demonstrations (wow.py) --------------------------------------------------------
-
-    def climb(self, lsn: int) -> tuple[wow.Certificate, list[wow.Step], bytes, bool]:
-        """The receipt's insert leaf, hashed up its RFC 9162 path to the signed root (§11.2)."""
-        cert = wow.parse((self.backend.receipts / f"{lsn}.cert").read_bytes())
-        steps, root, valid = wow.climb(cert.leaf, cert.leaf_index, cert.tree_size, cert.path)
-        ok = valid and root == cert.root and cert.witnesses >= 4
-        self.checklist.mark(
-            "climb",
-            ok,
-            f"receipt #{lsn}: {len(steps)} hashes from leaf {cert.leaf_index} to the root of "
-            f"{cert.tree_size} leaves; {'equals' if root == cert.root else 'DIFFERS FROM'} the "
-            f"signed root; {cert.witnesses} witnesses",
-        )
-        return cert, steps, root, ok
 
     def attack_lab(self, lsn: int) -> list[wow.Attack]:
         """Forgery attempts on receipt ``lsn``, judged by sever-verify (§11.3)."""
@@ -1039,7 +894,7 @@ class Studio:
             if n != lsn and p.exists() and wow.parse(p.read_bytes()).user_key != key:
                 other = p.read_bytes()
                 break
-        out = wow.attacks(self.root, self.work, mine, self.backend.live.anchors(), key, other)
+        out = wow.attacks(self.cfg, self.work, mine, self.backend.live.anchors(), key, other)
         caught = sum(a.caught for a in out)
         self.checklist.mark(
             "attacks", caught == len(out) >= 4, f"{caught} of {len(out)} attempts caught"
@@ -1049,80 +904,7 @@ class Studio:
     def operator_forgeries(self) -> list[wow.Forgery]:
         """Part 3's register of forgeries made with the operator's own keys (P3-T2), judged by
         sever-verify: each must be rejected at a step its register row lists."""
-        return wow.operator_forgeries(self.root, self.work)
-
-    def crash_test_person(self, size: int = 0) -> tuple[str, list[str]]:
-        """A person with many records (the next spare passages), for the killed deletion."""
-        size = size or (40 if self.data == "nq" else 16)
-        self.ensure_spares(size)
-        b, c = self.backend, self.corpus
-        account = f"Crash-test person {len(b.index.receipts) + b.index.loaded}"
-        ids = []
-        for _ in range(size):
-            i = b.index.loaded
-            if i >= len(c.ids):
-                break
-            b.insert(c.ids[i], c.vectors[i], account, save=False)
-            b.index.records[c.ids[i]].account = account
-            b.index.loaded = i + 1
-            ids.append(c.ids[i])
-        b.save()
-        return account, ids
-
-    def crash_delete(self, account: str, fraction: float) -> wow.CrashDelete:
-        """Deletes ``account`` in a second process, killed ``fraction`` of the way through the
-        expected time; all or nothing after recovery (§12.5)."""
-        ids = self.backend.accounts().get(account, [])
-        if "delete_user_ms_per_record" not in self.numbers:
-            # Learn how long one person's deletion takes: time a throwaway one of the same size.
-            _, spare = self.crash_test_person(len(ids))
-            t0 = time.perf_counter()
-            self.backend.forget_ids(spare)
-            took = (time.perf_counter() - t0) * 1000
-            self.numbers["delete_user_ms_per_record"] = round(took / max(1, len(spare)), 2)
-        per = float(self.numbers["delete_user_ms_per_record"])
-        r = wow.crash_delete(self, ids, account, fraction * per * max(1, len(ids)))
-        if r.took_ms is not None:  # learn how long a whole deletion takes, to land inside it
-            self.numbers["delete_user_ms_per_record"] = round(r.took_ms / max(1, len(ids)), 2)
-        if r.outcome in ("none", "all"):
-            ok = r.killed and not self.backend.mismatches()
-            self.checklist.mark(
-                "crashdelete",
-                ok,
-                f"{account}: killed at {r.planned_ms:.0f} ms; {r.outcome} of {r.records} records "
-                "deleted after recovery",
-            )
-        elif r.outcome == "partial":
-            self.checklist.mark(
-                "crashdelete", False, f"{r.deleted} of {r.records} deleted: NOT all or nothing"
-            )
-        return r
-
-    def race(self, cycles: int, report: Callable[..., None] | None = None) -> wow.RaceResult:
-        """Studio's numpy model of §4–5 (not the engine): remove and re-add members ``cycles``
-        times; float32 against Q24. It ticks nothing: the row's check is Part 1's own program
-        (``proof("idea", ...)``)."""
-        r = wow.race_all(self.corpus.vectors[:200], cycles, report)
-        self.numbers["race_model_differing"] = r.differing[-1][1] if r.differing else 0
-        return r
+        return wow.operator_forgeries(self.cfg, self.work)
 
     def report(self) -> Path:
         return self.checklist.save(self.work, self.numbers)
-
-
-def crash_child(
-    root: Path, data: str, rows: int, work: Path, start: int, count: int, dev: bool
-) -> int:
-    """The process that is killed: inserts and writes down each insert the database acknowledged,
-    with where it landed."""
-    corpus = load(root, data, rows)  # the parent passes its own corpus size
-    b = Backend(corpus, work, dev)
-    b.open()
-    with (work / "acks.txt").open("a", encoding="utf-8") as acks:
-        for i in range(start, min(start + count, len(corpus.ids))):
-            r = b.insert(corpus.ids[i], corpus.vectors[i], corpus.accounts[i], save=False)
-            acks.write(f"{r.rid}\t{r.placement}\t{r.lsn}\n")
-            acks.flush()
-            os.fsync(acks.fileno())
-    b.close()
-    return 0

@@ -1,175 +1,162 @@
 # SEVER-DB Studio
 
-**The whole project in one desktop app.** Ten thousand real Wikipedia passages appear as dots on a
-map, placed by meaning. You add yourself and watch where the database puts you, and why. You delete
-yourself and the dot disappears, and you get a receipt anyone can check offline. You climb that receipt up
-the public log, try to forge it, kill the database in the middle of a deletion, and watch a float
-average drift while SEVER's integer sum stays exact. Every claim of the project is one click away.
+**A company app on SEVER-DB, and the evidence behind it.** Acme Notes is a notes app with an AI
+assistant, built the way a company would build one: its own code, the SEVER-DB SDK, and nothing
+else. You store a few notes, ask the assistant about them, then ask to be forgotten. Then you check
+what is left of you: in SEVER-DB, and in an ordinary vector store (Chroma) running the same app
+beside it. You keep one receipt per note, which anyone can check offline.
 
-Studio drives the real engine (Part 4's build) only through its public surfaces: the SDK
-`sever_db`, the separate checkers `sever-verify` and `sever-audit`, and each part's own proof
-program. It reaches inside nothing, is owned by no part, and nothing depends on it (DB-106).
-
-`setup` builds the SDK with its `inspect` feature, so Studio can also read the engine's own report
-of each committed change (`Database.events`, DB-107) and ask the engine's own routing and search
-code why a record went where it did (`Explainer`, DB-108). Every number on screen comes from the
-engine or a part program, or says where it comes from (DB-109).
+Every number on screen is the result of a real call, listed live under **SEVER-DB calls**. Studio
+runs on the frozen v1.0.0 engine (Part 4's build) and changes nothing in it (DB-106, DB-119).
 
 ## Run it
 
 WSL2 (Ubuntu, with WSLg for the window) or Linux, from the repository root. It needs `uv` and the
-Rust toolchain.
+Rust toolchain (for `setup` only).
 
 ```bash
-studio/studio.sh setup      # once: Studio's environment, the SDK, the encoder (90 MB, hash-checked), the checkers
-studio/studio.sh prepare    # once: stores 10,000 NQ passages through the SDK (~10 min) and lays out the map in 2-D and 3-D
+studio/studio.sh setup      # once: the environment, the SDK wheel, the programs, config.toml, the encoder
+studio/studio.sh prepare    # once: stores 10,000 NQ passages through the SDK (~10 min), lays out the map
 studio/studio.sh run        # opens the window, sized to your screen
 ```
 
+- **The AI answers** need a Groq key: `export GROQ_API_KEY=…` before `run`. Without it the
+  assistant shows the passages it found, labelled "AI off"; everything else works the same.
 - **No NQ data?** Without `datasets/` (not in git), add `--data synthetic` to `prepare` and `run`.
-  The offline fixture then runs everything: d = 16, 240 vectors plus 2,000 made-up ones, spawn
-  size 8.
+  The offline fixture runs everything: d = 16, 240 vectors plus 2,000 made-up ones, spawn size 8.
+  It has no real encoder, so the two encoder rows of the checklist stay unticked.
 - **Boxes instead of letters** in a few NQ passages (Hindi, Bengali): `sudo apt install
-  fonts-noto-core`. `setup` says so when the fonts are missing.
-- **Dark theme:** `SEVER_STUDIO_THEME=dark`.
-- **X11 instead of Wayland:** `--x11` (needs `libxcb-cursor0`).
-- **A busy work directory** is not an error. While a `prepare` runs, `run` says so and names the
-  process.
+  fonts-noto-core`.
+- **Dark theme:** `SEVER_STUDIO_THEME=dark`. **X11 instead of Wayland:** `--x11`.
 - **Your machine will be refused, and that is a feature.** The database will not start where
   secrets could leak (§12.8–12.9). `studio.sh` passes `--dev`, so the window shows the refusal,
-  then opens with the development override, which the database reports. `SEVER_STRICT=1` leaves
-  the override out.
+  then opens with the development override and says so. `SEVER_STRICT=1` leaves the override out.
 
-## The window
+## The boundary (DB-119)
 
-**Layout:**
-- A rail of six sections on the left.
-- A slim bar at the top, with the checklist pill (✓ 12/34) and **Tour**.
-- Short labels everywhere. Every ⓘ opens the full explanation, with its section of the spec.
+Studio uses SEVER-DB only as a company's application would:
 
-**Controls:**
-- **Tour:** 21 chapters, each with one line on screen, presenter notes behind **Notes**, and
-  **Do it**, which runs the chapter's step for you.
-- **The checklist:** 34 checks, each ticked only by an engine check or a part program run live. A
-  recorded run is shown as a recording (◐) and ticks nothing. Three more rows (a hover, the limits,
-  the evidence) only show something and are not counted. **Save the session report** writes every
-  verdict, with numbers only: no key, `r_t` or passage text.
-- **Shortcuts:** `/` search, `N` next chapter, `Esc` close, `F11` full screen.
-- **Rail buttons:** A− / A+ change the text size.
-- **Colours:** each frozen group (a k-means cluster) has its own colour, the same on the map and
-  in Groups made; a spawned group (a batch, not a cluster) is grey until you point at or click its
-  ✕. **Colour every group** colours the spawned ones too. The dot's shape says the kind (● frozen,
-  ■ spawned).
-- **2-D and 3-D:** the map has both modes; 2-D is the default. 3-D is t-SNE with three axes, made
-  once (by `prepare`, or the first time 3-D opens) and kept; drag to turn it. It shows the same
-  records, colours and lit group. It needs OpenGL that can draw into a window (WSLg's software
-  renderer does); where it cannot, it says why and 2-D works as before.
+- it imports only `sever_db`, the SDK;
+- it runs `sever-verify`, `sever-audit` and Part 3's attack generator from the paths in
+  `studio/config.toml`;
+- it reads its data and the project's evidence from the folders named there.
 
-| Section | What you do | What it proves |
+`studio.sh setup` is the only code that knows the repository. It builds the SDK wheel (with the
+`inspect` feature, so the app can read a stored passage, DB-110) and the programs into the
+git-ignored `studio/vendor/`. It links the data, copies the evidence and writes `config.toml`.
+`tests/test_boundary.py` fails if Studio's code imports anything else, runs `cargo`, or names a
+repository folder.
+
+## The story: the Assistant
+
+| Step | What you do | What it shows |
 |---|---|---|
-| **Home** | Read the four claims; re-hash the data; check the encoder; reset the demo database | The data is pinned (P0), the machine is checked before opening (§12.8), and one encoder serves everything (§3.3) |
-| **Explore** | Hover a dot; click a ✕ to light its group; **+ Add yourself**; click a dot, then Delete / Forget; search; fill the bucket | Groups (§6–7); routing of your own text, predicted by the engine's own routing code and checked against where the engine put it (§7.1–7.3); search opens a quarter of the groups (§8.1); the bucket is stored but unsearchable and flushes at 200 into a group named by a hash of its members (§7.4–7.5); deletion keeps the counts exact (§5) and is idempotent (§5.4); forgetting a person is all or nothing (§12.5) |
-| **Receipts** | Verify; flip one byte | `sever-verify` checks a receipt offline (§11.3), and the flipped copy is rejected at the step that fails |
-| **Live** | **Log tree**, **Attack lab**, **Kill a delete**, **Float vs exact**, **Groups made** | See below |
-| **Under the hood** | The log, the disk, crashes, bad input | Signed and witnessed log, with an audit (§10, §11.3); nothing in the clear on disk (§13.2); restart and SIGKILL lose nothing (§12, §15.1); typed refusals (§4, §17); a retry stored once |
-| **Proof** | The four parts' own programs; the sabotage lab; the evidence | Survivors-only state, all or nothing at the commit point, chained receipts, forensic erasure (and the SB-24 leak); a planted bug turns a test red; traceability, proofs, gate runs, fairness runs |
+| **1 You** | Type a name and notes, or **Fill example**; **Store my notes** | Each note is encoded, signed with your key and stored encrypted with its text (§3.4, §13.2). Studio shows where the engine put it, its log position, and whether the engine's own routing code predicted that place (§7.3). A note far from every group waits in the holding area: stored, not searchable (§7.4). **Let other users write** fills it until it flushes into a new group. |
+| **2 Ask** | Ask a question | Search (§8), the groups the engine opened (§8.1), and `passage()` for each hit (§16.1), so the text comes only from the database. With a key, Groq writes the answer and cites [1]…[5]; ★ marks your notes. |
+| **3 Forget me** | **Forget me** | All your notes go in one transaction (§12.5), with one receipt each (§11). The report opens. |
 
-### Live
+**The Forget-me report**, row by row, SEVER-DB beside Chroma:
 
-- **Log tree.** Your receipt carries your insert leaf and the hashes beside it on the way up the
-  public log. Studio hashes them itself (RFC 9162, with its own code), draws the climb level by
-  level, and checks that the top equals the root the operator signed and 4 or more independent
-  witnesses cosigned.
-- **Attack lab.** Real forgery attempts on a receipt. Each is caught, and the screen says what
-  caught it:
-  - change one byte → step 2;
-  - cut it short → step 1;
-  - trust only 2 witnesses → step 4;
-  - another operator's key → step 2;
-  - someone else's valid receipt → your own key check;
-  - **the operator cheats:** Part 3's own forgery kit makes 20 forgeries with the operator's keys
-    (P3-T2), which `sever-verify` rejects at steps 3, 5 and 6.
-- **Kill a delete.** One person's records are deleted by a second process, killed with SIGKILL at
-  a random moment, five times. After each recovery the engine's log says, record by record, whether
-  each went. Only runs the kill landed in count: the verdict says whether they were before the
-  commit point (none deleted) or after it (all), and a half deletion fails. A timeline shows where
-  the commit point is.
-- **Float vs exact.** 200 real vectors; one is removed and put back 20,000 times, so the members
-  never change. The float32 running mean, as most indexes keep it, changes in almost every
-  number. SEVER's Q24 integer sum stays bit-identical. This is labelled as Studio's model of the
-  §4–5 arithmetic; **Run the engine's proof** runs Part 1's own program, and only that ticks the
-  row.
-- **Groups made.** How the 128 frozen groups were made: the partition builder's k-means (C-15,
-  §6.2), stepped one Lloyd iteration at a time on the reference rows, then the real 128 centres
-  with each row coloured by the engine's routing code. It is labelled as the offline build step:
-  the database never runs k-means (§6.1). **Are they clusters? (384-D)** answers without a
-  picture: for up to 8 records of every group, the distance to its own centre over the distance to
-  the nearest other centre, both from the engine's search code (§8.1). On NQ, 98% of the frozen
-  groups' records are nearer their own centre; 12% of the spawned groups'.
+| | SEVER-DB | Chroma, the same app |
+|---|---|---|
+| Deleted | your notes; each group's `n` before → after | your notes, with `delete()` |
+| Search with her own words | what search returns | what `query` returns |
+| The app can still read her text | `passage()` | `get()` |
+| Her text in the files, before → after | byte search of the database's files | byte search of Chroma's folder |
+| Her vectors in the files, before → after | the same, for her vectors | the same |
+| Proof she can keep | one receipt per note | none |
+
+Its buttons:
+- **Verify receipts (offline):** `sever-verify` checks each receipt with only the receipt and the
+  public anchors (§11.3), and its step list is shown.
+- **Flip a byte:** the receipt is rejected at the step that fails.
+- **Save receipts…:** writes the receipts, `anchors.json` and the exact command that checks them,
+  to run in a terminal.
+
+Chroma's column is measured, never assumed. On 6 Nov 2026, with Chroma 1.5.9, `get` and `query`
+returned nothing after `delete()`, but the scan still found every ID, text window and vector in its
+files (DB-119).
+
+On the right of the screen are the map (your notes ★, lines to the hits; 2-D or 3-D), the
+**SEVER-DB calls** log, and the **Engine state** after each action: records, groups, the holding
+area, the log's size and its latest checkpoint.
+
+## The rest of the window
+
+| Section | What it shows |
+|---|---|
+| **Home** | The four claims, each with its status from the evidence: its freeze tag and its gate's latest run (for example "frozen: part-4-frozen · P4-T1 PASS on 2026-10-30, nq-10k"); the data re-hashed; the machine check; the encoder check |
+| **Explore** | The map of every passage. Hover a dot; click a ✕ to light its group; add yourself, delete, forget; search; fill the holding area. Routing is predicted by the engine's own code and checked against where the engine put it (§7.1–7.3). After a deletion, one observed line: each group's `n` before → after, and the receipt numbers |
+| **Receipts** | Verify any receipt offline; flip a byte |
+| **Live** | **Groups made:** the same algorithm as the partition builder (C-15), with one start, small enough to watch; then the real 128 centres, and **Are they clusters? (384-D)**. **Attack lab:** forgery attempts judged by `sever-verify`, including Part 3's 20 forgeries made with the operator's own keys (P3-T2) |
+| **Under the hood** | The public log and the auditor (§10, §11.3); the database's files searched for plaintext (§13.2); typed refusals (§4, §17); a retry stored once (§15.1) |
+| **Evidence** | Traceability, proofs, oracles, the run ledger, the fairness runs, read from the generated files |
+
+**The tour** has 10 chapters, one action each: the company, store notes, the holding area, ask,
+forget me, verify, flip a byte, Chroma beside it, how the groups were made, the log and the
+auditor. **The checklist** has 27 rows: 24 checks, each ticked only by a live engine check, and 3
+that only show something. **Save the session report** writes every verdict, with numbers only: no
+key, `r_t` or passage text.
 
 ## What it does not claim
 
-- **The map is a picture.** t-SNE flattens the 384 dimensions to two (or three); distances are
-  measured in 384. Groups are not drawn as areas: each centre μ is a ✕ (a frozen one from the partition
-  artefact, a spawned one as the engine reported it at its flush), and clicking it lights its
-  members. A spawned group holds the 200 records that waited together, whatever they mean (§7.4),
-  so its members are scattered. The frozen groups were fitted on SciQ, not NQ, so most NQ passages
-  are out of distribution and end up in spawned groups.
-- **Hover text is not read back from the database.** It comes from the dataset or from what you
-  typed; the database stores it encrypted and never hands it back.
-- **Every byte of a receipt is signed.** So an outsider's edit stops at step 1, 2 or 4. Steps 3, 5
-  and 6 guard against the operator itself; the Attack lab reaches them only through Part 3's
-  forgery kit, which holds the operator's keys.
-- **Part 4's erase program counts what the SB-24 scan decrypts.** It does not print the rebuilt
-  vector (Build 3-4 §2.11 step 4).
-- **No receipt proves the operator kept no copy** (L-2).
+- **The witnesses are simulated.** In v1 the database holds the five witnesses' keys and cosigns
+  itself (§10.4). Real independent witnesses are future work (overview L-7).
+- **The file scan is not the raw-disk test.** Studio searches the database's own files. Carving
+  deleted blocks from a whole raw device with every key a scanner can find is gate P4-T1, run on a
+  16 GiB image (see Evidence).
+- **What Groq receives is outside the database.** SEVER-DB can neither delete it nor prove
+  anything about it.
+- **No receipt proves the operator kept no copy** (L-2), or that the person asked for the deletion
+  (L-27).
+- **`passage()` exists only in the `inspect` build** (DB-110), which Studio uses. The release build
+  stores the text encrypted and never returns it.
+- **The map is a picture.** t-SNE flattens 384 dimensions to two (or three); distances are measured
+  in 384. The frozen groups were fitted on SciQ, not NQ, so most NQ passages end up in spawned
+  groups: batches, not clusters.
 
 ## Tests
 
 ```bash
-studio/studio.sh test          # fast, offline, ~3 min: lint, mypy --strict, ~100 tests
-studio/studio.sh test --full   # adds the real display, more screen sizes, a 500-step soak,
-                               # the NQ data, a freeze watchdog and live sabotage (~30 min)
+studio/studio.sh test          # fast, offline: lint, mypy --strict, the boundary, the tests
+studio/studio.sh test --full   # adds the real display, more screen sizes, a soak, the NQ data,
+                               # and one live Groq call (with GROQ_API_KEY)
 ```
 
-Every Qt test runs on an emulated 1280 × 800 screen at scale 2 (the owner's laptop). Results go to
+Every Qt test runs on an emulated 1280 × 800 screen at scale 2. Results go to
 `studio/work/test-report.json`. The tests cover:
 
-- **Layout,** on every screen size, in every state: the window fits the screen, nothing is clipped
-  or sticks out of its parent, and nothing scrolls sideways (`tests/layout_probe.py`, with a
-  screenshot of each state).
-- **Click-through:** real clicks, keys and mouse moves, and the whole tour by its buttons.
-- **Edge cases:**
-  - an empty bucket;
-  - deleting from the bucket (§11.3 step 7);
-  - emptying a whole group (tag 11);
-  - Unicode, emoji, 10 kB texts, empty and very long names;
-  - lost answers and crashes;
-  - a busy work directory;
-  - missing data or model;
-  - a report with no secrets.
-- **Independent oracles:** RFC 9162 trees and paths are built by the tests from the definitions,
-  and §7.5 IDs and §4.2 rounding are written out again.
-- **The engine's own truth:** each record's group is replayed from `export_log` and compared record
-  by record; 1,000 inserts' routes are predicted by the engine's routing code and must equal where
-  the engine put them; §7.1–7.2 are worked again with sequential float64 sums, bit for bit; a
-  spawned group's centre from the event stream equals §7.5's formula over its founders.
-- **The real display:** `studio.sh smoke` opens on this screen, walks everything and quits (the
-  `--full` tier runs it).
+- **The boundary:** `test_boundary.py`, which also proves it catches each kind of offence.
+- **The company app** (`test_company.py`):
+  - notes read back byte for byte (§3.4);
+  - every hit's text is the engine's passage;
+  - after Forget me, every receipt ACCEPTs, `passage()` is absent, search finds none of her IDs,
+    and the files hold nothing of her, before or after (§13.2);
+  - the call log holds only calls that ran.
+- **The assistant** (`test_assistant.py`):
+  - no key gives the passages and "AI off";
+  - the prompt holds only the question and the passages;
+  - the key is never in an answer, a note or an error.
+- **The window:** the story walked by clicks, with the report's two columns, Verify ACCEPT, Flip
+  REJECT, and the saved command run in a shell. Also the layout on every screen size, in every
+  state (`layout_probe.py`).
+- **The engine's own truth:** each record's group replayed from `export_log`; routes predicted by
+  the engine's routing code; §7.1–7.2 worked again with sequential float64 sums.
 
 ## Files
 
 | Path | What |
 |---|---|
-| `studio.sh` | the entry point |
-| `sever_studio/backend.py` | the application backend: account keys (0600, never shown), inserts, deletions, receipts, the index of where each record landed, and the work-directory lock |
-| `sever_studio/actions.py` | every demonstration as a function that runs its live check and ticks its row |
-| `sever_studio/wow.py` | the Live demonstrations: certificate parser, RFC 9162 climb, attacks, killed deletion, the race |
-| `sever_studio/checklist.py` | the 37 rows (34 checks, 3 shown) and the session report |
-| `sever_studio/explain.py` | the beginner diagrams as data, each filled with the engine's numbers for the record shown |
-| `sever_studio/kmeans.py` | the partition builder's k-means, step by step, and the real partition |
-| `sever_studio/encoder.py`, `layout.py`, `corpus.py` | the pinned encoder (ONNX), the map layout, the data |
-| `sever_studio/proofs.py`, `sabotage.py`, `evidence.py` | each part's proof program, the sabotage runner, the generated evidence |
-| `sever_studio/ui/` | the window: `copy.py` holds every word on screen; `theme.py` the light and dark palettes |
+| `studio.sh` | the entry point and the one bridge to the repository (`setup`) |
+| `config.toml`, `vendor/` | written by `setup` (not in git): the SDK, the programs, the data links, the evidence |
+| `sever_studio/company.py` | Acme Notes on SEVER-DB: store, retrieve, forget, the checks after, the call log |
+| `sever_studio/ordinary.py` | the same app on Chroma |
+| `sever_studio/assistant.py` | the Groq call, and "AI off" |
+| `sever_studio/config.py` | reads `config.toml` |
+| `sever_studio/backend.py`, `actions.py` | the application backend and every demonstration with its live check |
+| `sever_studio/wow.py` | the attack lab: the certificate parser, the forgeries, the operator's forgeries |
+| `sever_studio/checklist.py`, `explain.py`, `evidence.py` | the 27 rows; the certificate fields and the observed deletion line; the generated evidence and the claims' status |
+| `sever_studio/kmeans.py`, `q24.py` | k-means step by step; Studio's own §4.2, labelled |
+| `sever_studio/ui/` | the window: `assistant.py` the main screen; `copy.py` every word on screen |
 | `tests/` | the fast tier and the `full` tier |
-| `work/` | databases, keys, receipts, the model, screenshots, the test report (not in git; `studio.sh clean`) |
+| `work/` | databases, keys, receipts, Chroma's folder, the model, the test report (not in git) |

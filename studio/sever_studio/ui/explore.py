@@ -31,7 +31,7 @@ from . import copy, theme
 from .host import Host
 from .map3d import Map3D
 from .map_view import Bucket, GroupCard, HoverCard, MapView
-from .widgets import Flow, Heatmap, Verdict, button, chip, info, label, lift
+from .widgets import Heatmap, Verdict, button, chip, info, label, lift
 
 #: a search's question, its hits, where it is drawn, and how the engine searched (§8.1)
 Found = tuple[str, list[tuple[str, float, bool]], tuple[float, float], dict[str, Any]]
@@ -169,8 +169,8 @@ class Explore(QWidget):
         il.addWidget(self.sel_heat)
         self.sel_nums = label("", "mono", wrap=True)
         il.addWidget(self.sel_nums)
-        self.flow = Flow(vertical=True)
-        il.addWidget(self.flow)
+        self.observed = label("", "small", wrap=True)
+        il.addWidget(self.observed)
         il.addStretch(1)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -197,7 +197,14 @@ class Explore(QWidget):
 
         # the status, bottom right
         self.status = label("", "small")
-        self.replay_btn = button("Replay", "ghost", self.replay, "play", "Replay the preparation")
+        self.replay_btn = button(
+            "Replay (recorded)",
+            "ghost",
+            self.replay,
+            "play",
+            "Replays where each passage landed while the database was prepared, as recorded then;"
+            " not a live run",
+        )
         self.caption = label(copy.short("map.caption"), "small")
 
         # the welcome card
@@ -398,7 +405,7 @@ class Explore(QWidget):
         if rec.group == HOLDING:
             lines.append("waiting in the bucket: in no group yet (§7.4)")
         self.sel_nums.setText("\n".join(lines))
-        self.flow.set(explain.insert_flow(self.host.studio, rid), delay=220)
+        self.observed.setText("")
         self.b_forget.setText(f"Forget ({n})")
         self._sheet(mode="selected")
 
@@ -655,7 +662,7 @@ class Explore(QWidget):
                 self.sel_text.setText("")
                 self.sel_nums.setText("")
                 self.sel_heat.hide()
-                self.flow.set(explain.delete_flow(s, d), delay=220)
+                self.observed.setText(explain.deleted_line(d))
                 self._sheet(mode="deleted")
                 self.b_again.setVisible(kind == "delete")
                 self.host.toast(

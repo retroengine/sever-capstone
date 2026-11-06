@@ -1,7 +1,7 @@
 """Starts the window on a prepared database, sized to the screen it opens on.
 
-``smoke=True`` walks every section, every tab and the whole tour with "Do it" (the slow sabotage
-build left out), then quits: exit 1 if Qt reported a warning or an error, the window did not fit
+``smoke=True`` walks every section, every tab, the whole tour with "Do it" and every other
+checklist row, then quits: exit 1 if Qt reported a warning or an error, the window did not fit
 the screen, or a step failed.
 """
 
@@ -17,6 +17,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 from ..actions import Studio
 from ..checklist import CHECKS, ROWS
+from ..config import Config
 from . import theme
 from .main_window import MainWindow
 from .tour import CHAPTERS
@@ -39,18 +40,22 @@ def fit(win: MainWindow, app: QApplication) -> None:
 
 
 def smoke_steps(win: MainWindow) -> Iterator[Callable[[], None]]:
-    for section in ("home", "explore", "receipts", "hood", "proof"):
+    for section in ("home", "assistant", "explore", "receipts", "live", "hood", "proof"):
         yield partial(win.go, section)
-    for tab in ("log", "disk", "crash", "rules"):
+    for tab in ("log", "disk", "rules"):
         yield partial(win.go, "hood", tab)
-    for tab in ("parts", "sabotage", "evidence"):
-        yield partial(win.go, "proof", tab)
     yield win.start_tour
     for i, ch in enumerate(CHAPTERS):
         if i:
             yield partial(win.tour.step, 1)
-        if "sabotage" not in ch.rows:
-            yield partial(win._tour_do, ch)
+        yield partial(win._tour_do, ch)
+    # every other row, from the checklist, as a reviewer would click it
+    shown = {k for ch in CHAPTERS for k in ch.rows}
+    for row in CHECKS:
+        if row.key not in shown:
+            yield partial(win.show_row, row.key, True)
+    if win.sections["assistant"].report is not None:
+        yield win.sections["assistant"].report.close
     # the map's 3-D mode and the 384-D measurement, then back to 2-D
     e = win.sections["explore"]
     yield partial(win.go, "explore")
@@ -63,7 +68,7 @@ def smoke_steps(win: MainWindow) -> Iterator[Callable[[], None]]:
     yield partial(win.set_scale, -0.2)
 
 
-def run(root: Path, data: str, rows: int, work: Path, dev: bool, smoke: bool = False) -> int:
+def run(cfg: Config, data: str, rows: int, work: Path, dev: bool, smoke: bool = False) -> int:
     issues: list[str] = []
 
     def handler(mode: QtMsgType, ctx: QMessageLogContext, msg: str) -> None:
@@ -97,7 +102,7 @@ def run(root: Path, data: str, rows: int, work: Path, dev: bool, smoke: bool = F
         if not smoke:
             QMessageBox.information(None, "SEVER-DB Studio", hint)
         return 2
-    studio = Studio(root, data, work, dev, rows)
+    studio = Studio(cfg, data, work, dev, rows)
     studio.open()
     win = MainWindow(studio)
     fit(win, app)

@@ -1,19 +1,22 @@
 """The programs Studio runs beside the database, and the raw search of its disk.
 
-``sever-verify`` (``verifier/``) and ``sever-audit`` (``audit/``) are separate workspaces that share
-no code with the engine (§16.3): whoever holds a certificate checks it with them, offline, with no
-access to the database.
+``sever-verify`` and ``sever-audit`` are separate programs that share no code with the engine
+(§16.3): whoever holds a certificate checks it with them, offline, with no access to the database.
+Studio runs the copies ``studio.sh setup`` put where ``config.toml`` says (DB-119).
 """
 
-import os
 import re
 import subprocess
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+
+if TYPE_CHECKING:
+    from .config import Config
 
 #: kind -> items; an item is found when any of its forms (byte strings) is in a file
 Needles = dict[str, list[list[bytes]]]
@@ -25,20 +28,16 @@ class Tools:
     audit: Path
 
 
-def _cargo(args: Sequence[str], cwd: Path, target: Path) -> None:
-    env = {**os.environ, "CARGO_TARGET_DIR": str(target)}
-    subprocess.run(["cargo", *args], cwd=cwd, check=True, env=env)
+class ToolMissingError(RuntimeError):
+    pass
 
 
-def build(root: Path) -> Tools:
-    """Builds whichever checker is missing (release, ``--locked``)."""
-    t = Tools(
-        verify=root / "verifier/target/release/sever-verify",
-        audit=root / "audit/target/release/sever-audit",
-    )
-    for ws, binary in (("verifier", t.verify), ("audit", t.audit)):
+def of(cfg: "Config") -> Tools:
+    """The checkers named in ``config.toml``; they must exist (``studio.sh setup`` copies them)."""
+    t = Tools(verify=cfg.verify, audit=cfg.audit)
+    for binary in (t.verify, t.audit):
         if not binary.exists():
-            _cargo(["build", "-q", "--release", "--locked"], root / ws, root / ws / "target")
+            raise ToolMissingError(f"{binary.name} is missing: run studio/studio.sh setup")
     return t
 
 

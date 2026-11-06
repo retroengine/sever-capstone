@@ -18,9 +18,10 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT / "python"), str(ROOT / "studio")]
+STUDIO = Path(__file__).resolve().parents[1]
+sys.path[:0] = [str(STUDIO / "vendor/site"), str(STUDIO), str(STUDIO / "tests")]
 
+from conftest import CFG, WORK  # noqa: E402
 from PySide6.QtWidgets import (  # noqa: E402
     QAbstractButton,
     QAbstractScrollArea,
@@ -45,7 +46,7 @@ def inside_scroll(w: QWidget) -> bool:
     return False
 
 
-def problems(win: MainWindow, state: str) -> list[str]:
+def problems(win: QWidget, state: str) -> list[str]:
     out = []
     for w in win.findChildren(QWidget):
         if not w.isVisible() or w.width() <= 0:
@@ -83,9 +84,9 @@ def main() -> int:
     app = QApplication([])
     app.setFont(theme.font())
     app.setStyleSheet(theme.stylesheet())
-    work = ROOT / "studio/work" / f"test-layout-{width}x{height}"
+    work = WORK / f"test-layout-{width}x{height}"
     shutil.rmtree(work, ignore_errors=True)
-    studio = Studio(ROOT, "synthetic", work, dev=True, rows=120)
+    studio = Studio(CFG, "synthetic", work, dev=True, rows=120)
     studio.open()
     studio.backend.insert_next(120)
     win = MainWindow(studio)
@@ -111,28 +112,44 @@ def main() -> int:
         win.grab().save(str(outdir / f"{shots:02d}-{state}.png"))
         shots += 1
 
-    for section, tab in [("home", None), ("explore", None), ("receipts", None)]:
+    for section, tab in [
+        ("home", None),
+        ("assistant", None),
+        ("explore", None),
+        ("receipts", None),
+    ]:
         win.go(section, tab)
         check(section)
-    for tab in ("log", "disk", "crash", "rules"):
+    for tab in ("log", "disk", "rules"):
         win.go("hood", tab)
         check(f"hood-{tab}")
-    for tab in ("parts", "sabotage", "evidence"):
+    for tab in ("evidence",):
         win.go("proof", tab)
         check(f"proof-{tab}")
-    win.go("live", "tree")
-    check("live-empty")
-    studio.forget("account-1")  # receipts for the live demonstrations
+    studio.forget("account-1")  # receipts for the attack lab
     live = win.sections["live"].tabs
-    for tab, start in (
-        ("tree", live["tree"].climb),
-        ("attacks", live["attacks"].run),
-        ("kill", live["kill"].run),
-        ("race", live["race"].run),
-    ):
-        win.go("live", tab)
-        start()
-        check(f"live-{tab}", 4.0)  # the climb and the kills animate after the work is done
+    win.go("live", "attacks")
+    live["attacks"].run()
+    check("live-attacks", 1.0)
+    # the Assistant: store, flush, ask, forget, and its report
+    a = win.sections["assistant"]
+    win.go("assistant")
+    check("assistant-empty")
+    a.fill_example()
+    for step in (a.store, a.others, a.ask):
+        step()
+        settle(0.3)
+    check("assistant-answer")
+    a.forget()
+    settle(0.5)
+    check("assistant-forgot")
+    if a.report is not None:
+        a.report.verify()
+        settle(0.5)
+        found.extend(problems(a.report, "forget-report"))
+        a.report.grab().save(str(outdir / f"{shots:02d}-forget-report.png"))
+        shots += 1
+        a.report.close()
     e = win.sections["explore"]
     win.go("explore")
     e.dismiss_welcome()

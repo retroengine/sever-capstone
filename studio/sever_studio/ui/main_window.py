@@ -22,7 +22,9 @@ from PySide6.QtWidgets import (
 from .. import explain
 from ..actions import Studio
 from ..checklist import CHECKS
+from ..company import Company
 from . import theme
+from .assistant import AssistantSection
 from .drawer import Drawer
 from .explore import Explore
 from .home import Home
@@ -37,11 +39,12 @@ from .worker import Worker
 
 SECTIONS = [
     ("home", "home", "Home"),
+    ("assistant", "chat", "Assistant: Acme Notes, a company app on SEVER-DB"),
     ("explore", "map", "Explore the map  ( / to search)"),
     ("receipts", "receipt", "Receipts"),
-    ("live", "spark", "Live: log tree, attack lab, kill a delete, float vs exact"),
-    ("hood", "engine", "Under the hood: log, disk, crash, bad input"),
-    ("proof", "shield", "Proof: the four parts, sabotage, evidence"),
+    ("live", "spark", "Live: how the groups were made, the attack lab"),
+    ("hood", "engine", "Under the hood: log, disk, bad input"),
+    ("proof", "shield", "Evidence: the project's generated reports"),
 ]
 #: checklist row -> (section, tab)
 WHERE = {
@@ -64,17 +67,10 @@ WHERE = {
     **dict.fromkeys(("verify", "tamper", "limits"), ("receipts", None)),
     **dict.fromkeys(("log", "audit"), ("hood", "log")),
     "disk": ("hood", "disk"),
-    **dict.fromkeys(("restart", "crash"), ("hood", "crash")),
     **dict.fromkeys(("refusals", "retry"), ("hood", "rules")),
-    **dict.fromkeys(
-        ("exact", "ghost", "durable", "chain", "shred", "leak", "phasec"), ("proof", "parts")
-    ),
-    "sabotage": ("proof", "sabotage"),
     "evidence": ("proof", "evidence"),
-    "climb": ("live", "tree"),
     "attacks": ("live", "attacks"),
-    "crashdelete": ("live", "kill"),
-    "race": ("live", "race"),
+    **dict.fromkeys(("assistant", "gone", "compare"), ("assistant", None)),
 }
 SAMPLE = (
     "Tour visitor",
@@ -157,8 +153,10 @@ class MainWindow(QMainWindow):
         column.addWidget(self.stage, 1)
         outer.addLayout(column, 1)
 
+        self.company = Company(studio, _ordinary(studio))
         self.sections: dict[str, Any] = {
             "home": Home(self, self.start_tour),
+            "assistant": AssistantSection(self, self.company),
             "explore": Explore(self),
             "receipts": Receipts(self),
             "live": Live(self),
@@ -217,7 +215,8 @@ class MainWindow(QMainWindow):
         self.go(section, tab)
         s = self.sections
         e: Explore = s["explore"]
-        hood, proof = s["hood"].tabs, s["proof"].tabs
+        hood = s["hood"].tabs
+        a: AssistantSection = s["assistant"]
         actions: dict[str, Callable[[], None]] = {
             "data": s["home"].verify_data,
             "startup": s["home"].show_startup,
@@ -239,25 +238,36 @@ class MainWindow(QMainWindow):
             "log": hood["log"].arrive,
             "audit": hood["log"].audit,
             "disk": hood["disk"].scan,
-            "restart": hood["crash"].restart,
-            "crash": hood["crash"].crash,
             "refusals": hood["rules"].refusals,
             "retry": hood["rules"].retry,
-            "exact": lambda: proof["parts"].arrive("idea", "synthetic"),
-            "ghost": lambda: proof["parts"].arrive("idea", "synthetic"),
-            "durable": lambda: proof["parts"].arrive("durable", "synthetic"),
-            "chain": lambda: proof["parts"].arrive("receipt", "synthetic"),
-            "shred": lambda: proof["parts"].arrive("erase", "synthetic"),
-            "leak": lambda: proof["parts"].arrive("erase", "synthetic"),
-            "phasec": lambda: proof["parts"].arrive("erase", "synthetic"),
-            "sabotage": proof["sabotage"].run,
             "evidence": lambda: None,
-            "climb": s["live"].tabs["tree"].climb,
             "attacks": s["live"].tabs["attacks"].run,
-            "crashdelete": s["live"].tabs["kill"].run,
-            "race": s["live"].tabs["race"].engine_proof,
+            "assistant": lambda: self._assistant(a, "ask"),
+            "gone": lambda: self._assistant(a, "forget"),
+            "compare": lambda: self._assistant(a, "forget"),
         }
         actions[key]()
+
+    def _assistant(self, a: AssistantSection, step: str) -> None:
+        """The Assistant's story up to ``step``: store the example notes, let others write until
+        they are searchable, ask, then forget; each step starts when the one before it is done."""
+        a.fill_example()
+        steps: list[Callable[[], None]] = []
+        if not self.company.notes_of(a.name.text().strip()):
+            steps += [a.store, a.others]
+        steps.append(a.ask if step == "ask" else a.forget)
+        self.in_order(steps)
+
+    def in_order(self, steps: list[Callable[[], None]]) -> None:
+        """Runs each step once the worker is idle after the one before it."""
+        if not steps:
+            return
+
+        def first() -> None:
+            steps[0]()
+            self.in_order(steps[1:])
+
+        self.when_idle(first)
 
     def _show_any(self) -> None:
         self.sections["explore"].show_any()
@@ -326,15 +336,23 @@ class MainWindow(QMainWindow):
         self.go(ch.section, ch.tab)
 
     def _tour_do(self, ch: Chapter) -> None:
+        if ch.do:
+            a: AssistantSection = self.sections["assistant"]
+            a.fill_example()
+            steps = {
+                "store": a.store,
+                "others": a.others,
+                "ask": a.ask,
+                "forget": a.forget,
+                "verify": a.report_verify,
+                "flip": a.report_flip,
+                "report": a.open_report,
+            }
+            self.in_order([steps[k] for k in ch.do])
+            return
         done = set()
         for key in ch.rows:
-            run = {
-                "ghost": "exact",
-                "leak": "shred",
-                "phasec": "shred",
-                "freetext": "insert",
-                "routing": "insert",
-            }.get(key, key)
+            run = {"freetext": "insert", "routing": "insert", "compare": "gone"}.get(key, key)
             if run not in done:
                 done.add(run)
                 self.show_row(run, tour=True)
@@ -393,3 +411,14 @@ class MainWindow(QMainWindow):
             self.studio.report()
         self.studio.backend.close()
         event.accept()
+
+
+def _ordinary(studio: Studio) -> Any:
+    """The same app on Chroma, beside SEVER-DB; ``None`` (and the report says "not set up") when
+    Chroma cannot start here."""
+    try:
+        from ..ordinary import Ordinary
+
+        return Ordinary(studio.work / "chroma")
+    except Exception:  # Chroma is optional: any failure leaves the comparison out
+        return None

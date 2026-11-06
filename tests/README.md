@@ -101,6 +101,6 @@ Part page: [parts/4-the-erasure/README.md](../parts/4-the-erasure/README.md).
 | [python/sever_fair](../python/sever_fair) | 12 test functions, 20 files |
 | [tests/sabotage](../tests/sabotage) | 0 test functions, 1 files |
 | [tests/cleanroom](../tests/cleanroom) | 171 test functions, 29 files |
-| [studio/tests](../studio/tests) | 116 test functions, 20 files |
+| [studio/tests](../studio/tests) | 91 test functions, 18 files |
 
 **Total in the parts:** 550 Rust and 384 Python test functions.

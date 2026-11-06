@@ -62,3 +62,5 @@ Thumbs.db
 
 # Personal practice code, kept outside the repository (~/rust-practice)
 src/practise-rust/
+studio/vendor/
+studio/config.toml

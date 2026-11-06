@@ -8,13 +8,11 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
-from conftest import WORK
+from conftest import CFG, WORK
 
 from sever_studio import wow
 from sever_studio.actions import Studio
 from sever_studio.corpus import DataMissingError, fixture_encode, load
-
-ROOT = Path(__file__).resolve().parents[2]
 
 
 def spawn_id(members: list[str]) -> str:
@@ -28,7 +26,7 @@ def template() -> Iterator[Path]:
     """One prepared fixture database; each test gets a copy (the database is closed meanwhile)."""
     work = WORK / "test-edge-template"
     shutil.rmtree(work, ignore_errors=True)
-    s = Studio(ROOT, "synthetic", work, dev=True, rows=120)
+    s = Studio(CFG, "synthetic", work, dev=True, rows=120)
     s.open()
     s.backend.insert_next(120)
     s.backend.close()
@@ -41,7 +39,7 @@ def studio(request: pytest.FixtureRequest, template: Path) -> Iterator[Studio]:
     work = WORK / f"test-edge-{request.node.name[:40]}"
     shutil.rmtree(work, ignore_errors=True)
     shutil.copytree(template, work)
-    s = Studio(ROOT, "synthetic", work, dev=True, rows=120)
+    s = Studio(CFG, "synthetic", work, dev=True, rows=120)
     s.open()
     yield s
     s.backend.close()
@@ -153,34 +151,6 @@ def test_edge_only_your_own_records_fill_the_bucket(studio: Studio) -> None:
     exact(studio)
 
 
-def test_edge_a_committed_insert_whose_answer_was_lost(studio: Studio) -> None:
-    b, c = studio.backend, studio.corpus
-    rid = c.ids[b.index.loaded]
-    i = c.position[rid]
-    b.live.insert(b.cid, b.request(rid, c.vectors[i], c.accounts[i]))  # committed, never tracked
-    assert b.mismatches() != []
-    assert b.reconcile([], rid) is True  # the database says it committed
-    exact(studio)
-
-
-@pytest.mark.full
-def test_edge_five_crashes_in_a_row(studio: Studio) -> None:
-    for _ in range(5):
-        c = studio.crash(count=30)
-        assert c.killed
-        assert c.missing == 0
-        exact(studio)
-
-
-def test_edge_restart_then_carry_on(studio: Studio) -> None:
-    studio.add_mine("Before Restart", "one")
-    studio.restart()
-    studio.add_mine("After Restart", "two")
-    studio.fill_bucket(until="one")
-    exact(studio)
-    assert studio.checklist.verdicts["restart"].ok
-
-
 def test_edge_missing_data_and_model_say_what_to_do(tmp_path: Path) -> None:
     from sever_studio.encoder import Encoder, EncoderError
 
@@ -193,7 +163,7 @@ def test_edge_missing_data_and_model_say_what_to_do(tmp_path: Path) -> None:
 def test_edge_an_unprepared_work_directory_is_refused_kindly(tmp_path: Path) -> None:
     from sever_studio.ui.app import run
 
-    assert run(ROOT, "synthetic", 120, WORK / "test-not-prepared", True, smoke=True) == 2
+    assert run(CFG, "synthetic", 120, WORK / "test-not-prepared", True, smoke=True) == 2
 
 
 def test_edge_the_report_holds_no_secret_and_no_text(studio: Studio) -> None:

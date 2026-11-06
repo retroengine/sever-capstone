@@ -8,21 +8,19 @@ tag 9 is the scrambled ID (§11.1); a flush moves every record then in the holdi
 
 import json
 from collections.abc import Iterator
-from pathlib import Path
 from typing import Any
 
 import pytest
+from conftest import CFG, WORK
 
 from sever_studio.actions import Studio
 from sever_studio.backend import HOLDING
 
-ROOT = Path(__file__).resolve().parents[2]
-
 
 @pytest.fixture(scope="module")
 def studio(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Studio]:
-    work = ROOT / "studio/work" / f"test-truth-{tmp_path_factory.getbasetemp().name}"
-    s = Studio(ROOT, "synthetic", work, dev=True, rows=120)
+    work = WORK / f"test-truth-{tmp_path_factory.getbasetemp().name}"
+    s = Studio(CFG, "synthetic", work, dev=True, rows=120)
     s.open()
     s.backend.insert_next(120)
     s.fill_bucket("flush")
@@ -113,7 +111,8 @@ def test_studio_a_receipt_keeps_its_record_name_after_a_restart(studio: Studio) 
     rid = next(r for r, v in b.index.records.items() if v.group != HOLDING)
     account = b.index.records[rid].account
     d = studio.delete([rid])
-    studio.restart()
+    b.close()
+    b.open()
     assert b.receipt_owner(d.lsns[0]) == (rid, account)
 
 

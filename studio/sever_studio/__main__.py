@@ -1,4 +1,4 @@
-"""``python -m sever_studio prepare | run | crash-child`` (through ``studio/studio.sh``).
+"""``python -m sever_studio prepare | run`` (through ``studio/studio.sh``).
 
 ``prepare`` builds the demo database once: it stores ``--rows`` passages (default 10,000 on NQ)
 through the SDK, writes where each landed (``prepare-events.jsonl``, for the replay), and lays out
@@ -9,12 +9,16 @@ import argparse
 import sys
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-ROOT = Path(__file__).resolve().parents[2]
+if TYPE_CHECKING:
+    from .config import Config
+
+STUDIO = Path(__file__).resolve().parents[1]
 DEFAULT_ROWS = {"nq": 10_000, "synthetic": 120}
 
 
-def prepare(data: str, rows: int, work: Path, dev: bool, held: int) -> int:
+def prepare(cfg: "Config", data: str, rows: int, work: Path, dev: bool, held: int) -> int:
     import shutil
 
     from .actions import Studio
@@ -24,7 +28,7 @@ def prepare(data: str, rows: int, work: Path, dev: bool, held: int) -> int:
     t0 = time.perf_counter()
     shutil.rmtree(work, ignore_errors=True)
     work.mkdir(parents=True)
-    studio = Studio(ROOT, data, work, dev, rows)
+    studio = Studio(cfg, data, work, dev, rows)
     print(f"  map laid out ({time.perf_counter() - t0:.0f} s)")
     studio.layout3()
     print(f"  3-D map laid out ({time.perf_counter() - t0:.0f} s)")
@@ -53,7 +57,7 @@ def prepare(data: str, rows: int, work: Path, dev: bool, held: int) -> int:
 def main(argv: list[str]) -> int:
     p = argparse.ArgumentParser(prog="sever_studio")
     sub = p.add_subparsers(dest="cmd", required=True)
-    for name in ("prepare", "run", "crash-child", "delete-child"):
+    for name in ("prepare", "run"):
         s = sub.add_parser(name)
         s.add_argument("--data", choices=["nq", "synthetic"], default="nq")
         s.add_argument("--rows", type=int, default=None)
@@ -61,33 +65,24 @@ def main(argv: list[str]) -> int:
         s.add_argument("--dev", action="store_true", help="use the development override if refused")
         if name == "run":
             s.add_argument("--smoke", action="store_true", help="walk everything, then quit")
-        if name == "delete-child":
-            s.add_argument("--ids", type=Path, required=True)
-        if name == "crash-child":
-            s.add_argument("--start", type=int, required=True)
-            s.add_argument("--count", type=int, required=True)
     a = p.parse_args(argv)
     rows = a.rows if a.rows is not None else DEFAULT_ROWS[a.data]
-    work = a.work or ROOT / "studio/work" / f"studio-{a.data}"
+    work = a.work or STUDIO / "work" / f"studio-{a.data}"
     from .backend import WorkInUseError, lock
+    from .config import ConfigMissingError, load
     from .corpus import DataMissingError
 
     try:
-        if a.cmd == "crash-child":
-            from .actions import crash_child
-
-            return crash_child(ROOT, a.data, rows, work, a.start, a.count, a.dev)
-        if a.cmd == "delete-child":
-            from .actions import Studio
-            from .wow import delete_child
-
-            return delete_child(Studio(ROOT, a.data, work, a.dev, rows), a.ids)
+        cfg = load()
         held = lock(work, a.cmd)
         if a.cmd == "prepare":
-            return prepare(a.data, rows, work, a.dev, held)
+            return prepare(cfg, a.data, rows, work, a.dev, held)
         from .ui.app import run
 
-        return run(ROOT, a.data, rows, work, a.dev, a.smoke)
+        return run(cfg, a.data, rows, work, a.dev, a.smoke)
+    except ConfigMissingError as e:
+        print(e)
+        return 2
     except WorkInUseError as e:
         print(e)
         return 2

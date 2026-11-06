@@ -11,18 +11,16 @@ import random
 import shutil
 import time
 from collections.abc import Iterator
-from pathlib import Path
 from typing import Any
 
 import pytest
-from conftest import WORK
+from conftest import CFG, WORK
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
 from sever_studio.actions import Studio
 from sever_studio.checklist import ROWS
 
-ROOT = Path(__file__).resolve().parents[2]
 pytestmark = pytest.mark.full
 
 
@@ -34,7 +32,7 @@ def exact(s: Studio) -> None:
 def test_full_soak_500_random_operations(report: dict[str, Any]) -> None:
     work = WORK / "test-soak"
     shutil.rmtree(work, ignore_errors=True)
-    s = Studio(ROOT, "synthetic", work, dev=True, rows=120)
+    s = Studio(CFG, "synthetic", work, dev=True, rows=120)
     s.open()
     s.backend.insert_next(120)
     rng = random.Random(42)  # the order of the operations only
@@ -43,8 +41,8 @@ def test_full_soak_500_random_operations(report: dict[str, Any]) -> None:
     for k in range(500):
         b = s.backend
         op = rng.choices(
-            ["add", "fill", "delete", "forget", "search", "restart", "crash"],
-            weights=[30, 15, 25, 6, 20, 2, 2],
+            ["add", "fill", "delete", "forget", "search"],
+            weights=[30, 15, 25, 6, 20],
         )[0]
         if op == "add":
             s.add_mine(f"Person {rng.randrange(40)}", f"note {k} {rng.random()}")
@@ -58,10 +56,6 @@ def test_full_soak_500_random_operations(report: dict[str, Any]) -> None:
                 s.forget(rng.choice(accounts))
         elif op == "search":
             s.ask(rng.randrange(len(s.corpus.questions)))
-        elif op == "restart":
-            s.restart()
-        elif op == "crash":
-            assert s.crash(count=20).missing == 0
         done[op] = done.get(op, 0) + 1
         exact(s)
     report.update(
@@ -80,7 +74,7 @@ def nq() -> Iterator[Studio]:
     work = WORK / "test-nq"
     shutil.rmtree(work, ignore_errors=True)
     shutil.copytree(source, work)
-    s = Studio(ROOT, "nq", work, dev=True, rows=10_000)
+    s = Studio(CFG, "nq", work, dev=True, rows=10_000)
     s.open()
     yield s
     s.backend.close()
@@ -116,27 +110,38 @@ def test_full_every_demonstration_on_the_real_data(nq: Studio, report: dict[str,
     timed("verify", s.verify, f.lsns[0])
     timed("tamper", s.tamper, f.lsns[0])
     s.limits()
-    timed("climb", s.climb, d.lsns[0])
     timed("attack_lab", s.attack_lab, d.lsns[0])
     timed("log", s.log)
     timed("audit", s.audit)
     timed("disk", s.disk)
-    timed("restart", s.restart)
-    timed("crash", s.crash, 200)
-    for _ in range(3):
-        account, _ = s.crash_test_person()
-        timed("crash_delete", s.crash_delete, account, random.uniform(0.2, 1.3))
-    timed("race", s.race, 20_000)
-    for name in ("idea", "durable", "receipt"):
-        timed(f"proof_{name}", s.proof, name, None)
-    timed("proof_erase", s.proof, "erase", "synthetic")
     timed("evidence", s.evidence)
+    # the company demo on the real data: Acme Notes, with Chroma beside it (Stage 6)
+    from sever_studio.company import Company
+    from sever_studio.ordinary import Ordinary
+
+    c = Company(s, Ordinary(s.work / "chroma"))
+    notes = [
+        "I am allergic to penicillin; my doctor is Dr. Mehta at the Elm Street clinic.",
+        "My daughter's school pickup is at 3:15 on Tuesdays and Thursdays.",
+    ]
+    stored = timed("store_notes", c.store_notes, "Full Tier Person", notes)
+    assert len(stored) == 2
+    timed("let_others_write", c.let_others_write)
+    got, _ = timed("ask", c.ask, notes[1])
+    assert all(h.text is not None for h in got.hits)
+    gone = timed("forget_me", c.forget, "Full Tier Person")
+    assert gone.clean, gone
+    assert gone.chroma is not None
+    report.update(
+        chroma_after={k: f for k, (f, _) in gone.chroma.after.hits.items()},
+        sever_after={k: f for k, (f, _) in gone.after.hits.items()},
+    )
     exact(s)
     v = s.checklist.verdicts
     report.update(timings=timings, numbers={k: x for k, x in s.numbers.items() if k != "data"})
     failed = {k: x.detail for k, x in v.items() if not x.ok}
     assert failed == {}
-    assert {r.key for r in ROWS} - set(v) <= {"sabotage"}
+    assert {r.key for r in ROWS} - set(v) == set()
 
 
 def test_full_the_window_never_freezes(
@@ -183,20 +188,10 @@ def test_full_the_window_never_freezes(
     assert worst < 250, f"the window's thread was blocked for {worst:.0f} ms"
 
 
-@pytest.mark.parametrize("sb", ["SB-1", "SB-16", "SB-24"])
-def test_full_a_planted_bug_turns_a_test_red(sb: str, report: dict[str, Any]) -> None:
-    from sever_studio import sabotage
-
-    out = sabotage.run(ROOT, sb)
-    report.update(summary=out.summary)
-    assert out.compiled
-    assert out.caught, out.output[-3000:]
-
-
 @pytest.mark.full
 def test_full_encoder_check_reencodes_stored_passages() -> None:
     # H6, oracle B: the ONNX encoder against the dataset's own vectors, not three names compared
-    s = Studio(ROOT, "nq", WORK / "studio-nq", dev=True, rows=10_000)
+    s = Studio(CFG, "nq", WORK / "studio-nq", dev=True, rows=10_000)
     s.encoder_check()
     v = s.checklist.verdicts["encoder"]
     assert v.ok, v.detail

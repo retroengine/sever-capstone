@@ -12,17 +12,19 @@ from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT / "python"), str(ROOT / "studio")]
+STUDIO = Path(__file__).resolve().parents[1]
+sys.path[:0] = [str(STUDIO / "vendor/site"), str(STUDIO), str(STUDIO / "tests")]
+
+from conftest import CFG, WORK  # noqa: E402
 
 from sever_studio.actions import Studio  # noqa: E402
 from sever_studio.ui import theme  # noqa: E402
 from sever_studio.ui.main_window import MainWindow  # noqa: E402
 
 app = QApplication([])
-work = ROOT / "studio/work/test-map3d"
+work = WORK / "test-map3d"
 shutil.rmtree(work, ignore_errors=True)
-s = Studio(ROOT, "synthetic", work, dev=True, rows=120)
+s = Studio(CFG, "synthetic", work, dev=True, rows=120)
 s.open()
 s.backend.insert_next(120)
 w = MainWindow(s)

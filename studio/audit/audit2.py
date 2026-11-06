@@ -1,37 +1,45 @@
-"""Audit 2 (23 Oct 2026): each suspicion run, not argued. Run on a COPY of a synthetic work dir
-(on ext4):  uv run --project studio --no-sync python studio/audit/audit2.py COPY
-Prints one line per experiment: what Studio says, and what is actually true."""
+"""Audit 2 (23 Oct 2026), re-run after Stage 6 (6 Nov 2026, DB-119): each suspicion run, not argued.
+Run on a COPY of a synthetic work dir (on ext4), through studio.sh's environment:
+
+    PYTHONPATH=studio/vendor/site:studio uv run --project studio --no-sync \\
+        python studio/audit/audit2.py COPY
+
+Prints one line per experiment: what Studio says now, and what is actually true."""
 
 import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT / "python"), str(ROOT / "studio")]
+from sever_studio import config, explain, tools, wow
+from sever_studio.actions import Studio
 
-from sever_studio import explain, proofs, tools, wow  # noqa: E402
-from sever_studio.actions import Studio  # noqa: E402
-
-s = Studio(ROOT, "synthetic", Path(sys.argv[1]), dev=True, rows=120)
+cfg = config.load()
+s = Studio(cfg, "synthetic", Path(sys.argv[1]), dev=True, rows=120)
 s.open()
 b = s.backend
 
-# E1: on synthetic, "your own text, encoded by the pinned model" ticks with a hash stand-in
-a = s.add_mine("Audit Person", "any words at all")
-v = s.checklist.verdicts["freetext"]
-print(f"E1 freetext ticked={v.ok} source={v.source!r}; encoder used: {s.corpus.encoder}")
+# E1: on synthetic, "your own text, encoded by the pinned model" ticked with a hash stand-in
+s.add_mine("Audit Person", "any words at all")
+v = s.checklist.verdicts.get("freetext")
+print(f"E1 freetext verdict on synthetic: {v} (fixed when None: never ticks offline, H1)")
 
-# E2: on synthetic, "one encoder" ticks by comparing three name strings, no re-encoding
+# E2: on synthetic, "one encoder" ticked by comparing three name strings
 s.encoder_check()
-v = s.checklist.verdicts["encoder"]
-print(f"E2 encoder ticked={v.ok}: {v.detail}")
+v = s.checklist.verdicts.get("encoder")
+print(f"E2 encoder verdict on synthetic: {v} (fixed when None, H1)")
 
 # E3: the witnesses live in the database's own key directory (simulated, §10.4, L-7)
 keys = sorted(p.name for p in b.keys.iterdir())
 anchors = json.loads(b.live.anchors())
-print(f"E3 key dir holds {keys}; anchors list {len(anchors['witnesses'])} witnesses")
+from sever_studio.ui import copy  # noqa: E402
 
-# E4: the climb counts cosignatures; it never checks one. Corrupt a cosignature's signature bytes
+said = "simulated" in copy.long("log.about")
+print(
+    f"E3 key dir holds {keys}; anchors list {len(anchors['witnesses'])} witnesses; "
+    f"the log screen says simulated: {said}"
+)
+
+# E4: the climb counted cosignatures without checking one; is any climb left?
 s.fill_bucket("one")
 rid = next(r for r, rec in b.index.records.items() if rec.group != "holding" and not rec.mine)
 d = s.delete([rid])
@@ -44,29 +52,26 @@ while cert[at] != 0xFF:
     at += 5 + ln
 assert t7 is not None
 cert[t7[0] + t7[1] - 1] ^= 0x01  # the last byte of the last cosignature's signature
-bad = wow.parse(bytes(cert))
-steps, root, valid = wow.climb(bad.leaf, bad.leaf_index, bad.tree_size, bad.path)
 folder = s.work / "audit2-climb"
 folder.mkdir(exist_ok=True)
 (folder / "certificate.bin").write_bytes(bytes(cert))
 (folder / "anchors.json").write_text(b.live.anchors(), "utf-8")
-code, out = tools.run(
-    [tools.build(ROOT).verify, "certificate.bin", "--anchors", "anchors.json"], folder
-)
+code, out = tools.run([tools.of(cfg).verify, "certificate.bin", "--anchors", "anchors.json"], folder)
 print(
-    f"E4 corrupted cosignature: Studio's climb says valid={valid and root == bad.root}, "
-    f"{bad.witnesses} witnesses cosigned; sever-verify says: {out.splitlines()[-1]}"
+    f"E4 Studio has a climb: {hasattr(wow, 'climb')} (removed, H2); "
+    f"sever-verify on a corrupted cosignature says: {out.splitlines()[-1]}"
 )
 
-# E5: Part 4's "every certificate verifies" passes on output that says the opposite
-text = (
-    "SEVER-DB Part 4: the erasure\n1. Positive control: the scanner RECOVERS x.\n"
-    "2. delete_user: certificate 1: verify FAILED.\n3. Checkpoint: 0 findings.\n"
-    "5. Crash during phase C: 0 findings."
-)
-print(f"E5 erase checks on a 'verify FAILED' output: {proofs._erase({}, text)[1]}")
+# E5: Part 4's "every certificate verifies" passed on output that said the opposite
+import importlib.util  # noqa: E402
 
-# E6: the deletion diagram states key rotation and C_t without observing either
-flow = dict(explain.delete_flow(s, d))
-print(f"E6 delete_flow says: Keys -> {flow['Keys'][:60]}...; it reads no key file")
+print(
+    "E5 the part-program parser exists: "
+    f"{importlib.util.find_spec('sever_studio.proofs') is not None} (removed, H3)"
+)
+
+# E6: the deletion diagram stated key rotation and C_t without observing either
+line = explain.deleted_line(d)
+print(f"E6 Studio says after a deletion: {line!r}; unobserved words in it: "
+      f"{[w for w in ('key', 'overwritten', 'C_S', 'witness') if w in line]}")
 b.close()
