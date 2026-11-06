@@ -60,7 +60,9 @@ target-version = "py313"
 src = ["python", "tests"]
 # studio/ is its own project with its own ruff settings; src/ holds practice files;
 # scripts/data-preparation/ is the P0 tool, run in the P0 environment and left as it was used.
-extend-exclude = ["studio", "src", "docs", "scripts/data-preparation"]
+# project_report/ is prose, like docs/; tests/cleanroom/p*/ holds the sealed tests of fairness
+# runs, kept byte for byte (FT-10) and never edited.
+extend-exclude = ["studio", "src", "docs", "project_report", "scripts/data-preparation", "tests/cleanroom/p*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "PT"]

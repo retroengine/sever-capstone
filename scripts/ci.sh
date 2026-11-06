@@ -39,6 +39,14 @@ dalek_pinned() { # spec §20.3 check 2: every lockfile that has curve25519-dalek
 freeze_guard() { # F-2: no file of a frozen part changes (Build §0.3)
   local m; for m in freeze/PART-*.sha256; do [ -e "$m" ] || continue; sha256sum --quiet -c "$m" || return 1; done
 }
+# Each kept fairness run (tests/cleanroom/pN/RUN/, FT-10) is sealed and self-contained: two runs
+# both define a `helpers` module and same-named test files, so each runs in its own pytest process.
+cleanroom_kept() {
+  local d; for d in tests/cleanroom/p*/*/; do
+    [ -e "$d/MANIFEST.sha256" ] || continue
+    uv run --no-sync pytest -q "$d" || return 1
+  done
+}
 fast() {
   step fmt cargo fmt --all --check
   step clippy cargo clippy --workspace --all-targets -- -D warnings
@@ -58,7 +66,7 @@ fast() {
   step sdk-native uv run --no-sync maturin develop -q --release --uv -m crates/sever-py-p2/Cargo.toml
   step sdk-native-p3 uv run --no-sync maturin develop -q --release --uv -m crates/sever-py-p3/Cargo.toml
   step sdk-native-p4 uv run --no-sync maturin develop -q --release --uv -m crates/sever-py/Cargo.toml
-  step python-tests uv run --no-sync pytest -q -m "not slow"
+  step python-tests uv run --no-sync pytest -q -m "not slow" --ignore=tests/cleanroom
   step spec-trace uv run --no-sync python -m sever_testkit.spec_trace check --part 1 --complete
   step spec-trace-p2 uv run --no-sync python -m sever_testkit_p2.spec_trace check --part 2 --complete
   step oracle-check-p2 uv run --no-sync python -m sever_testkit_p2.oracle_check check
@@ -83,7 +91,8 @@ fast() {
 full_checks() {
   fast
   step rust-ignored cargo test --workspace --release -q -- --include-ignored
-  step python-slow uv run --no-sync pytest -q -m slow
+  step python-slow uv run --no-sync pytest -q -m slow --ignore=tests/cleanroom
+  step cleanroom-kept cleanroom_kept
   step sabotage tests/sabotage/run.sh
   step msrv cargo +1.85 build -q --workspace --target-dir target/msrv
   step deny cargo deny check licenses advisories bans sources
