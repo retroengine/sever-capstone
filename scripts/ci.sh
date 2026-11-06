@@ -44,7 +44,11 @@ freeze_guard() { # F-2: no file of a frozen part changes (Build §0.3)
 cleanroom_kept() {
   local d; for d in tests/cleanroom/p*/*/; do
     [ -e "$d/MANIFEST.sha256" ] || continue
-    uv run --no-sync pytest -q "$d" || return 1
+    # The CLI each part's run was written against (configs/fair.yaml, cli.bins); the tests start
+    # Python subprocesses that import the SDK packages under python/.
+    local cli; case "$d" in tests/cleanroom/p3/*) cli=sever-db-p3 ;; tests/cleanroom/p4/*) cli=sever-db ;; *) cli=sever-db-p2 ;; esac
+    cargo build -q --release --bin "$cli" || return 1
+    SEVER_CLI="$PWD/target/release/$cli" PYTHONPATH="$PWD/python" uv run --no-sync pytest -q "$d" || return 1
   done
 }
 fast() {

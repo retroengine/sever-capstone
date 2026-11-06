@@ -22,10 +22,16 @@ INPUTS = [
 ]
 
 
-def pytest_configure(config: pytest.Config) -> None:
-    config.addinivalue_line("markers", "req(ids): requirement IDs (clean-room tests)")
+def _set_env() -> None:
+    """Point the kept tests at their inputs, scratch folder and CLI.
+
+    Runs when this file is imported, before a run's own conftest, which reads the variables at
+    import time when pytest is given the run's folder directly (scripts/ci.sh cleanroom_kept).
+    """
     if not any(Path(__file__).parent.glob("p*/*/MANIFEST.sha256")):
         return  # no kept clean-room tests yet
+    if "SEVER_INPUTS" in os.environ:
+        return
     inputs = Path(tempfile.mkdtemp(prefix="cleanroom-inputs-"))
     for rel in INPUTS:
         if (ROOT / rel).exists():
@@ -35,6 +41,13 @@ def pytest_configure(config: pytest.Config) -> None:
     os.environ.setdefault("SEVER_INPUTS", str(inputs))
     os.environ.setdefault("SEVER_SCRATCH", str(scratch))
     os.environ.setdefault("SEVER_CLI", str(ROOT / "target/release/sever-db-p2"))
+
+
+_set_env()
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    config.addinivalue_line("markers", "req(ids): requirement IDs (clean-room tests)")
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
