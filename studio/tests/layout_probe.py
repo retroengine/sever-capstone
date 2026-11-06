@@ -19,9 +19,13 @@ import time
 from pathlib import Path
 
 STUDIO = Path(__file__).resolve().parents[1]
-sys.path[:0] = [str(STUDIO / "vendor/site"), str(STUDIO), str(STUDIO / "tests")]
+sys.path[:0] = [str(STUDIO / "vendor/site"), str(STUDIO)]
 
-from conftest import CFG, WORK  # noqa: E402
+# not conftest: it would set this process's screen, which the caller chose (QT_QPA_PLATFORM)
+from sever_studio.config import load  # noqa: E402
+
+CFG = load()
+WORK = STUDIO / "work"
 from PySide6.QtWidgets import (  # noqa: E402
     QAbstractButton,
     QAbstractScrollArea,

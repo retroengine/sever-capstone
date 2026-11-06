@@ -24,7 +24,6 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QPushButton, QWidget
 
 from sever_studio.actions import Studio
-from sever_studio.checklist import ROWS
 from sever_studio.ui import theme
 from sever_studio.ui.app import fit
 from sever_studio.ui.main_window import MainWindow
@@ -197,20 +196,23 @@ def test_ui_the_whole_tour_by_its_buttons(win: MainWindow, report: dict[str, Any
     win.start_tour()
     settle(win)
     t0 = time.monotonic()
-    for i, ch in enumerate(CHAPTERS):
+    for i in range(len(CHAPTERS)):
         assert win.tour.title.text().startswith(f"{i + 1}.")
-        if "sabotage" not in ch.rows:
-            press(find(win.tour, "Do it"))
-            settle(win, 0.5)
+        press(find(win.tour, "Do it"))
+        settle(win, 0.5)
         if i < len(CHAPTERS) - 1:
             press(win.tour.findChildren(QPushButton)[-2])  # Next
             settle(win)
     report["tour_seconds"] = round(time.monotonic() - t0, 1)
     v = win.studio.checklist.verdicts
-    missing = {r.key for r in ROWS} - set(v)
+    # every row a chapter names is shown by its "Do it" (offline, the encoder rows never tick:
+    # audit 2, H1); the other rows are reached from the checklist
+    named = {k for ch in CHAPTERS for k in ch.rows} - {"encoder", "freetext"}
+    missing = named - set(v)
     failed = [k for k, x in v.items() if not x.ok]
     report.update(shown=len(v), failed=failed)
-    assert missing <= {"sabotage"}, missing
+    assert len(CHAPTERS) == 10
+    assert missing == set(), missing
     assert failed == []
     assert win.errors == []
 
@@ -262,8 +264,20 @@ def test_ui_smoke_on_the_real_display(report: dict[str, Any]) -> None:
     env = {k: v for k, v in os.environ.items() if k != "QT_QPA_PLATFORM"}
     if REAL_DISPLAY:
         env["QT_QPA_PLATFORM"] = REAL_DISPLAY
+    # a fresh fixture database: the long-lived work/studio-synthetic grows with every session,
+    # and auditing a log of tens of thousands of leaves with every receipt takes many minutes
+    work = WORK / "test-smoke"
+    shutil.rmtree(work, ignore_errors=True)
+    subprocess.run(
+        ["bash", "studio.sh", "prepare", "--data", "synthetic", "--work", str(work)],
+        cwd=STUDIO,
+        capture_output=True,
+        env=env,
+        timeout=600,
+        check=True,
+    )
     p = subprocess.run(
-        ["bash", "studio.sh", "smoke", "--data", "synthetic"],
+        ["bash", "studio.sh", "smoke", "--data", "synthetic", "--work", str(work)],
         cwd=STUDIO,
         capture_output=True,
         text=True,

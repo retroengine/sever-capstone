@@ -24,11 +24,12 @@ from .tour import CHAPTERS
 
 #: Qt messages that say nothing about Studio: WSLg's compositor reports the first two on every
 #: start; the third comes from passages in a script no installed font covers (setup says which
-#: package adds the fonts).
+#: package adds the fonts); the fourth is a headless screen that cannot raise the report window.
 BENIGN = (
     "Wayland does not support QWindow::requestActivate",
     "propagateSizeHints",
     "OpenType support missing for",
+    "This plugin does not support raise()",
 )
 
 
@@ -51,7 +52,7 @@ def smoke_steps(win: MainWindow) -> Iterator[Callable[[], None]]:
         yield partial(win._tour_do, ch)
     # every other row, from the checklist, as a reviewer would click it
     shown = {k for ch in CHAPTERS for k in ch.rows}
-    for row in CHECKS:
+    for row in ROWS:
         if row.key not in shown:
             yield partial(win.show_row, row.key, True)
     if win.sections["assistant"].report is not None:

@@ -71,7 +71,7 @@ CHAPTERS = [
         "Your question is searched; every passage shown was read with passage(), so a deleted "
         "one cannot appear. With GROQ_API_KEY set, Groq writes the answer and cites [n]; what "
         "Groq receives is outside the database.",
-        ("assistant", "search"),
+        ("assistant",),
         ("ask",),
     ),
     Chapter(
@@ -92,7 +92,7 @@ CHAPTERS = [
         "sever-verify, with only the receipts and the public anchors.",
         "A separate program that shares no code with the database checks each receipt offline "
         "(§11.3). Save receipts… writes the files and the exact command, to run in a terminal.",
-        ("verify", "limits"),
+        ("verify",),
         ("verify",),
     ),
     Chapter(
@@ -188,7 +188,7 @@ class TourBar(QFrame):
         text = QVBoxLayout()
         text.setSpacing(2)
         self.title = label("", "strong")
-        self.line = label("", "muted")
+        self.line = label("", "muted", wrap=True)
         text.addWidget(self.title)
         text.addWidget(self.line)
         lay.addLayout(text, 1)

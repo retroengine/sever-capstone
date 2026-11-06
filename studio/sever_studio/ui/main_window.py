@@ -298,7 +298,8 @@ class MainWindow(QMainWindow):
 
     def _delete(self, e: Explore) -> None:
         mine = [r for r, rec in self.studio.backend.index.records.items() if rec.mine]
-        rid = e.map.selected or (mine[-1] if mine else None)
+        # yours first; once you have none left, the record nearest the middle of the map
+        rid = e.map.selected or (mine[-1] if mine else e.show_any())
         if rid is None:
             self.toast("Click a dot first, then Delete.", None)
             return
