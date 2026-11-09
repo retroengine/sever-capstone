@@ -1,11 +1,12 @@
 """The assistant: a language model writes the answer from the passages SEVER-DB returned.
 
-Groq's OpenAI-compatible ``chat/completions`` with ``llama-3.1-8b-instant``, called with the
-standard library on Studio's worker thread, 20 s timeout. The key is read from ``GROQ_API_KEY`` at
-each call; it is never logged, shown, saved or put in an error. The question and the retrieved
-passages are sent to Groq, and the screen says so: what Groq receives is outside the database and
-outside anything SEVER-DB can delete or prove. With no key, or on any error, the answer is the
-passages themselves, labelled "AI off".
+Groq's OpenAI-compatible ``chat/completions`` with ``openai/gpt-oss-20b``; ``GROQ_MODEL``
+overrides it, since Groq retires models (``llama-3.1-8b-instant`` answered 404 in Nov 2026).
+Called with the standard library on Studio's worker thread, 20 s timeout. The key is read from
+``GROQ_API_KEY`` at each call; it is never logged, shown, saved or put in an error. The question
+and the retrieved passages are sent to Groq, and the screen says so: what Groq receives is outside
+the database and outside anything SEVER-DB can delete or prove. With no key, or on any error, the
+answer is the passages themselves, labelled "AI off".
 """
 
 import json
@@ -16,7 +17,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 URL = "https://api.groq.com/openai/v1/chat/completions"
-MODEL = "llama-3.1-8b-instant"
+MODEL = "openai/gpt-oss-20b"
 TIMEOUT = 20.0
 SYSTEM = (
     "You are the assistant of Acme Notes. Answer only from the numbered passages you are given, "
@@ -65,7 +66,11 @@ def answer(question: str, passages: list[str], post: Post | None = None) -> Answ
         return Answer(off(passages), False, "AI off: no GROQ_API_KEY set", sent)
     if not passages:
         return Answer(off(passages), False, "AI off: nothing was retrieved to answer from", sent)
-    body = json.dumps({"model": MODEL, "messages": msgs, "temperature": 0}).encode("utf-8")
+    model = os.environ.get("GROQ_MODEL", "").strip() or MODEL
+    req: dict[str, object] = {"model": model, "messages": msgs, "temperature": 0}
+    if model.startswith("openai/gpt-oss"):
+        req["reasoning_effort"] = "low"  # a short cited answer; keeps it inside the timeout
+    body = json.dumps(req).encode("utf-8")
     headers = {
         "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
@@ -78,4 +83,4 @@ def answer(question: str, passages: list[str], post: Post | None = None) -> Answ
         return Answer(off(passages), False, f"AI off: Groq answered HTTP {e.code}", sent)
     except (OSError, ValueError, KeyError, IndexError, TypeError) as e:
         return Answer(off(passages), False, f"AI off: {type(e).__name__} calling Groq", sent)
-    return Answer(text, True, f"written by {MODEL} on Groq from the passages below", sent)
+    return Answer(text, True, f"written by {model} on Groq from the passages below", sent)

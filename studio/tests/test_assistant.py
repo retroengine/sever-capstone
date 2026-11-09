@@ -30,6 +30,7 @@ def test_assistant_sends_only_the_question_and_the_passages(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("GROQ_API_KEY", KEY)
+    monkeypatch.delenv("GROQ_MODEL", raising=False)
     seen: dict[str, object] = {}
 
     def post(url: str, headers: dict[str, str], body: bytes, timeout: float) -> bytes:
@@ -43,7 +44,8 @@ def test_assistant_sends_only_the_question_and_the_passages(
     assert seen["timeout"] == 20.0
     body = seen["body"]
     assert isinstance(body, dict)
-    assert body["model"] == "llama-3.1-8b-instant"
+    assert body["model"] == "openai/gpt-oss-20b"
+    assert body["reasoning_effort"] == "low"
     user = body["messages"][1]["content"]
     assert user == (
         "Passages:\n[1] The shed code is 4471.\n\n[2] The party is on Saturday.\n\n"
@@ -53,6 +55,23 @@ def test_assistant_sends_only_the_question_and_the_passages(
     headers = seen["headers"]
     assert isinstance(headers, dict)
     assert headers["Authorization"] == f"Bearer {KEY}"
+
+
+def test_assistant_groq_model_overrides_the_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GROQ_API_KEY", KEY)
+    monkeypatch.setenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+    seen: dict[str, object] = {}
+
+    def post(url: str, headers: dict[str, str], body: bytes, timeout: float) -> bytes:
+        seen.update(body=json.loads(body))
+        return json.dumps({"choices": [{"message": {"content": "ok [1]"}}]}).encode()
+
+    a = assistant.answer("q", PASSAGES, post)
+    body = seen["body"]
+    assert isinstance(body, dict)
+    assert body["model"] == "qwen/qwen3.8-27b"
+    assert "reasoning_effort" not in body  # only the gpt-oss models take it
+    assert "qwen/qwen3.8-27b" in a.note
 
 
 @pytest.mark.parametrize(

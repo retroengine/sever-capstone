@@ -235,7 +235,7 @@ TEXT: dict[str, tuple[str, str]] = {
     "assistant.groq": (
         "",
         "With GROQ_API_KEY set, your question and the retrieved passages are sent to Groq "
-        "(llama-3.1-8b-instant), which writes the answer. What Groq receives is outside the "
+        "(openai/gpt-oss-20b), which writes the answer. What Groq receives is outside the "
         "database: SEVER-DB can neither delete it nor prove anything about it. Without a key the "
         "passages are shown as they are (AI off).",
     ),
