@@ -127,6 +127,7 @@ def stylesheet() -> str:
 * {{ color: {TEXT}; font-family: "{FAMILY}", "DejaVu Sans"; font-size: {pt(BODY)}pt; }}
 QMainWindow, QWidget#root {{ background: {BG}; }}
 QWidget {{ background: transparent; }}
+QDialog {{ background: {BG}; }}
 QToolTip {{ background: {SURFACE_2}; color: {TEXT}; border: 1px solid {LINE}; padding: 6px;
     font-size: {pt(SMALL)}pt; }}
 QFrame#card {{ background: {SURFACE}; border: 1px solid {LINE}; border-radius: 12px; }}

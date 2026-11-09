@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
@@ -377,8 +378,19 @@ class ForgetReport(QDialog):
         super().__init__(parent)
         self.host, self.company, self.g = host, company, g
         self.setWindowTitle(f"Forget me: {g.name}")
-        self.resize(1000, 700)
-        lay = QVBoxLayout(self)
+        # never larger than the screen (WSLg); what does not fit scrolls
+        geo = self.screen().availableGeometry()
+        self.resize(min(1000, int(geo.width() * 0.9)), min(720, int(geo.height() * 0.85)))
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        inside = QWidget()
+        scroll.setWidget(inside)
+        outer.addWidget(scroll)
+        lay = QVBoxLayout(inside)
         lay.setContentsMargins(20, 18, 20, 18)
         lay.setSpacing(12)
         lay.addWidget(label(f"What is left of {g.name}", "heading"))
@@ -396,11 +408,10 @@ class ForgetReport(QDialog):
         hh.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         hh.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         hh.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
-        self.table.resizeRowsToContents()
         self.table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        rows_h = sum(self.table.rowHeight(i) for i in range(self.table.rowCount()))
-        self.table.setFixedHeight(hh.height() + rows_h + 2 * self.table.frameWidth() + 4)
+        hh.sectionResized.connect(lambda *_: self._fit_table())
+        self._fit_table()
         lay.addWidget(self.table)
         brow = QHBoxLayout()
         brow.addWidget(button("Verify receipts (offline)", "primary", self.verify, "shield"))
@@ -418,6 +429,18 @@ class ForgetReport(QDialog):
         lay.addWidget(self.saved)
         lay.addWidget(label(copy.long("forget.notes"), "small", wrap=True))
         lay.addWidget(button("Close", "ghost", self.accept), 0, Qt.AlignmentFlag.AlignRight)
+        lay.addStretch(1)
+
+    def _fit_table(self) -> None:
+        """The table as tall as its rows at the width it has now, so nothing hides under it."""
+        self.table.resizeRowsToContents()
+        rows_h = sum(self.table.rowHeight(i) for i in range(self.table.rowCount()))
+        head = self.table.horizontalHeader().sizeHint().height()
+        self.table.setFixedHeight(head + rows_h + 2 * self.table.frameWidth() + 4)
+
+    def resizeEvent(self, e: QResizeEvent) -> None:  # noqa: N802 (Qt)
+        super().resizeEvent(e)
+        self._fit_table()
 
     @staticmethod
     def _found(hits: dict[str, tuple[int, int]], kinds: tuple[str, ...]) -> tuple[int, int]:

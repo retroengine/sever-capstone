@@ -16,6 +16,7 @@ import json
 import shutil
 import sys
 import time
+from itertools import pairwise
 from pathlib import Path
 
 STUDIO = Path(__file__).resolve().parents[1]
@@ -26,10 +27,12 @@ from sever_studio.config import load  # noqa: E402
 
 CFG = load()
 WORK = STUDIO / "work"
+from PySide6.QtGui import QColor  # noqa: E402
 from PySide6.QtWidgets import (  # noqa: E402
     QAbstractButton,
     QAbstractScrollArea,
     QApplication,
+    QBoxLayout,
     QLabel,
     QScrollArea,
     QWidget,
@@ -52,7 +55,7 @@ def inside_scroll(w: QWidget) -> bool:
 
 def problems(win: QWidget, state: str) -> list[str]:
     out = []
-    for w in win.findChildren(QWidget):
+    for w in [win, *win.findChildren(QWidget)]:
         if not w.isVisible() or w.width() <= 0:
             continue
         name = f"{state}: {type(w).__name__} {w.objectName() or ''}".strip()
@@ -72,6 +75,19 @@ def problems(win: QWidget, state: str) -> list[str]:
                 out.append(
                     f"{name} outside {type(parent).__name__} ({g.getRect()} in {r.getRect()})"
                 )
+        box = w.layout()
+        if isinstance(box, QBoxLayout):  # siblings drawn over each other: a squeezed layout
+            rects = []
+            for i in range(box.count()):
+                it = box.itemAt(i)
+                if it is None or it.spacerItem() is not None or it.isEmpty():
+                    continue
+                kid = it.widget()
+                if kid is None or kid.isVisible():
+                    rects.append(it.geometry())
+            for r1, r2 in pairwise(rects):
+                if r1.intersects(r2):
+                    out.append(f"{name}: layout items overlap ({r1.getRect()}, {r2.getRect()})")
         if isinstance(w, QScrollArea) and w.horizontalScrollBar().maximum() > 0:
             out.append(f"{name} scrolls sideways by {w.horizontalScrollBar().maximum()} px")
     return out
@@ -151,6 +167,15 @@ def main() -> int:
         a.report.verify()
         settle(0.5)
         found.extend(problems(a.report, "forget-report"))
+        geo = app.primaryScreen().availableGeometry()
+        rf = a.report.frameGeometry()
+        if rf.width() > geo.width() or rf.height() > geo.height():
+            found.append(f"forget-report larger than the screen ({rf.width()}x{rf.height()})")
+        # a dialog paints its own background: a transparent one shows what is behind it (WSLg)
+        shot = a.report.grab().toImage()
+        corner = shot.pixelColor(shot.width() - 3, shot.height() - 3).name()
+        if corner != QColor(theme.BG).name():
+            found.append(f"forget-report background {corner}, not the theme's {theme.BG}")
         a.report.grab().save(str(outdir / f"{shots:02d}-forget-report.png"))
         shots += 1
         a.report.close()
