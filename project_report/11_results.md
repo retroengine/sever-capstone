@@ -33,7 +33,8 @@ The ledger has **224 lines** (2026-10-04T15:23Z … 2026-11-01T19:51Z) [RUN: `wc
 Each runner writes a `started` line and then an outcome line. Every run recorded the platform
 `x86_64`, kernel `6.6.114.1-microsoft-standard-WSL2`, CPU flags `avx2 fma aes sha_ni` (WSL2 on the
 owner's laptop) [DATA: docs/RUN_LEDGER.jsonl line 224 `platform`]. DB-113 names the laptop as an
-Intel Core Ultra 5 226V, 8 cores, 16 GB, WSL2 Ubuntu 24.04 with 12 GB [DOC: Overview DB-113].
+Intel Core Ultra 5 226V, 8 cores, 16 GB, WSL2 with 12 GB [DOC: Overview DB-113]. The OS is Ubuntu 26.04 LTS
+[owner, 9 Nov 2026; DB-120: DB-113's "24.04" is wrong].
 
 ```mermaid
 flowchart LR
@@ -117,7 +118,7 @@ The final Part 3 gates ran on the laptop (DB-113), not the HPC that the README s
 | P4-T12 (T-5 / EX-6) | MEASURE (target drift ≤ 0.005 per seed) | Search stability under deletion, 4 arms × 6 rungs × 5 seeds, nq-10k | **RECORDED — target not met**: `t5_met: false`. Per-seed drift (ddof 0): 42: 0.01295, 123: 0.01046, 777: 0.01279, 2024: 0.00791, 9999: 0.01037. SEVER-DB Recall@10 falls from about 0.95 at rung 0 to 0.917–0.930 at rung 5; rebuilt IVF falls to 0.933–0.941; soft-delete IVF to 0.900–0.909; frozen-only to 0.855–0.887. Bootstrap 95 % mean drift: SEVER-DB [0.00938, 0.01240] | [DATA: line 161; results/p4-ex6-nq-10k-20261030T154119Z.json `statistics`, `arms`] |
 | P4-T13 | MEASURE | Recall@10 at nq-1m | recorded as P1-T7 at nq-1m: 1.0 | [DATA: line 180] |
 | P4-T14 (EX-7) | MEASURE | Cost of erasure: three builds | nq-100k seed 42 (line 186): delete p50 109,129 µs (sever) / 59,880 µs (noerase) / 907 µs (softdelete); bytes written per deleted record 39,525 / 27,279 / 11; deletes per second 7.63 / 12.70 / 741.37. nq-10k (line 184), 5 seeds: sever delete p50 74,502–77,198 µs, noerase 64,586–66,892 µs, softdelete 1,303–1,623 µs | [DATA: lines 184, 186; results/p4-ex7-*.json] |
-| P4-T15 (EX-8) | MEASURE | Scale at nq-1m | **Not completed, no result.** Killed by the kernel's out-of-memory killer at 10.39 GB after 6 h 11 min; the owner chose not to rerun. **No ledger line exists** for EX-8. | [DOC: Overview DB-114 "What happened (31 October)"] [RUN: `grep -n ex8 docs/RUN_LEDGER.jsonl` → no match] |
+| P4-T15 (EX-8) | MEASURE | Scale at nq-1m | **Not run to completion (device memory); no result.** The 10^6-vector measure needs more memory than the 16 GB laptop has. DB-114 reports an out-of-memory stop at 10.39 GB after 6 h 11 min, with no stored log; the owner chose not to rerun. **No ledger line exists** for EX-8. | [DOC: Overview DB-114 "What happened (31 October)"] [RUN: `grep -n ex8 docs/RUN_LEDGER.jsonl` → no match] |
 
 What the numbers mean in plain words:
 - **0 mismatches across 10.6 M and 12.4 M compared values** means the Rust engine and the separately
@@ -169,6 +170,9 @@ ledger; Part 2 has the clean-room re-runs after E-1 and E-2 (lines 79, 83, PASS)
 | EX-8 | P4-T15 | **Not completed** (no ledger entry) |
 
 ## README vs ledger
+
+*This table compares the README as it was before 9 Nov 2026. The README was corrected to the
+ledger that day (DB-120), so the ✗ rows below no longer apply to the current README.*
 
 | README claim (line) | Ledger/results value | Match? |
 |---|---|---|

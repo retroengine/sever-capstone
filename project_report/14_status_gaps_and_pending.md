@@ -39,11 +39,11 @@ measures recorded; **EX-8 not completed** [DOC: Overview DB-114; DATA: lines 189
 
 | Item | State | Source |
 |---|---|---|
-| EX-8 (P4-T15, nq-1m scale measure) | **not completed**: OOM-killed at 10.39 GB after 6 h 11 min; no ledger entry; owner chose no rerun | [DOC: DB-114] [RUN: no `ex8` in the ledger] |
+| EX-8 (P4-T15, nq-1m scale measure) | **not run to completion (device memory); no result**: it needs more memory than the 16 GB laptop has. DB-114's figure is an out-of-memory stop at 10.39 GB, with no stored log. There is no ledger entry, and the owner chose no rerun | [DOC: DB-114] [RUN: no `ex8` in the ledger] |
 | T-5 search stability (P4-T12) | **recorded, target not met** (drift 0.008–0.013 per seed vs ≤ 0.005) | [DATA: line 161, `t5_met: false`] |
 | HPC full-size gate run (DB-111) | **cancelled**; replaced by a scoped laptop run (DB-113): P4-T3 in windows of 300 ops, forensics/replay/EX-6 at nq-10k, EX-7 at nq-10k (5 seeds) + nq-100k (1 seed) | [DOC: DB-113] |
-| Final-commit reruns | after the November fixes, p4-crash-a ran ~⅓ and was stopped; p4-crash-b, p3/p4-mutants, p3-replay, p3-crash were **not rerun on the final commit** (last results on 7c3c313) | [DOC: Overview line 1061, DB-116] |
-| Studio "company demo" (Stage 6) | not done; `studio/audit/AUDIT2.md` findings unfixed (critical: "nowhere does Studio say 'simulated'") | [DOC: PROGRESS.md; _notes/history.md C3] |
+| Final-commit reruns | after the November fixes, p4-crash-a ran about ⅓ and was stopped. Its raw records hold 14,784 crash points with 0 failures, and there is no result file. p4-mutants **was** rerun (ledger line 220 PASS). Not rerun on the final commit: p4-crash-b, p3-mutants, p3-replay, p3-crash, p4-forensics, the fuzzers, p3-measures, EX-6 and EX-7. Their last results are on 7c445b5 / 9e11156 / 11f00f2 / 4810d8f, not 7c3c313. The 1 Nov fixes only add refusals of damaged stores. The owner decided on 9 Nov not to rerun (DB-120) | [DOC: Overview line 1061, DB-116] |
+| Studio "company demo" (Stage 6) | done on 6 Nov 2026 (DB-119, commits b51404a…af8fed2). Audit 2's fixes are recorded in `studio/audit/AUDIT2.md` ("after" table) | [DOC: PROGRESS.md; _notes/history.md C3] |
 | Branch | `bughunt-2026-11` is 53 commits ahead of the local `origin/main` ref; not merged | [RUN: `git rev-list --count origin/main..HEAD`] |
 | BH-7 follow-up | the certificate check at recovery makes crash campaigns ~3× slower | [DOC: DB-116] |
 
@@ -84,6 +84,9 @@ bytes (crates/sever-format/src/paged.rs:L154; crates/sever-vfs/src/contract.rs:L
 [RUN: grep, recorded in _notes/history.md C7]. Pending work is tracked in docs, not code comments.
 
 ## 8. Doc-vs-code and doc-vs-doc mismatches
+
+*Listed as found on 6 Nov 2026. The README, PROGRESS and CLAUDE.md items were corrected on
+9 Nov 2026 (DB-120).*
 
 | # | Document says | Code / data shows |
 |---|---|---|

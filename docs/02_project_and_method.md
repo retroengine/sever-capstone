@@ -288,11 +288,12 @@ for each part), `sever_experiments` (EX-2, EX-6, EX-7/8), `sever_fair` (clean-ro
 - **Specification first.** The specification (2,055 lines) is normative; code that disagrees is wrong
   or a gap is recorded (52 rows `G-…` in `docs/SPEC_GAPS.md`), and design choices are recorded as
   decisions DB-1 … DB-119 in the overview (CLAUDE.md §2).
-- **AI-assisted.** Development was done with an AI pair programmer (Claude Code) under rules in
-  `CLAUDE.md`. Because the same AI wrote code and tests, the project added declared test oracles and
+- **AI-built.** All of the work was done by AI (Claude Code) sessions directed by the owner, under
+  the rules in `CLAUDE.md` (owner, 9 Nov 2026; DB-120). That covers the specification, engine,
+  reference models, tests, gate runs and documents. Because the same AI wrote code and tests, the project added declared test oracles and
   "red proofs" (CLAUDE.md §6.3) and clean-room testing by fresh AI sessions (§6.4,
-  `docs/FAIR_TESTING.md`). [NEEDS INPUT: how the paper should describe the human/AI division of
-  work; git records a single author for all 436 commits.]
+  `docs/FAIR_TESTING.md`). Git records one author for every commit,
+  because the AI committed under the owner's name.
 - **Gate runners** write every run to the append-only ledger with commit, dirty-tree flag, platform and
   result-file hash ([python/sever_testkit/ledger.py](../python/sever_testkit/ledger.py)).
 

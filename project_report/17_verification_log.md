@@ -57,6 +57,7 @@ in this session (ledger line numbers given there). The README-vs-ledger table in
 with rounding, 4 values with no ledger source (P1-T4 10⁷ random pairs, P1-T6 differences, P1-T14 ghost,
 P2 "28,707 generic-record points"), and these mismatches: README status of Parts 3/4 (stale), "college
 HPC" (stale), P4 traceability 68/68 vs 69/69, P3-T13 interim vs final timings, and omission of T-5 not met.
+The README was corrected to the ledger on 9 Nov 2026 (DB-120).
 
 ## 6. Spot checks of code references
 

@@ -5,7 +5,25 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
 [`plans/2026-10-23-v1-then-demo.md`](plans/2026-10-23-v1-then-demo.md); nothing is planned after it
 (DB-112).
 
-## Now (1 Nov 2026): v1.0.0, all four parts frozen
+## Now (9 Nov 2026): v1.0.0, all four parts frozen; documents checked against the evidence (DB-120)
+
+- **Evidence audit (9 Nov, DB-120):** every number in the README, this file and the paper documents
+  was checked against the raw result files and the run ledger, and corrected where it was stale.
+- **On the final commit 94d0b24:** checks, coverage, spikes, the P3 and P4 attacks, and the P4 replay.
+  p4-mutants passed on 77ca977. Window A of p4-crash also ran there, partially, before it was
+  stopped: 14,784 crash points, 0 failures.
+- **On 7c445b5 / 9e11156 / 11f00f2 / 4810d8f, before the 1 Nov fixes:**
+  - P3-T4, P3-T5 and the P3 mutants
+  - P4-T1/T2 (forensics) and P4-T3
+  - the fuzzers
+  - P3-T13, EX-6 and EX-7
+
+  The 1 Nov fixes only add refusals of damaged stores. The owner decided on 9 Nov that these will
+  not be rerun.
+- **Authorship:** all of the work was done by AI (Claude) sessions directed by the owner.
+- **Platform:** WSL2, Ubuntu 26.04.
+
+## v1.0.0 (1 Nov 2026)
 
 | Part | Status | Tag |
 |---|---|---|
@@ -18,7 +36,7 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
   - 16 of the 17 gates pass as recorded;
   - P4-T10 records FAIL on one untriaged timeout, which the owner accepts as passed;
   - 5 of the 6 measures are recorded;
-  - EX-8 was killed by the out-of-memory killer at 10.39 GB after 6 h 11 min, and the owner chose not to rerun it.
+  - EX-8 (10^6 vectors) was not run to completion. It needs more memory than the laptop has, and it recorded no result. DB-114 reports an out-of-memory stop at 10.39 GB after 6 h 11 min; no raw log of that figure is kept. The owner chose not to rerun it.
 
   The run unit and its helpers are stopped and disabled.
 - **Navigation (31 Oct, DB-115):** one page per part in [`../parts/`](../parts/README.md), every test in
@@ -31,9 +49,9 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
   `scripts/ci.sh full-checks` passed 42 of its 43 steps there; the 43rd, the new per-run step for
   the kept clean-room tests, was fixed in `0d6482b` and passes on its own (281 tests), but the
   whole of `full-checks` was not rerun.
-- **Stage 6 (6 Nov 2026, DB-119):** Studio's company demo is on branch `p6-studio-company`,
-  pushed and not merged into `main`; see Studio below.
-- **The HPC is gone (29 Oct, DB-113):** the v1.0 run is on the laptop, every step scoped to fit
+- **Stage 6 (6 Nov 2026, DB-119):** Studio's company demo is on branch `p6-studio-company`.
+  `main` was fast-forwarded to it (`af8fed2`, 9 Nov); see Studio below.
+- **The HPC is gone (29 Oct, DB-113):** the v1.0 run is on the laptop (WSL2, Ubuntu 26.04), every step scoped to fit
   about 29 h of the owner's two days (`scripts/hpc/steps.sh`, `scripts/hpc/LAPTOP_RUN.md`).
 - **Plan stage:** Stages 1 to 6 are done. Stage 4: fair runs PASS for Parts 3 and 4. Stage 5: the
   freeze and the tags, 1 Nov. Stage 6: Studio's company demo, 6 Nov, waiting for the owner's
@@ -43,16 +61,15 @@ The current state only, updated at the end of every session (CLAUDE.md §3.3). T
 
 1. **Stage 6, the owner's part:**
    - set `GROQ_API_KEY`, then walk the Assistant on NQ by hand (plan Stage 6.6, item 2);
-   - merge `p6-studio-company` into `main`.
 
    New work goes on new branches; frozen files change only by erratum (F-6).
 2. **Known follow-up:** the BH-7 certificate check reads every certificate at each recovery, so the
    crash campaigns run about 3× slower. A performance change to a frozen part needs an erratum.
-3. **Not rerun:** what the stopped final rerun (p4-crash-a) left out is recorded in DB-116.
+3. **Not rerun:** the full list is in DB-120, which corrects DB-116's list. The owner decided on 9 Nov not to rerun these.
 4. **Project report:** `project_report/` (17 chapters, background, research notes) is committed;
    the owner reviews it.
 
-## Evidence so far (interim, laptop; never reported as the gates, DB-94)
+## Interim evidence (19 Oct; superseded by the v1.0 run, kept for the record, DB-94)
 
 - **Part 3:** the crash campaign's insert phase (351,866 points, 0 failures) and crash points from
   operation 17,000 on every seed; the `nq-100k` replay of seed 42; attacks on five seeds; checks,

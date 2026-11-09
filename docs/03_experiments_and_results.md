@@ -24,7 +24,8 @@ flowchart LR
 
 **Where everything ran.** Every ledger line records the same platform: `x86_64`, kernel
 `6.6.114.1-microsoft-standard-WSL2`, CPU flags `avx2 fma aes sha_ni`. DB-113 names the machine: the
-owner's laptop (Intel Core Ultra 5 226V, 8 cores, 16 GB; WSL2 Ubuntu 24.04 with 12 GB). There is no
+owner's laptop (Intel Core Ultra 5 226V, 8 cores, 16 GB; WSL2 with 12 GB). The OS is Ubuntu 26.04 LTS
+(owner, 9 Nov 2026; DB-113's "24.04" is wrong, DB-120). There is no
 run on native Linux or on other hardware.
 
 ---
@@ -155,7 +156,7 @@ defined in `docs/SEVER-DB_BUILD_PLAN_PART_3-4.md`, not summarised here.]
 |---|---|---|---|
 | P4-T1, T2 (EX-2, T-2) | GATE | **PASS**: nq-10k, 5 seeds, 16 GiB images, override `allow_unsafe_fs` recorded (fuse2fs mounts are not on §12.9's list; G-35, DB-96). 6 scans per seed (after ingest and each rung): **0 findings in all 30 scans**; every planted secret found in every scan (plaintext vector, float vector, passage text, `r_t`, retired key) | L159; `results/p4-forensics-nq-10k-20261030T141339Z.json` |
 | P4-T2 sensitivity (seed 42, ingest + rung 1) | GATE | Every sabotage build found: SB-24 2,374 findings; SB-25 1,178; SB-26 924; SB-28 4,246; SB-29 65,738; SB-30 65,229 | same file, `sensitivity` |
-| P4-T3 (EX-1 on the final build) | GATE | Window A (ops 17,694–17,993), seeds 42/123/777: **PASS**, 15,240 / 15,170 / 15,225 crash points incl. torn key-slot writes; 100/100 key losses refused per seed; 0 stale key slots, 0 unreadable records (L164). Window B (ops 18,700–18,999), seeds 2024/9999: L168 **FAIL** (82 method mismatches — harness fault, DB-114 item 5), then **PASS** (L192): 7,915 and 9,050 crash points | L164, L168, L192; `results/p4-crash-nq-10k-*.json` |
+| P4-T3 (EX-1 on the final build) | GATE | Window A (ops 17,694–17,993), seeds 42/123/777: **PASS**, 15,240 / 15,170 / 15,225 crash points incl. torn key-slot writes; 100/100 key losses refused per seed; 0 stale key slots, 0 unreadable records (L164). Window B (ops 18,700–18,999), seeds 2024/9999: L168 **FAIL** (82 method mismatches — harness fault, DB-114 item 5), then **PASS** (L192): 7,915 and 9,050 crash points. On the final commit 94d0b24, window A was started again and stopped by the owner after 94–98 of its 300 operations per seed. There is no result file; the raw per-point records `traces/p4-crash-nq-10k-seed{42,123,777}.jsonl` hold 14,784 crash points, and every failure counter is 0 (DB-120) | L164, L168, L192; `results/p4-crash-nq-10k-*.json` |
 | P4-T9 (T-3 on the final build) | GATE | **PASS**, nq-10k, 5 seeds (L154, L210) | — |
 | P4-T9 (T-4 on the final build) | GATE | **PASS** (L142, L208): 5,000 honest accepted, 226,410 attacks rejected | `results/p4-attacks-nq-10k-20261101T090800Z.json` |
 | P4-T10 fuzzing, 5 parsers | GATE | **PASS** at 10⁸ (L153) | `results/p4-fuzz-20261030T063228Z.json` |
@@ -238,13 +239,15 @@ size at nq-100k: mean 13,986 B (`sever`, `noerase`), 0 (`softdelete`). The `seve
 material per deleted record at nq-100k: WAL 13,706 B, of which bucket blocks 4,208 B; key file 972 B;
 wrapped-key store 4,752 B (field `secret_material_per_deleted_record`).
 
-### 5.5 EX-8: scale at one million vectors — **not completed**
+### 5.5 EX-8: scale at one million vectors — **not run to completion (device memory); no result**
 
 No ledger line and no result file exist (`grep -c ex8 docs/RUN_LEDGER.jsonl` → 0). DB-114 records
 that the kernel's out-of-memory killer stopped the benchmark after 6 h 11 min at 10.39 GB resident
 memory (12 GB WSL, no swap); before that it held 6.4–6.9 GB, against Appendix A's 3.8 GB prediction,
 a figure that includes the benchmark's own 1.5 GB copy of the input. The owner chose not to rerun.
-These memory figures come only from the decision text (DB-114), not from an output file.
+These memory figures come only from the decision text (DB-114), not from an output file. Report
+EX-8 as "not run to completion: the 10^6-vector measure needs more memory than the 16 GB laptop has".
+That is not a failed measurement, and it has no number (DB-120).
 
 ---
 

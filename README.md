@@ -16,8 +16,8 @@ frozen (Build §0.1):
 |---|---|---|
 | **1 The Idea** | Deleting a vector returns its group, bit for bit, to the never-inserted state | **Done**: every gate passed on 6 Oct 2026; frozen as `part-1-frozen` (see [Part 1 results](#part-1-results)) |
 | **2 The Database** | Exactness survives a crash at any point; multi-group deletion is all-or-nothing | **Done**: every gate passed on 8 Oct 2026, then an independent test audit; frozen, now as `part-2-frozen-e2` after errata E-1 and E-2 (see [Part 2](#part-2-the-database)) |
-| **3 The Receipt** | Every deletion yields a certificate anyone can verify offline | **Built**: every gate of the v1.0 laptop run passes (31 Oct 2026); it freezes after a fair-testing pass (DB-113, DB-114; see [Part 3](#part-3-the-receipt)) |
-| **4 The Erasure** | Nothing deleted can be recovered from raw storage | **Built**: the v1.0 laptop run's gates pass, P4-T10 by the owner's acceptance; the EX-8 measure did not complete (DB-114; see [Part 4](#part-4-the-erasure)) |
+| **3 The Receipt** | Every deletion yields a certificate anyone can verify offline | **Done**: every gate passed in the v1.0 laptop run (29–31 Oct 2026); checks, coverage, spikes and attacks reran on the final commit (1 Nov); fair-testing PASS; frozen as `part-3-frozen` on 1 Nov 2026 (DB-116, DB-117, DB-120; see [Part 3](#part-3-the-receipt)) |
+| **4 The Erasure** | Nothing deleted can be recovered from raw storage | **Done**: every gate passed (P4-T10 mutants PASS on 1 Nov); fair-testing PASS; frozen as `part-4-frozen` = `v1.0.0` on 1 Nov 2026. Target T-5 (search stability) was **missed**. The EX-8 measure (10^6 vectors) was **not run to completion**: it needs more memory than the laptop has, and it has no result (DB-114, DB-120; see [Part 4](#part-4-the-erasure)) |
 
 **Each part has its own page** with its code, tests, results and reports: [`parts/`](parts/README.md).
 Every test: [`tests/README.md`](tests/README.md). Every result: [`docs/RESULTS.md`](docs/RESULTS.md).
@@ -25,6 +25,11 @@ A map of all the documents: [`docs/README.md`](docs/README.md).
 
 Where things stand in detail: [`docs/PROGRESS.md`](docs/PROGRESS.md). Working rules for contributors
 and AI assistants: [`CLAUDE.md`](CLAUDE.md).
+
+**Authorship.** All of SEVER-DB was produced by AI (Claude) sessions directed by the owner: the
+specification, the engine, the reference models, the tests, the gate runs and the documents.
+The independent checks are AI too: fresh clean-room sessions that see only the spec (fair testing).
+Every number below was checked against the raw result files and the run ledger on 9 Nov 2026 (DB-120).
 
 ## Use the database
 
@@ -291,20 +296,22 @@ audit/target/release/sever-audit export.json --anchors anchors.json --certificat
 
 ### Part 3 results
 
-The pre-registered gates (Build 3-4 §1.9) run once, in full, on the college HPC in WSL2 Ubuntu with
-Part 4's ([DB-94, DB-111](docs/SEVER-DB_PROJECT_OVERVIEW.md); `scripts/hpc/run-all.sh`). Until then the laptop runs
-**interim checks**, which are evidence, never reported as the gates (from the run ledger, 19 Oct
-2026):
+The pre-registered gates (Build 3-4 §1.9) ran once, at full size, on the owner's laptop (Intel
+Core Ultra 5 226V, 8 cores, 16 GB; WSL2, Ubuntu 26.04), not on the college HPC that was planned
+(DB-111, DB-113). Each figure comes from the run ledger and its result file. The ledger line is
+in brackets.
 
-| Target | Interim check | Result |
+| Target | What | Result |
 |---|---|---|
-| P3-T4 (T-1 with certificates) | crash points from operation 17,000 on every seed, nq-10k (single deletions, every multi-group deletion, the inserts after) | **PASS**: 145,919 crash points, 76,852 certificates checked, 0 failures |
-| P3-T5 (T-3) | Part 1's nq-100k trace, seed 42, five fields and certificate arithmetic | **PASS** |
-| P3-T1, P3-T2 (T-4) | 1,000 honest certificates per seed, every attack of AT-1 … AT-20 on each, five seeds | **PASS**: 5,000 accepted, 226,410 attacks rejected at a step the register allows |
-| P3-T9 coverage | lines: sever-crypto, verifier ≥ 95 %; others ≥ 90 % | **PASS**: crypto 95.4 %, verifier 95.2 %, commit 91.6 %, log 92.9 %, cert 96.2 % |
-| P3-T10 | fuzzing, 10^7 executions per parser (the gate is 10^8) | **PASS**: 6 parsers, 0 crashes |
-| P3-T3, T6–T8, T11, T12 | `scripts/ci.sh full-checks` | **PASS**: 36 steps |
-| P3-T13 (measure) | proof and verification time, certificate size (d = 384) | prove 12.2 ms, verify 2.2 ms (medians); certificate 1.2–13.6 KB |
+| P3-T4 (T-1 with certificates) | Crash at every protocol step of 20,000 operations, at WAL byte offsets, at random points and during recovery; nq-10k, five seeds | **PASS** [L144]: 938,129 crash points, 192,964 certificates checked, 0 failures, 0 bad certificates. This ran on 7c445b5, before the 1 Nov integrity fixes; those fixes only add refusals of damaged stores (DB-116, DB-120) |
+| P3-T5 (T-3) | Part 1's nq-100k traces, five seeds, five fields and the certificate arithmetic against the model | **PASS** [L148]: 450,056 certificates, 12,880,102 checks, 0 mismatches (on 7c445b5) |
+| P3-T1, P3-T2 (T-4) | 1,000 honest certificates per seed, and every attack of AT-1 … AT-20 on each; five seeds | **PASS** on the final commit [L206]: 5,000 accepted, 226,410 attacks rejected. The first runs failed. The verifier accepted 3 forgeries in L103 (a generator bug, AT-14) and 3 in L119 (AT-2: an emptied group's proof verifies under any context, G-34). The generator was changed in response, so the attack set changed after those failures |
+| P3-T9 coverage | Lines: sever-crypto and verifier ≥ 95 %, the others ≥ 90 % | **PASS** on the final commit [L200]: crypto 95.4 %, verifier 96.3 %, commit 91.6 %, log 93.1 %, cert 95.9 % |
+| P3-T9 mutants | Score ≥ 90 % (crypto, verifier), ≥ 85 % (cert, log); every survivor triaged | **PASS** [L158]: cert 85.2 %, crypto 93.4 %, log 89.1 %, verifier 97.3 % (code of 11f00f2) |
+| P3-T10 | Fuzzing, 10^8 executions per parser | **PASS** [L162]: 6 parsers, 0 crashes (on 7c445b5) |
+| P3-T3, T6–T8, T11, T12 | `scripts/ci.sh full-checks` | **PASS** on the final commit [L196]: 42 steps |
+| P3-T13 (measure) | Proof and verification time, certificate size (d = 384) | Recorded [L182]: prove 15.8 ms, verify 2.7 ms (medians); certificate 1,197–13,645 bytes |
+| Fair testing | Clean-room tests from the spec only | **PASS**, run `20261101T134211Z-p3-bb4bac5e` [L215]: 180 tests, 0 failing. Four earlier runs failed |
 
 **Found on the way:** the verifier was right where the spec was not. An emptied group's proof
 verifies under any context, so §9.5's "cannot be replayed" was false in exactly that case (G-34,
@@ -352,14 +359,22 @@ The forensic scanner reads a raw disk image for anything deleted: `target/releas
 
 ### Part 4 results
 
-Interim (laptop, 19 Oct 2026); the gates P4-T1 … P4-T11 and the measures P4-T12 … P4-T15 run on
-the college HPC (DB-111).
+These come from the same laptop run, with figures from the run ledger. To fit the owner's two days,
+some steps were scoped down (DB-113). P4-T3 crashes one 300-operation window per seed, and EX-2,
+EX-6 and P4-T9's replay run at nq-10k instead of the pre-registered nq-100k.
 
-| Target | Interim check | Result |
+| Target | What | Result |
 |---|---|---|
-| P4-T3 (T-1, final build) | crash points on both disks, torn key-slot writes, active-key losses; three windows of 80 operations per seed (single deletions, multi-group deletions, inserts), five seeds, plus a smoke run | **PASS**: 16 / 16 runs, 0 refusals, 0 stale key slots, 0 unreadable records, every key loss refused |
-| P4-T10 | SB-24 … SB-30 each turn a test red; traceability | **PASS**: all seven red; 68 / 68 requirements traced, 84 proofs |
-| Test suite | `cargo test --workspace`, Python tests | pass |
+| P4-T1, P4-T2 (T-2) | Raw 16 GiB image scanned after the ingest and after each of five deletion rungs; planted controls; sabotage builds; nq-10k, five seeds | **PASS** [L159]: 0 findings in 30 of 30 scans, every planted control found, and every sabotage build found (924 … 65,738 findings). This ran on 7c445b5, before the 1 Nov integrity fixes, which change no write or erase path (DB-120). A live-record control recovered 0 of 20 records at rungs 1–3 |
+| P4-T3 (T-1, final build) | Crash points on both disks, torn key-slot writes, active-key losses. Window A: operations 17,694–17,993, seeds 42, 123, 777. Window B: 18,700–18,999, seeds 2024, 9999 | **PASS** [L164, L192]: 45,635 and 16,965 crash points, 0 failures, 500 of 500 key losses refused, 0 stale key slots, 0 unreadable records (on 7c445b5 and 9e11156). On the final commit, window A was started again and stopped by the owner after 94–98 of its 300 operations per seed: 14,784 crash points, 0 failures, no result file (per-point records in `traces/`, DB-120) |
+| P4-T9 (T-3, T-4) | Replay against the model, and attacks, on the final build | **PASS** on the final commit [L210, L208]: 0 mismatches in 10,693,787 checks; 5,000 honest accepted, 226,410 attacks rejected |
+| P4-T10 | Coverage ≥ 95 %, mutants ≥ 90 %, fuzzing 10^8, SB-24 … SB-30 | **PASS**: coverage keys 98.1 %, seal 96.1 %, erasure 95.6 % [L202]; mutants erasure 90.4 %, keys 97.7 %, seal 95.9 % [L220]; 5 parsers, 0 crashes [L153]; sabotage inside `p4-checks` [L198]; traceability 69 of 69 (`docs/TRACE_PART_4.md`); proof report 79 of 79 (`docs/PROOFS_P4.md`, run on 19 Oct and not rerun since) |
+| P4-T12 (T-5, measure) | Std of Recall@10 over five deletion rungs ≤ 0.005 per seed (nq-10k) | **Missed on all five seeds** [L161]: 0.0079–0.0130. Welch t-test against soft-delete IVF: t = −9.57, p = 0.00015, so SEVER-DB's drift is lower. TOST (Δ 0.005): p = 0.997, so equivalence is not shown. Rebuilding the IVF index drifts less (mean 0.0083 against SEVER-DB's 0.0109). SEVER-DB's ground truth leaves out its own holding-area records, while the FAISS arms score all live records |
+| P4-T13 (T-6, measure) | Recall@10 of the dequantised vectors at nq-1m | **1.0** (target ≥ 0.999) [L180] |
+| P4-T14 (EX-7, measure) | The cost of erasure: `sever` against `noerase` and `softdelete` | Recorded [L184, L186]. At nq-100k (one seed) a delete call took 109 ms (p50) and 505 ms (p99). That is 7.6 deletes/s, against 741/s for a tombstone delete, with 39.5 KB written per deleted record |
+| P4-T15 (EX-8, measure) | Memory and recovery at 10^6 vectors | **Not run to completion**: it needs more memory than the laptop has, and it recorded no result (DB-114, DB-120). Appendix A's ≈ 3.8 GB is a prediction, not a measurement |
+| Fair testing | Clean-room tests from the spec only | **PASS**, run `20261101T192712Z-p4-36291aec` [L224]: 101 tests, 0 failing. Four earlier runs failed |
+| Test suite | `cargo test --workspace`; `uv run --no-sync pytest -q -m "not slow" --ignore=tests/cleanroom` (the kept clean-room suites run in their own processes, `scripts/ci.sh`) | pass. Python: 271 passed on 9 Nov 2026. Rust: inside `p4-checks` [L198] |
 
 **Bugs found on the way** (each fixed with a regression test first): recovery refused to start
 after a crash that tore the last record of the wrapped-key store (found by the crash campaign);
@@ -378,8 +393,9 @@ EX-2 on a `fuse2fs`-mounted ext4 image (`sever-ex2`), EX-6's four arms (the engi
 soft-delete and rebuild IVF), EX-7's three builds (`sever-db`, `sever-db-noerase`, `sever-softdelete`
 through `sever-bench`) and EX-8 at nq-1m.
 
-Everything runs once, at full size, in WSL2 Ubuntu on the college HPC (about 1–2 days on 32
-cores; DB-111). The one guide, step by step, is [`scripts/hpc/HPC_GUIDE.md`](scripts/hpc/HPC_GUIDE.md):
+The run was planned for the college HPC (DB-111). The HPC became unavailable, so the one v1.0 run
+was on the owner's laptop through the same scripts, with some steps scoped to fit (DB-113; WSL2,
+Ubuntu 26.04). The HPC guide is kept as written: [`scripts/hpc/HPC_GUIDE.md`](scripts/hpc/HPC_GUIDE.md):
 
 ```bash
 bash scripts/hpc/discover.sh             # read-only machine report
@@ -420,8 +436,8 @@ The specification is the source of truth; tests are written from it, not from th
 - **Fair testing** ([`docs/FAIR_TESTING.md`](docs/FAIR_TESTING.md), `scripts/fair.sh`). One author
   wrote the engine and its tests, so every part is also tested by fresh AI sessions in a `bwrap`
   clean room that holds only the spec and the public API: tests written against a sealed engine and
-  hashed before the real engine answers, failures judged by a different model, blind planted bugs
-  scored against both suites, a random audit of the suite's expected values, and guarded red-first
+  hashed before the real engine answers, failures judged by a different model, planted bugs taken
+  from the part's cargo-mutants gate (DB-75), a random audit of the suite's expected values, and guarded red-first
   fixes. A part freezes only after a PASS on its exact files.
 
 ### Commands

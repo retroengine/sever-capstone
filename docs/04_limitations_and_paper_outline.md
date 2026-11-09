@@ -84,11 +84,12 @@ These are not in Overview §14. Each was found by reading the files named.
    (the ghost) are backed by `artefacts/partition-seed*.json` and `artefacts/demo/idea-nq-10k-seed42.json`,
    which are not in git and have no ledger line; the ghost is one seed. The 10⁷ random kernel pairs
    (README L123) have code but no recorded output.
-9. **The README is partly stale** (Part 3 freeze status, "college HPC", 68 vs 69 requirements, no
-   mention that T-5 was missed; [03](03_experiments_and_results.md) §9).
+9. **The README was partly stale** (Part 3 freeze status, "college HPC", 68 vs 69 requirements, no
+   mention that T-5 was missed; [03](03_experiments_and_results.md) §9). It was corrected to the
+   ledger on 9 Nov 2026 (DB-120).
 10. **A decision entry cites a commit inconsistently.** DB-116 says the remaining results are "on
     7c3c313 (DB-114)"; the ledger lines name `7c445b5`, and `7c3c313` is the `pre-tidy` tag. Likely a
-    typo; it does not change a result.
+    typo; it does not change a result. DB-120 records the corrected commit list.
 
 ---
 

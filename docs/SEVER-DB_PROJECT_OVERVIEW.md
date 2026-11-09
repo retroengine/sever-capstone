@@ -7,9 +7,9 @@
 | **Document** | SEVER-DB project overview, version 1.0 |
 | **Date** | 27 September 2026 |
 | **Companion** | `SEVER-DB_SPECIFICATION.md`: the normative software and index specification (every algorithm, byte format, protocol and setting) |
-| **Status** | Plan of record for a new, independent project. Nothing is built yet |
-| **Team** | One person |
-| **Hardware** | Intel Core Ultra 5 226V laptop, 16 GB RAM (not upgradeable), SSD, native Linux |
+| **Status** | Plan of record for a new, independent project, written on 27 September 2026 before anything was built. v1.0.0 was released on 1 November 2026 |
+| **Team** | One person (the owner), directing AI (Claude) sessions that produced all of the work (DB-120) |
+| **Hardware** | Intel Core Ultra 5 226V laptop, 16 GB RAM (not upgradeable), SSD. Planned as native Linux; every recorded run used WSL2 on Windows, with Ubuntu 26.04 (DB-113, DB-120) |
 | **Deliverables** | The SEVER-DB engine, SDK, partition builder, verifier and auditor; an evaluation; one research paper |
 
 Together, these two documents are self-contained. Nothing else is needed to understand, build or
@@ -1043,6 +1043,88 @@ part never gains features (F-3). **Rejected.** Editing `sever-p1` (breaks the fr
 a later crate with the same name (two crates in one workspace cannot both produce `sever-demo`).
 **Consequence.** Closes G-17; Build §5.9 and CLAUDE.md §6.1 name the new binary.
 
+#### DB-120 — The documents are checked against an evidence audit and corrected (9 November 2026)
+
+**Decision.** Every reported number was checked against the raw result files, the run ledger and
+the raw traces (an audit on 9 November 2026, kept outside git in `audit_output/`). The audit found
+the README, PROGRESS, CLAUDE.md and parts of the paper documents stale or inconsistent with the
+ledger. They are corrected to the ledger, and the corrections are recorded here instead of
+rewriting the older entries. No result file, ledger line, frozen file, test or code changes.
+
+1. **Authorship.** All of SEVER-DB was produced by AI (Claude) sessions directed by the owner (owner,
+   9 November 2026). This covers the specification, the engine, the reference models, the tests,
+   the gate runs and the documents. The reference models are independent of the engine only in being
+   written from the spec in separate sessions. The clean-room fair-testing sessions are the
+   strongest independence evidence, and they are AI too.
+2. **Platform.** Every ledger line is WSL2 (kernel 6.6.114.1-microsoft-standard-WSL2, x86_64). The OS is
+   Ubuntu 26.04 LTS (owner, 9 November 2026); DB-113's "24.04" is wrong. The ledger has no OS,
+   CPU-model or memory field.
+3. **DB-116's not-rerun list, corrected.**
+   - p4-mutants *was* rerun after the 1 November fixes. Ledger line 220, PASS on 77ca977 (started
+     on e00e31d): sever-erasure 0.9044, sever-keys 0.9767, sever-seal 0.9586, none untriaged.
+   - The last results of the steps that did not rerun are on these commits, not on 7c3c313 (a docs
+     commit, tag `pre-tidy`):
+     - 7c445b5: p3-crash, p3-replay, p3-fuzz, p4-fuzz, p4-forensics, p4-crash window A, p3-measures, p4-ex7, p4-quant-recall
+     - code of 11f00f2 (logged as fd40dfe): p3-mutants
+     - 9e11156: p4-crash window B
+     - 4810d8f: p4-ex6
+   - Beyond DB-116's list, these also did not rerun: p4-forensics (P4-T1/T2, T-2), both fuzzers,
+     p3-measures, p4-ex6, p4-ex7 and p4-quant-recall.
+4. **What the 1 November fixes changed.** `git diff 7c445b5 94d0b24` changes production code in four
+   files: sever-cert `encoding.rs` and `participant.rs`, sever-log `store.rs`, sever-erasure
+   `store.rs`. That is about 70 lines, and every one adds an `IntegrityViolation` refusal when
+   stores are opened, recovered or checked: BH-6, BH-7 and BH-9. No line changes the insert,
+   delete, key-rotation, sealing or erasure write paths. So the earlier T-1 and T-2 results describe
+   the final build's write and erase behaviour. What the final build adds is refusal of damaged
+   stores, which the final-commit check suites cover (ledger lines 196, 198). The owner decided on
+   9 November 2026 not to rerun these.
+5. **The final-commit p4-crash-a.** Ledger line 211 is `started`, and `traces/final-p4-crash-a.log`
+   ends `rc=stopped`, so there is no result file. The run's raw per-point records are kept:
+   `traces/p4-crash-nq-10k-seed{42,123,777}.jsonl` and `.progress`, written 13:00–13:01 on
+   1 November. They hold 4,910, 4,961 and 4,913 crash points (14,784 in all) over operations
+   17,694–17,787 / 17,791 / 17,788: 94, 98 and 95 of the window's 300. Every failure counter is 0,
+   with 0 refusals. The key-loss injection had not been reached. This confirms DB-116's "about
+   4,900 crash points each; 0 mismatches, 0 bad certificates".
+6. **EX-8 (P4-T15)** was not run to completion: at 10^6 vectors it needs more memory than the
+   laptop has. The ledger has no EX-8 line, and there is no result file. It is reported as "not
+   run to completion, no result", never as a failed measurement and never with a number. DB-114's
+   out-of-memory figures are not backed by a stored log. Appendix A's ≈ 3.8 GB is a prediction.
+7. **T-5 was missed** on all five seeds: 0.0079–0.0130 against ≤ 0.005
+   (`results/p4-ex6-nq-10k-20261030T154119Z.json`). The README now says so.
+8. **EX-6's ground truth.** The SEVER-DB arm's truth leaves out the records in SEVER-DB's own
+   holding area (179 at rung 0, seed 42). The FAISS arms are scored over all live records. The
+   comparison is reported with this caveat. Its size is unknown without a rerun.
+9. **Part 2's freeze and fair testing.** The Part 2 freeze commit 23ac9be (8 October, 12:41:42 UTC)
+   came 6 minutes before fair testing became a freeze requirement (f4772a3, 12:47:34, DB-73). The
+   errata E-1 and E-2 re-hashed `freeze/PART-2.sha256` in their own commits (15 October). Part 2
+   has no fair-testing PASS in the ledger: the outcomes are DRY (line 68) and FAIL (line 72), and
+   run `20261008T164154Z-p2-42fc06df` has no outcome line.
+10. **Planted bugs in fair testing** are the part's cargo-mutants mutants (DB-75). No counted fair
+    run scored bugs planted by a separate session. CLAUDE.md §6.4 and the testing summary now say
+    so.
+11. **Generated reports not rerun.** `docs/PROOFS_P3.md` (31 of 31 proofs, 15 October) and
+    `docs/PROOFS_P4.md` (79 of 79, 19 October) predate most of their patches (172 and 93 files in
+    `tests/proofs/`). Whether every proof holds on the final commit is unknown. The README now
+    quotes the generated files: 79 of 79 on 19 October, and traceability 69 of 69.
+12. **The Chroma spike** (DB-119: 3/3 IDs, 6/6 text windows, 3/3 vectors) has no stored output. It
+    is a demo observation, not a result.
+
+**Why.** The paper must cite only what a stored result shows, and must name the build each result
+comes from.
+
+**Rejected.** Rerunning the older gates (days of laptop time; owner, 9 November 2026). Editing the
+older entries (DB-113, DB-114, DB-116) in place: the register keeps what was decided when.
+
+**Consequence.** These are rewritten to match:
+- README.md: status, Part 3 and Part 4 results, and the evaluation section
+- docs/PROGRESS.md
+- CLAUDE.md (§1, §6.1, §6.4, §9)
+- the testing summary in this document
+- docs/02, docs/03 and docs/04
+- project_report/11, /13 and /14
+
+`scripts/index.py` regenerates the navigation pages.
+
 #### DB-116 — The November bug hunt before the Part 3 and Part 4 freezes (1 November 2026)
 
 **Decision.** Fair run `20261031T225306Z-p3-1479019b` (FAIL, two findings) is followed by a bug hunt before any fix is rerun (owner, 1 November 2026): search extensively, fix every finding red-test-first, rerun the gates the fixes touch once, then fair testing, then the freezes. Findings are tracked in `docs/notes/BUG_HUNT_2026-11.md` (BH-6 onward). So far:
@@ -1904,8 +1986,8 @@ test; the owner asked for no loss of quality). **Consequence.** A run may stop p
 **Decision.** Every part is tested by an automated system (`docs/FAIR_TESTING.md`, rules FT-1 …
 FT-10; `scripts/fair.sh`): fresh headless Claude sessions in a `bwrap` sandbox that holds only the
 spec, the public API and inputs write tests against a sealed engine; the tests are hashed and run by a
-script against the real engine; a different model judges failures; a separate session plants blind
-bugs that the script scores against both suites; a judge re-derives a random sample of the suite's
+script against the real engine; a different model judges failures; planted bugs, taken from the part's
+cargo-mutants gate (DB-75), are scored against both suites; a judge re-derives a random sample of the suite's
 expected values; findings are fixed red-first under diff guards and the run repeats. A part freezes
 only after a PASS on its exact owned files; the settings in `configs/fair.yaml` are pre-registered.
 **Why.** The engine, its tests, its oracle labels and its proofs had one author; such a suite can be
