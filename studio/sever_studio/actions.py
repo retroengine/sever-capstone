@@ -109,7 +109,9 @@ class Studio:
         self.backend = Backend(self.corpus, self.work, dev)
         self.checklist = Checklist()
         self.numbers: dict[str, Any] = {"data": data, "rows": rows}
-        self.coords = layout.fit(self.corpus.vectors, cache=work)
+        # laid out once, on the rows prepare stored and their spares: rows loaded later (as notes
+        # are added) are placed beside their nearest passages, never a new t-SNE at each start
+        self.coords = layout.fit(self.corpus.vectors[: rows + SPARE], cache=work)
         self.extra_xy: dict[str, tuple[float, float]] = {}
         #: the 3-D layout, made the first time the 3-D mode opens (``layout3``)
         self.coords3: layout.Coords | None = None

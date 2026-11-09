@@ -131,6 +131,7 @@ QDialog {{ background: {BG}; }}
 QToolTip {{ background: {SURFACE_2}; color: {TEXT}; border: 1px solid {LINE}; padding: 6px;
     font-size: {pt(SMALL)}pt; }}
 QFrame#card {{ background: {SURFACE}; border: 1px solid {LINE}; border-radius: 12px; }}
+QFrame#cardNext {{ background: {SURFACE}; border: 2px solid {ACCENT}; border-radius: 12px; }}
 QFrame#card2 {{ background: {SURFACE_2}; border: 1px solid {LINE}; border-radius: 10px; }}
 QFrame#float {{ background: {rgba(SURFACE, 238)}; border: 1px solid {LINE}; border-radius: 14px; }}
 QFrame#popover {{ background: {SURFACE_2}; border: 1px solid {ACCENT}; border-radius: 12px; }}

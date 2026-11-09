@@ -7,10 +7,11 @@ SEVER-DB and in an ordinary vector store (Chroma) running the same app.
 """
 
 import shutil
+from html import escape
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import (
     QDialog,
@@ -22,6 +23,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPlainTextEdit,
     QScrollArea,
+    QSizePolicy,
     QSplitter,
     QStackedWidget,
     QTableWidget,
@@ -53,11 +55,16 @@ EXAMPLE_QUESTION = "When is my daughter's school pickup?"
 def note_line(n: Note, spawn: int) -> str:
     if n.waiting:
         return (
-            f"<b>{n.rid}</b>: waiting in the holding area, stored at log #{n.lsn} but not "
-            f"searchable until {spawn} gather into a new group (§7.4)"
+            f"⏳ <b>{n.rid}</b> · log #{n.lsn} · waiting in the holding area: searchable once "
+            f"{spawn} notes gather (§7.4)"
         )
-    agreed = "routing code agreed" if n.agreed else "routing code not checked"
-    return f"<b>{n.rid}</b>: stored at log #{n.lsn} in {n.placement} ({agreed}, §7.3)"
+    agreed = "" if n.agreed else " (routing not checked)"
+    return f"✓ <b>{n.rid}</b> · log #{n.lsn} · group {n.placement}{agreed}"
+
+
+def snippet(text: str, n: int = 140) -> str:
+    one = " ".join(text.split())
+    return one if len(one) <= n else one[: n - 1].rstrip() + "…"
 
 
 class AssistantSection(QWidget):
@@ -80,7 +87,7 @@ class AssistantSection(QWidget):
         left.addWidget(label(copy.short("assistant.about"), "heading", wrap=True))
         left.addWidget(label(copy.long("assistant.about"), "small", wrap=True))
 
-        you = Card("1  You", "assistant.you")
+        you = Card("1  Store your notes", "assistant.you")
         self.name = QLineEdit()
         self.name.setPlaceholderText("Your name")
         you.add(self.name)
@@ -97,23 +104,24 @@ class AssistantSection(QWidget):
         self.stored = label("", "small", wrap=True)
         self.stored.setTextFormat(Qt.TextFormat.RichText)
         you.add(self.stored)
-        row2 = QHBoxLayout()
-        row2.addWidget(
-            button(
-                "Let other users write",
-                "",
-                self.others,
-                "users",
-                "Other customers' notes (the dataset's passages) until the holding area flushes",
-            )
+        # only needed while a note waits in the holding area (§7.4)
+        self.b_others = button(
+            "Let other users write",
+            "primary",
+            self.others,
+            "users",
+            "Other customers' notes (the dataset's passages) until the holding area flushes",
         )
+        self.b_others.hide()
+        row2 = QHBoxLayout()
+        row2.addWidget(self.b_others)
         row2.addStretch(1)
         you.body.addLayout(row2)
         self.holding = label("", "small", wrap=True)
         you.add(self.holding)
         left.addWidget(you)
 
-        ask = Card("2  Ask the assistant", "assistant.ask")
+        ask = Card("2  Ask about them", "assistant.ask")
         qrow = QHBoxLayout()
         self.question = QLineEdit()
         self.question.setPlaceholderText("Ask about your notes")
@@ -130,14 +138,13 @@ class AssistantSection(QWidget):
         self.cites = label("", "small", wrap=True)
         self.cites.setTextFormat(Qt.TextFormat.RichText)
         ask.add(self.cites)
-        ask.add(label(copy.long("assistant.groq"), "small", wrap=True))
         left.addWidget(ask)
 
         forget = Card("3  Forget me", "assistant.forget")
         frow = QHBoxLayout()
         self.b_forget = button("Forget me", "danger", self.forget, "forget")
         frow.addWidget(self.b_forget)
-        self.b_report = button("The report", "ghost", self.open_report, "list")
+        self.b_report = button("Open the report", "ghost", self.open_report, "list")
         self.b_report.hide()
         frow.addWidget(self.b_report)
         frow.addStretch(1)
@@ -145,6 +152,9 @@ class AssistantSection(QWidget):
         self.forgot = label("", "small", wrap=True)
         forget.add(self.forgot)
         left.addWidget(forget)
+        self.cards = [you, ask, forget]
+        for c in self.cards:  # as tall as what they hold; the room left stays below them
+            c.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
         left.addStretch(1)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -153,6 +163,7 @@ class AssistantSection(QWidget):
         scroll.setWidget(inside)
         scroll.setMinimumWidth(400)
         split.addWidget(scroll)
+        self.left_scroll = scroll
 
         # -- right: the map, the calls, the engine ----------------------------------------------
         right = QWidget()
@@ -170,6 +181,8 @@ class AssistantSection(QWidget):
         rl.addLayout(mrow)
         self.stack = QStackedWidget()
         self.map = MapView(host.studio)
+        self.map.setMouseEnabled(x=False, y=False)  # a picture here: a stray scroll never zooms it
+        self.map.hideButtons()
         self.map3d = Map3D(host.studio, self.map)
         self.stack.addWidget(self.map)
         self.stack.addWidget(self.map3d)
@@ -193,12 +206,26 @@ class AssistantSection(QWidget):
         split.setStretchFactor(1, 3)
         self.mode = "2d"
         self.b2d.setChecked(True)
+        self.step = 0
+        self.next_step(1)
+        self.tidy()
 
     # -- the Host's section protocol ------------------------------------------------------------
 
     def arrive(self, **_: Any) -> None:
         self.map.refresh()
         self.refresh_side()
+
+    def next_step(self, n: int) -> None:
+        """Outline the card of the step to do next (0: none)."""
+        self.step = n
+        for i, c in enumerate(self.cards, 1):
+            c.setObjectName("cardNext" if i == n else "card")
+            c.style().unpolish(c)
+            c.style().polish(c)
+        if n:  # bring it into view once the layout has settled
+            card = self.cards[n - 1]
+            QTimer.singleShot(0, lambda: self.left_scroll.ensureWidgetVisible(card, 0, 16))
 
     # -- actions --------------------------------------------------------------------------------
 
@@ -223,11 +250,18 @@ class AssistantSection(QWidget):
             lines = [note_line(n, spawn) for n in out]
             self.stored.setText("<br>".join(lines))
             waiting = sum(n.waiting for n in out)
+            self.b_others.setVisible(bool(waiting))
+            self.holding.setText(
+                f"{waiting} of your notes wait: fill the holding area to make them searchable."
+                if waiting
+                else ""
+            )
             self.host.toast(
                 f"{len(out)} notes stored"
                 + (f"; {waiting} waiting in the holding area" if waiting else ""),
                 True,
             )
+            self.next_step(1 if waiting else 2)
             self.after_action()
 
         self.host.worker.submit(
@@ -237,18 +271,21 @@ class AssistantSection(QWidget):
     def others(self) -> None:
         def done(n: int) -> None:
             self.holding.setText(
-                f"{n:,} other notes written; the holding area flushed into a new group, so "
-                "the notes that waited there are searchable now (§7.4–7.5)."
+                f"✓ {n:,} other notes filled the holding area; it became a new group, so your "
+                "notes are searchable now (§7.4–7.5)."
             )
+            self.b_others.hide()
             mine = self.company.notes_of(self.name.text().strip())
             recs = self.host.studio.backend.index.records
             self.stored.setText(
-                "<br>".join(f"<b>{r}</b>: now in {recs[r].group}" for r in mine if r in recs)
+                "<br>".join(f"✓ <b>{r}</b> · group {recs[r].group}" for r in mine if r in recs)
                 or self.stored.text()
             )
+            self.next_step(2)
             self.after_action()
 
         self.holding.setText("writing other users' notes…")
+        self.tidy()
         self.host.worker.submit(self.company.let_others_write, done, self.host.error)
 
     def ask(self) -> None:
@@ -261,28 +298,30 @@ class AssistantSection(QWidget):
 
         def done(out: tuple[Retrieved, Answer]) -> None:
             got, ans = out
-            self.answer.setText(ans.text.replace("\n", "<br>"))
+            # with AI off the answer is the passages themselves: shown once, in the list below
+            self.answer.setText(escape(ans.text).replace("\n", "<br>") if ans.ai else "")
             self.ai_note.setText(ans.note)
             rows = []
             for h in got.hits:
                 star = "★ " if h.mine and h.account == name else ""
                 who = "your note" if star else (h.account or "another user")
+                text = "passage absent" if h.text is None else snippet(h.text)
                 rows.append(
-                    f"<b>[{h.n}]</b> {star}{h.rid} · {who} · distance {h.distance:.3f}"
-                    + ("" if h.text is not None else " · passage absent")
+                    f"<b>[{h.n}]</b> {star}{escape(text)}<br>"
+                    f"<span style='color:{theme.MUTED}'>{who} · distance {h.distance:.3f}</span>"
                 )
             rows.append(
-                f"<span style='color:{theme.MUTED}'>the engine opened {len(got.opened)} groups: "
-                + ", ".join(got.opened[:8])
-                + (" …" if len(got.opened) > 8 else "")
-                + " (§8.1); every passage above was read with passage() (§16.1)</span>"
+                f"<span style='color:{theme.MUTED}'>searched {len(got.opened)} groups (§8.1); "
+                "each text read from the database with passage() (§16.1)</span>"
             )
             self.cites.setText("<br>".join(rows))
             origin = layout.place(s.encode(q), s.corpus.vectors, s.coords)
             self.map.show_beam(origin, [(h.rid, h.distance, h.mine) for h in got.hits])
+            self.next_step(3)
             self.after_action(redraw=False)
 
         self.answer.setText("asking…")
+        self.tidy()
         self.host.worker.submit(lambda: self.company.ask(q), done, self.host.error)
 
     def forget(self) -> None:
@@ -295,17 +334,22 @@ class AssistantSection(QWidget):
             self.last_gone = g
             self.map.clear_beam()
             self.answer.setText("")
+            self.ai_note.setText("")
             self.cites.setText("")
             ok = sum(a for _, _, a in g.receipts)
+            sign = "✓" if ok == len(g.receipts) else "✗"
             self.forgot.setText(
-                f"{name} forgotten: {len(g.deleted.rids)} notes deleted, {ok} of "
-                f"{len(g.receipts)} receipts accepted by sever-verify."
+                f"{sign} {len(g.deleted.rids)} notes deleted; {ok} of {len(g.receipts)} "
+                "receipts check out."
             )
             self.b_report.show()
+            self.next_step(0)
+            QTimer.singleShot(0, lambda: self.left_scroll.ensureWidgetVisible(self.cards[2], 0, 16))
             self.after_action()
             self.open_report()
 
         self.forgot.setText("forgetting…")
+        self.tidy()
         self.host.worker.submit(lambda: self.company.forget(name), done, self.host.error)
 
     def open_report(self) -> None:
@@ -344,7 +388,13 @@ class AssistantSection(QWidget):
         elif three:
             self.map3d.refresh()
 
+    def tidy(self) -> None:
+        """An empty line takes no room."""
+        for w in (self.stored, self.holding, self.answer, self.ai_note, self.cites, self.forgot):
+            w.setVisible(bool(w.text()))
+
     def after_action(self, redraw: bool = True) -> None:
+        self.tidy()
         if redraw:
             self.map.refresh()
             if self.mode == "3d":
@@ -394,6 +444,26 @@ class ForgetReport(QDialog):
         lay.setContentsMargins(20, 18, 20, 18)
         lay.setSpacing(12)
         lay.addWidget(label(f"What is left of {g.name}", "heading"))
+        self.summary = QGridLayout()
+        self.summary.setHorizontalSpacing(24)
+        self.summary.setVerticalSpacing(10)
+        self.answers = self.summarise()
+        for col, head in enumerate(("", "SEVER-DB", "Chroma, the same app")):
+            if head:
+                self.summary.addWidget(label(head, "strong"), 0, col)
+        for r, (question, sever, chroma) in enumerate(self.answers, 1):
+            self.summary.addWidget(label(question, "", wrap=True), r, 0)
+            for col, (good, text) in enumerate((sever, chroma), 1):
+                sign, colour = mark(good)
+                cell = label(f"<span style='color:{colour}'><b>{sign}</b> {text}</span>", "")
+                cell.setTextFormat(Qt.TextFormat.RichText)
+                self.summary.addWidget(cell, r, col)
+        self.summary.setColumnStretch(0, 3)
+        self.summary.setColumnStretch(1, 2)
+        self.summary.setColumnStretch(2, 2)
+        box = Card()
+        box.body.addLayout(self.summary)
+        lay.addWidget(box)
         self.table = QTableWidget(0, 3)
         self.table.setHorizontalHeaderLabels(["", "SEVER-DB", "Chroma, the same app"])
         self.table.verticalHeader().hide()
@@ -412,12 +482,14 @@ class ForgetReport(QDialog):
         self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         hh.sectionResized.connect(lambda *_: self._fit_table())
         self._fit_table()
-        lay.addWidget(self.table)
         brow = QHBoxLayout()
         brow.addWidget(button("Verify receipts (offline)", "primary", self.verify, "shield"))
         brow.addWidget(button("Flip a byte", "danger", self.flip, "zap"))
         brow.addWidget(button("Save receipts…", "", self.save, "receipt"))
         brow.addStretch(1)
+        self.b_details = button("Details", "ghost", self.toggle_details, "list")
+        self.b_details.setCheckable(True)
+        brow.addWidget(self.b_details)
         lay.addLayout(brow)
         self.verdict = label("", "strong", wrap=True)
         self.verdict.setTextFormat(Qt.TextFormat.RichText)
@@ -427,9 +499,56 @@ class ForgetReport(QDialog):
         self.saved = label("", "mono", wrap=True)
         self.saved.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         lay.addWidget(self.saved)
-        lay.addWidget(label(copy.long("forget.notes"), "small", wrap=True))
+        # the full table and what it does not show, behind Details
+        self.details = QWidget()
+        dl = QVBoxLayout(self.details)
+        dl.setContentsMargins(0, 0, 0, 0)
+        dl.setSpacing(10)
+        dl.addWidget(self.table)
+        dl.addWidget(label(copy.long("forget.notes"), "small", wrap=True))
+        self.details.hide()
+        lay.addWidget(self.details)
         lay.addWidget(button("Close", "ghost", self.accept), 0, Qt.AlignmentFlag.AlignRight)
         lay.addStretch(1)
+
+    def toggle_details(self) -> None:
+        self.details.setVisible(self.b_details.isChecked())
+        self._fit_table()
+
+    def summarise(self) -> list[tuple[str, tuple[bool, str], tuple[bool | None, str]]]:
+        """Three questions, each answered for both stores from the same measurements as the table:
+        ✓ is the answer a person who asked to be forgotten wants."""
+        g, c = self.g, self.g.chroma
+        kinds = ("passage text", "vectors", "x̃ (stored integers)")
+
+        def left(after: Any) -> tuple[int, int]:
+            return self._found(after.hits, kinds)
+
+        s_find = bool(g.found_by_search or g.readable)
+        s_left, s_of = left(g.after)
+        n = len(g.receipts)
+        sever = [
+            (not s_find, "no" if not s_find else "yes"),
+            (s_left == 0, "nothing" if s_left == 0 else f"{s_left} of {s_of} found"),
+            (n > 0, f"{n} receipt{'s' if n != 1 else ''}"),
+        ]
+        chroma: list[tuple[bool | None, str]]
+        if c is None:
+            chroma = [(None, "not set up")] * 3
+        else:
+            c_find = bool(c.found_by_query or c.readable)
+            c_left, c_of = left(c.after)
+            chroma = [
+                (not c_find, "no" if not c_find else "yes"),
+                (c_left == 0, "nothing" if c_left == 0 else f"still there: {c_left} of {c_of}"),
+                (False, "none"),
+            ]
+        questions = [
+            "Can the app still find or read your notes?",
+            "Is your text or vector still in its files?",
+            "Do you get proof it was deleted?",
+        ]
+        return [(q, a, b) for q, a, b in zip(questions, sever, chroma, strict=True)]
 
     def _fit_table(self) -> None:
         """The table as tall as its rows at the width it has now, so nothing hides under it."""

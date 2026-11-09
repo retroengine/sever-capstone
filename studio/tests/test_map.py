@@ -81,3 +81,33 @@ def test_map_3d_has_a_position_for_every_laid_out_row_and_is_kept(studio: Studio
         assert len(studio.xyz(rid)) == 3
     for g, *at, _ in studio.centres3():
         assert len(at) == 3, g
+
+
+def test_map_reopening_after_more_records_keeps_the_layout(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # oracle: D the owner's report (9 Nov 2026): every start after notes were added ran t-SNE
+    # again (a new layout-*.npy each time; the 3-D one for minutes). The layout is made once, on
+    # the rows prepare stored and their spares; later rows are placed beside their neighbours.
+    from sever_studio import actions
+
+    monkeypatch.setattr(actions, "SPARE", 100)  # the fixture is smaller than the real spares
+    work = WORK / f"test-map-reopen-{tmp_path_factory.getbasetemp().name}"
+    a = Studio(CFG, "synthetic", work, dev=True, rows=120)
+    a.open()
+    a.backend.insert_next(180)  # more than rows: the next start loads more corpus rows
+    first = a.coords.copy()
+    files = sorted(p.name for p in work.glob("layout-*.npy"))
+    a.backend.close()
+    b = Studio(CFG, "synthetic", work, dev=True, rows=120)
+    try:
+        # laid out on rows + spares only, whatever else is loaded (the old code: every loaded row)
+        assert len(first) == 120 + 100 < len(b.corpus.vectors)
+        assert np.array_equal(b.coords, first)
+        assert sorted(p.name for p in work.glob("layout-*.npy")) == files
+        b.open()
+        for rid in list(b.backend.index.records)[-5:]:  # rows past the layout still have a place
+            assert b.xy(rid) == b.meaning_xy(rid)
+    finally:
+        b.backend.close()
+        b.backend.wipe()

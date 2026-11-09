@@ -213,11 +213,8 @@ TEXT: dict[str, tuple[str, str]] = {
         "is measured in all the dimensions.",
     ),
     "assistant.about": (
-        "Acme Notes: a company app on SEVER-DB.",
-        "A notes app with an AI assistant, built the way a company would build it: its own code, "
-        "the SEVER-DB SDK, and nothing else. Store your notes, ask about them, then ask to be "
-        "forgotten and check what is left. Every number on this screen is the result of a real "
-        "call, listed under SEVER-DB calls.",
+        "Acme Notes",
+        "A notes app on SEVER-DB. Store a few notes, ask about them, then ask to be forgotten.",
     ),
     "assistant.you": (
         "",
@@ -230,10 +227,7 @@ TEXT: dict[str, tuple[str, str]] = {
         "",
         "Your question is encoded and searched (§8); the engine opens the groups nearest it and "
         "returns the best matches. Each passage is read from the database with passage() (§16.1), "
-        "so text that was deleted cannot be shown.",
-    ),
-    "assistant.groq": (
-        "",
+        "so text that was deleted cannot be shown. "
         "With GROQ_API_KEY set, your question and the retrieved passages are sent to Groq "
         "(openai/gpt-oss-20b), which writes the answer. What Groq receives is outside the "
         "database: SEVER-DB can neither delete it nor prove anything about it. Without a key the "
@@ -246,7 +240,7 @@ TEXT: dict[str, tuple[str, str]] = {
         "an ordinary vector store (Chroma) holding the same notes.",
     ),
     "assistant.map": (
-        "Your notes ★ among everyone's; after a question, lines to the passages it found.",
+        "★ your notes · lines: what a question found",
         "",
     ),
     "forget.notes": (
