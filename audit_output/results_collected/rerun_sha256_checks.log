@@ -1,0 +1,23 @@
+2026-11-09T20:34:09Z
+af8fed22f9be9cd8595f271d7b692e5664fdf0a6
+== CMD: sha256sum -c freeze/PART-1.sha256
+     81 OK
+== CMD: sha256sum -c freeze/PART-2.sha256
+    250 OK
+== CMD: sha256sum -c freeze/PART-3.sha256
+    342 OK
+== CMD: sha256sum -c freeze/PART-4.sha256
+    191 OK
+== CMD: (cd datasets && sha256sum -c MANIFEST.sha256)
+processed/meta.json: OK
+processed/nq_1m/embeddings.npy: OK
+processed/nq_1m/passages.parquet: OK
+processed/nq_queries/embeddings.npy: OK
+processed/nq_queries/qrels_test.parquet: OK
+processed/nq_queries/queries.parquet: OK
+processed/sciq_reference/embeddings.npy: OK
+processed/sciq_reference/passages.parquet: OK
+PINS.json: OK
+== CMD: (cd tests/traces && sha256sum -c MANIFEST.sha256) [if present]
+ls: cannot access 'tests/traces/MANIFEST.sha256': No such file or directory
+2026-11-09T20:34:37Z

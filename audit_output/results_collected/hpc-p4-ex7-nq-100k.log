@@ -1,0 +1,7 @@
+# step p4-ex7-nq-100k, 2026-10-31T03:38:01+00:00, commit 7c445b589fe3bb46765b158517fb4ccf66d4e88c
+# cmd: uv run --no-sync python -m sever_testkit_p4.gates p4-ex7 --data nq-100k --seed 42
+{"arm": "sever", "seed": 42, "data": "nq-100k", "ok": true}
+{"arm": "noerase", "seed": 42, "data": "nq-100k", "ok": true}
+{"arm": "softdelete", "seed": 42, "data": "nq-100k", "ok": true}
+{"measure": "P4-T14 (EX-7)", "outcome": "RECORDED"}
+rc=0

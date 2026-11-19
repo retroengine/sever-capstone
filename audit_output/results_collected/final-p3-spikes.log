@@ -1,0 +1,4 @@
+# step p3-spikes, 2026-11-01T02:32:07Z, commit 94d0b243fe21ade2de477f857c3d5a634c556eab
+# cmd: uv run --no-sync python -m sever_testkit_p3.gates p3-spikes
+["test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s", "test p3_spike_part_4_plugs_in_without_touching_part_3 ... ok", "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s", "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s", "PASS"]
+rc=0

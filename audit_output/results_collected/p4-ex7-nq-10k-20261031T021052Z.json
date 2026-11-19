@@ -1,0 +1,1835 @@
+{
+ "measure": "P4-T14 (EX-7)",
+ "found": {
+  "data": "nq-10k",
+  "results": [
+   {
+    "arm": "sever",
+    "certificate_bytes": {
+     "max": 13901,
+     "mean": 13652.951946607342,
+     "n": 8990
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 83921.20084980238,
+      "n": 7843,
+      "p50_us": 74538.06,
+      "p99_us": 216510.868,
+      "per_second": 11.915940070849866
+     },
+     "per_record": {
+      "bytes_per_op": 38886.95639599555,
+      "counts": {
+       "bytes": {
+        "certs": 122883894,
+        "keys/KEYS": 9092096,
+        "keys/WITNESSES.tmp": 32783740,
+        "log": 4764824,
+        "wal": 125140216,
+        "wrapped": 41496291,
+        "wrapped.new": 13432677
+       },
+       "fsyncs": 143339,
+       "total_bytes": 349593738,
+       "wal_by_type": {
+        "Begin": 392150,
+        "BucketBlock": 39360607,
+        "CertRef": 764150,
+        "Commit": 392150,
+        "Counters": 439584,
+        "Extension": 2273288,
+        "GroupHeader": 55661170,
+        "LocatorDel": 943950,
+        "LocatorPut": 1255555,
+        "LogCheckpoint": 3819541,
+        "LogLeaf": 1159710,
+        "SlotPut": 17950107,
+        "SlotTruncate": 728190
+       }
+      },
+      "fsyncs_per_op": 15.944271412680756
+     },
+     "records": 8990
+    },
+    "disk_bytes": 146950194,
+    "insert": {
+     "latency": {
+      "mean_us": 28910.4626895,
+      "n": 10000,
+      "p50_us": 21890.877,
+      "p99_us": 87130.51,
+      "per_second": 34.589553641533044
+     },
+     "per_op": {
+      "bytes_per_op": 8574.8595,
+      "counts": {
+       "bytes": {
+        "keys/KEYS": 88064,
+        "log": 3380000,
+        "wal": 81899981,
+        "wrapped": 380550
+       },
+       "fsyncs": 30175,
+       "total_bytes": 85748595,
+       "wal_by_type": {
+        "Begin": 250000,
+        "BucketBlock": 381238,
+        "Commit": 250000,
+        "Counters": 72048,
+        "GroupCreate": 272190,
+        "GroupHeader": 36036190,
+        "LocatorPut": 2697000,
+        "LogLeaf": 3380000,
+        "SlotPut": 38557800,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 3.0175
+     }
+    },
+    "memory": {
+     "peak": 104824832,
+     "peak_after_load": 99201024,
+     "rss": 104824832,
+     "rss_after_load": 99201024
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 2.431517732,
+    "search": {
+     "mean_us": 163.295536,
+     "n": 1000,
+     "p50_us": 137.627,
+     "p99_us": 430.307,
+     "per_second": 6123.866117197473
+    },
+    "seed": 42,
+    "data": "nq-10k",
+    "seconds": 1015
+   },
+   {
+    "arm": "noerase",
+    "certificate_bytes": {
+     "max": 13901,
+     "mean": 13652.951946607342,
+     "n": 8990
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 70675.71164962387,
+      "n": 7843,
+      "p50_us": 65035.746,
+      "p99_us": 135893.165,
+      "per_second": 14.149132377435665
+     },
+     "per_record": {
+      "bytes_per_op": 27134.454616240266,
+      "counts": {
+       "bytes": {
+        "certs": 122883894,
+        "keys/WITNESSES.tmp": 32783740,
+        "log": 4764824,
+        "wal": 83506289
+       },
+       "fsyncs": 117651,
+       "total_bytes": 243938747,
+       "wal_by_type": {
+        "Begin": 392150,
+        "CertRef": 764150,
+        "Commit": 392150,
+        "Counters": 439584,
+        "GroupHeader": 55661170,
+        "LocatorDel": 943950,
+        "LocatorPut": 1255555,
+        "LogCheckpoint": 3819541,
+        "LogLeaf": 1159710,
+        "SlotPut": 17950107,
+        "SlotTruncate": 728190
+       }
+      },
+      "fsyncs_per_op": 13.086874304783093
+     },
+     "records": 8990
+    },
+    "disk_bytes": 170880238,
+    "insert": {
+     "latency": {
+      "mean_us": 23300.323151999997,
+      "n": 10000,
+      "p50_us": 17448.697,
+      "p99_us": 37450.581,
+      "per_second": 42.91785969990568
+     },
+     "per_op": {
+      "bytes_per_op": 8532.3669,
+      "counts": {
+       "bytes": {
+        "keys/KEYS": 44032,
+        "log": 3380000,
+        "wal": 81709362,
+        "wrapped": 190275
+       },
+       "fsyncs": 30089,
+       "total_bytes": 85323669,
+       "wal_by_type": {
+        "Begin": 250000,
+        "BucketBlock": 190619,
+        "Commit": 250000,
+        "Counters": 72048,
+        "GroupCreate": 272190,
+        "GroupHeader": 36036190,
+        "LocatorPut": 2697000,
+        "LogLeaf": 3380000,
+        "SlotPut": 38557800,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 3.0089
+     }
+    },
+    "memory": {
+     "peak": 103686144,
+     "peak_after_load": 99479552,
+     "rss": 103686144,
+     "rss_after_load": 99479552
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 2.754428199,
+    "search": {
+     "mean_us": 125.901889,
+     "n": 1000,
+     "p50_us": 118.128,
+     "p99_us": 234.1,
+     "per_second": 7942.692583428991
+    },
+    "seed": 42,
+    "data": "nq-10k",
+    "seconds": 843
+   },
+   {
+    "arm": "softdelete",
+    "certificate_bytes": {
+     "max": 0,
+     "mean": 0.0,
+     "n": 0
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 1682.580936631391,
+      "n": 7843,
+      "p50_us": 1439.241,
+      "p99_us": 6353.16,
+      "per_second": 594.3250504204859
+     },
+     "per_record": {
+      "bytes_per_op": 9.957285873192436,
+      "counts": {
+       "bytes": {
+        "tombstones": 89516
+       },
+       "fsyncs": 7843,
+       "total_bytes": 89516,
+       "wal_by_type": {}
+      },
+      "fsyncs_per_op": 0.8724137931034482
+     },
+     "records": 8990
+    },
+    "disk_bytes": 33224281,
+    "insert": {
+     "latency": {
+      "mean_us": 2258.5361315,
+      "n": 10000,
+      "p50_us": 1950.187,
+      "p99_us": 8253.645,
+      "per_second": 442.76466780978745
+     },
+     "per_op": {
+      "bytes_per_op": 7535.6771,
+      "counts": {
+       "bytes": {
+        "wal": 75356771
+       },
+       "fsyncs": 10003,
+       "total_bytes": 75356771,
+       "wal_by_type": {
+        "Begin": 250000,
+        "Commit": 250000,
+        "Counters": 72048,
+        "GroupCreate": 268234,
+        "GroupHeader": 35638974,
+        "LocatorPut": 2697000,
+        "SlotPut": 36177000,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 1.0003
+     }
+    },
+    "memory": {
+     "peak": 88621056,
+     "peak_after_load": 85557248,
+     "rss": 88621056,
+     "rss_after_load": 85557248
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 0.108525808,
+    "search": {
+     "mean_us": 1410.3964569999998,
+     "n": 1000,
+     "p50_us": 1392.243,
+     "p99_us": 1985.398,
+     "per_second": 709.0204991914553
+    },
+    "seed": 42,
+    "data": "nq-10k",
+    "seconds": 38
+   },
+   {
+    "arm": "sever",
+    "certificate_bytes": {
+     "max": 13901,
+     "mean": 13641.755481357819,
+     "n": 8985
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 82918.42919189086,
+      "n": 7843,
+      "p50_us": 74617.585,
+      "p99_us": 171022.159,
+      "per_second": 12.06004515215535
+     },
+     "per_record": {
+      "bytes_per_op": 38863.92264885921,
+      "counts": {
+       "bytes": {
+        "certs": 122714949,
+        "keys/KEYS": 9081856,
+        "keys/WITNESSES.tmp": 32783740,
+        "log": 4764259,
+        "wal": 124955293,
+        "wrapped": 41446974,
+        "wrapped.new": 13445274
+       },
+       "fsyncs": 143319,
+       "total_bytes": 349192345,
+       "wal_by_type": {
+        "Begin": 392150,
+        "BucketBlock": 39316277,
+        "CertRef": 763725,
+        "Commit": 392150,
+        "Counters": 439983,
+        "Extension": 2268276,
+        "GroupHeader": 55575986,
+        "LocatorDel": 943425,
+        "LocatorPut": 1252365,
+        "LogCheckpoint": 3819541,
+        "LogLeaf": 1159065,
+        "SlotPut": 17904501,
+        "SlotTruncate": 727785
+       }
+      },
+      "fsyncs_per_op": 15.950918196994992
+     },
+     "records": 8985
+    },
+    "disk_bytes": 146504418,
+    "insert": {
+     "latency": {
+      "mean_us": 23746.8254932,
+      "n": 10000,
+      "p50_us": 17474.872,
+      "p99_us": 41764.816,
+      "per_second": 42.11089184473748
+     },
+     "per_op": {
+      "bytes_per_op": 8572.6272,
+      "counts": {
+       "bytes": {
+        "keys/KEYS": 88064,
+        "log": 3380000,
+        "wal": 81877658,
+        "wrapped": 380550
+       },
+       "fsyncs": 30175,
+       "total_bytes": 85726272,
+       "wal_by_type": {
+        "Begin": 250000,
+        "BucketBlock": 381238,
+        "Commit": 250000,
+        "Counters": 71649,
+        "GroupCreate": 272190,
+        "GroupHeader": 36014266,
+        "LocatorPut": 2697000,
+        "LogLeaf": 3380000,
+        "SlotPut": 38557800,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 3.0175
+     }
+    },
+    "memory": {
+     "peak": 105132032,
+     "peak_after_load": 99676160,
+     "rss": 105132032,
+     "rss_after_load": 99676160
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 2.7453804699999997,
+    "search": {
+     "mean_us": 167.754784,
+     "n": 1000,
+     "p50_us": 150.284,
+     "p99_us": 402.954,
+     "per_second": 5961.0818610096985
+    },
+    "seed": 123,
+    "data": "nq-10k",
+    "seconds": 944
+   },
+   {
+    "arm": "noerase",
+    "certificate_bytes": {
+     "max": 13901,
+     "mean": 13641.755481357819,
+     "n": 8985
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 82907.39578592376,
+      "n": 7843,
+      "p50_us": 64586.194,
+      "p99_us": 496441.857,
+      "per_second": 12.061650116017548
+     },
+     "per_record": {
+      "bytes_per_op": 27115.598887033946,
+      "counts": {
+       "bytes": {
+        "certs": 122714949,
+        "keys/WITNESSES.tmp": 32783740,
+        "log": 4764259,
+        "wal": 83370708
+       },
+       "fsyncs": 117651,
+       "total_bytes": 243633656,
+       "wal_by_type": {
+        "Begin": 392150,
+        "CertRef": 763725,
+        "Commit": 392150,
+        "Counters": 439983,
+        "GroupHeader": 55575986,
+        "LocatorDel": 943425,
+        "LocatorPut": 1252365,
+        "LogCheckpoint": 3819541,
+        "LogLeaf": 1159065,
+        "SlotPut": 17904501,
+        "SlotTruncate": 727785
+       }
+      },
+      "fsyncs_per_op": 13.094156928213689
+     },
+     "records": 8985
+    },
+    "disk_bytes": 170567032,
+    "insert": {
+     "latency": {
+      "mean_us": 23682.7957305,
+      "n": 10000,
+      "p50_us": 17361.18,
+      "p99_us": 39412.416,
+      "per_second": 42.22474455210308
+     },
+     "per_op": {
+      "bytes_per_op": 8530.1346,
+      "counts": {
+       "bytes": {
+        "keys/KEYS": 44032,
+        "log": 3380000,
+        "wal": 81687039,
+        "wrapped": 190275
+       },
+       "fsyncs": 30089,
+       "total_bytes": 85301346,
+       "wal_by_type": {
+        "Begin": 250000,
+        "BucketBlock": 190619,
+        "Commit": 250000,
+        "Counters": 71649,
+        "GroupCreate": 272190,
+        "GroupHeader": 36014266,
+        "LocatorPut": 2697000,
+        "LogLeaf": 3380000,
+        "SlotPut": 38557800,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 3.0089
+     }
+    },
+    "memory": {
+     "peak": 103907328,
+     "peak_after_load": 99700736,
+     "rss": 103907328,
+     "rss_after_load": 99700736
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 3.065104675,
+    "search": {
+     "mean_us": 140.803247,
+     "n": 1000,
+     "p50_us": 131.359,
+     "p99_us": 294.192,
+     "per_second": 7102.108944973407
+    },
+    "seed": 123,
+    "data": "nq-10k",
+    "seconds": 944
+   },
+   {
+    "arm": "softdelete",
+    "certificate_bytes": {
+     "max": 0,
+     "mean": 0.0,
+     "n": 0
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 2481.015598240469,
+      "n": 7843,
+      "p50_us": 1302.658,
+      "p99_us": 38671.538,
+      "per_second": 403.06074686076045
+     },
+     "per_record": {
+      "bytes_per_op": 9.95180856983862,
+      "counts": {
+       "bytes": {
+        "tombstones": 89417
+       },
+       "fsyncs": 7843,
+       "total_bytes": 89417,
+       "wal_by_type": {}
+      },
+      "fsyncs_per_op": 0.8728992765720646
+     },
+     "records": 8985
+    },
+    "disk_bytes": 33203032,
+    "insert": {
+     "latency": {
+      "mean_us": 3132.812852,
+      "n": 10000,
+      "p50_us": 1895.443,
+      "p99_us": 38457.251,
+      "per_second": 319.20195914722325
+     },
+     "per_op": {
+      "bytes_per_op": 7533.4868,
+      "counts": {
+       "bytes": {
+        "wal": 75334868
+       },
+       "fsyncs": 10003,
+       "total_bytes": 75334868,
+       "wal_by_type": {
+        "Begin": 250000,
+        "Commit": 250000,
+        "Counters": 71649,
+        "GroupCreate": 268234,
+        "GroupHeader": 35617470,
+        "LocatorPut": 2697000,
+        "SlotPut": 36177000,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 1.0003
+     }
+    },
+    "memory": {
+     "peak": 88907776,
+     "peak_after_load": 85827584,
+     "rss": 88907776,
+     "rss_after_load": 85827584
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 0.102533923,
+    "search": {
+     "mean_us": 1245.104643,
+     "n": 1000,
+     "p50_us": 1220.014,
+     "p99_us": 2014.506,
+     "per_second": 803.1453465554221
+    },
+    "seed": 123,
+    "data": "nq-10k",
+    "seconds": 52
+   },
+   {
+    "arm": "sever",
+    "certificate_bytes": {
+     "max": 13901,
+     "mean": 13666.659730722155,
+     "n": 8987
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 93033.29920923116,
+      "n": 7843,
+      "p50_us": 74501.612,
+      "p99_us": 579434.238,
+      "per_second": 10.748839485429919
+     },
+     "per_record": {
+      "bytes_per_op": 38902.46055413375,
+      "counts": {
+       "bytes": {
+        "certs": 122966079,
+        "keys/KEYS": 9085952,
+        "keys/WITNESSES.tmp": 32783740,
+        "log": 4764485,
+        "wal": 125111606,
+        "wrapped": 41470926,
+        "wrapped.new": 13433625
+       },
+       "fsyncs": 143327,
+       "total_bytes": 349616413,
+       "wal_by_type": {
+        "Begin": 392150,
+        "BucketBlock": 39334009,
+        "CertRef": 763895,
+        "Commit": 392150,
+        "Counters": 440040,
+        "Extension": 2274220,
+        "GroupHeader": 55654534,
+        "LocatorDel": 943635,
+        "LocatorPut": 1255845,
+        "LogCheckpoint": 3819541,
+        "LogLeaf": 1159323,
+        "SlotPut": 17954253,
+        "SlotTruncate": 727947
+       }
+      },
+      "fsyncs_per_op": 15.948258595749415
+     },
+     "records": 8987
+    },
+    "disk_bytes": 147028961,
+    "insert": {
+     "latency": {
+      "mean_us": 26657.7012378,
+      "n": 10000,
+      "p50_us": 17855.724,
+      "p99_us": 127912.841,
+      "per_second": 37.51261187450114
+     },
+     "per_op": {
+      "bytes_per_op": 8579.3241,
+      "counts": {
+       "bytes": {
+        "keys/KEYS": 88064,
+        "log": 3380000,
+        "wal": 81944627,
+        "wrapped": 380550
+       },
+       "fsyncs": 30175,
+       "total_bytes": 85793241,
+       "wal_by_type": {
+        "Begin": 250000,
+        "BucketBlock": 381238,
+        "Commit": 250000,
+        "Counters": 72846,
+        "GroupCreate": 272190,
+        "GroupHeader": 36080038,
+        "LocatorPut": 2697000,
+        "LogLeaf": 3380000,
+        "SlotPut": 38557800,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 3.0175
+     }
+    },
+    "memory": {
+     "peak": 105259008,
+     "peak_after_load": 99835904,
+     "rss": 105259008,
+     "rss_after_load": 99835904
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 1.695547261,
+    "search": {
+     "mean_us": 135.331638,
+     "n": 1000,
+     "p50_us": 127.607,
+     "p99_us": 269.857,
+     "per_second": 7389.255127466941
+    },
+    "seed": 777,
+    "data": "nq-10k",
+    "seconds": 1053
+   },
+   {
+    "arm": "noerase",
+    "certificate_bytes": {
+     "max": 13901,
+     "mean": 13666.659730722155,
+     "n": 8987
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 81579.23522542395,
+      "n": 7843,
+      "p50_us": 65183.21,
+      "p99_us": 490584.411,
+      "per_second": 12.258021262846464
+     },
+     "per_record": {
+      "bytes_per_op": 27152.292088572383,
+      "counts": {
+       "bytes": {
+        "certs": 122966079,
+        "keys/WITNESSES.tmp": 32783740,
+        "log": 4764485,
+        "wal": 83503345
+       },
+       "fsyncs": 117651,
+       "total_bytes": 244017649,
+       "wal_by_type": {
+        "Begin": 392150,
+        "CertRef": 763895,
+        "Commit": 392150,
+        "Counters": 440040,
+        "GroupHeader": 55654534,
+        "LocatorDel": 943635,
+        "LocatorPut": 1255845,
+        "LogCheckpoint": 3819541,
+        "LogLeaf": 1159323,
+        "SlotPut": 17954253,
+        "SlotTruncate": 727947
+       }
+      },
+      "fsyncs_per_op": 13.091242906420385
+     },
+     "records": 8987
+    },
+    "disk_bytes": 171002770,
+    "insert": {
+     "latency": {
+      "mean_us": 26057.449176600003,
+      "n": 10000,
+      "p50_us": 17815.92,
+      "p99_us": 125412.314,
+      "per_second": 38.37674183772431
+     },
+     "per_op": {
+      "bytes_per_op": 8536.8315,
+      "counts": {
+       "bytes": {
+        "keys/KEYS": 44032,
+        "log": 3380000,
+        "wal": 81754008,
+        "wrapped": 190275
+       },
+       "fsyncs": 30089,
+       "total_bytes": 85368315,
+       "wal_by_type": {
+        "Begin": 250000,
+        "BucketBlock": 190619,
+        "Commit": 250000,
+        "Counters": 72846,
+        "GroupCreate": 272190,
+        "GroupHeader": 36080038,
+        "LocatorPut": 2697000,
+        "LogLeaf": 3380000,
+        "SlotPut": 38557800,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 3.0089
+     }
+    },
+    "memory": {
+     "peak": 103968768,
+     "peak_after_load": 99749888,
+     "rss": 103968768,
+     "rss_after_load": 99749888
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 2.083536446,
+    "search": {
+     "mean_us": 133.640705,
+     "n": 1000,
+     "p50_us": 122.171,
+     "p99_us": 313.723,
+     "per_second": 7482.7501097064705
+    },
+    "seed": 777,
+    "data": "nq-10k",
+    "seconds": 959
+   },
+   {
+    "arm": "softdelete",
+    "certificate_bytes": {
+     "max": 0,
+     "mean": 0.0,
+     "n": 0
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 2556.108355731225,
+      "n": 7843,
+      "p50_us": 1400.888,
+      "p99_us": 38516.513,
+      "per_second": 391.2197218704879
+     },
+     "per_record": {
+      "bytes_per_op": 9.958050517414042,
+      "counts": {
+       "bytes": {
+        "tombstones": 89493
+       },
+       "fsyncs": 7843,
+       "total_bytes": 89493,
+       "wal_by_type": {}
+      },
+      "fsyncs_per_op": 0.8727050183598531
+     },
+     "records": 8987
+    },
+    "disk_bytes": 33269778,
+    "insert": {
+     "latency": {
+      "mean_us": 2801.4291264,
+      "n": 10000,
+      "p50_us": 1766.584,
+      "p99_us": 38139.993,
+      "per_second": 356.96066360424345
+     },
+     "per_op": {
+      "bytes_per_op": 7540.0577,
+      "counts": {
+       "bytes": {
+        "wal": 75400577
+       },
+       "fsyncs": 10003,
+       "total_bytes": 75400577,
+       "wal_by_type": {
+        "Begin": 250000,
+        "Commit": 250000,
+        "Counters": 72846,
+        "GroupCreate": 268234,
+        "GroupHeader": 35681982,
+        "LocatorPut": 2697000,
+        "SlotPut": 36177000,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 1.0003
+     }
+    },
+    "memory": {
+     "peak": 88887296,
+     "peak_after_load": 85807104,
+     "rss": 88887296,
+     "rss_after_load": 85807104
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 0.11391096,
+    "search": {
+     "mean_us": 1609.60285,
+     "n": 1000,
+     "p50_us": 1554.086,
+     "p99_us": 2954.389,
+     "per_second": 621.2712657659621
+    },
+    "seed": 777,
+    "data": "nq-10k",
+    "seconds": 50
+   },
+   {
+    "arm": "sever",
+    "certificate_bytes": {
+     "max": 13901,
+     "mean": 13628.836662228141,
+     "n": 9012
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 96472.34009307664,
+      "n": 7843,
+      "p50_us": 75809.877,
+      "p99_us": 583810.441,
+      "per_second": 10.365665423220777
+     },
+     "per_record": {
+      "bytes_per_op": 38839.98668442077,
+      "counts": {
+       "bytes": {
+        "certs": 122967284,
+        "keys/KEYS": 9111552,
+        "keys/WITNESSES.tmp": 32783740,
+        "log": 4767310,
+        "wal": 125325947,
+        "wrapped": 41592207,
+        "wrapped.new": 13477920
+       },
+       "fsyncs": 143377,
+       "total_bytes": 350025960,
+       "wal_by_type": {
+        "Begin": 392150,
+        "BucketBlock": 39444834,
+        "CertRef": 766020,
+        "Commit": 392150,
+        "Counters": 438786,
+        "Extension": 2285228,
+        "GroupHeader": 55724988,
+        "LocatorDel": 946260,
+        "LocatorPut": 1256715,
+        "LogCheckpoint": 3819541,
+        "LogLeaf": 1162548,
+        "SlotPut": 17966691,
+        "SlotTruncate": 729972
+       }
+      },
+      "fsyncs_per_op": 15.909565024411895
+     },
+     "records": 9012
+    },
+    "disk_bytes": 147080372,
+    "insert": {
+     "latency": {
+      "mean_us": 26691.4168689,
+      "n": 10000,
+      "p50_us": 17809.297,
+      "p99_us": 128621.883,
+      "per_second": 37.465227301783614
+     },
+     "per_op": {
+      "bytes_per_op": 8570.3949,
+      "counts": {
+       "bytes": {
+        "keys/KEYS": 88064,
+        "log": 3380000,
+        "wal": 81855335,
+        "wrapped": 380550
+       },
+       "fsyncs": 30175,
+       "total_bytes": 85703949,
+       "wal_by_type": {
+        "Begin": 250000,
+        "BucketBlock": 381238,
+        "Commit": 250000,
+        "Counters": 71250,
+        "GroupCreate": 272190,
+        "GroupHeader": 35992342,
+        "LocatorPut": 2697000,
+        "LogLeaf": 3380000,
+        "SlotPut": 38557800,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 3.0175
+     }
+    },
+    "memory": {
+     "peak": 104960000,
+     "peak_after_load": 99700736,
+     "rss": 104960000,
+     "rss_after_load": 99700736
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 2.384781022,
+    "search": {
+     "mean_us": 134.587421,
+     "n": 1000,
+     "p50_us": 124.577,
+     "p99_us": 275.093,
+     "per_second": 7430.114884213435
+    },
+    "seed": 2024,
+    "data": "nq-10k",
+    "seconds": 1083
+   },
+   {
+    "arm": "noerase",
+    "certificate_bytes": {
+     "max": 13901,
+     "mean": 13628.836662228141,
+     "n": 9012
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 84352.18592706873,
+      "n": 7843,
+      "p50_us": 66892.2,
+      "p99_us": 509408.106,
+      "per_second": 11.85505732909642
+     },
+     "per_record": {
+      "bytes_per_op": 27087.681646693298,
+      "counts": {
+       "bytes": {
+        "certs": 122967284,
+        "keys/WITNESSES.tmp": 32783740,
+        "log": 4767310,
+        "wal": 83595853
+       },
+       "fsyncs": 117651,
+       "total_bytes": 244114187,
+       "wal_by_type": {
+        "Begin": 392150,
+        "CertRef": 766020,
+        "Commit": 392150,
+        "Counters": 438786,
+        "GroupHeader": 55724988,
+        "LocatorDel": 946260,
+        "LocatorPut": 1256715,
+        "LogCheckpoint": 3819541,
+        "LogLeaf": 1162548,
+        "SlotPut": 17966691,
+        "SlotTruncate": 729972
+       }
+      },
+      "fsyncs_per_op": 13.054926764314247
+     },
+     "records": 9012
+    },
+    "disk_bytes": 170965158,
+    "insert": {
+     "latency": {
+      "mean_us": 27123.1145343,
+      "n": 10000,
+      "p50_us": 18170.413,
+      "p99_us": 131308.799,
+      "per_second": 36.86892221523439
+     },
+     "per_op": {
+      "bytes_per_op": 8527.9023,
+      "counts": {
+       "bytes": {
+        "keys/KEYS": 44032,
+        "log": 3380000,
+        "wal": 81664716,
+        "wrapped": 190275
+       },
+       "fsyncs": 30089,
+       "total_bytes": 85279023,
+       "wal_by_type": {
+        "Begin": 250000,
+        "BucketBlock": 190619,
+        "Commit": 250000,
+        "Counters": 71250,
+        "GroupCreate": 272190,
+        "GroupHeader": 35992342,
+        "LocatorPut": 2697000,
+        "LogLeaf": 3380000,
+        "SlotPut": 38557800,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 3.0089
+     }
+    },
+    "memory": {
+     "peak": 103759872,
+     "peak_after_load": 99577856,
+     "rss": 103759872,
+     "rss_after_load": 99577856
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 3.391525782,
+    "search": {
+     "mean_us": 190.949683,
+     "n": 1000,
+     "p50_us": 142.526,
+     "p99_us": 1075.941,
+     "per_second": 5236.981723609355
+    },
+    "seed": 2024,
+    "data": "nq-10k",
+    "seconds": 994
+   },
+   {
+    "arm": "softdelete",
+    "certificate_bytes": {
+     "max": 0,
+     "mean": 0.0,
+     "n": 0
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 1530.5673350758639,
+      "n": 7843,
+      "p50_us": 1316.462,
+      "p99_us": 3454.498,
+      "per_second": 653.3525034038663
+     },
+     "per_record": {
+      "bytes_per_op": 9.952396804260985,
+      "counts": {
+       "bytes": {
+        "tombstones": 89691
+       },
+       "fsyncs": 7843,
+       "total_bytes": 89691,
+       "wal_by_type": {}
+      },
+      "fsyncs_per_op": 0.8702840656901909
+     },
+     "records": 9012
+    },
+    "disk_bytes": 33181232,
+    "insert": {
+     "latency": {
+      "mean_us": 2952.9700430000003,
+      "n": 10000,
+      "p50_us": 1944.946,
+      "p99_us": 37885.551,
+      "per_second": 338.64210792469595
+     },
+     "per_op": {
+      "bytes_per_op": 7531.2965,
+      "counts": {
+       "bytes": {
+        "wal": 75312965
+       },
+       "fsyncs": 10003,
+       "total_bytes": 75312965,
+       "wal_by_type": {
+        "Begin": 250000,
+        "Commit": 250000,
+        "Counters": 71250,
+        "GroupCreate": 268234,
+        "GroupHeader": 35595966,
+        "LocatorPut": 2697000,
+        "SlotPut": 36177000,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 1.0003
+     }
+    },
+    "memory": {
+     "peak": 88727552,
+     "peak_after_load": 85651456,
+     "rss": 88727552,
+     "rss_after_load": 85651456
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 0.123148022,
+    "search": {
+     "mean_us": 1581.750031,
+     "n": 1000,
+     "p50_us": 1495.524,
+     "p99_us": 3566.276,
+     "per_second": 632.2111461365289
+    },
+    "seed": 2024,
+    "data": "nq-10k",
+    "seconds": 44
+   },
+   {
+    "arm": "sever",
+    "certificate_bytes": {
+     "max": 13901,
+     "mean": 13644.44796883695,
+     "n": 8985
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 96255.720371159,
+      "n": 7843,
+      "p50_us": 77197.7,
+      "p99_us": 593551.18,
+      "per_second": 10.388992946538988
+     },
+     "per_record": {
+      "bytes_per_op": 38878.50539788536,
+      "counts": {
+       "bytes": {
+        "certs": 122739141,
+        "keys/KEYS": 9086976,
+        "keys/WITNESSES.tmp": 32783740,
+        "log": 4764259,
+        "wal": 125018937,
+        "wrapped": 41489295,
+        "wrapped.new": 13441023
+       },
+       "fsyncs": 143329,
+       "total_bytes": 349323371,
+       "wal_by_type": {
+        "Begin": 392150,
+        "BucketBlock": 39338442,
+        "CertRef": 763725,
+        "Commit": 392150,
+        "Counters": 439812,
+        "Extension": 2288472,
+        "GroupHeader": 55610748,
+        "LocatorDel": 943425,
+        "LocatorPut": 1251495,
+        "LogCheckpoint": 3819541,
+        "LogLeaf": 1159065,
+        "SlotPut": 17892063,
+        "SlotTruncate": 727785
+       }
+      },
+      "fsyncs_per_op": 15.952031163049528
+     },
+     "records": 8985
+    },
+    "disk_bytes": 146669039,
+    "insert": {
+     "latency": {
+      "mean_us": 27652.1582404,
+      "n": 10000,
+      "p50_us": 18190.65,
+      "p99_us": 133412.507,
+      "per_second": 36.16354250927846
+     },
+     "per_op": {
+      "bytes_per_op": 8574.2217,
+      "counts": {
+       "bytes": {
+        "keys/KEYS": 88064,
+        "log": 3380000,
+        "wal": 81893603,
+        "wrapped": 380550
+       },
+       "fsyncs": 30175,
+       "total_bytes": 85742217,
+       "wal_by_type": {
+        "Begin": 250000,
+        "BucketBlock": 381238,
+        "Commit": 250000,
+        "Counters": 71934,
+        "GroupCreate": 272190,
+        "GroupHeader": 36029926,
+        "LocatorPut": 2697000,
+        "LogLeaf": 3380000,
+        "SlotPut": 38557800,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 3.0175
+     }
+    },
+    "memory": {
+     "peak": 104554496,
+     "peak_after_load": 99684352,
+     "rss": 104554496,
+     "rss_after_load": 99684352
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 2.338044808,
+    "search": {
+     "mean_us": 139.030895,
+     "n": 1000,
+     "p50_us": 130.011,
+     "p99_us": 233.51,
+     "per_second": 7192.645922332587
+    },
+    "seed": 9999,
+    "data": "nq-10k",
+    "seconds": 1091
+   },
+   {
+    "arm": "noerase",
+    "certificate_bytes": {
+     "max": 13901,
+     "mean": 13644.44796883695,
+     "n": 8985
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 82606.20394632156,
+      "n": 7843,
+      "p50_us": 65944.862,
+      "p99_us": 483144.798,
+      "per_second": 12.105628296995844
+     },
+     "per_record": {
+      "bytes_per_op": 27120.660100166944,
+      "counts": {
+       "bytes": {
+        "certs": 122739141,
+        "keys/WITNESSES.tmp": 32783740,
+        "log": 4764259,
+        "wal": 83391991
+       },
+       "fsyncs": 117651,
+       "total_bytes": 243679131,
+       "wal_by_type": {
+        "Begin": 392150,
+        "CertRef": 763725,
+        "Commit": 392150,
+        "Counters": 439812,
+        "GroupHeader": 55610748,
+        "LocatorDel": 943425,
+        "LocatorPut": 1251495,
+        "LogCheckpoint": 3819541,
+        "LogLeaf": 1159065,
+        "SlotPut": 17892063,
+        "SlotTruncate": 727785
+       }
+      },
+      "fsyncs_per_op": 13.094156928213689
+     },
+     "records": 8985
+    },
+    "disk_bytes": 170634513,
+    "insert": {
+     "latency": {
+      "mean_us": 27401.476266899997,
+      "n": 10000,
+      "p50_us": 18213.871,
+      "p99_us": 136272.13,
+      "per_second": 36.49438410761701
+     },
+     "per_op": {
+      "bytes_per_op": 8531.7291,
+      "counts": {
+       "bytes": {
+        "keys/KEYS": 44032,
+        "log": 3380000,
+        "wal": 81702984,
+        "wrapped": 190275
+       },
+       "fsyncs": 30089,
+       "total_bytes": 85317291,
+       "wal_by_type": {
+        "Begin": 250000,
+        "BucketBlock": 190619,
+        "Commit": 250000,
+        "Counters": 71934,
+        "GroupCreate": 272190,
+        "GroupHeader": 36029926,
+        "LocatorPut": 2697000,
+        "LogLeaf": 3380000,
+        "SlotPut": 38557800,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 3.0089
+     }
+    },
+    "memory": {
+     "peak": 103882752,
+     "peak_after_load": 99684352,
+     "rss": 103882752,
+     "rss_after_load": 99684352
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 1.311530988,
+    "search": {
+     "mean_us": 84.706722,
+     "n": 1000,
+     "p50_us": 74.136,
+     "p99_us": 220.484,
+     "per_second": 11805.438534146086
+    },
+    "seed": 9999,
+    "data": "nq-10k",
+    "seconds": 983
+   },
+   {
+    "arm": "softdelete",
+    "certificate_bytes": {
+     "max": 0,
+     "mean": 0.0,
+     "n": 0
+    },
+    "delete": {
+     "calls": 7843,
+     "latency_per_call": {
+      "mean_us": 2927.8262935101366,
+      "n": 7843,
+      "p50_us": 1623.36,
+      "p99_us": 39241.774,
+      "per_second": 341.55031745449344
+     },
+     "per_record": {
+      "bytes_per_op": 9.952365052865888,
+      "counts": {
+       "bytes": {
+        "tombstones": 89422
+       },
+       "fsyncs": 7843,
+       "total_bytes": 89422,
+       "wal_by_type": {}
+      },
+      "fsyncs_per_op": 0.8728992765720646
+     },
+     "records": 8985
+    },
+    "disk_bytes": 33219643,
+    "insert": {
+     "latency": {
+      "mean_us": 3110.7501954,
+      "n": 10000,
+      "p50_us": 1849.411,
+      "p99_us": 41264.638,
+      "per_second": 321.4658642403183
+     },
+     "per_op": {
+      "bytes_per_op": 7535.0513,
+      "counts": {
+       "bytes": {
+        "wal": 75350513
+       },
+       "fsyncs": 10003,
+       "total_bytes": 75350513,
+       "wal_by_type": {
+        "Begin": 250000,
+        "Commit": 250000,
+        "Counters": 71934,
+        "GroupCreate": 268234,
+        "GroupHeader": 35632830,
+        "LocatorPut": 2697000,
+        "SlotPut": 36177000,
+        "SlotTruncate": 3483
+       }
+      },
+      "fsyncs_per_op": 1.0003
+     }
+    },
+    "memory": {
+     "peak": 88621056,
+     "peak_after_load": 85540864,
+     "rss": 88621056,
+     "rss_after_load": 85540864
+    },
+    "records": 10000,
+    "refused_inserts": 0,
+    "reopen_seconds": 0.111212328,
+    "search": {
+     "mean_us": 1594.562409,
+     "n": 1000,
+     "p50_us": 1514.744,
+     "p99_us": 3193.763,
+     "per_second": 627.131302202923
+    },
+    "seed": 9999,
+    "data": "nq-10k",
+    "seconds": 56
+   }
+  ],
+  "summary": {
+   "sever": {
+    "insert_p50_us": {
+     "mean": 18644.283999999996,
+     "ci95": [
+      17684.812400000003,
+      20334.515599999995
+     ]
+    },
+    "insert_p99_us": {
+     "mean": 103768.5114,
+     "ci95": [
+      68209.3682,
+      130396.3242
+     ]
+    },
+    "insert_per_second": {
+     "mean": 37.568365434366754,
+     "ci95": [
+      35.53394696218029,
+      40.00176598359841
+     ]
+    },
+    "delete_call_p50_us": {
+     "mean": 75332.96680000001,
+     "ci95": [
+      74539.3858,
+      76380.9178
+     ]
+    },
+    "delete_call_p99_us": {
+     "mean": 428865.7772,
+     "ci95": [
+      261802.31660000002,
+      586831.496
+     ]
+    },
+    "insert_bytes_per_op": {
+     "mean": 8574.28548,
+     "ci95": [
+      8571.92562,
+      8577.091799999998
+     ]
+    },
+    "insert_fsyncs_per_op": {
+     "mean": 3.0175,
+     "ci95": [
+      3.0175,
+      3.0175
+     ]
+    },
+    "delete_bytes_per_record": {
+     "mean": 38874.36633625893,
+     "ci95": [
+      38855.394169806605,
+      38891.6521414512
+     ]
+    },
+    "delete_fsyncs_per_record": {
+     "mean": 15.941008878577318,
+     "ci95": [
+      15.924999529793194,
+      15.950831463167692
+     ]
+    },
+    "certificate_bytes": {
+     "mean": 13646.930357950481,
+     "ci95": [
+      13636.587953705948,
+      13658.435060253269
+     ]
+    },
+    "peak_memory": {
+     "mean": 104946073.6,
+     "ci95": [
+      104724070.4,
+      105148416.0
+     ]
+    },
+    "reopen_seconds": {
+     "mean": 2.3190542586,
+     "ci95": [
+      1.9712408646,
+      2.5917934479999998
+     ]
+    },
+    "secret_material_per_deleted_record": [
+     {
+      "wal_bytes": 13919.927919911011,
+      "wal_bucket_block": 4378.26551724138,
+      "wal_extension": 252.86852057842046,
+      "key_file": 1011.3566184649611,
+      "wrapped_store": 4615.827697441602,
+      "all_bytes": 38886.95639599555
+     },
+     {
+      "wal_bytes": 13907.092821368948,
+      "wal_bucket_block": 4375.76816917084,
+      "wal_extension": 252.45141903171952,
+      "key_file": 1010.7797440178075,
+      "wrapped_store": 4612.907512520868,
+      "all_bytes": 38863.92264885921
+     },
+     {
+      "wal_bytes": 13921.3911205074,
+      "wal_bucket_block": 4376.767441860465,
+      "wal_extension": 253.0566373650829,
+      "key_file": 1011.0105708245243,
+      "wrapped_store": 4614.546122176477,
+      "all_bytes": 38902.46055413375
+     },
+     {
+      "wal_bytes": 13906.556036395916,
+      "wal_bucket_block": 4376.9234354194405,
+      "wal_extension": 253.57612072791832,
+      "key_file": 1011.046604527297,
+      "wrapped_store": 4615.202729693741,
+      "all_bytes": 38839.98668442077
+     },
+     {
+      "wal_bytes": 13914.176182526433,
+      "wal_bucket_block": 4378.235058430718,
+      "wal_extension": 254.6991652754591,
+      "key_file": 1011.3495826377296,
+      "wrapped_store": 4617.617696160267,
+      "all_bytes": 38878.50539788536
+     }
+    ]
+   },
+   "noerase": {
+    "insert_p50_us": {
+     "mean": 17802.0162,
+     "ci95": [
+      17487.1348,
+      18116.8976
+     ]
+    },
+    "insert_p99_us": {
+     "mean": 93971.24799999999,
+     "ci95": [
+      55827.66159999999,
+      132114.8344
+     ]
+    },
+    "insert_per_second": {
+     "mean": 39.3765304825169,
+     "ci95": [
+      37.02067089668542,
+      41.732390068348366
+     ]
+    },
+    "delete_call_p50_us": {
+     "mean": 65528.442399999985,
+     "ci95": [
+      64885.41799999999,
+      66323.79719999999
+     ]
+    },
+    "delete_call_p99_us": {
+     "mean": 423094.46739999996,
+     "ci95": [
+      277769.6634,
+      501562.19460000005
+     ]
+    },
+    "insert_bytes_per_op": {
+     "mean": 8531.792879999999,
+     "ci95": [
+      8529.43302,
+      8534.5992
+     ]
+    },
+    "insert_fsyncs_per_op": {
+     "mean": 3.0089,
+     "ci95": [
+      3.0089,
+      3.0089
+     ]
+    },
+    "delete_bytes_per_record": {
+     "mean": 27122.137467741366,
+     "ci95": [
+      27103.631931297423,
+      27139.63929321021
+     ]
+    },
+    "delete_fsyncs_per_record": {
+     "mean": 13.08427156638902,
+     "ci95": [
+      13.069162305187906,
+      13.09357412385503
+     ]
+    },
+    "certificate_bytes": {
+     "mean": 13646.930357950481,
+     "ci95": [
+      13636.587953705948,
+      13658.435060253269
+     ]
+    },
+    "peak_memory": {
+     "mean": 103840972.8,
+     "ci95": [
+      103745126.4,
+      103926988.8
+     ]
+    },
+    "reopen_seconds": {
+     "mean": 2.521225218,
+     "ci95": [
+      1.8819310383999999,
+      3.130467619554999
+     ]
+    },
+    "secret_material_per_deleted_record": [
+     {
+      "wal_bytes": 9288.793882091213,
+      "wal_bucket_block": 0.0,
+      "wal_extension": 0.0,
+      "key_file": 0.0,
+      "wrapped_store": 0.0,
+      "all_bytes": 27134.454616240266
+     },
+     {
+      "wal_bytes": 9278.873233166389,
+      "wal_bucket_block": 0.0,
+      "wal_extension": 0.0,
+      "key_file": 0.0,
+      "wrapped_store": 0.0,
+      "all_bytes": 27115.598887033946
+     },
+     {
+      "wal_bytes": 9291.56704128185,
+      "wal_bucket_block": 0.0,
+      "wal_extension": 0.0,
+      "key_file": 0.0,
+      "wrapped_store": 0.0,
+      "all_bytes": 27152.292088572383
+     },
+     {
+      "wal_bytes": 9276.056480248557,
+      "wal_bucket_block": 0.0,
+      "wal_extension": 0.0,
+      "key_file": 0.0,
+      "wrapped_store": 0.0,
+      "all_bytes": 27087.681646693298
+     },
+     {
+      "wal_bytes": 9281.241958820256,
+      "wal_bucket_block": 0.0,
+      "wal_extension": 0.0,
+      "key_file": 0.0,
+      "wrapped_store": 0.0,
+      "all_bytes": 27120.660100166944
+     }
+    ]
+   },
+   "softdelete": {
+    "insert_p50_us": {
+     "mean": 1881.3142,
+     "ci95": [
+      1818.8218000000002,
+      1937.1417999999999
+     ]
+    },
+    "insert_p99_us": {
+     "mean": 32800.2156,
+     "ci95": [
+      20220.7474,
+      39963.8916
+     ]
+    },
+    "insert_per_second": {
+     "mean": 355.80705254525367,
+     "ci95": [
+      323.9955509399558,
+      401.1156438557508
+     ]
+    },
+    "delete_call_p50_us": {
+     "mean": 1416.5218,
+     "ci95": [
+      1327.8256,
+      1522.3957999999998
+     ]
+    },
+    "delete_call_p99_us": {
+     "mean": 25247.496600000002,
+     "ci95": [
+      11191.685599999999,
+      38868.6274
+     ]
+    },
+    "insert_bytes_per_op": {
+     "mean": 7535.11388,
+     "ci95": [
+      7532.798420000001,
+      7537.8674
+     ]
+    },
+    "insert_fsyncs_per_op": {
+     "mean": 1.0003,
+     "ci95": [
+      1.0003,
+      1.0003
+     ]
+    },
+    "delete_bytes_per_record": {
+     "mean": 9.954381363514395,
+     "ci95": [
+      9.952148809934,
+      9.95676049566009
+     ]
+    },
+    "delete_fsyncs_per_record": {
+     "mean": 0.8722402860595242,
+     "ci95": [
+      0.8712330533492171,
+      0.8728604249296223
+     ]
+    },
+    "certificate_bytes": {
+     "mean": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ]
+    },
+    "peak_memory": {
+     "mean": 88752947.2,
+     "ci95": [
+      88642355.2,
+      88863539.2
+     ]
+    },
+    "reopen_seconds": {
+     "mean": 0.1118662082,
+     "ci95": [
+      0.10600770740000001,
+      0.1183737444
+     ]
+    },
+    "secret_material_per_deleted_record": [
+     {
+      "wal_bytes": 0.0,
+      "wal_bucket_block": 0.0,
+      "wal_extension": 0.0,
+      "key_file": 0.0,
+      "wrapped_store": 0.0,
+      "all_bytes": 9.957285873192436
+     },
+     {
+      "wal_bytes": 0.0,
+      "wal_bucket_block": 0.0,
+      "wal_extension": 0.0,
+      "key_file": 0.0,
+      "wrapped_store": 0.0,
+      "all_bytes": 9.95180856983862
+     },
+     {
+      "wal_bytes": 0.0,
+      "wal_bucket_block": 0.0,
+      "wal_extension": 0.0,
+      "key_file": 0.0,
+      "wrapped_store": 0.0,
+      "all_bytes": 9.958050517414042
+     },
+     {
+      "wal_bytes": 0.0,
+      "wal_bucket_block": 0.0,
+      "wal_extension": 0.0,
+      "key_file": 0.0,
+      "wrapped_store": 0.0,
+      "all_bytes": 9.952396804260985
+     },
+     {
+      "wal_bytes": 0.0,
+      "wal_bucket_block": 0.0,
+      "wal_extension": 0.0,
+      "key_file": 0.0,
+      "wrapped_store": 0.0,
+      "all_bytes": 9.952365052865888
+     }
+    ]
+   }
+  }
+ },
+ "outcome": "RECORDED"
+}

@@ -1,0 +1,8 @@
+# step p3-attacks, 2026-10-29T11:29:55+00:00, commit 4dcfbe0f1404904e4978e24efd9e9a4fdafdd900
+# cmd: uv run --no-sync python -m sever_testkit_p3.gates p3-attacks --data nq-10k --all-seeds --jobs 2
+{"seed": 42, "outcome": "PASS"}
+{"seed": 123, "outcome": "PASS"}
+{"seed": 2024, "outcome": "PASS"}
+{"seed": 777, "outcome": "PASS"}
+{"seed": 9999, "outcome": "PASS"}
+rc=0

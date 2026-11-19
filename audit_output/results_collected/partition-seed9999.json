@@ -1,0 +1,17 @@
+{
+ "seed": 9999,
+ "file": "partition-seed9999.svp",
+ "sha256_artefact": "73801f0723b5aaeb98aba76043f6ed55b876d232e66c2335d3c7717f9c7ebc67",
+ "bytes": 1573055,
+ "tau": 25.74396927935331,
+ "lw_shrinkage": 0.018573653078892187,
+ "oracle_tau_diff": 0.0,
+ "oracle_shrinkage_diff": 3.469446951953614e-18,
+ "m": 13679,
+ "group_sizes": {
+  "min": 34,
+  "max": 205
+ },
+ "encoder": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+ "sabotage": ""
+}

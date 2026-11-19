@@ -1,0 +1,20 @@
+{
+ "gate": "Build \u00a73.4 proof spikes",
+ "tests": [
+  "test tests::spike_appendix_a_sizes_with_aead_sealer ... ok",
+  "test tests::spike_ep6_aead_sealer_passes_contract ... ok",
+  "test tests::spike_ep7_key_rotation_participant_passes_contract ... ok",
+  "test tests::spike_ep7_log_participant_passes_contract ... ok",
+  "test tests::spike_ep7_rotation_without_phase_a_fails_contract ... ok",
+  "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+  "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+ ],
+ "seconds": 1.8,
+ "outcome": "PASS",
+ "stderr_tail": [
+  "   Compiling sever-spike-p2-proof v0.0.0 (/home/saiki/sever-db/spikes/p2-proof)",
+  "    Finished `release` profile [optimized] target(s) in 1.74s",
+  "     Running unittests src/lib.rs (spikes/p2-proof/target/release/deps/sever_spike_p2_proof-511ce471f2dde4e6)",
+  "   Doc-tests sever_spike_p2_proof"
+ ]
+}

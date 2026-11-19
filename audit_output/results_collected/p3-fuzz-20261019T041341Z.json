@@ -1,0 +1,121 @@
+{
+ "gate": "P3-T10 (0 crashes)",
+ "runs_per_target": 10000000,
+ "targets": {
+  "fuzz-p3:certificate": {
+   "exit": 0,
+   "done": "Done 10000000 runs in 83 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"\\004\\000\" # Uses: 52806",
+    "\"n\\000\\000\\000\\000\\000\\000\\000\" # Uses: 51879",
+    "\"\\000\\000\" # Uses: 52069",
+    "\"\\264\\000\\000\\000\\000\\000\\000\\000\" # Uses: 51456",
+    "\"\\374\\377\\377\\377\\377\\377\\377\\377\" # Uses: 34077",
+    "###### End of recommended dictionary. ######",
+    "Done 10000000 runs in 83 second(s)",
+    "stat::number_of_executed_units: 10000000",
+    "stat::average_exec_per_sec:     120481",
+    "stat::new_units_added:          328",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              422"
+   ]
+  },
+  "fuzz-p3:log_record": {
+   "exit": 0,
+   "done": "Done 10000000 runs in 73 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"\\036\\036\\036\\036\\036\\036\\036\" # Uses: 31571",
+    "\"j\\000\\000\\000\\000\\000\\000\\000\" # Uses: 10412",
+    "\"f0eoznr\" # Uses: 9606",
+    "\"\\322\\000\\000\\000\\000\\000\\000\\000\" # Uses: 7646",
+    "\"'\\000\\000\\000\\000\\000\\000\\000\" # Uses: 6661",
+    "###### End of recommended dictionary. ######",
+    "Done 10000000 runs in 73 second(s)",
+    "stat::number_of_executed_units: 10000000",
+    "stat::average_exec_per_sec:     136986",
+    "stat::new_units_added:          252",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              506"
+   ]
+  },
+  "fuzz-p3:witnessed": {
+   "exit": 0,
+   "done": "Done 10000000 runs in 63 second(s)",
+   "crashed": false,
+   "tail": [
+    "#8388608\tpulse  cov: 81 ft: 178 corp: 15/8193b lim: 4096 exec/s: 152520 rss: 540Mb",
+    "#10000000\tDONE   cov: 81 ft: 178 corp: 15/8193b lim: 4096 exec/s: 158730 rss: 540Mb",
+    "###### Recommended dictionary. ######",
+    "\"\\377\\377\\377\\377\" # Uses: 421350",
+    "\"\\377\\377\\377\\377\\377\\377\\377\\003\" # Uses: 395231",
+    "###### End of recommended dictionary. ######",
+    "Done 10000000 runs in 63 second(s)",
+    "stat::number_of_executed_units: 10000000",
+    "stat::average_exec_per_sec:     158730",
+    "stat::new_units_added:          11",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              540"
+   ]
+  },
+  "fuzz-p3:placement": {
+   "exit": 0,
+   "done": "Done 10000000 runs in 45 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"\\001\\005\" # Uses: 179637",
+    "\"frohold\" # Uses: 179265",
+    "\"frozen-\" # Uses: 178496",
+    "\"\\017\\000\\000\\000\\000\\000\\000\\000\" # Uses: 177128",
+    "\"holding\" # Uses: 159528",
+    "###### End of recommended dictionary. ######",
+    "Done 10000000 runs in 45 second(s)",
+    "stat::number_of_executed_units: 10000000",
+    "stat::average_exec_per_sec:     222222",
+    "stat::new_units_added:          76",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              484"
+   ]
+  },
+  "verifier/fuzz:verify": {
+   "exit": 0,
+   "done": "Done 10000000 runs in 413 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"\\363\\364\\267\\221\\342Y\\360\\0026F\\251\\304\\343\\330\\0330Q\\010_\\300\\275/\\343\\015\\340\\200\\346F\\370l\\\\\\351\" # Uses: 62094",
+    "\"\\001\\000\\000\\000\\000\\000\\001L\" # Uses: 61800",
+    "\"\\001\\000\\000\\001\" # Uses: 62752",
+    "\"j\\000\\000\\000\\000\\000\\000\\000\" # Uses: 62410",
+    "\"\\014\\000\\000\\000\\000\\000\\000\\000\" # Uses: 42276",
+    "###### End of recommended dictionary. ######",
+    "Done 10000000 runs in 413 second(s)",
+    "stat::number_of_executed_units: 10000000",
+    "stat::average_exec_per_sec:     24213",
+    "stat::new_units_added:          108",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              455"
+   ]
+  },
+  "audit/fuzz:export": {
+   "exit": 0,
+   "done": "Done 10000000 runs in 2045 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"p\\001\\000\\000\\000\\000\\000\\000\" # Uses: 475",
+    "\"\\000\\000\\000\\012\" # Uses: 423",
+    "\"\\377\\001\\000\\000\\000\\000\\000\\000\" # Uses: 376",
+    "\"bk[,,,,\" # Uses: 334",
+    "\"\\377\\377\\377\\377\\377\\377\\377\\002\" # Uses: 144",
+    "###### End of recommended dictionary. ######",
+    "Done 10000000 runs in 2045 second(s)",
+    "stat::number_of_executed_units: 10000000",
+    "stat::average_exec_per_sec:     4889",
+    "stat::new_units_added:          20577",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              504"
+   ]
+  }
+ },
+ "outcome": "PASS"
+}

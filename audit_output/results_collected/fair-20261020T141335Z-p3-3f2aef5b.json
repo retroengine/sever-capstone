@@ -1,0 +1,209 @@
+{
+ "run_id": "20261020T141335Z-p3-3f2aef5b",
+ "part": 3,
+ "module": null,
+ "commit": "3f2aef5b6d4062305f8ec33bd7d084e8a6acf80f",
+ "outcome": "FAIL",
+ "config_sha256": "231bb3fb123fee16c62fcc8cfa97b28811a5dbafccced9792d478ac1a49836ca",
+ "seal_digest": "5f5ac9543432e8bc503dc42657cd0e894b70b1299fde337d0d4f431d6da7434b",
+ "owned_sha256": "4fd239895f7524f1aea8f0c3b23ceb3c16a3b0f684b4c514890a7fd62000467f",
+ "rows": [
+  {
+   "check": "own suite green on the unpatched build",
+   "value": "True",
+   "ok": true
+  },
+  {
+   "check": "engine bugs (triage)",
+   "value": "2",
+   "ok": false
+  },
+  {
+   "check": "spec gaps (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "test gaps (escaped real bugs)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "oracle disagreements",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "planted bugs: cargo-mutants gate PASS in the ledger (DB-75)",
+   "value": "none",
+   "ok": false
+  },
+  {
+   "check": "judge outputs complete",
+   "value": "yes",
+   "ok": true
+  }
+ ],
+ "tests": 172,
+ "failing": 2,
+ "triage": {
+  "test_platform::test_artefact_of_another_dimension_is_refused": {
+   "verdict": "ENGINE_BUG",
+   "section": "\u00a76.3",
+   "reason": "\u00a76.3 says create_collection MUST verify d and that a failed check is rejected with IntegrityViolation naming the check (DB-64, G-12). The engine raised WrongDimension, which \u00a717 reserves for an input vector that fails \u00a74.1 step 0, not for an artefact whose d differs from the database's. The test passes a 384-d artefact to a 16-d database, which is the case \u00a76.3 describes."
+  },
+  "test_platform::test_key_directory_on_tmpfs_is_refused": {
+   "verdict": "ENGINE_BUG",
+   "section": "\u00a712.9",
+   "reason": "\u00a712.9 makes the key file's filesystem an allow-list (ext4, XFS, btrfs with no-CoW) and names tmpfs as refused; before KEYS exists the key directory decides. Only allow_unsafe_fs overrides it, and the test does not set it. The data directory was a normal filesystem, so the key directory was the only violation, and the engine opened without PlatformUnsafe (\u00a717). The spec does not limit this check to a later part."
+  }
+ },
+ "planted": [],
+ "escapes": {},
+ "oracle": {
+  "pool": 91,
+  "verdicts": {
+   "01.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a711.2",
+    "reason": "\u00a711.2 fixes the layout (version = 1, 209-byte insert leaf, u8 path_len and path_len \u00d7 32 bytes). The test expects Certificate::parse to reject a delete-type leaf byte with ParseError::LeafType. The spec checks the leaf type only in \u00a711.3 step 3 (verification), and \u00a711.1 does not list it among the parser's mandatory rejections. The specific ParseError variants (Version, LeafType, Length{tag:6}) are also not fixed by the spec. Rejecting version 2 and a path of the wrong length follows from the layout, but the leaf-type and variant expectations do not."
+   },
+   "02.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a79.8",
+    "reason": "The insert message is DST_INSERT \u2016 collection_id \u2016 C_t, 65 bytes (\u00a79.8), and the signature must verify under the user key. The first leaf of a fresh log is index 0 (\u00a710.2: database_lsn is the 0-based leaf index; genesis is a checkpoint, not a leaf). Ed25519 is deterministic, so a restored key gives the same public key. retried=False for a first insert matches \u00a715.1."
+   },
+   "03.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a710.2",
+    "reason": "After six inserts the deletion leaf is index 6, so database_lsn is 6 (\u00a710.2). Only the genesis checkpoint exists, so the on-demand checkpoint is at the current size, 6 (\u00a710.3), and it does not cover the deletion leaf. The delete leaf is 0x02 \u2016 certificate bytes, so its hash is leaf_hash of that. A repeated deletion removes nothing and appends no leaf, so the tree stays at size 7 (\u00a710.2: only deletions that remove a record)."
+   },
+   "04.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a711.3",
+    "reason": "\u00a711.3 says the anchors list the operator's and every witness's epoch-0 key from database creation, with the witnesses listed by index. That means five witness entries each with key \"0\", plus operator \"0\". Keys persist across restart and no epoch passes, so the anchors are unchanged."
+   },
+   "05.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a715.1",
+    "reason": "The signature covers DST_INSERT \u2016 collection_id \u2016 C_t (\u00a79.8). Submitting a request signed for collection a to collection b passes the C_t recomputation, since C_t does not depend on the collection. The signature check then fails, giving BadUserSignature (\u00a715.1 step 2, \u00a717). Nothing is inserted into b, and the same request still succeeds on a as the first leaf, lsn 0."
+   },
+   "06.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a710.5",
+    "reason": "The workload gives three insert leaves plus a delete leaf, so size 4. Bytes staged and synced without a COMMIT are ignored on reopen (\u00a710.5: committed entries only; recovery restores from the WAL), so size 4 and no entry at 5. A later committed insert reuses index 4 (insert leaf 7, size 5). The uncommitted certificate at key 4 is not committed, so certificate(4) is None."
+   },
+   "07.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a716.3",
+    "reason": "Exit code 0 on an honest certificate and its acceptance follow from \u00a711.3 and \u00a716.3. The test also asserts that the last stdout line is JSON with the keys accepted, deletion_kind, database_lsn and leaf_index. \u00a716.3 says only that the tool 'prints accepted' or the failed step, and fixes no JSON format or field names. The assertions rest on an output format the spec does not define."
+   },
+   "08.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a79.8",
+    "reason": "\u00a79.8 requires verify_strict. The identity key with R = identity and S = 0 satisfies the plain equation for every message and must be rejected. A non-canonical S (S + \u2113, with \u2113 written correctly in little-endian) must be rejected. A signature made over the 65-byte insert message does not verify over the 83-byte cosign message, as expected from domain separation."
+   },
+   "09.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a79.5",
+    "reason": "\u00a79.5 verifies by z_r\u00b7H + \u03a3 z_i\u00b7G_i = A + c\u00b7C_S_post. The test builds A = z_r\u00b7H + \u03a3 z_i\u00b7G_i \u2212 c\u00b7C, so the equation holds for any c, z_r and z. It fails for c+1 because C_S_post is not the identity. The simulator never uses the opening, which is the standard honest-verifier simulation, and a random A is not the identity."
+   },
+   "10.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a711.1",
+    "reason": "\u00a711.1 requires rejecting missing, repeated or out-of-order tags, a wrong length for fixed-size fields and trailing bytes. The test's mutations (14 TLVs including the trailer, adjacent swaps, truncation, one byte more or less on tags 1, 5, 8, 9, 10, 11, 12, 13, trailer length 63) are all covered, and the fixed sizes match the tag table. The ParseError variant names are test-internal. Each mutation is something the spec requires to be rejected."
+   }
+  },
+  "picked": [
+   [
+    "crates/sever-cert/src/tests.rs",
+    "p3_cert_parser_rejects_a_bad_insert_inclusion"
+   ],
+   [
+    "python/sever_db_p3/tests/test_sdk_p3.py",
+    "test_p3_sdk_prepare_insert_signs_the_collection_and_commitment"
+   ],
+   [
+    "crates/sever-cert/tests/log_participant.rs",
+    "p3_log_txn_a_deletion_returns_a_certificate_section_11_3_accepts"
+   ],
+   [
+    "crates/sever-p3/src/tests.rs",
+    "p3_root_a_new_databases_anchors_hold_every_witness_key"
+   ],
+   [
+    "python/sever_db_p3/tests/test_sdk_p3.py",
+    "test_p3_sdk_a_request_is_bound_to_its_collection"
+   ],
+   [
+    "crates/sever-log/src/store_tests.rs",
+    "p3_log_store_uncommitted_bytes_never_join_the_log"
+   ],
+   [
+    "tests/e2e_p3/test_p3_e2e.py",
+    "test_p3_e2e_3_1_the_verifier_accepts_a_deletion_in_another_process"
+   ],
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_signatures_are_checked_strictly"
+   ],
+   [
+    "crates/sever-crypto/src/tests.rs",
+    "p3_crypto_soundness_simulator_transcripts_verify"
+   ],
+   [
+    "crates/sever-cert/src/tests.rs",
+    "p3_cert_parser_rejects_malformed_tlv"
+   ]
+  ]
+ },
+ "findings": [
+  {
+   "kind": "ENGINE_BUG",
+   "test": "test_platform::test_artefact_of_another_dimension_is_refused",
+   "section": "\u00a76.3",
+   "reason": "\u00a76.3 says create_collection MUST verify d and that a failed check is rejected with IntegrityViolation naming the check (DB-64, G-12). The engine raised WrongDimension, which \u00a717 reserves for an input vector that fails \u00a74.1 step 0, not for an artefact whose d differs from the database's. The test passes a 384-d artefact to a 16-d database, which is the case \u00a76.3 describes.",
+   "output": "sever_db_p3_native.WrongDimension: vector has the wrong dimension\nworld = <conftest.World object at 0x7d688e01da30>\n\n    @pytest.mark.req(\"SR-6.3-2\", \"SR-6.3-3\")\n    def test_artefact_of_another_dimension_is_refused(world):\n        \"\"\"\u00a76.3: \"create_collection MUST verify sha256_artefact, d, and that P has finite entries; a failed\n        check is rejected with IntegrityViolation\".\"\"\"\n        with pytest.raises(sdk.IntegrityViolation):\n>           world.db.create_collection(H.inputs(H.LARGE))  # d = 384 into a d = 16 database\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n/room/work/tests/test_platform.py:122: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <sever_db_p3.Database object at 0x7d68a2546f80>\nartefact = '/room/inputs/partition-seed42.svp', spawn_target = 200\nspawning_enabled = True, store_passages = True\n\n    def create_collection(\n        self,\n        artefact: str | PathLike[str],\n        spawn_target: int = 200,\n        spawning_enabled: bool = True,\n        store_passages: bool = True,\n    ) -> str:\n        \"\"\"A new collection over a partition artefact (\u00a76.3); returns its ID (32 hex characters).\"\"\"\n>       return self._e.create_collection(artefact, spawn_target, spawning_enabled, store_passages)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       sever_db_p3_native.WrongDimension: vector has the wrong dimension\n\n/room/site/sever_db_p3/__init__.py:209: WrongDimension",
+   "source": "\"\"\"\u00a712.9 platform checks, \u00a76.3 artefact checks at create_collection, \u00a714.1 key-folder files.\"\"\"\n\nfrom __future__ import annotations\n\nimport os\nimport shutil\nimport stat\nimport tempfile\n\nimport pytest\n\nimport _sever_helpers as H\nfrom conftest import World, sdk\n\nTMPFS = \"/dev/shm\" if os.path.isdir(\"/dev/shm\") else \"/tmp\"  # both tmpfs here (the task says /tmp is)\n\n\ndef _tmpfs_dir():\n    return tempfile.mkdtemp(prefix=\"sv-unsafe-\", dir=TMPFS)\n\n\n@pytest.mark.req(\"SR-12.9-1\", \"SR-17-6\")\ndef test_data_directory_on_tmpfs_is_refused():\n    \"\"\"\u00a712.9: \"The data directory is on ext4 or XFS\"; \u00a717: PlatformUnsafe \"A \u00a712.8 or \u00a712.9 check\n    fails\".\"\"\"\n    data, keys = _tmpfs_dir(), H.scratch_dir(\"keys\")\n    try:\n        with pytest.raises(sdk.PlatformUnsafe):\n            sdk.Database.open(data, keys, d=16)\n    finally:\n        shutil.rmtree(data, ignore_errors=True)\n\n\n@pytest.mark.req(\"SR-12.9-3\", \"SR-17-6\")\ndef test_key_directory_on_tmpfs_is_refused():\n    \"\"\"\u00a712.9: the key file's filesystem is an allow-list of ext4, XFS and btrfs without copy-on-write;\n    \"Anything else (\u2026 tmpfs \u2026) is refused. Before KEYS exists, the key directory's attribute decides\".\"\"\"\n    data, keys = H.scratch_dir(\"data\"), _tmpfs_dir()\n    try:\n        with pytest.raises(sdk.PlatformUnsafe):\n            sdk.Database.open(data, keys, d=16)\n    finally:\n        shutil.rmtree(keys, ignore_errors=True)\n\n\n@pytest.mark.req(\"SR-12.9-4\")\ndef test_unsafe_filesystem_override_allows_tmpfs(art, rng):\n    \"\"\"\u00a712.9: \"Both filesystem checks are overridden only by platform.allow_unsafe_fs = true, which is\n    for development only\".\"\"\"\n    data, keys = _tmpfs_dir(), _tmpfs_dir()\n    try:\n        db = sdk.Database.open(data, keys, d=16, allow_unsafe_fs=True)\n        try:\n            cid = db.create_collection(H.inputs(H.SMALL))\n            user = sdk.UserKey.generate()\n            req = sdk.prepare_insert(cid, \"dev\", H.as_list(H.in_distribution_vector(art, 0, rng)), user)\n            assert db.insert(cid, req).database_lsn == 0\n        finally:\n            db.close()\n    finally:\n        shutil.rmtree(data, ignore_errors=True)\n        shutil.rmtree(keys, ignore_errors=True)\n\n\nHOLDER = \"\"\"\nimport sys, time\nimport sever_db_p3 as sdk\ndb = sdk.Database.open(sys.argv[1], sys.argv[2], d=16)\nprint(\"open\", flush=True)\nsys.stdin.readline()\ndb.close()\n\"\"\"\n\n\n@pytest.mark.req(\"SR-12.9-2\", \"SR-17-6\")\ndef test_engine_lock_is_exclusive_across_processes():\n    \"\"\"\u00a712.9: \"ENGINE.lock is taken exclusively (one process per data directory)\"; a failed \u00a712.9\n    check is PlatformUnsafe (\u00a717).\"\"\"\n    data, keys = H.scratch_dir(\"data\"), H.scratch_dir(\"keys\")\n    child = H.python_child(HOLDER.replace(\"sever_db_p3\", sdk.__name__), data, keys)\n    try:\n        line = child.stdout.readline()\n        assert line.strip() == \"open\", child.stderr.read()\n        with pytest.raises(sdk.PlatformUnsafe):\n            sdk.Database.open(data, keys, d=16)\n        # The command-line tool must be refused too (it cannot print a success line for this folder).\n        r = H.run_cli(\"anchors\", \"--data\", data, \"--keys\", keys, \"--d\", \"16\", \"--out\",\n                      os.path.join(H.scratch_dir(\"out\"), \"a.json\"))\n        assert r.returncode != 0\n    finally:\n        child.kill()\n        child.wait()\n    # Once the holder is gone, the lock is free again.\n    db = sdk.Database.open(data, keys, d=16)\n    db.close()\n\n\n@pytest.mark.req(\"SR-12.9-2\")\ndef test_lock_is_released_by_close():\n    \"\"\"\u00a712.9 / SDK: ENGINE.lock \"is held until close\"; a closed database can be reopened.\"\"\"\n    w = World(16)\n    w.db.close()\n    db = sdk.Database.open(w.data, w.keys, d=16)\n    db.close()\n\n\n@pytest.mark.req(\"SR-14.1-1\")\ndef test_secrets_file_is_private(world):\n    \"\"\"\u00a714.1: \"SECRETS  k_scramble and operator signing keys by epoch (mode 0600)\"; \"WITNESSES \u2026 mode\n    0600\".\"\"\"\n    for name in (\"SECRETS\", \"WITNESSES\"):\n        path = os.path.join(world.keys, name)\n        assert os.path.exists(path), name\n        assert stat.S_IMODE(os.stat(path).st_mode) == 0o600, name\n\n\n@pytest.mark.req(\"SR-6.3-2\", \"SR-6.3-3\")\ndef test_artefact_of_another_dimension_is_refused(world):\n    \"\"\"\u00a76.3: \"create_collection MUST verify sha256_artefact, d, and that P has finite entries; a failed\n    check is rejected with IntegrityViolation\".\"\"\"\n    with pytest.raises(sdk.IntegrityViolation):\n        world.db.create_collection(H.inputs(H.LARGE))  # d = 384 into a d = 16 database\n    assert world.db.collections() == []\n\n\n@pytest.mark.req(\"SR-6.3-2\", \"SR-6.3-3\")\n@pytest.mark.parametrize(\"offset\", [12, 100, -40, -1])\ndef test_corrupted_artefact_is_refused(world, offset):\n    \"\"\"\u00a76.3: create_collection verifies \"sha256_artefact\" (SHA-256 of every preceding byte).\"\"\"\n    raw = bytearray(open(H.inputs(H.SMALL), \"rb\").read())\n    raw[offset] ^= 0x01  # a header, centroid, precision or hash byte: the stored hash no longer matches\n    path = os.path.join(H.scratch_dir(\"art\"), \"bad.svp\")\n    with open(path, \"wb\") as fh:\n        fh.write(raw)\n    with pytest.raises(sdk.IntegrityViolation):\n        world.db.create_collection(path)\n    assert world.db.collections() == []\n\n\n@pytest.mark.req(\"SR-3.1-1\", \"SR-5.1-1\")\ndef test_create_collection_returns_a_16_byte_id(world):\n    \"\"\"\u00a73.1: \"A collection is identified by a collection_id: 16 random bytes generated from the OS\n    CSPRNG at creation\"; the SDK returns it as 32 hex characters.\"\"\"\n    a, b = world.collection(), world.collection()\n    for cid in (a, b):\n        assert len(bytes.fromhex(cid)) == 16\n    assert a != b\n    assert sorted(world.db.collections()) == sorted([a, b])\n    # Every collection starts with its four frozen groups, empty, in label order (\u00a75.1, \u00a75.2).\n    assert world.db.group_sizes(a) == [(H.frozen_id(i), 0) for i in range(4)]\n",
+   "id": "F-1"
+  },
+  {
+   "kind": "ENGINE_BUG",
+   "test": "test_platform::test_key_directory_on_tmpfs_is_refused",
+   "section": "\u00a712.9",
+   "reason": "\u00a712.9 makes the key file's filesystem an allow-list (ext4, XFS, btrfs with no-CoW) and names tmpfs as refused; before KEYS exists the key directory decides. Only allow_unsafe_fs overrides it, and the test does not set it. The data directory was a normal filesystem, so the key directory was the only violation, and the engine opened without PlatformUnsafe (\u00a717). The spec does not limit this check to a later part.",
+   "output": "Failed: DID NOT RAISE PlatformUnsafe\n@pytest.mark.req(\"SR-12.9-3\", \"SR-17-6\")\n    def test_key_directory_on_tmpfs_is_refused():\n        \"\"\"\u00a712.9: the key file's filesystem is an allow-list of ext4, XFS and btrfs without copy-on-write;\n        \"Anything else (\u2026 tmpfs \u2026) is refused. Before KEYS exists, the key directory's attribute decides\".\"\"\"\n        data, keys = H.scratch_dir(\"data\"), _tmpfs_dir()\n        try:\n>           with pytest.raises(sdk.PlatformUnsafe):\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE           Failed: DID NOT RAISE PlatformUnsafe\n\n/room/work/tests/test_platform.py:40: Failed",
+   "source": "\"\"\"\u00a712.9 platform checks, \u00a76.3 artefact checks at create_collection, \u00a714.1 key-folder files.\"\"\"\n\nfrom __future__ import annotations\n\nimport os\nimport shutil\nimport stat\nimport tempfile\n\nimport pytest\n\nimport _sever_helpers as H\nfrom conftest import World, sdk\n\nTMPFS = \"/dev/shm\" if os.path.isdir(\"/dev/shm\") else \"/tmp\"  # both tmpfs here (the task says /tmp is)\n\n\ndef _tmpfs_dir():\n    return tempfile.mkdtemp(prefix=\"sv-unsafe-\", dir=TMPFS)\n\n\n@pytest.mark.req(\"SR-12.9-1\", \"SR-17-6\")\ndef test_data_directory_on_tmpfs_is_refused():\n    \"\"\"\u00a712.9: \"The data directory is on ext4 or XFS\"; \u00a717: PlatformUnsafe \"A \u00a712.8 or \u00a712.9 check\n    fails\".\"\"\"\n    data, keys = _tmpfs_dir(), H.scratch_dir(\"keys\")\n    try:\n        with pytest.raises(sdk.PlatformUnsafe):\n            sdk.Database.open(data, keys, d=16)\n    finally:\n        shutil.rmtree(data, ignore_errors=True)\n\n\n@pytest.mark.req(\"SR-12.9-3\", \"SR-17-6\")\ndef test_key_directory_on_tmpfs_is_refused():\n    \"\"\"\u00a712.9: the key file's filesystem is an allow-list of ext4, XFS and btrfs without copy-on-write;\n    \"Anything else (\u2026 tmpfs \u2026) is refused. Before KEYS exists, the key directory's attribute decides\".\"\"\"\n    data, keys = H.scratch_dir(\"data\"), _tmpfs_dir()\n    try:\n        with pytest.raises(sdk.PlatformUnsafe):\n            sdk.Database.open(data, keys, d=16)\n    finally:\n        shutil.rmtree(keys, ignore_errors=True)\n\n\n@pytest.mark.req(\"SR-12.9-4\")\ndef test_unsafe_filesystem_override_allows_tmpfs(art, rng):\n    \"\"\"\u00a712.9: \"Both filesystem checks are overridden only by platform.allow_unsafe_fs = true, which is\n    for development only\".\"\"\"\n    data, keys = _tmpfs_dir(), _tmpfs_dir()\n    try:\n        db = sdk.Database.open(data, keys, d=16, allow_unsafe_fs=True)\n        try:\n            cid = db.create_collection(H.inputs(H.SMALL))\n            user = sdk.UserKey.generate()\n            req = sdk.prepare_insert(cid, \"dev\", H.as_list(H.in_distribution_vector(art, 0, rng)), user)\n            assert db.insert(cid, req).database_lsn == 0\n        finally:\n            db.close()\n    finally:\n        shutil.rmtree(data, ignore_errors=True)\n        shutil.rmtree(keys, ignore_errors=True)\n\n\nHOLDER = \"\"\"\nimport sys, time\nimport sever_db_p3 as sdk\ndb = sdk.Database.open(sys.argv[1], sys.argv[2], d=16)\nprint(\"open\", flush=True)\nsys.stdin.readline()\ndb.close()\n\"\"\"\n\n\n@pytest.mark.req(\"SR-12.9-2\", \"SR-17-6\")\ndef test_engine_lock_is_exclusive_across_processes():\n    \"\"\"\u00a712.9: \"ENGINE.lock is taken exclusively (one process per data directory)\"; a failed \u00a712.9\n    check is PlatformUnsafe (\u00a717).\"\"\"\n    data, keys = H.scratch_dir(\"data\"), H.scratch_dir(\"keys\")\n    child = H.python_child(HOLDER.replace(\"sever_db_p3\", sdk.__name__), data, keys)\n    try:\n        line = child.stdout.readline()\n        assert line.strip() == \"open\", child.stderr.read()\n        with pytest.raises(sdk.PlatformUnsafe):\n            sdk.Database.open(data, keys, d=16)\n        # The command-line tool must be refused too (it cannot print a success line for this folder).\n        r = H.run_cli(\"anchors\", \"--data\", data, \"--keys\", keys, \"--d\", \"16\", \"--out\",\n                      os.path.join(H.scratch_dir(\"out\"), \"a.json\"))\n        assert r.returncode != 0\n    finally:\n        child.kill()\n        child.wait()\n    # Once the holder is gone, the lock is free again.\n    db = sdk.Database.open(data, keys, d=16)\n    db.close()\n\n\n@pytest.mark.req(\"SR-12.9-2\")\ndef test_lock_is_released_by_close():\n    \"\"\"\u00a712.9 / SDK: ENGINE.lock \"is held until close\"; a closed database can be reopened.\"\"\"\n    w = World(16)\n    w.db.close()\n    db = sdk.Database.open(w.data, w.keys, d=16)\n    db.close()\n\n\n@pytest.mark.req(\"SR-14.1-1\")\ndef test_secrets_file_is_private(world):\n    \"\"\"\u00a714.1: \"SECRETS  k_scramble and operator signing keys by epoch (mode 0600)\"; \"WITNESSES \u2026 mode\n    0600\".\"\"\"\n    for name in (\"SECRETS\", \"WITNESSES\"):\n        path = os.path.join(world.keys, name)\n        assert os.path.exists(path), name\n        assert stat.S_IMODE(os.stat(path).st_mode) == 0o600, name\n\n\n@pytest.mark.req(\"SR-6.3-2\", \"SR-6.3-3\")\ndef test_artefact_of_another_dimension_is_refused(world):\n    \"\"\"\u00a76.3: \"create_collection MUST verify sha256_artefact, d, and that P has finite entries; a failed\n    check is rejected with IntegrityViolation\".\"\"\"\n    with pytest.raises(sdk.IntegrityViolation):\n        world.db.create_collection(H.inputs(H.LARGE))  # d = 384 into a d = 16 database\n    assert world.db.collections() == []\n\n\n@pytest.mark.req(\"SR-6.3-2\", \"SR-6.3-3\")\n@pytest.mark.parametrize(\"offset\", [12, 100, -40, -1])\ndef test_corrupted_artefact_is_refused(world, offset):\n    \"\"\"\u00a76.3: create_collection verifies \"sha256_artefact\" (SHA-256 of every preceding byte).\"\"\"\n    raw = bytearray(open(H.inputs(H.SMALL), \"rb\").read())\n    raw[offset] ^= 0x01  # a header, centroid, precision or hash byte: the stored hash no longer matches\n    path = os.path.join(H.scratch_dir(\"art\"), \"bad.svp\")\n    with open(path, \"wb\") as fh:\n        fh.write(raw)\n    with pytest.raises(sdk.IntegrityViolation):\n        world.db.create_collection(path)\n    assert world.db.collections() == []\n\n\n@pytest.mark.req(\"SR-3.1-1\", \"SR-5.1-1\")\ndef test_create_collection_returns_a_16_byte_id(world):\n    \"\"\"\u00a73.1: \"A collection is identified by a collection_id: 16 random bytes generated from the OS\n    CSPRNG at creation\"; the SDK returns it as 32 hex characters.\"\"\"\n    a, b = world.collection(), world.collection()\n    for cid in (a, b):\n        assert len(bytes.fromhex(cid)) == 16\n    assert a != b\n    assert sorted(world.db.collections()) == sorted([a, b])\n    # Every collection starts with its four frozen groups, empty, in label order (\u00a75.1, \u00a75.2).\n    assert world.db.group_sizes(a) == [(H.frozen_id(i), 0) for i in range(4)]\n",
+   "id": "F-2"
+  }
+ ],
+ "sessions": [
+  {
+   "role": "tester",
+   "name": "1-tester",
+   "model": "opus",
+   "rc": 0,
+   "cost_usd": 5.896756600000003,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T141335Z-p3-3f2aef5b/logs/1-tester.json"
+  },
+  {
+   "role": "triage",
+   "name": "4-triage",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.1144953,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T141335Z-p3-3f2aef5b/logs/4-triage.json"
+  },
+  {
+   "role": "oracle",
+   "name": "8-oracle",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.2686833,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261020T141335Z-p3-3f2aef5b/logs/8-oracle.json"
+  }
+ ]
+}

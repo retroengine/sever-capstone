@@ -1,0 +1,4 @@
+# step p4-quant-recall, 2026-10-30T23:05:21+00:00, commit 7c445b589fe3bb46765b158517fb4ccf66d4e88c
+# cmd: uv run --no-sync python -m sever_testkit_p4.gates p4-quant-recall
+{"measure": "P1-T7 (overview T-6, first size)", "data": "nq-1m", "queries": 3452, "k": 10, "recall_at_10": 1.0, "target_pre_registered": 0.999, "met": true, "seconds": 917.4, "method": "float64 brute force, |q|^2 - 2 q.x + |x|^2; ties by row index; dequantised = round_half_even(x*2^24)/2^24"}
+rc=0

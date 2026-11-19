@@ -1,0 +1,87 @@
+{
+  "all_or_nothing": true,
+  "artefact_sha256": "f01f4165ebda056dfc03c93f4162a6b2ffec15020936e97e64172d92fef20a8c",
+  "cohort": {
+    "groups": [
+      "frozen-0000",
+      "frozen-0001",
+      "frozen-0003",
+      "holding",
+      "spawn-3b1aa00dc40fa816",
+      "spawn-ebfca67020772fdf"
+    ],
+    "records": 6,
+    "title_chars": 9
+  },
+  "commit_point_respected": true,
+  "data": "synthetic",
+  "demo": "sever-demo-p2 durable",
+  "loaded_stats": {
+    "N": 238,
+    "holding": 2,
+    "k": 6,
+    "spawned": 2
+  },
+  "note": "plaintext database (DB-48): no confidentiality claim",
+  "records": 240,
+  "seconds": 1,
+  "seed": 42,
+  "sigkill": [
+    {
+      "child": "PAUSED at WalWriting",
+      "left": 6,
+      "of": 6,
+      "paused_at": "wal",
+      "survivors_check": {
+        "failed": [],
+        "groups_checked": 5
+      },
+      "verdict": "none deleted"
+    },
+    {
+      "child": "PAUSED at Committed",
+      "left": 0,
+      "of": 6,
+      "paused_at": "committed",
+      "survivors_check": {
+        "failed": [],
+        "groups_checked": 5
+      },
+      "verdict": "all deleted"
+    }
+  ],
+  "simulated": [
+    {
+      "crash": "before the commit point",
+      "left": 6,
+      "of": 6,
+      "stats_after": {
+        "N": 238,
+        "holding": 2,
+        "k": 6,
+        "spawned": 2
+      },
+      "survivors_check": {
+        "failed": [],
+        "groups_checked": 5
+      },
+      "verdict": "none deleted"
+    },
+    {
+      "crash": "after the commit point",
+      "left": 0,
+      "of": 6,
+      "stats_after": {
+        "N": 233,
+        "holding": 1,
+        "k": 6,
+        "spawned": 2
+      },
+      "survivors_check": {
+        "failed": [],
+        "groups_checked": 5
+      },
+      "verdict": "all deleted"
+    }
+  ]
+}

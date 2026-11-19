@@ -1,0 +1,4 @@
+# step p4-coverage, 2026-10-31T11:33:16+00:00, commit 96f9370a52c1cca5d61915259c77590c51df00e2
+# cmd: uv run --no-sync python -m sever_testkit_p4.gates p4-coverage
+{"sever-keys": 0.9813, "sever-seal": 0.9615, "sever-erasure": 0.9571, "outcome": "PASS"}
+rc=0

@@ -1,0 +1,4 @@
+# step p4-fuzz, 2026-10-30T05:01:19+00:00, commit 7c445b589fe3bb46765b158517fb4ccf66d4e88c
+# cmd: uv run --no-sync python -m sever_testkit_p4.gates p4-fuzz --runs 100000000
+{"key_slot": "Done 100000000 runs in 712 second(s)", "wrapped_value": "Done 100000000 runs in 937 second(s)", "bucket_block": "Done 100000000 runs in 811 second(s)", "envelope": "Done 100000000 runs in 2265 second(s)", "scan_targets": "Done 100000000 runs in 5465 second(s)", "outcome": "PASS"}
+rc=0

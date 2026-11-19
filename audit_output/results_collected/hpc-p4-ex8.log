@@ -1,0 +1,2 @@
+# step p4-ex8, 2026-10-31T12:48:19+00:00, commit 96f9370a52c1cca5d61915259c77590c51df00e2
+# cmd: uv run --no-sync python -m sever_testkit_p4.gates p4-ex8 --seed 42

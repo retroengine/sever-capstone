@@ -1,0 +1,61 @@
+{
+ "measure": "P2-T11",
+ "data": "nq-100k",
+ "seed": 42,
+ "trace_sha256": "4316193b4f20446663989f0529a27cc4f29ae72d9fb068fddefa2ac236df065b",
+ "rc": 0,
+ "found": {
+  "config": {
+   "checkpoint_every_wal_bytes": 1073741824,
+   "wal_segment_bytes": 67108864
+  },
+  "final_stats": {
+   "N": 9960,
+   "holding": 0,
+   "k": 317,
+   "spawned": 189
+  },
+  "measure": "P2-T11",
+  "memory_after_load": {
+   "VmHWM_kb": 854276,
+   "VmRSS_kb": 602772
+  },
+  "memory_end": {
+   "VmHWM_kb": 1093044,
+   "VmRSS_kb": 765920
+  },
+  "per_kind": {
+   "delete_one": {
+    "bytes_per_op": 14156.824960594915,
+    "fsyncs_per_op": 1.0008487248918887,
+    "ms_per_op": 1.6106494235541307,
+    "ops": 24743
+   },
+   "delete_user_many": {
+    "bytes_per_op": 24608.149310730252,
+    "fsyncs_per_op": 1.0012574515648287,
+    "ms_per_op": 1.6696851796758612,
+    "ops": 21472
+   },
+   "insert": {
+    "bytes_per_op": 8062.09474,
+    "fsyncs_per_op": 1.00036,
+    "ms_per_op": 1.501273944860034,
+    "ops": 100000
+   }
+  },
+  "recovery_seconds": {
+   "checkpoint_only": 0.051788124,
+   "wal_only": 0.847202078
+  },
+  "run_seconds": 227.322400586,
+  "storage_checkpoint": {
+   "bytes": 23363807,
+   "fsyncs": 15,
+   "seconds": 0.135542294
+  },
+  "trace": "/home/saiki/sever-db/traces/p1-nq-100k-seed42.jsonl"
+ },
+ "stderr_tail": [],
+ "outcome": "RECORDED"
+}

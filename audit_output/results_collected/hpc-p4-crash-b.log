@@ -1,0 +1,5 @@
+# step p4-crash-b, 2026-10-30T17:51:47+00:00, commit 7c445b589fe3bb46765b158517fb4ccf66d4e88c
+# cmd: uv run --no-sync python -m sever_testkit_p4.gates p4-crash --data nq-10k --seed 2024 --seed 9999 --jobs 2 --crash-from 18700 --limit-ops 19000
+{"seed": 2024, "outcome": "FAIL"}
+{"seed": 9999, "outcome": "FAIL"}
+rc=1

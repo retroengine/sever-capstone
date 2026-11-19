@@ -1,0 +1,21 @@
+sever delete_call_p50_us n 5 recomputed mean 75332.9668 sample sd 1176.8041457679765 stated mean 75332.96680000001 MATCH
+sever delete_call_p99_us n 5 recomputed mean 428865.7772 sample sd 215277.68755202086 stated mean 428865.7772 MATCH
+sever insert_p50_us n 5 recomputed mean 18644.284 sample sd 1832.532707969902 stated mean 18644.283999999996 MATCH
+sever delete_bytes_per_record n 5 recomputed mean 38874.36633625893 sample sd 23.74846089925089 stated mean 38874.36633625893 MATCH
+sever delete_fsyncs_per_record n 5 recomputed mean 15.941008878577318 sample sd 0.01782977733397866 stated mean 15.941008878577318 MATCH
+sever insert_bytes_per_op n 5 recomputed mean 8574.28548 sample sd 3.301808733406633 stated mean 8574.28548 MATCH
+sever search p50 per seed [137.627, 150.284, 127.607, 124.577, 130.011]
+noerase delete_call_p50_us n 5 recomputed mean 65528.4424 sample sd 905.9535411249275 stated mean 65528.442399999985 MATCH
+noerase delete_call_p99_us n 5 recomputed mean 423094.4674 sample sd 160837.96703675282 stated mean 423094.46739999996 MATCH
+noerase insert_p50_us n 5 recomputed mean 17802.0162 sample sd 395.1913797474583 stated mean 17802.0162 MATCH
+noerase delete_bytes_per_record n 5 recomputed mean 27122.137467741366 sample sd 23.943436268214878 stated mean 27122.137467741366 MATCH
+noerase delete_fsyncs_per_record n 5 recomputed mean 13.08427156638902 sample sd 0.016672822156114677 stated mean 13.08427156638902 MATCH
+noerase insert_bytes_per_op n 5 recomputed mean 8531.79288 sample sd 3.3018087334068613 stated mean 8531.792879999999 MATCH
+noerase search p50 per seed [118.128, 131.359, 122.171, 142.526, 74.136]
+softdelete delete_call_p50_us n 5 recomputed mean 1416.5218 sample sd 128.95691844255583 stated mean 1416.5218 MATCH
+softdelete delete_call_p99_us n 5 recomputed mean 25247.4966 sample sd 18601.35900421146 stated mean 25247.496600000002 MATCH
+softdelete insert_p50_us n 5 recomputed mean 1881.3142 sample sd 76.11327824827931 stated mean 1881.3142 MATCH
+softdelete delete_bytes_per_record n 5 recomputed mean 9.954381363514395 sample sd 0.0030216766111223507 stated mean 9.954381363514395 MATCH
+softdelete delete_fsyncs_per_record n 5 recomputed mean 0.8722402860595243 sample sd 0.00111146479137794 stated mean 0.8722402860595242 MATCH
+softdelete insert_bytes_per_op n 5 recomputed mean 7535.11388 sample sd 3.239686273700007 stated mean 7535.11388 MATCH
+softdelete search p50 per seed [1392.243, 1220.014, 1554.086, 1495.524, 1514.744]

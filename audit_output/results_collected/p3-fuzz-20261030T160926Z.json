@@ -1,0 +1,121 @@
+{
+ "gate": "P3-T10 (0 crashes)",
+ "runs_per_target": 100000000,
+ "targets": {
+  "fuzz-p3:certificate": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 865 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"\\377\\377\\377\\377\" # Uses: 1759879",
+    "\"\\010\\000\\000\\000\" # Uses: 1551591",
+    "\"\\361\\000\\000\\000\\000\\000\\000\\000\" # Uses: 949510",
+    "\"\\377\\377\" # Uses: 635521",
+    "\"\\027\\004\\000\\000\\000\\000\\000\\000\" # Uses: 112920",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 865 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     115606",
+    "stat::new_units_added:          131",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              418"
+   ]
+  },
+  "fuzz-p3:log_record": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 926 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"\\321\\000\\000\\000\\000\\000\\000\\000\" # Uses: 1453292",
+    "\"frozen-\" # Uses: 1455429",
+    "\"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" # Uses: 1451561",
+    "\"2222222\" # Uses: 1440749",
+    "\"\\000[\" # Uses: 1427317",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 926 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     107991",
+    "stat::new_units_added:          119",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              495"
+   ]
+  },
+  "fuzz-p3:witnessed": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 919 second(s)",
+   "crashed": false,
+   "tail": [
+    "#16569556\tNEW    cov: 81 ft: 201 corp: 18/16Kb lim: 4096 exec/s: 95777 rss: 458Mb L: 3429/3429 MS: 5 ChangeASCIIInt-CrossOver-ShuffleBytes-CopyPart-CrossOver-",
+    "#16777216\tpulse  cov: 81 ft: 201 corp: 18/16Kb lim: 4096 exec/s: 95869 rss: 458Mb",
+    "#33554432\tpulse  cov: 81 ft: 201 corp: 18/16Kb lim: 4096 exec/s: 89958 rss: 458Mb",
+    "#36334324\tREDUCE cov: 81 ft: 201 corp: 18/16341b lim: 4096 exec/s: 90383 rss: 458Mb L: 1014/3429 MS: 3 CrossOver-InsertRepeatedBytes-EraseBytes-",
+    "#67108864\tpulse  cov: 81 ft: 201 corp: 18/16341b lim: 4096 exec/s: 95460 rss: 458Mb",
+    "#100000000\tDONE   cov: 81 ft: 201 corp: 18/16341b lim: 4096 exec/s: 108813 rss: 458Mb",
+    "Done 100000000 runs in 919 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     108813",
+    "stat::new_units_added:          4",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              458"
+   ]
+  },
+  "fuzz-p3:placement": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 590 second(s)",
+   "crashed": false,
+   "tail": [
+    "#10166185\tNEW    cov: 266 ft: 383 corp: 125/7937b lim: 4096 exec/s: 149502 rss: 461Mb L: 64/64 MS: 3 ShuffleBytes-ChangeByte-CopyPart-",
+    "#16777216\tpulse  cov: 266 ft: 383 corp: 125/7937b lim: 4096 exec/s: 148470 rss: 461Mb",
+    "#33554432\tpulse  cov: 266 ft: 383 corp: 125/7937b lim: 4096 exec/s: 151830 rss: 462Mb",
+    "#67108864\tpulse  cov: 266 ft: 383 corp: 125/7937b lim: 4096 exec/s: 164482 rss: 463Mb",
+    "#80406672\tNEW    cov: 266 ft: 384 corp: 126/8001b lim: 4096 exec/s: 169277 rss: 463Mb L: 64/64 MS: 2 ShuffleBytes-ShuffleBytes-",
+    "#100000000\tDONE   cov: 266 ft: 384 corp: 126/8001b lim: 4096 exec/s: 169491 rss: 463Mb",
+    "Done 100000000 runs in 590 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     169491",
+    "stat::new_units_added:          5",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              463"
+   ]
+  },
+  "verifier/fuzz:verify": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 4960 second(s)",
+   "crashed": false,
+   "tail": [
+    "#45160266\tNEW    cov: 1282 ft: 2741 corp: 78/92Kb lim: 4096 exec/s: 26611 rss: 444Mb L: 1805/1805 MS: 1 CrossOver-",
+    "#47094138\tNEW    cov: 1282 ft: 2742 corp: 79/94Kb lim: 4096 exec/s: 26076 rss: 496Mb L: 1805/1805 MS: 2 ChangeASCIIInt-ChangeBinInt-",
+    "#67108864\tpulse  cov: 1282 ft: 2742 corp: 79/94Kb lim: 4096 exec/s: 22833 rss: 496Mb",
+    "#69242766\tNEW    cov: 1283 ft: 2743 corp: 80/96Kb lim: 4096 exec/s: 22657 rss: 496Mb L: 1742/1805 MS: 3 ChangeBinInt-ChangeBinInt-InsertByte-",
+    "#94147449\tREDUCE cov: 1283 ft: 2743 corp: 80/96Kb lim: 4096 exec/s: 20440 rss: 503Mb L: 1695/1805 MS: 3 ChangeASCIIInt-ChangeASCIIInt-EraseBytes-",
+    "#100000000\tDONE   cov: 1283 ft: 2743 corp: 80/96Kb lim: 4096 exec/s: 20161 rss: 503Mb",
+    "Done 100000000 runs in 4960 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     20161",
+    "stat::new_units_added:          23",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              503"
+   ]
+  },
+  "audit/fuzz:export": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 40084 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"\\261Y\\030\\266\\3244\\346\\271\\002\\234\\301\\252g<\\315\\3772\\244\\223\\320\\223\\177lM}L\\020-\\323<\\265'\" # Uses: 14070",
+    "\"\\271\\201\\253\\201C_\\014\\200\\025\\352\\312\\237\\015\\245\\326a\\305s'\\013\\376\\330n\\242\\356\\023\\205\\023n\\332]\\022\" # Uses: 13487",
+    "\"|\\014\\000\\000\\000\\000\\000\\000\" # Uses: 13472",
+    "\"\\244\\004\\000\\000\\000\\000\\000\\000\" # Uses: 10489",
+    "\"flosh\" # Uses: 9330",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 40084 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     2494",
+    "stat::new_units_added:          14971",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              557"
+   ]
+  }
+ },
+ "outcome": "PASS"
+}

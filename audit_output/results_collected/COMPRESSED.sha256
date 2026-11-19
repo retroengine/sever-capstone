@@ -1,0 +1,11 @@
+# sha256 of each ORIGINAL file; check with: xz -dc FILE.xz | sha256sum (31 Oct 2026)
+3d7c647ff21dbb8ff75e0a5be6df8dc09bfa0322170989e6e651e1da41ab5590  p3-attacks-nq-10k-seed123.jsonl
+e4e358e5b825e2d88a37f6fce5026c624736312e22c7bfd8ed61ce8c0f0906ab  p3-attacks-nq-10k-seed2024.jsonl
+02e48597fe057c3f7fd0a6ec0d8833065e2078e0afe0ce62f82eb3fc91ad1e92  p3-attacks-nq-10k-seed42.jsonl
+be1825494ba09539da06764439fb3f2edc8dae1426ecab2a4e76ac10294de4fd  p3-attacks-nq-10k-seed777.jsonl
+f28cbf158255449582bfd990555c16521cd5cf19857921469e9a649d19fc15b4  p3-attacks-nq-10k-seed9999.jsonl
+1ca961627d8df2b443cd9185dfc773e10236895b597b3846f2f82d00c9c0f69f  p4-attacks-nq-10k-seed123.jsonl
+a9582f09eef50e5d79c09172e51c7fc25441e1609234287c0dfade2d178cfd76  p4-attacks-nq-10k-seed2024.jsonl
+c04cbb51288b46aba84131effdb43f1045971b04689c23a2ec7eb4d20b452aed  p4-attacks-nq-10k-seed42.jsonl
+6d53c2f1d79dc65d12b5829ebc291fccaa991b0d650bbb68553b0cf8ceff72ea  p4-attacks-nq-10k-seed777.jsonl
+e1cbfcf816bf14eb48c59d701194a766b0be1f1fd71faa24230e9776005ee73b  p4-attacks-nq-10k-seed9999.jsonl

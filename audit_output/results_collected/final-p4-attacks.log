@@ -1,0 +1,8 @@
+# step p4-attacks, 2026-11-01T08:57:48Z, commit 94d0b243fe21ade2de477f857c3d5a634c556eab
+# cmd: uv run --no-sync python -m sever_testkit_p4.gates p4-attacks --data nq-10k --all-seeds --jobs 2
+{"seed": 42, "outcome": "PASS"}
+{"seed": 123, "outcome": "PASS"}
+{"seed": 2024, "outcome": "PASS"}
+{"seed": 777, "outcome": "PASS"}
+{"seed": 9999, "outcome": "PASS"}
+rc=0

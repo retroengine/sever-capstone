@@ -1,0 +1,51 @@
+STEP fmt: PASS
+STEP clippy: PASS
+STEP clippy-sabotage: PASS
+STEP rust-tests: PASS
+STEP verifier-fmt: PASS
+STEP verifier-clippy: PASS
+STEP verifier-tests: PASS
+STEP audit-fmt: PASS
+STEP audit-clippy: PASS
+STEP audit-tests: PASS
+STEP ruff: PASS
+STEP ruff-format: PASS
+STEP mypy: PASS
+STEP sdk-native: PASS
+STEP sdk-native-p3: PASS
+STEP sdk-native-p4: PASS
+STEP python-tests: PASS
+STEP spec-trace: PASS
+STEP spec-trace-p2: PASS
+STEP oracle-check-p2: PASS
+STEP proofs-check-p2: PASS
+STEP spec-trace-p3: PASS
+STEP oracle-check-p3: PASS
+STEP proofs-check-p3: PASS
+STEP registers-p3: PASS
+STEP rfc-vectors-p3: PASS
+STEP refmodel-golden-p3: PASS
+STEP spec-trace-p4: PASS
+STEP oracle-check-p4: PASS
+STEP proofs-check-p4: PASS
+STEP registers-p4: PASS
+STEP rfc-vectors-p4: PASS
+STEP crypto-deps: PASS
+STEP dalek-pinned: PASS
+STEP freeze-guard: PASS
+STEP fair-check: PASS
+STEP rust-ignored: PASS
+STEP python-slow: PASS
+STEP cleanroom-kept: FAIL (log: /tmp/sever-ci-cleanroom-kept.log)
+ImportError while loading conftest '/home/saiki/sever-db/tests/cleanroom/p3/20261101T134211Z-p3-bb4bac5e/tests/conftest.py'.
+tests/cleanroom/p3/20261101T134211Z-p3-bb4bac5e/tests/conftest.py:15: in <module>
+    import helpers as h  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^
+tests/cleanroom/p3/20261101T134211Z-p3-bb4bac5e/tests/helpers.py:16: in <module>
+    INPUTS = os.environ["SEVER_INPUTS"]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'SEVER_INPUTS'
+STEP sabotage: PASS
+STEP msrv: PASS
+STEP deny: PASS
+STEP docs: PASS

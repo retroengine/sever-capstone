@@ -1,0 +1,59 @@
+# step p4-ex6, 2026-10-30T05:01:19+00:00, commit 7c445b589fe3bb46765b158517fb4ccf66d4e88c
+# cmd: uv run --no-sync python -m sever_testkit_p4.gates p4-ex6 --data nq-10k --all-seeds --locked-memory
+{"seed": 42, "msg": "rung 0: recall10 0.0997"}
+{"seed": 42, "msg": "rung 1: recall10 0.0985"}
+{"seed": 42, "msg": "rung 2: recall10 0.0954"}
+{"seed": 42, "msg": "rung 3: recall10 0.0894"}
+{"seed": 42, "msg": "rung 4: recall10 0.0758"}
+{"seed": 42, "msg": "rung 5: recall10 0.0517"}
+{"seed": 42, "msg": "rung 0: recall10 0.9253"}
+{"seed": 42, "msg": "rung 1: recall10 0.9229"}
+{"seed": 42, "msg": "rung 2: recall10 0.9183"}
+{"seed": 42, "msg": "rung 3: recall10 0.9054"}
+{"seed": 42, "msg": "rung 4: recall10 0.8895"}
+{"seed": 42, "msg": "rung 5: recall10 0.8590"}
+{"seed": 42, "msg": "faiss rung 0: soft 0.9601"}
+{"seed": 42, "msg": "faiss rung 1: soft 0.9587"}
+{"seed": 42, "msg": "faiss rung 2: soft 0.9557"}
+WARNING clustering 5019 points to 171 centroids: please provide at least 6669 training points
+{"seed": 42, "msg": "faiss rung 3: soft 0.9490"}
+WARNING clustering 2512 points to 171 centroids: please provide at least 6669 training points
+{"seed": 42, "msg": "faiss rung 4: soft 0.9350"}
+WARNING clustering 1010 points to 171 centroids: please provide at least 6669 training points
+{"seed": 42, "msg": "faiss rung 5: soft 0.9014"}
+{"seed": 42, "msg": "sweep 0.25: recall10 0.1143"}
+{"seed": 42, "msg": "sweep 0.5: recall10 0.1219"}
+{"seed": 42, "msg": "sweep 0.75: recall10 0.1169"}
+{"seed": 123, "msg": "rung 0: recall10 0.0989"}
+{"seed": 123, "msg": "rung 1: recall10 0.0966"}
+{"seed": 123, "msg": "rung 2: recall10 0.0947"}
+{"seed": 123, "msg": "rung 3: recall10 0.0889"}
+{"seed": 123, "msg": "rung 4: recall10 0.0733"}
+{"seed": 123, "msg": "rung 5: recall10 0.0569"}
+{"seed": 123, "msg": "rung 0: recall10 0.9337"}
+{"seed": 123, "msg": "rung 1: recall10 0.9310"}
+{"seed": 123, "msg": "rung 2: recall10 0.9297"}
+{"seed": 123, "msg": "rung 3: recall10 0.9215"}
+{"seed": 123, "msg": "rung 4: recall10 0.9068"}
+{"seed": 123, "msg": "rung 5: recall10 0.8810"}
+Traceback (most recent call last):
+  File "<frozen runpy>", line 203, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/saiki/sever-db/python/sever_testkit_p4/gates.py", line 692, in <module>
+    raise SystemExit(main(sys.argv[1:]))
+                     ~~~~^^^^^^^^^^^^^^
+  File "/home/saiki/sever-db/python/sever_testkit_p4/gates.py", line 683, in main
+    return p4_ex6(root, args.data, seeds, not args.locked_memory, not args.no_sweep)
+  File "/home/saiki/sever-db/python/sever_testkit_p4/gates.py", line 569, in p4_ex6
+    per_seed = [ex6.run_seed(root, data, s, unsafe_memory, with_sweep=sweep) for s in seeds]
+                ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/saiki/sever-db/python/sever_experiments/ex6.py", line 340, in run_seed
+    arms.update(faiss_arms(inp, seed, nlist, log))
+                ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/saiki/sever-db/python/sever_experiments/ex6.py", line 259, in faiss_arms
+    soft = _ivf(x, rows.astype(np.int64), nlist, seed)
+  File "/home/saiki/sever-db/python/sever_experiments/ex6.py", line 235, in _ivf
+    index.cp.seed = sub_seed(seed, "kmeans") % 2**32
+    ^^^^^^^^^^^^^
+OverflowError: in method 'ClusteringParameters_seed_set', argument 2 of type 'int'
+rc=1

@@ -1,0 +1,255 @@
+{
+  "format": "sever-demo-idea-1",
+  "data": "nq-10k",
+  "seed": 42,
+  "d": 384,
+  "artefact_sha256": "86f5be649ff358376a9a3cd71cc0af3649949ccb51247ea0374e48756b6cce94",
+  "spawn_target": 200,
+  "stream_order": "corpus order",
+  "build": {
+    "records": 10000,
+    "accepted": 10000,
+    "rejected": {},
+    "frozen": 128,
+    "spawned": 43,
+    "big_n": 9821,
+    "k": 171,
+    "holding": 179,
+    "out_of_distribution": 8779,
+    "ood_rate": 0.8779,
+    "seconds": 1.43229199
+  },
+  "target": {
+    "cohort": "Culture of Australia",
+    "record_ids": [
+      "doc56064",
+      "doc56126",
+      "doc56151",
+      "doc56152"
+    ],
+    "groups": [
+      "spawn-5c926341a140d9ed",
+      "spawn-804d3addb82bfaec",
+      "spawn-b19d5a5b559757ec",
+      "spawn-c82f6ca5b190f907"
+    ],
+    "rule": "most frozen or spawned groups touched, then most records, then first title by bytes"
+  },
+  "groups": [
+    {
+      "group": "spawn-5c926341a140d9ed",
+      "n_before": 200,
+      "n_after": 199,
+      "s_sha_before": "6f740d81be6559a0c4c9c80db1769ee4968e9cb9990f12537bc8b989b6ff23c8",
+      "s_sha_after": "2f38eacad51878c03692d57cc69742836fd60cefed6c847db66249137126943b",
+      "blob_sha_before": "c9d0779be2b399bd2e635a27875a5e4d9da8e47d7c3390c02fa2763af85eaaf0",
+      "blob_sha_after": "2a94676bcb92b33901d63abbb5bf2c39619ed9ff6856fb1cd737f4e31d2ef1d7",
+      "survivors_blob_sha": "2a94676bcb92b33901d63abbb5bf2c39619ed9ff6856fb1cd737f4e31d2ef1d7",
+      "exact": true
+    },
+    {
+      "group": "spawn-804d3addb82bfaec",
+      "n_before": 200,
+      "n_after": 199,
+      "s_sha_before": "e4760c5b6b0540280635bfe225fd02459deec899406a727d0d83914842348699",
+      "s_sha_after": "dd7caaeb93e30917f7fbe0e0cb2c5be6b4356aada47d459a1237c9fef637ddfb",
+      "blob_sha_before": "cfdc114d9e8425ad97eec30605e97b06d3498c449ce8e6ba29a81c306741e614",
+      "blob_sha_after": "468f2022fd91760c0b407863fdda48204319730c0a2e2fc4db5e5dbca4afe151",
+      "survivors_blob_sha": "468f2022fd91760c0b407863fdda48204319730c0a2e2fc4db5e5dbca4afe151",
+      "exact": true
+    },
+    {
+      "group": "spawn-b19d5a5b559757ec",
+      "n_before": 200,
+      "n_after": 199,
+      "s_sha_before": "384ec4a61d373d38f9f7563a681ad1338951c3655e259a5f3311286a02cd8eb9",
+      "s_sha_after": "d4897393fa83ab8382cd56d1542764ea2d6bd5853d3fcd95a7c8c0a37ae23e1b",
+      "blob_sha_before": "5d43d486eafdf508c37a347ed3bbcfcf3105501482b732ed055a225606d1429b",
+      "blob_sha_after": "98f29b8ac53832086b8bd693854d983966546e0865dfd059942d2b1a6465795d",
+      "survivors_blob_sha": "98f29b8ac53832086b8bd693854d983966546e0865dfd059942d2b1a6465795d",
+      "exact": true
+    },
+    {
+      "group": "spawn-c82f6ca5b190f907",
+      "n_before": 200,
+      "n_after": 199,
+      "s_sha_before": "289a674d5c94a70a964119da4c6748732a19ee87708202273dd7732d68cdfdf0",
+      "s_sha_after": "ff90442c36b9d255c5130532826e23bb82c51165da86409bb1f0df0ea67e062c",
+      "blob_sha_before": "adbe86dac4a6063460cd0ee2322c56d70011943c7b267270e4626c735f79d727",
+      "blob_sha_after": "7790d82d419d2e9abf7f956aeeded4380e62422a3ec6f05945f68ca61815cdff",
+      "survivors_blob_sha": "7790d82d419d2e9abf7f956aeeded4380e62422a3ec6f05945f68ca61815cdff",
+      "exact": true
+    }
+  ],
+  "holding": {
+    "n_before": 179,
+    "n_after": 179,
+    "cohort_members": 0
+  },
+  "untouched": {
+    "groups": 167,
+    "unchanged": 167
+  },
+  "big_n": [
+    9821,
+    9817
+  ],
+  "outcomes": [
+    "deleted from spawn-5c926341a140d9ed",
+    "deleted from spawn-c82f6ca5b190f907",
+    "deleted from spawn-804d3addb82bfaec",
+    "deleted from spawn-b19d5a5b559757ec"
+  ],
+  "second_delete": {
+    "all_already_absent": true,
+    "state_unchanged": true
+  },
+  "ghost": {
+    "per_group": [
+      {
+        "group": "spawn-5c926341a140d9ed",
+        "soft_delete_distance": 0.005035506396513171,
+        "float_mean_max_abs_diff": 9.313225746154785e-9,
+        "float_mean_components_differing": 342,
+        "sever_max_abs_diff": 0
+      },
+      {
+        "group": "spawn-804d3addb82bfaec",
+        "soft_delete_distance": 0.0049833528371023405,
+        "float_mean_max_abs_diff": 1.862645149230957e-8,
+        "float_mean_components_differing": 350,
+        "sever_max_abs_diff": 0
+      },
+      {
+        "group": "spawn-b19d5a5b559757ec",
+        "soft_delete_distance": 0.004940917498821908,
+        "float_mean_max_abs_diff": 9.313225746154785e-9,
+        "float_mean_components_differing": 329,
+        "sever_max_abs_diff": 0
+      },
+      {
+        "group": "spawn-c82f6ca5b190f907",
+        "soft_delete_distance": 0.004892598463534046,
+        "float_mean_max_abs_diff": 1.30385160446167e-8,
+        "float_mean_components_differing": 345,
+        "sever_max_abs_diff": 0
+      }
+    ],
+    "summary": [
+      {
+        "system": "soft-delete IVF",
+        "deleted_record_still_stored": true,
+        "distance": 0.005035506396513171,
+        "measure": "L2 distance, centroid to survivors' mean"
+      },
+      {
+        "system": "float running mean",
+        "deleted_record_still_stored": false,
+        "distance": 1.862645149230957e-8,
+        "measure": "max abs difference from the survivors-only running mean"
+      },
+      {
+        "system": "SEVER (Part 1)",
+        "deleted_record_still_stored": false,
+        "distance": 0.0,
+        "measure": "max abs difference of S from the survivors-only S (0 = bit-identical)"
+      }
+    ]
+  },
+  "search": {
+    "queries": 3452,
+    "k": 10,
+    "queries_hit_before": 17,
+    "deleted_returned_after": 0,
+    "example": {
+      "query": "nq query #123",
+      "deleted_record": "doc56152",
+      "rank_before": 2,
+      "before": [
+        [
+          "doc38977",
+          0.64352167
+        ],
+        [
+          "doc56152",
+          0.9807005
+        ],
+        [
+          "doc2055923",
+          1.0240439
+        ],
+        [
+          "doc2098555",
+          1.104422
+        ],
+        [
+          "doc2005108",
+          1.1069589
+        ],
+        [
+          "doc999738",
+          1.1248909
+        ],
+        [
+          "doc2177648",
+          1.1384364
+        ],
+        [
+          "doc1398115",
+          1.1666479
+        ],
+        [
+          "doc106005",
+          1.178152
+        ],
+        [
+          "doc153298",
+          1.2275562
+        ]
+      ],
+      "after": [
+        [
+          "doc38977",
+          0.64352167
+        ],
+        [
+          "doc2055923",
+          1.0240439
+        ],
+        [
+          "doc2098555",
+          1.104422
+        ],
+        [
+          "doc2005108",
+          1.1069589
+        ],
+        [
+          "doc999738",
+          1.1248909
+        ],
+        [
+          "doc2177648",
+          1.1384364
+        ],
+        [
+          "doc1398115",
+          1.1666479
+        ],
+        [
+          "doc106005",
+          1.178152
+        ],
+        [
+          "doc153298",
+          1.2275562
+        ],
+        [
+          "doc1889633",
+          1.2333407
+        ]
+      ]
+    }
+  },
+  "invariants": "ok"
+}

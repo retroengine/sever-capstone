@@ -1,0 +1,4 @@
+# step p3-fuzz, 2026-10-30T05:01:19+00:00, commit 7c445b589fe3bb46765b158517fb4ccf66d4e88c
+# cmd: uv run --no-sync python -m sever_testkit_p3.gates p3-fuzz --runs 100000000
+{"fuzz-p3:certificate": "Done 100000000 runs in 865 second(s)", "fuzz-p3:log_record": "Done 100000000 runs in 926 second(s)", "fuzz-p3:witnessed": "Done 100000000 runs in 919 second(s)", "fuzz-p3:placement": "Done 100000000 runs in 590 second(s)", "verifier/fuzz:verify": "Done 100000000 runs in 4960 second(s)", "audit/fuzz:export": "Done 100000000 runs in 40084 second(s)", "outcome": "PASS"}
+rc=0

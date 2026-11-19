@@ -1,0 +1,78 @@
+{
+ "gate": "L4: 0 of every failure count",
+ "streams": 1000,
+ "ops_per_stream": 1000,
+ "seeds": [
+  {
+   "seed": 42,
+   "ops": 200200,
+   "compared": 2619990,
+   "mismatches": 0,
+   "deleted_returned": 0,
+   "survivor_groups_checked": 55017,
+   "survivor_failures": 0,
+   "kernel_pairs": 1765813,
+   "kernel_mismatches": 0,
+   "streams_replayed": 200,
+   "streams_failed": 0,
+   "stderr": ""
+  },
+  {
+   "seed": 123,
+   "ops": 200200,
+   "compared": 2659620,
+   "mismatches": 0,
+   "deleted_returned": 0,
+   "survivor_groups_checked": 54607,
+   "survivor_failures": 0,
+   "kernel_pairs": 1799328,
+   "kernel_mismatches": 0,
+   "streams_replayed": 200,
+   "streams_failed": 0,
+   "stderr": ""
+  },
+  {
+   "seed": 777,
+   "ops": 200200,
+   "compared": 2580976,
+   "mismatches": 0,
+   "deleted_returned": 0,
+   "survivor_groups_checked": 55108,
+   "survivor_failures": 0,
+   "kernel_pairs": 1731434,
+   "kernel_mismatches": 0,
+   "streams_replayed": 200,
+   "streams_failed": 0,
+   "stderr": ""
+  },
+  {
+   "seed": 2024,
+   "ops": 200200,
+   "compared": 2617545,
+   "mismatches": 0,
+   "deleted_returned": 0,
+   "survivor_groups_checked": 55272,
+   "survivor_failures": 0,
+   "kernel_pairs": 1765688,
+   "kernel_mismatches": 0,
+   "streams_replayed": 200,
+   "streams_failed": 0,
+   "stderr": ""
+  },
+  {
+   "seed": 9999,
+   "ops": 200200,
+   "compared": 2677772,
+   "mismatches": 0,
+   "deleted_returned": 0,
+   "survivor_groups_checked": 55110,
+   "survivor_failures": 0,
+   "kernel_pairs": 1815668,
+   "kernel_mismatches": 0,
+   "streams_replayed": 200,
+   "streams_failed": 0,
+   "stderr": ""
+  }
+ ],
+ "outcome": "PASS"
+}

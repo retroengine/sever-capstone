@@ -1,0 +1,30 @@
+{
+ "gate": "P3-T5: 0 mismatches on the five-field equivalence and the certificate arithmetic against the model (T-3, complete)",
+ "data": "nq-100k",
+ "runs": [
+  {
+   "seed": 42,
+   "mode": "plain",
+   "outcome": "PASS",
+   "report": {
+    "certificate_failures": 0,
+    "certificates": 90040,
+    "checks": 2576072,
+    "commitment_mismatches": 0,
+    "deleted_returned": 0,
+    "first": [],
+    "five_field_checked": 1902,
+    "five_field_failed": 0,
+    "mismatches": 0,
+    "ops": 146221,
+    "passed": true,
+    "reopen_changed": 0,
+    "reopens": 0
+   },
+   "trace_sha256": "4316193b4f20446663989f0529a27cc4f29ae72d9fb068fddefa2ac236df065b",
+   "stderr_tail": "",
+   "seconds": 6378
+  }
+ ],
+ "outcome": "PASS"
+}

@@ -1,0 +1,2 @@
+# step p3-crash, 2026-10-29T11:29:55+00:00, commit 4dcfbe0f1404904e4978e24efd9e9a4fdafdd900
+# cmd: uv run --no-sync python -m sever_testkit_p3.gates p3-crash --data nq-10k --all-seeds --jobs 5

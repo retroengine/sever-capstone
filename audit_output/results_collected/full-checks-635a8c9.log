@@ -1,0 +1,118 @@
+STEP fmt: PASS
+STEP clippy: PASS
+STEP clippy-sabotage: PASS
+STEP rust-tests: PASS
+STEP verifier-fmt: PASS
+STEP verifier-clippy: PASS
+STEP verifier-tests: PASS
+STEP audit-fmt: PASS
+STEP audit-clippy: PASS
+STEP audit-tests: PASS
+STEP ruff: FAIL (log: /tmp/sever-ci-ruff.log)
+165 |     assert "data directory replaced" in str(e.value)
+166 |     # §17: "each later call, close() included, fails with IntegrityViolation ... and writes nothing".
+    |                                                                                                     ^
+167 |     with pytest.raises(IntegrityViolation):
+168 |         db.collections()
+    |
+
+E501 Line too long (101 > 100)
+   --> tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_platform.py:177:101
+    |
+175 | @pytest.mark.req("SR-12.9-4", "SR-12.9-3")
+176 | def test_unused_fs_override_not_reported(root):
+177 |     """§12.9: the filesystem override is "recorded" when used; API: startup lists "the startup checks
+    |                                                                                                     ^
+178 |     that failed and were overridden". On ext4 both §12.9 filesystem checks pass, so giving
+179 |     allow_unsafe_fs adds nothing to the report."""
+    |
+
+Found 252 errors.
+[*] 24 fixable with the `--fix` option (69 hidden fixes can be enabled with the `--unsafe-fixes` option).
+STEP ruff-format: FAIL (log: /tmp/sever-ci-ruff-format.log)
+    -         "WrongDimension", "NonFinite", "NotNormalised", "InvalidRecordId", "DuplicateRecord",
+    -         "CommitmentMismatch", "BadUserSignature", "GroupCapacityExceeded", "UnknownCollection",
+    -         "SeededNonceForbidden", "PlatformUnsafe", "IntegrityViolation", "DurabilityFailure",
+261 +         "WrongDimension",
+262 +         "NonFinite",
+263 +         "NotNormalised",
+264 +         "InvalidRecordId",
+265 +         "DuplicateRecord",
+266 +         "CommitmentMismatch",
+267 +         "BadUserSignature",
+268 +         "GroupCapacityExceeded",
+269 +         "UnknownCollection",
+270 +         "SeededNonceForbidden",
+271 +         "PlatformUnsafe",
+272 +         "IntegrityViolation",
+273 +         "DurabilityFailure",
+274 |     ]  # the §17 table, in order
+    |
+
+18 files would be reformatted, 204 files already formatted
+STEP mypy: PASS
+STEP sdk-native: PASS
+STEP sdk-native-p3: PASS
+STEP sdk-native-p4: PASS
+STEP python-tests: FAIL (log: /tmp/sever-ci-python-tests.log)
+          ^^^^^
+E   AttributeError: module 'helpers' has no attribute 'art'
+_ ERROR collecting tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_delete.py _
+import file mismatch:
+imported module 'test_delete' has this __file__ attribute:
+  /home/saiki/sever-db/tests/cleanroom/p3/20261101T134211Z-p3-bb4bac5e/tests/test_delete.py
+which is not the same as the test file we want to collect:
+  /home/saiki/sever-db/tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_delete.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+_ ERROR collecting tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_keyfile.py _
+tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_keyfile.py:10: in <module>
+    GROUPS_SMALL = {h.frozen_id(j) for j in range(4)} | {"holding"}
+                    ^^^^^^^^^^^
+E   AttributeError: module 'helpers' has no attribute 'frozen_id'
+=========================== short test summary info ============================
+ERROR tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_crash_cli.py
+ERROR tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_delete.py
+ERROR tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_keyfile.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!!
+237 deselected, 3 errors in 4.14s
+STEP spec-trace: PASS
+STEP spec-trace-p2: PASS
+STEP oracle-check-p2: PASS
+STEP proofs-check-p2: PASS
+STEP spec-trace-p3: PASS
+STEP oracle-check-p3: PASS
+STEP proofs-check-p3: PASS
+STEP registers-p3: PASS
+STEP rfc-vectors-p3: PASS
+STEP refmodel-golden-p3: PASS
+STEP spec-trace-p4: PASS
+STEP oracle-check-p4: PASS
+STEP proofs-check-p4: PASS
+STEP registers-p4: PASS
+STEP rfc-vectors-p4: PASS
+STEP crypto-deps: PASS
+STEP dalek-pinned: PASS
+STEP freeze-guard: PASS
+STEP fair-check: PASS
+STEP rust-ignored: PASS
+STEP python-slow: FAIL (log: /tmp/sever-ci-python-slow.log)
+          ^^^^^
+E   AttributeError: module 'helpers' has no attribute 'art'
+_ ERROR collecting tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_delete.py _
+import file mismatch:
+imported module 'test_delete' has this __file__ attribute:
+  /home/saiki/sever-db/tests/cleanroom/p3/20261101T134211Z-p3-bb4bac5e/tests/test_delete.py
+which is not the same as the test file we want to collect:
+  /home/saiki/sever-db/tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_delete.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+_ ERROR collecting tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_keyfile.py _
+tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_keyfile.py:10: in <module>
+    GROUPS_SMALL = {h.frozen_id(j) for j in range(4)} | {"holding"}
+                    ^^^^^^^^^^^
+E   AttributeError: module 'helpers' has no attribute 'frozen_id'
+=========================== short test summary info ============================
+ERROR tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_crash_cli.py
+ERROR tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_delete.py
+ERROR tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_keyfile.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!!
+271 deselected, 3 errors in 2.02s

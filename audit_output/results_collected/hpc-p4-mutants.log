@@ -1,0 +1,6 @@
+# step p4-mutants, 2026-10-31T08:36:07+00:00, commit 96f9370a52c1cca5d61915259c77590c51df00e2
+# cmd: env CARGO_BUILD_JOBS=2 uv run --no-sync python -m sever_testkit_p4.gates p4-mutants --jobs 4
+Preparing worktree (detached HEAD 96f9370)
+HEAD is now at 96f9370 test(sever-erasure): strict value parsing, a drop is final, replay reads only its own record types, a length past the file's end is a cut-off tail (§12.2, §14.6, §14.8; P4-T10, DB-114)
+{"sever-erasure": 0.9167, "sever-keys": 0.9651, "sever-seal": 0.9586, "untriaged": 1, "outcome": "FAIL"}
+rc=1

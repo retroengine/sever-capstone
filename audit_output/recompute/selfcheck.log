@@ -1,0 +1,30 @@
+OK  recall nq-1m: source=917.4 doc_text='917.4' in_docs=True
+OK  recall nq-100k seconds: source=86.3 doc_text='86.3' in_docs=True
+OK  ex6 seed42 drift: source=0.012954464183038068 doc_text='0.012954464183038068' in_docs=True
+OK  ex6 seed2024 drift: source=0.007905761024394675 doc_text='0.007905761024394675' in_docs=True
+OK  welch t: source=-9.570522849699275 doc_text='-9.570522849699275' in_docs=True
+OK  tost p: source=0.9974696929884848 doc_text='0.9974696929884848' in_docs=True
+OK  ex7 sever p50: source=109129.15 doc_text='109129.15' in_docs=True
+OK  ex7 softdelete per_second: source=741.3707917259521 doc_text='741.3707917259521' in_docs=True
+OK  ex7 noerase reopen: source=21.058904848 doc_text='21.058904848' in_docs=True
+OK  p2 measures VmHWM: source=1093044 doc_text='1093044' in_docs=True
+OK  p2 measures wal_only: source=0.847202078 doc_text='0.847202078' in_docs=True
+OK  p3 measures prove median: source=15.783409000000002 doc_text='15.783409000000002' in_docs=True
+OK  p3 coverage log final: source=0.930937 doc_text='0.930937' in_docs=True
+OK  p4 coverage erasure final: source=0.9557522123893806 doc_text='0.9557522123893806' in_docs=True
+OK  p4 mutants erasure L220: source=0.9044117647058824 doc_text='0.9044117647058824' in_docs=True
+OK  p3 mutants cert: source=0.8516129032258064 doc_text='0.8516129032258064' in_docs=True
+OK  p1 coverage rust lines: source=1127 doc_text='1127' in_docs=True
+OK  p2 mutants caught: source=652 doc_text='652' in_docs=True
+OK  p3 crash seed42 points: source=187795 doc_text='187,795' in_docs=True
+OK  p4 crash seed2024 points: source=7915 doc_text='7,915' in_docs=True
+OK  forensics SB-29: source=65738 doc_text='65,738' in_docs=True
+OK  fair p3 pass tests: source=180 doc_text='180' in_docs=True
+OK  ledger L211 outcome: source='started' doc_text='started' in_docs=True
+OK  ledger L224 dirty: source='git_dirty: true' doc_text='git_dirty: true' in_docs=True
+OK  cleanroom e2 passed: source=255 doc_text='255' in_docs=True
+OK  D4 seed42 points (progress): source=4910 doc_text='4,910' in_docs=True
+OK  D4 seed123 raw records: source=4961 doc_text='4,961' in_docs=True
+OK  D4 seed777 main_mismatches: source=0 doc_text='main_mismatches 0' in_docs=True
+OK  meta truncation: source=0.049148 doc_text='0.049148' in_docs=True
+29/29 checks pass

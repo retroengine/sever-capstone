@@ -1,0 +1,91 @@
+{
+ "gate": "P3-T9: mutation score >= 90 % (sever-crypto, verifier), >= 85 % (sever-cert, sever-log); every survivor triaged",
+ "scores": {
+  "sever-cert": {
+   "score": 0.0,
+   "minimum": 0.85,
+   "caught": 0,
+   "missed": 0,
+   "timeout": 0,
+   "unviable": 0
+  },
+  "sever-crypto": {
+   "score": 0.0,
+   "minimum": 0.9,
+   "caught": 0,
+   "missed": 0,
+   "timeout": 0,
+   "unviable": 0
+  },
+  "sever-log": {
+   "score": 0.0,
+   "minimum": 0.85,
+   "caught": 0,
+   "missed": 0,
+   "timeout": 0,
+   "unviable": 0
+  },
+  "verifier": {
+   "score": 0.0,
+   "minimum": 0.9,
+   "caught": 0,
+   "missed": 0,
+   "timeout": 0,
+   "unviable": 0
+  }
+ },
+ "missed": [],
+ "untriaged": [],
+ "cargo_mutants_exit": {
+  "root": 1,
+  "verifier": 1
+ },
+ "excluded_sabotage_lines": {
+  "crates/sever-crypto/src/group.rs": [
+   44
+  ],
+  "crates/sever-crypto/src/nonce.rs": [
+   94,
+   96,
+   97,
+   98,
+   99,
+   100,
+   101,
+   102,
+   103,
+   104,
+   105,
+   106,
+   107,
+   108,
+   109,
+   110,
+   112,
+   162,
+   163,
+   164,
+   165
+  ],
+  "crates/sever-crypto/src/posk.rs": [
+   66,
+   67,
+   68,
+   69,
+   73,
+   78,
+   79,
+   80,
+   81,
+   82,
+   83
+  ],
+  "crates/sever-cert/src/builder.rs": [
+   143
+  ],
+  "crates/sever-log/src/checkpoint.rs": [
+   20
+  ]
+ },
+ "outcome": "FAIL"
+}

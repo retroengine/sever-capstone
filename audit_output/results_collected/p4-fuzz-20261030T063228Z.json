@@ -1,0 +1,102 @@
+{
+ "gate": "P4-T10 (0 crashes)",
+ "runs_per_target": 100000000,
+ "targets": {
+  "key_slot": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 712 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"f:\\215\\311\" # Uses: 100056",
+    "\"\\346(\\276\\036\" # Uses: 87570",
+    "\"cfKy\" # Uses: 68163",
+    "\"\\303\\231:}\" # Uses: 65659",
+    "\"\\314\\014`4\" # Uses: 64046",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 712 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     140449",
+    "stat::new_units_added:          98",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              516"
+   ]
+  },
+  "wrapped_value": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 937 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"\\026\\000\\000\\000\\000\\000\\000\\000\" # Uses: 994483",
+    "\"\\001\\000\\000\\000\\000\\000\\000<\" # Uses: 993552",
+    "\"\\377\\377\\377\\377\\377\\377\\377\\204\" # Uses: 992003",
+    "\"\\377\\377\\377\\377\\377\\377\\377\\007\" # Uses: 988511",
+    "\"\\316\\000\\000\\000\\000\\000\\000\\000\" # Uses: 964485",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 937 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     106723",
+    "stat::new_units_added:          102",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              465"
+   ]
+  },
+  "bucket_block": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 811 second(s)",
+   "crashed": false,
+   "tail": [
+    "#4194304\tpulse  cov: 55 ft: 56 corp: 1/1b lim: 4096 exec/s: 85598 rss: 525Mb",
+    "#8388608\tpulse  cov: 55 ft: 56 corp: 1/1b lim: 4096 exec/s: 94254 rss: 525Mb",
+    "#16777216\tpulse  cov: 55 ft: 56 corp: 1/1b lim: 4096 exec/s: 103563 rss: 526Mb",
+    "#33554432\tpulse  cov: 55 ft: 56 corp: 1/1b lim: 4096 exec/s: 100462 rss: 526Mb",
+    "#67108864\tpulse  cov: 55 ft: 56 corp: 1/1b lim: 4096 exec/s: 107892 rss: 527Mb",
+    "#100000000\tDONE   cov: 55 ft: 56 corp: 1/1b lim: 4096 exec/s: 123304 rss: 527Mb",
+    "Done 100000000 runs in 811 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     123304",
+    "stat::new_units_added:          0",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              527"
+   ]
+  },
+  "envelope": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 2265 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"q\\000\\000\\000\\000\\000\\000\\000\" # Uses: 1173244",
+    "\"\\001\\000\\000\\000\\000\\000\\000\\017\" # Uses: 1171515",
+    "\"\\005\\000\\000\\000\\000\\000\\000\\000\" # Uses: 1169501",
+    "\"\\000\\000\\000\\000\" # Uses: 1170410",
+    "\"\\000\\000\\000\\000\\000\\000\\000\\003\" # Uses: 1164247",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 2265 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     44150",
+    "stat::new_units_added:          81",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              566"
+   ]
+  },
+  "scan_targets": {
+   "exit": 0,
+   "done": "Done 100000000 runs in 5465 second(s)",
+   "crashed": false,
+   "tail": [
+    "\"5\\001\\000\\000\" # Uses: 15167",
+    "\"\\006\\000\\000\\000\" # Uses: 14603",
+    "\"\\000\\000\\376\\333\" # Uses: 8084",
+    "\"\\010\\000\\000\\000\" # Uses: 8068",
+    "\",K\" # Uses: 2657",
+    "###### End of recommended dictionary. ######",
+    "Done 100000000 runs in 5465 second(s)",
+    "stat::number_of_executed_units: 100000000",
+    "stat::average_exec_per_sec:     18298",
+    "stat::new_units_added:          19882",
+    "stat::slowest_unit_time_sec:    0",
+    "stat::peak_rss_mb:              1026"
+   ]
+  }
+ },
+ "outcome": "PASS"
+}

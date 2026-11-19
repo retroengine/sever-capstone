@@ -1,0 +1,195 @@
+{
+ "run_id": "20261101T175539Z-p4-587aa09b",
+ "part": 4,
+ "module": null,
+ "commit": "587aa09b9584c8bbb7029567b6a4a33ab70201d2",
+ "outcome": "FAIL",
+ "config_sha256": "231bb3fb123fee16c62fcc8cfa97b28811a5dbafccced9792d478ac1a49836ca",
+ "seal_digest": "74614ea392a94a6d63db27265e1c984d421173d8328fa23d1f6ca5e2287c36d9",
+ "owned_sha256": "a91648164b32db7f19f902a7e92ba7284c45735438c980928bb6f7199611daa3",
+ "rows": [
+  {
+   "check": "own suite green on the unpatched build",
+   "value": "True",
+   "ok": true
+  },
+  {
+   "check": "engine bugs (triage)",
+   "value": "1",
+   "ok": false
+  },
+  {
+   "check": "spec gaps (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "test gaps (escaped real bugs)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "oracle disagreements",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "planted bugs: cargo-mutants gate PASS in the ledger (DB-75)",
+   "value": "77ca977027a8",
+   "ok": true
+  },
+  {
+   "check": "judge outputs complete",
+   "value": "yes",
+   "ok": true
+  }
+ ],
+ "tests": 148,
+ "failing": 1,
+ "triage": {
+  "test_sdk::test_wrong_dimension_insert[0]": {
+   "verdict": "ENGINE_BUG",
+   "section": "\u00a74.1",
+   "reason": "\u00a74.1 step 0 requires exactly d components and rejects otherwise with WrongDimension, before the finiteness and norm checks (steps 1-3). The test passes an empty vector to a d=16 collection, which is a clear dimension mismatch. The engine raised NotNormalised, so it fails to apply step 0 (or applies it after the norm check) for the zero-length input. The other wrong dimensions (15, 17, 384) pass, so the test is using the interface correctly."
+  }
+ },
+ "planted": [],
+ "escapes": {},
+ "oracle": {
+  "pool": 60,
+  "verdicts": {
+   "01.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a715.4",
+    "reason": "Acknowledged means the old key slot is already erased (\u00a715.8, row 5). A crash before COMMIT leaves the state unchanged with the old key kept (rows 2/3). A crash after COMMIT leaves the record deleted with only v+1 held (rows 4/5). A rollback adds no delete leaf and issues no certificate. A completed delete has a certificate at database_lsn = size0 (\u00a715.3 step 4). The on-demand log checkpoint is not a leaf (\u00a710.3), so size is unaffected. The `ops >= 8 / >= 2` floors are implementation-specific sanity bounds, not spec values, but they are not what the verdict rests on."
+   },
+   "02.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.1",
+    "reason": "b(t) = scrambled_id[0] mod 64. 0x00\u21920, 0x01\u21921, 0x3F\u219263, 0x40\u21920, 0x85 (133)\u21925, 0xFF (255)\u219263. All expected values are correct."
+   },
+   "03.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a715.4",
+    "reason": "Row 5, a crash after phase C and before the acknowledgement: the old key is already gone, so only v+1 is in the key file before any restart. After recovery the record is deleted and a retry returns AlreadyAbsent. All of this matches the row."
+   },
+   "04.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a715.4",
+    "reason": "The crash is after phase A and before COMMIT. Recovery leaves the state unchanged, so the record is still located. The orphan v+1 slot is erased (\u00a713.4 recovery rule), leaving only [v]. A retry then performs a real delete (Deleted). Even with KeepAll the uncommitted WAL transaction is discarded (\u00a715.7 step 3)."
+   },
+   "05.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.4",
+    "reason": "After a deletion the domain is at version+1 (\u00a713.3 step 1). The new key sits in the inactive slot of the same pair (\u00a713.4 two-slot rule). The old slot is zeros, i.e. erased, by the time delete returns (\u00a715.3 phase C, \u00a715.8). The expected values follow."
+   },
+   "06.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a714.7",
+    "reason": "\u00a714.7 fixes the layout: an erased slot is 512 zero bytes, and pair i starts at 4096+1024\u00b7i. It does not say which of the pair's two slots an append puts the first key in, or what the arguments of erase_slot(0,0) mean. The expected result, that all 1,024 bytes of pair 0 are zero, holds only if append wrote to slot 0. If it wrote to slot 1, the key would still be there. The first assertion (512 zero bytes decode as Erased) does follow from the spec."
+   },
+   "07.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a712.8",
+    "reason": "The spec lists refusals for swap, hibernation, core dumps and mlock. It says nothing about a probe that cannot answer (fail-closed), and it names only 'core dumps' and 'mlock' as check labels. The strings '\u00a712.8 swap not encrypted' and '\u00a712.9 data filesystem not ext4 or XFS' are not fixed by the spec. Treating an unknown data directory as unsafe is plausible under \u00a712.9 but not specified."
+   },
+   "08.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a713.2",
+    "reason": "Record-level ciphertexts carry no group, position or key version (\u00a713.2), so the payload ciphertext moves between groups undecrypted. Only the record-key envelope is re-wrapped under the destination's keys, so the new envelope differs from the old one. The payload opens in the new group. The expected values match."
+   },
+   "09.txt": {
+    "verdict": "CANNOT_DERIVE",
+    "section": "\u00a712.8",
+    "reason": "The behaviours follow the spec. A swap partition without CRYPT- is refused. Hibernation with disk in /sys/power/state and resume other than 0:0 is refused. An mlock failure is refused. A dm device with a CRYPT- uuid and a zram device both start (\u00a712.8). However, the refusal labels '\u00a712.8 swap not encrypted' and '\u00a712.8 hibernation enabled' are not given by the spec, which names only 'core dumps' and 'mlock'. The PL-n register rows and 'no lock, no proof' (locked is None) are context I can't see."
+   },
+   "10.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a712.8",
+    "reason": "At startup the engine sets RLIMIT_CORE = 0 and PR_SET_DUMPABLE = 0. The test expects soft and hard core limits of 0 and a not-dumpable state, which is what the spec requires."
+   }
+  },
+  "picked": [
+   [
+    "crates/sever-db/src/tests.rs",
+    "p4_db_a_crash_anywhere_in_a_deletion_on_either_disk_recovers_cleanly"
+   ],
+   [
+    "crates/sever-keys/src/tests.rs",
+    "p4_keys_a_bucket_is_the_first_scrambled_byte_mod_64"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_crash_table_row_5_crash_after_phase_c_before_the_acknowledgement"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_crash_table_row_2_crash_after_phase_a_before_the_commit"
+   ],
+   [
+    "crates/sever-erasure/src/tests/erasure.rs",
+    "p4_erasure_a_deletion_rotates_its_domain_and_erases_the_old_key_before_returning"
+   ],
+   [
+    "crates/sever-keys/src/tests.rs",
+    "p4_keys_an_erased_slot_is_512_zero_bytes"
+   ],
+   [
+    "crates/sever-platform/src/tests.rs",
+    "p4_platform_a_probe_that_cannot_answer_fails_closed"
+   ],
+   [
+    "crates/sever-seal/src/tests.rs",
+    "p4_seal_a_flush_moves_a_record_without_touching_its_payload_ciphertext"
+   ],
+   [
+    "crates/sever-platform/src/tests.rs",
+    "p4_platform_memory_rows_of_the_register_refuse_and_start_as_listed"
+   ],
+   [
+    "crates/sever-platform/tests/linux.rs",
+    "p4_platform_linux_probe_turns_core_dumps_off"
+   ]
+  ]
+ },
+ "findings": [
+  {
+   "kind": "ENGINE_BUG",
+   "test": "test_sdk::test_wrong_dimension_insert[0]",
+   "section": "\u00a74.1",
+   "reason": "\u00a74.1 step 0 requires exactly d components and rejects otherwise with WrongDimension, before the finiteness and norm checks (steps 1-3). The test passes an empty vector to a d=16 collection, which is a clear dimension mismatch. The engine raised NotNormalised, so it fails to apply step 0 (or applies it after the norm check) for the zero-length input. The other wrong dimensions (15, 17, 384) pass, so the test is using the interface correctly.",
+   "output": "sever_db_native.NotNormalised: vector is not normalised\ncol = (<sever_db.Database object at 0x7be6a3211e50>, '6242b368ea1b90ca6f20aa377dd8e6bb')\nuser = UserKey(<secret>), rng = Generator(PCG64) at 0x7BE6A3219E00, dim = 0\n\n    @pytest.mark.parametrize(\"dim\", [0, 15, 17, 384])\n    @pytest.mark.req(\"SR-4.1-0\")\n    def test_wrong_dimension_insert(col, user, rng, dim):\n        \"\"\"\u00a74.1 step 0: \"The input MUST have exactly d components. Otherwise reject with\n        WrongDimension\"; \u00a716.2 \"prepare_insert takes the dimension from the vector's length; the engine\n        refuses another\". The collection has d = 16.\"\"\"\n        db, cid = col\n        x = sevtest.to_unit_f32(rng.standard_normal(dim)) if dim else np.zeros(0, np.float32)\n        with pytest.raises(WrongDimension):\n>           db.insert(cid, prepare_insert(cid, \"dim-x\", sevtest.as_list(x), user))\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n/room/work/tests/test_sdk.py:235: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncollection_id = '6242b368ea1b90ca6f20aa377dd8e6bb', record_id = 'dim-x'\nvector = [], user = UserKey(<secret>), randomness = (), more = {}\n\n    def prepare_insert(\n        collection_id: str,\n        record_id: str,\n        vector: Sequence[float],\n        user: UserKey,\n        *randomness: object,\n        **more: object,\n    ) -> InsertRequest:\n        \"\"\"Quantises (\u00a74.2), draws ``r_t`` from the OS (\u00a79.4), computes ``C_t`` and signs (\u00a79.8).\n        Keep the request to retry the insert; ``r_t`` cannot be read from it.\"\"\"\n        _no_randomness(randomness, more)\n        if not isinstance(user, UserKey):\n            raise TypeError(\"user must be a UserKey\")\n>       return _native.prepare_insert(collection_id, _rid(record_id), list(map(float, vector)), user._k)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       sever_db_native.NotNormalised: vector is not normalised\n\n/room/site/sever_db/__init__.py:154: NotNormalised",
+   "source": "\"\"\"\u00a716.2 the application-backend SDK, \u00a717 errors, \u00a73.2 record IDs, \u00a74.1 vector validation.\"\"\"\n\nfrom __future__ import annotations\n\nimport os\nimport re\nimport shutil\nimport uuid\n\nimport numpy as np\nimport pytest\n\nimport sevtest\nimport sever_db\nfrom sever_db import (\n    BadUserSignature,\n    Database,\n    DuplicateRecord,\n    IntegrityViolation,\n    InvalidRecordId,\n    NonFinite,\n    NotNormalised,\n    SeededNonceForbidden,\n    SeverError,\n    UnknownCollection,\n    UserKey,\n    WrongDimension,\n    prepare_insert,\n)\n\n\n@pytest.fixture\ndef col(dirs, opener):\n    db = opener.open(*dirs)\n    return db, db.create_collection(sevtest.SMALL)\n\n\n# ------------------------------------------------------------------ randomness (\u00a716.2, \u00a79.6)\n\n\n@pytest.mark.req(\"SR-17-5\")\ndef test_user_key_generate_takes_no_seed():\n    \"\"\"\u00a716.2: \"The SDK exposes no way to pass a random generator, seed or nonce \u2026 every SDK function\n    that draws randomness \u2026 raises it for any argument beyond its documented ones\".\"\"\"\n    with pytest.raises(SeededNonceForbidden):\n        UserKey.generate(42)\n    with pytest.raises(SeededNonceForbidden):\n        UserKey.generate(seed=42)\n\n\n@pytest.mark.req(\"SR-17-5\")\ndef test_prepare_insert_takes_no_randomness(col, user, rng, small):\n    \"\"\"\u00a716.2: prepare_insert draws r_t; any extra argument raises SeededNonceForbidden.\"\"\"\n    db, cid = col\n    x, _ = sevtest.in_dist_vector(small, rng)\n    with pytest.raises(SeededNonceForbidden):\n        prepare_insert(cid, \"r1\", sevtest.as_list(x), user, np.random.default_rng(1))\n    with pytest.raises(SeededNonceForbidden):\n        prepare_insert(cid, \"r1\", sevtest.as_list(x), user, r_t=b\"\\x01\" * 32)\n\n\n@pytest.mark.req(\"SR-17-5\")\ndef test_delete_takes_no_randomness(col, user, rng, small):\n    \"\"\"\u00a716.2: delete \"leads to a proof\" (\u00a79.5): any argument beyond (collection, record_id) raises\n    SeededNonceForbidden, and the record stays.\"\"\"\n    db, cid = col\n    recs = sevtest.populate(db, cid, user, rng, small, 1)\n    with pytest.raises(SeededNonceForbidden):\n        db.delete(cid, recs[0].rid, 7)\n    with pytest.raises(SeededNonceForbidden):\n        db.delete_user(cid, [recs[0].rid], nonce=b\"\\0\" * 32)\n    with pytest.raises(SeededNonceForbidden):\n        db.insert(cid, prepare_insert(cid, \"z1\", sevtest.as_list(recs[0].x), user), None, 3)\n    assert sevtest.is_live(db, cid, recs[0])\n\n\n@pytest.mark.req(\"SR-16.2-1\")\ndef test_request_hides_r_t(col, user, rng, small):\n    \"\"\"\u00a716.2: \"r_t travels inside req \u2026 r_t cannot be read from the request\"; C_t is 32 bytes\n    (a ristretto255 point, \u00a70.2), the signature 64 (Ed25519), the public key the user's.\"\"\"\n    db, cid = col\n    x, _ = sevtest.in_dist_vector(small, rng)\n    req = prepare_insert(cid, \"hide-1\", sevtest.as_list(x), user)\n    assert not hasattr(req, \"r_t\")\n    assert not any(\"r_t\" in n or \"blind\" in n for n in dir(req) if not n.startswith(\"__\"))\n    assert req.collection_id == cid and req.record_id == \"hide-1\"\n    assert len(req.c_t) == 32 and len(req.signature) == 64\n    assert req.user_public_key == user.public_key and len(user.public_key) == 32\n\n\n@pytest.mark.req(\"SR-16.2-1\")\ndef test_user_key_round_trip_and_repr(user):\n    \"\"\"\u00a716.2: the backend keeps the user key in its own key store; it never rotates (\u00a73.3).\n    \u00a717: never print a key.\"\"\"\n    secret = user.secret_bytes()\n    assert len(secret) == 32  # an Ed25519 secret seed\n    again = UserKey.from_secret_bytes(secret)\n    assert again.public_key == user.public_key\n    assert secret.hex() not in repr(user) and repr(secret) not in repr(user)\n\n\n# ------------------------------------------------------------------ insert, placement, retries\n\n\n@pytest.mark.req(\"SR-16.2-2\")\ndef test_placement_is_the_routed_frozen_group(col, user, rng, small):\n    \"\"\"\u00a716.2: placement is \"the \u00a75.1 text form of the group the record is in\": frozen-NNNN for an\n    in-distribution vector, whose group is \u00a77.1's nearest frozen centroid.\"\"\"\n    db, cid = col\n    for j in range(4):\n        x, label = sevtest.in_dist_vector(small, rng, j)\n        r = sevtest.insert(db, cid, user, f\"place-{j}\", x)\n        # Expected: computed from the artefact by \u00a77.1\u20137.3 (d_M \u2264 0.7\u03c4, nearest = j).\n        assert r.placement == sevtest.frozen_id(label)\n        assert re.fullmatch(r\"frozen-\\d{4}\", r.placement)\n        assert isinstance(r.database_lsn, int) and r.retried is False\n\n\n@pytest.mark.req(\"SR-16.2-2\")\ndef test_out_of_distribution_goes_to_holding(col, user, rng, small):\n    \"\"\"\u00a77.3: no spawned group has room, so an OOD vector \"return[s] holding area\"; \u00a716.2 renders\n    it as `holding`.\"\"\"\n    db, cid = col\n    r = sevtest.insert(db, cid, user, \"far-away\", sevtest.ood_vector(small, rng))\n    assert r.placement == \"holding\"\n\n\n@pytest.mark.req(\"SR-15.1-6\")\n@pytest.mark.req(\"SR-15.1-2\")\ndef test_retry_with_same_request_is_success(col, user, rng, small):\n    \"\"\"\u00a715.1: \"a retry fails with DuplicateRecord { same_commitment: true }, which the SDK treats as\n    success\" (Receipt(None, None, retried=True)).\"\"\"\n    db, cid = col\n    x, _ = sevtest.in_dist_vector(small, rng)\n    req = prepare_insert(cid, \"retry-me\", sevtest.as_list(x), user)\n    first = db.insert(cid, req)\n    second = db.insert(cid, req)\n    assert first.retried is False\n    assert second == sever_db.Receipt(None, None, retried=True)\n    # Expected: still exactly one record: group n is 1.\n    assert sum(n for _, n in db.group_sizes(cid)) == 1\n\n\n@pytest.mark.req(\"SR-3.2-3\")\n@pytest.mark.req(\"SR-17-2\")\ndef test_new_request_for_live_id_is_duplicate(col, user, rng, small):\n    \"\"\"\u00a73.2 rule 3: an ID \"MUST NOT equal the ID of a record currently live\"; a new request has a\n    new r_t hence a new C_t (\u00a716.2), so same_commitment is false and DuplicateRecord is raised.\n    \u00a717: the message carries no record ID.\"\"\"\n    db, cid = col\n    x, _ = sevtest.in_dist_vector(small, rng)\n    rid = \"dup-secret-name-4c2\"\n    sevtest.insert(db, cid, user, rid, x)\n    with pytest.raises(DuplicateRecord) as e:\n        sevtest.insert(db, cid, user, rid, x)\n    assert rid not in str(e.value) and rid not in repr(e.value.args)\n\n\n@pytest.mark.req(\"SR-17-4\")\n@pytest.mark.req(\"SR-15.1-3\")\ndef test_request_signed_for_other_collection_is_bad_signature(dirs, opener, user, rng, small):\n    \"\"\"\u00a716.2: \"The engine verifies the signature over the collection inserted into (\u00a715.1 step 2),\n    whatever collection the request names\"; the signature covers DST_INSERT \u2016 collection_id \u2016 C_t\n    (\u00a79.8), so it fails for another collection: BadUserSignature.\"\"\"\n    db = opener.open(*dirs)\n    a = db.create_collection(sevtest.SMALL)\n    b = db.create_collection(sevtest.SMALL)\n    x, _ = sevtest.in_dist_vector(small, rng)\n    req = prepare_insert(a, \"crossed\", sevtest.as_list(x), user)\n    with pytest.raises(BadUserSignature):\n        db.insert(b, req)\n    assert sum(n for _, n in db.group_sizes(b)) == 0\n\n\n@pytest.mark.req(\"SR-17-1\")\ndef test_errors_are_typed():\n    \"\"\"\u00a717: \"Every error is typed\" \u2014 each row of the table is its own class under SeverError.\"\"\"\n    names = [\"WrongDimension\", \"NonFinite\", \"NotNormalised\", \"InvalidRecordId\", \"DuplicateRecord\",\n             \"CommitmentMismatch\", \"BadUserSignature\", \"GroupCapacityExceeded\",\n             \"UnknownCollection\", \"SeededNonceForbidden\", \"PlatformUnsafe\", \"IntegrityViolation\",\n             \"DurabilityFailure\"]\n    classes = [getattr(sever_db, n) for n in names]\n    assert len(set(classes)) == len(names)\n    assert all(issubclass(c, SeverError) for c in classes)\n\n\n# ------------------------------------------------------------------ record IDs (\u00a73.2)\n\nVALID_IDS = [\"doc0\", \"nq-1234\", str(uuid.UUID(int=12345)), \"a\", \"x\" * 256, \"\u00e9\" * 128,\n             \"\u0663\", \" 1\", \"1.0\", \"1e3\", \"--3\", \"0x1F\", \"\uff11\uff12\"]\nINVALID_IDS = [\"\", \"1\", \"007\", \"-3\", \"+3\", \"0\", \"-0\", \"123456789012345678901234567890\",\n               \"x\" * 257, \"\u00e9\" * 128 + \"a\", \"\\ud800bad\"]\n\n\n@pytest.mark.parametrize(\"rid\", VALID_IDS)\n@pytest.mark.req(\"SR-3.2-1\")\n@pytest.mark.req(\"SR-3.2-2\")\ndef test_valid_record_ids_accepted(col, user, rng, small, rid):\n    \"\"\"\u00a73.2: \"A UTF-8 string of 1 to 256 bytes\" that does not match ^[+-]?[0-9]+$; \"doc0, nq-1234\n    and UUIDs are accepted\". \"x\"\u00b7256 and \"\u00e9\"\u00b7128 are exactly 256 bytes; Arabic-Indic and\n    full-width digits are not [0-9]; \" 1\", \"1.0\", \"--3\" do not match the anchored pattern.\"\"\"\n    db, cid = col\n    x, _ = sevtest.in_dist_vector(small, rng)\n    assert sevtest.insert(db, cid, user, rid, x).retried is False\n\n\n@pytest.mark.parametrize(\"rid\", INVALID_IDS)\n@pytest.mark.req(\"SR-3.2-1\")\n@pytest.mark.req(\"SR-3.2-2\")\n@pytest.mark.req(\"SR-17-2\")\ndef test_invalid_record_ids_rejected(col, user, rng, small, rid):\n    \"\"\"\u00a73.2: rule 1 (1\u2013256 bytes, UTF-8) and rule 2 (\"1, 007, -3 and +3 are rejected\") fail \u2192\n    InvalidRecordId (\u00a717); the message contains no record ID.\"\"\"\n    db, cid = col\n    x, _ = sevtest.in_dist_vector(small, rng)\n    with pytest.raises(InvalidRecordId) as e:\n        sevtest.insert(db, cid, user, rid, x)\n    if len(rid) >= 3:\n        assert rid not in str(e.value)\n    assert sum(n for _, n in db.group_sizes(cid)) == 0\n\n\n# ------------------------------------------------------------------ vectors (\u00a74.1, \u00a78.1)\n\n\n@pytest.mark.parametrize(\"dim\", [0, 15, 17, 384])\n@pytest.mark.req(\"SR-4.1-0\")\ndef test_wrong_dimension_insert(col, user, rng, dim):\n    \"\"\"\u00a74.1 step 0: \"The input MUST have exactly d components. Otherwise reject with\n    WrongDimension\"; \u00a716.2 \"prepare_insert takes the dimension from the vector's length; the engine\n    refuses another\". The collection has d = 16.\"\"\"\n    db, cid = col\n    x = sevtest.to_unit_f32(rng.standard_normal(dim)) if dim else np.zeros(0, np.float32)\n    with pytest.raises(WrongDimension):\n        db.insert(cid, prepare_insert(cid, \"dim-x\", sevtest.as_list(x), user))\n\n\n@pytest.mark.parametrize(\"bad\", [float(\"nan\"), float(\"inf\"), float(\"-inf\")])\n@pytest.mark.req(\"SR-4.1-1\")\ndef test_non_finite_insert(col, user, rng, small, bad):\n    \"\"\"\u00a74.1 step 1: \"Every component MUST be finite. Otherwise reject with NonFinite\".\"\"\"\n    db, cid = col\n    x, _ = sevtest.in_dist_vector(small, rng)\n    v = sevtest.as_list(x)\n    v[5] = bad\n    with pytest.raises(NonFinite):\n        db.insert(cid, prepare_insert(cid, \"nf-1\", v, user))\n\n\n@pytest.mark.parametrize(\"scale\", [0.0, 0.5, 2.0, 1.0 + 2.0**-16])\n@pytest.mark.req(\"SR-4.1-3\")\n@pytest.mark.req(\"SR-17-2\")\ndef test_not_normalised_insert(col, user, rng, small, scale):\n    \"\"\"\u00a74.1 step 3: \"|norm \u2212 1| \u2264 8 \u00b7 2^\u221223 MUST hold. Otherwise reject with NotNormalised\".\n    Scales 0, 0.5, 2 and 1 + 2^\u221216 (= 128 ULPs) are all outside. \u00a717: no vector value in the\n    message.\"\"\"\n    db, cid = col\n    x, _ = sevtest.in_dist_vector(small, rng)\n    v = (x.astype(np.float64) * scale).astype(np.float32)\n    assert abs(sevtest.norm64(v) - 1) > sevtest.TOL  # precondition, by \u00a74.1 step 2\n    with pytest.raises(NotNormalised) as e:\n        db.insert(cid, prepare_insert(cid, \"nn-1\", sevtest.as_list(v), user))\n    if scale:\n        assert repr(float(v[0]))[:8] not in str(e.value)\n\n\ndef _scaled_to(rng, small, lo_ulps, hi_ulps):\n    \"\"\"A float32 vector whose \u00a74.1 float64 norm lies at lo..hi ULPs (2^\u221223) above or below 1.\"\"\"\n    for _ in range(2000):\n        x, _ = sevtest.in_dist_vector(small, rng)\n        target = rng.uniform(lo_ulps, hi_ulps) * rng.choice([-1, 1]) * 2.0**-23\n        v = (x.astype(np.float64) * (1 + target)).astype(np.float32)\n        dev = abs(sevtest.norm64(v) - 1) / 2.0**-23\n        if lo_ulps <= dev <= hi_ulps:\n            return v\n    raise AssertionError(\"no vector in band\")\n\n\n@pytest.mark.req(\"SR-4.1-3\")\n@pytest.mark.req(\"SR-4.1-2\")\ndef test_normalisation_tolerance_boundary(col, user, rng, small):\n    \"\"\"\u00a74.1: tolerance \"8 float32 ULPs at 1.0 = 8 \u00b7 2^\u221223\": a norm 3\u20136.5 ULPs off is accepted; a\n    norm 10\u201320 ULPs off is rejected (deviation computed as \u00a74.1 step 2 does).\"\"\"\n    db, cid = col\n    inside = _scaled_to(rng, small, 3.0, 6.5)\n    outside = _scaled_to(rng, small, 10.0, 20.0)\n    assert sevtest.insert(db, cid, user, \"tol-in\", inside).retried is False\n    ",
+   "id": "F-1"
+  }
+ ],
+ "sessions": [
+  {
+   "role": "tester",
+   "name": "1-tester",
+   "model": "opus",
+   "rc": 0,
+   "cost_usd": 5.168374000000001,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261101T175539Z-p4-587aa09b/logs/1-tester.json"
+  },
+  {
+   "role": "triage",
+   "name": "4-triage",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.0413592,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261101T175539Z-p4-587aa09b/logs/4-triage.json"
+  },
+  {
+   "role": "oracle",
+   "name": "8-oracle",
+   "model": "sonnet",
+   "rc": 0,
+   "cost_usd": 0.237942,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261101T175539Z-p4-587aa09b/logs/8-oracle.json"
+  }
+ ]
+}

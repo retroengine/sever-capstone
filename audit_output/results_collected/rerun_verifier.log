@@ -1,0 +1,10 @@
+2026-11-09T20:36:11Z
+af8fed22f9be9cd8595f271d7b692e5664fdf0a6
+verifier binary mtime: 2026-10-24 17:21:49.736838218 +0000
+CMD: sever-verify certificate.bin --anchors anchors.json
+{"accepted":true,"collection_id":"de7fdd6e8c9f10abfaacf2479a9d992e","database_lsn":10000,"deletion_kind":0,"group_emptied":false,"leaf_index":3459}
+EXIT: 0
+CMD: sever-verify flipped.bin --anchors anchors.json
+{"accepted":false,"reason":"the operator signature does not verify","step":2}
+EXIT: 1
+2026-11-09T20:36:11Z

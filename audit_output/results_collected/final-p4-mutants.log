@@ -1,0 +1,4 @@
+Preparing worktree (detached HEAD e00e31d)
+HEAD is now at e00e31d chore(fair): Part 4 fair run 20261101T142251Z: 110/110 tests, 0 findings; FAIL only on DB-75 (no p4-mutants PASS in the ledger yet)
+{"sever-erasure": 0.9044, "sever-keys": 0.9767, "sever-seal": 0.9586, "untriaged": 0, "outcome": "PASS"}
+rc=0

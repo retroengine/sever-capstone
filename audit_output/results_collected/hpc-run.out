@@ -1,0 +1,113 @@
+run-all start 2026-10-29T11:29:55+00:00 on lappot: nproc=8 commit=4dcfbe0 mock=0 estimate=3030min
+ulimit -l = 65536; swap: 1 device(s)
+2026-10-29T11:29:55+00:00 p3-crash START: uv run --no-sync python -m sever_testkit_p3.gates p3-crash --data nq-10k --all-seeds --jobs 5
+2026-10-29T11:29:55+00:00 p4-attacks START: uv run --no-sync python -m sever_testkit_p4.gates p4-attacks --data nq-10k --all-seeds --jobs 2
+2026-10-29T11:29:55+00:00 p3-attacks START: uv run --no-sync python -m sever_testkit_p3.gates p3-attacks --data nq-10k --all-seeds --jobs 2
+2026-10-29T11:49:37+00:00 p3-attacks rc=0 duration=0h19m42s log=traces/hpc-p3-attacks.log
+2026-10-29T11:49:51+00:00 p4-attacks rc=0 duration=0h19m56s log=traces/hpc-p4-attacks.log
+run-all start 2026-10-29T12:05:22+00:00 on lappot: nproc=8 commit=7c445b5 mock=0 estimate=3030min
+ulimit -l = unlimited; swap: 0 device(s)
+2026-10-29T12:05:22+00:00 p4-attacks SKIPPED (passed earlier)
+2026-10-29T12:05:22+00:00 p3-crash START: uv run --no-sync python -m sever_testkit_p3.gates p3-crash --data nq-10k --all-seeds --jobs 5 --resume
+2026-10-29T12:05:22+00:00 p3-attacks SKIPPED (passed earlier)
+2026-10-29T22:53:09+00:00 p3-crash rc=0 duration=10h47m47s log=traces/hpc-p3-crash.log
+2026-10-29T22:53:09+00:00 p3-replay START: uv run --no-sync python -m sever_testkit_p3.gates p3-replay --data nq-100k --all-seeds --jobs 2
+2026-10-29T22:53:09+00:00 p3-mutants START: env CARGO_BUILD_JOBS=2 uv run --no-sync python -m sever_testkit_p3.gates p3-mutants --jobs 3
+2026-10-30T01:24:42+00:00 p3-mutants rc=1 duration=2h31m33s log=traces/hpc-p3-mutants.log
+2026-10-30T05:01:19+00:00 p3-replay rc=0 duration=6h08m10s log=traces/hpc-p3-replay.log
+2026-10-30T05:01:19+00:00 p4-fuzz START: uv run --no-sync python -m sever_testkit_p4.gates p4-fuzz --runs 100000000
+2026-10-30T05:01:19+00:00 p3-fuzz START: uv run --no-sync python -m sever_testkit_p3.gates p3-fuzz --runs 100000000
+2026-10-30T05:01:19+00:00 p4-replay START: uv run --no-sync python -m sever_testkit_p4.gates p4-replay --data nq-10k --all-seeds --jobs 3
+2026-10-30T05:01:19+00:00 p4-forensics START: uv run --no-sync python -m sever_testkit_p4.gates p4-forensics --data nq-10k --all-seeds --locked-memory
+2026-10-30T05:01:19+00:00 p4-ex6 START: uv run --no-sync python -m sever_testkit_p4.gates p4-ex6 --data nq-10k --all-seeds --locked-memory
+2026-10-30T06:32:29+00:00 p4-fuzz rc=0 duration=1h31m10s log=traces/hpc-p4-fuzz.log
+2026-10-30T06:53:03+00:00 p4-replay rc=0 duration=1h51m44s log=traces/hpc-p4-replay.log
+2026-10-30T06:56:07+00:00 p4-ex6 rc=1 duration=1h54m48s log=traces/hpc-p4-ex6.log
+2026-10-30T14:13:51+00:00 p4-forensics rc=0 duration=9h12m32s log=traces/hpc-p4-forensics.log
+2026-10-30T16:09:26+00:00 p3-fuzz rc=0 duration=11h08m07s log=traces/hpc-p3-fuzz.log
+2026-10-30T16:09:26+00:00 p4-crash-a START: uv run --no-sync python -m sever_testkit_p4.gates p4-crash --data nq-10k --seed 42 --seed 123 --seed 777 --jobs 3 --crash-from 17694 --limit-ops 17994
+2026-10-30T17:51:46+00:00 p4-crash-a rc=0 duration=1h42m20s log=traces/hpc-p4-crash-a.log
+2026-10-30T17:51:46+00:00 p3-spikes START: uv run --no-sync python -m sever_testkit_p3.gates p3-spikes
+2026-10-30T17:51:46+00:00 p4-crash-b START: uv run --no-sync python -m sever_testkit_p4.gates p4-crash --data nq-10k --seed 2024 --seed 9999 --jobs 2 --crash-from 18700 --limit-ops 19000
+2026-10-30T17:51:59+00:00 p3-spikes rc=0 duration=0h00m12s log=traces/hpc-p3-spikes.log
+2026-10-30T18:43:48+00:00 p4-crash-b rc=1 duration=0h52m02s log=traces/hpc-p4-crash-b.log
+2026-10-30T18:43:48+00:00 p4-mutants START: env CARGO_BUILD_JOBS=2 uv run --no-sync python -m sever_testkit_p4.gates p4-mutants --jobs 4
+2026-10-30T21:56:32+00:00 p4-mutants rc=1 duration=3h12m44s log=traces/hpc-p4-mutants.log
+2026-10-30T21:56:32+00:00 p3-checks START: uv run --no-sync python -m sever_testkit_p3.gates p3-checks
+2026-10-30T22:32:47+00:00 p3-checks rc=0 duration=0h36m15s log=traces/hpc-p3-checks.log
+2026-10-30T22:32:47+00:00 p4-checks START: uv run --no-sync python -m sever_testkit_p4.gates p4-checks
+2026-10-30T23:00:21+00:00 p4-checks rc=0 duration=0h27m34s log=traces/hpc-p4-checks.log
+2026-10-30T23:00:22+00:00 p3-coverage START: uv run --no-sync python -m sever_testkit_p3.gates p3-coverage
+2026-10-30T23:05:21+00:00 p3-coverage rc=0 duration=0h04m59s log=traces/hpc-p3-coverage.log
+2026-10-30T23:05:21+00:00 p4-coverage START: uv run --no-sync python -m sever_testkit_p4.gates p4-coverage
+2026-10-30T23:05:21+00:00 p4-quant-recall START: uv run --no-sync python -m sever_testkit_p4.gates p4-quant-recall
+2026-10-30T23:11:28+00:00 p4-coverage rc=1 duration=0h06m06s log=traces/hpc-p4-coverage.log
+2026-10-30T23:20:40+00:00 p4-quant-recall rc=0 duration=0h15m19s log=traces/hpc-p4-quant-recall.log
+2026-10-30T23:20:41+00:00 p3-measures START: uv run --no-sync python -m sever_testkit_p3.gates p3-measures
+2026-10-30T23:20:49+00:00 p3-measures rc=0 duration=0h00m08s log=traces/hpc-p3-measures.log
+2026-10-30T23:20:50+00:00 p4-ex8 START: uv run --no-sync python -m sever_testkit_p4.gates p4-ex8 --seed 42
+2026-10-30T23:20:50+00:00 p4-ex7-nq-100k START: uv run --no-sync python -m sever_testkit_p4.gates p4-ex7 --data nq-100k --seed 42
+2026-10-30T23:20:50+00:00 p4-ex7-nq-10k START: uv run --no-sync python -m sever_testkit_p4.gates p4-ex7 --data nq-10k --all-seeds
+2026-10-31T02:10:53+00:00 p4-ex7-nq-10k rc=0 duration=2h50m03s log=traces/hpc-p4-ex7-nq-10k.log
+run-all start 2026-10-31T03:31:47+00:00 on lappot: nproc=8 commit=7c445b5 mock=0 estimate=3030min
+ulimit -l = unlimited; swap: 0 device(s)
+2026-10-31T03:31:47+00:00 p4-attacks SKIPPED (passed earlier)
+2026-10-31T03:31:47+00:00 p3-crash SKIPPED (passed earlier)
+2026-10-31T03:31:47+00:00 p3-attacks SKIPPED (passed earlier)
+2026-10-31T03:31:47+00:00 p3-replay SKIPPED (passed earlier)
+2026-10-31T03:31:47+00:00 p3-mutants SKIPPED (finished earlier with rc=1; never rerun, Build §2.5)
+2026-10-31T03:31:47+00:00 p4-fuzz SKIPPED (passed earlier)
+2026-10-31T03:31:47+00:00 p3-fuzz SKIPPED (passed earlier)
+2026-10-31T03:31:47+00:00 p4-forensics SKIPPED (passed earlier)
+2026-10-31T03:31:47+00:00 p4-replay SKIPPED (passed earlier)
+2026-10-31T03:31:47+00:00 p4-ex6 SKIPPED (finished earlier with rc=1; never rerun, Build §2.5)
+2026-10-31T03:31:47+00:00 p4-crash-a SKIPPED (passed earlier)
+2026-10-31T03:31:47+00:00 p4-crash-b SKIPPED (finished earlier with rc=1; never rerun, Build §2.5)
+2026-10-31T03:31:47+00:00 p3-spikes SKIPPED (passed earlier)
+2026-10-31T03:31:48+00:00 p4-mutants SKIPPED (finished earlier with rc=1; never rerun, Build §2.5)
+2026-10-31T03:31:48+00:00 p3-checks SKIPPED (passed earlier)
+2026-10-31T03:31:48+00:00 p4-checks SKIPPED (passed earlier)
+2026-10-31T03:31:48+00:00 p3-coverage SKIPPED (passed earlier)
+2026-10-31T03:31:48+00:00 p4-quant-recall SKIPPED (passed earlier)
+2026-10-31T03:31:48+00:00 p4-coverage SKIPPED (finished earlier with rc=1; never rerun, Build §2.5)
+2026-10-31T03:31:48+00:00 p3-measures SKIPPED (passed earlier)
+2026-10-31T03:31:48+00:00 p4-ex7-nq-10k SKIPPED (passed earlier)
+2026-10-31T03:31:48+00:00 p4-ex7-nq-100k START: uv run --no-sync python -m sever_testkit_p4.gates p4-ex7 --data nq-100k --seed 42
+2026-10-31T03:31:48+00:00 p4-ex8 START: uv run --no-sync python -m sever_testkit_p4.gates p4-ex8 --seed 42
+run-all start 2026-10-31T03:38:01+00:00 on lappot: nproc=8 commit=7c445b5 mock=0 estimate=3030min
+ulimit -l = unlimited; swap: 0 device(s)
+2026-10-31T03:38:01+00:00 p3-crash SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p4-attacks SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p3-attacks SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p3-replay SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p3-mutants SKIPPED (finished earlier with rc=1; never rerun, Build §2.5)
+2026-10-31T03:38:01+00:00 p4-replay SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p4-forensics SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p4-ex6 SKIPPED (finished earlier with rc=1; never rerun, Build §2.5)
+2026-10-31T03:38:01+00:00 p3-fuzz SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p4-fuzz SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p4-crash-a SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p3-spikes SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p4-crash-b SKIPPED (finished earlier with rc=1; never rerun, Build §2.5)
+2026-10-31T03:38:01+00:00 p4-mutants SKIPPED (finished earlier with rc=1; never rerun, Build §2.5)
+2026-10-31T03:38:01+00:00 p3-checks SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p4-checks SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p3-coverage SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p4-coverage SKIPPED (finished earlier with rc=1; never rerun, Build §2.5)
+2026-10-31T03:38:01+00:00 p4-quant-recall SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p3-measures SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p4-ex8 SKIPPED (SKIP)
+2026-10-31T03:38:01+00:00 p4-ex7-nq-10k SKIPPED (passed earlier)
+2026-10-31T03:38:01+00:00 p4-ex7-nq-100k START: uv run --no-sync python -m sever_testkit_p4.gates p4-ex7 --data nq-100k --seed 42
+2026-10-31T07:37:14+00:00 p4-ex7-nq-100k rc=0 duration=3h59m13s log=traces/hpc-p4-ex7-nq-100k.log
+== 2026-10-31T07:37:14+00:00 run-all end failed=1 interrupted=0
+run-all start 2026-10-31T08:36:07+00:00 on lappot: nproc=8 commit=96f9370 mock=0 estimate=3030min
+ulimit -l = unlimited; swap: 0 device(s)
+2026-10-31T08:36:07+00:00 p4-mutants START: env CARGO_BUILD_JOBS=2 uv run --no-sync python -m sever_testkit_p4.gates p4-mutants --jobs 4
+2026-10-31T11:33:16+00:00 p4-mutants rc=1 duration=2h57m09s log=traces/hpc-p4-mutants.log
+2026-10-31T11:33:16+00:00 p4-coverage START: uv run --no-sync python -m sever_testkit_p4.gates p4-coverage
+2026-10-31T11:38:13+00:00 p4-coverage rc=0 duration=0h04m57s log=traces/hpc-p4-coverage.log
+2026-10-31T11:38:13+00:00 p4-ex8 START: uv run --no-sync python -m sever_testkit_p4.gates p4-ex8 --seed 42
+run-all start 2026-10-31T12:48:19+00:00 on lappot: nproc=8 commit=96f9370 mock=0 estimate=3030min
+ulimit -l = unlimited; swap: 0 device(s)
+2026-10-31T12:48:19+00:00 p4-ex8 START: uv run --no-sync python -m sever_testkit_p4.gates p4-ex8 --seed 42

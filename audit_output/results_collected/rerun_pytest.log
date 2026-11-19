@@ -1,0 +1,40 @@
+2026-11-09T20:29:18Z
+af8fed22f9be9cd8595f271d7b692e5664fdf0a6
+CMD: timeout 300 env PYTHONHASHSEED=0 uv run --no-sync pytest -q -m "not slow" -p no:cacheprovider
+
+==================================== ERRORS ====================================
+_ ERROR collecting tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_crash_cli.py _
+tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_crash_cli.py:18: in <module>
+    BIG = h.art(h.BIG_SVP)
+          ^^^^^
+E   AttributeError: module 'helpers' has no attribute 'art'
+_ ERROR collecting tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_delete.py _
+import file mismatch:
+imported module 'test_delete' has this __file__ attribute:
+  /home/saiki/sever-db/tests/cleanroom/p3/20261101T134211Z-p3-bb4bac5e/tests/test_delete.py
+which is not the same as the test file we want to collect:
+  /home/saiki/sever-db/tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_delete.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+_ ERROR collecting tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_keyfile.py _
+tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_keyfile.py:10: in <module>
+    GROUPS_SMALL = {h.frozen_id(j) for j in range(4)} | {"holding"}
+                    ^^^^^^^^^^^
+E   AttributeError: module 'helpers' has no attribute 'frozen_id'
+=========================== short test summary info ============================
+ERROR tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_crash_cli.py
+ERROR tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_delete.py
+ERROR tests/cleanroom/p4/20261101T192712Z-p4-36291aec/tests/test_keyfile.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!!
+237 deselected, 3 errors in 3.68s
+EXIT: 2
+2026-11-09T20:29:24Z
+--- attempt 1 above failed at collection (cleanroom dirs collide; ci.sh:43 runs them separately). attempt 2 uses ci.sh:73's invocation ---
+2026-11-09T20:29:41Z
+CMD: timeout 300 env PYTHONHASHSEED=0 uv run --no-sync pytest -q -m "not slow" --ignore=tests/cleanroom -p no:cacheprovider
+........................................................................ [ 26%]
+........................................................................ [ 53%]
+........................................................................ [ 79%]
+.......................................................                  [100%]
+271 passed, 2 deselected in 78.71s (0:01:18)
+EXIT: 0
+2026-11-09T20:31:01Z

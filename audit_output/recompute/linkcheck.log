@@ -1,0 +1,9 @@
+references 98 unresolved 4
+   ex6.py
+   freeze/PART-1..4.sha256
+   freeze/PART-N.sha256
+   oracle.json
+Resolution of the 4 unresolved names (manual):
+  ex6.py            -> source code python/sever_experiments/ex6.py (cited code, not a result; exists in repo)
+  freeze/PART-1..4.sha256, freeze/PART-N.sha256 -> pattern for PART-1.sha256 … PART-4.sha256, all copied
+  oracle.json       -> quoted text of an error message in docs/audit/FAIRNESS_P2.md (copied as FAIRNESS_P2.md), not a file

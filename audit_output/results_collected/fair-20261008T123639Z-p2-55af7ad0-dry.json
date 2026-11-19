@@ -1,0 +1,255 @@
+{
+ "run_id": "20261008T123639Z-p2-55af7ad0-dry",
+ "part": 2,
+ "module": null,
+ "commit": "55af7ad02cdf3fb600725c669058ddab42ebdf82",
+ "outcome": "DRY",
+ "config_sha256": "71a184c085f84dc30e52c25bc47764eabc7ec3f013348b7a39a633a7c95140ae",
+ "seal_digest": "838bf3f468300e97b0fcc58a84c2e82d41d496c7761f62e5dfd6fb5cc653d043",
+ "owned_sha256": null,
+ "rows": [
+  {
+   "check": "own suite green on the unpatched build",
+   "value": "True",
+   "ok": true
+  },
+  {
+   "check": "engine bugs (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "spec gaps (triage)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "test gaps (escaped real bugs)",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "oracle disagreements",
+   "value": "0",
+   "ok": true
+  },
+  {
+   "check": "valid planted bugs",
+   "value": "1 of 2",
+   "ok": false
+  },
+  {
+   "check": "judge outputs complete",
+   "value": "yes",
+   "ok": true
+  }
+ ],
+ "tests": 2,
+ "failing": 1,
+ "triage": {
+  "test_stub::test_stub_wrong_on_purpose": {
+   "verdict": "TEST_ERROR",
+   "section": "\u00a716.2",
+   "reason": "Stub verdict."
+  }
+ },
+ "planted": [
+  {
+   "id": "01",
+   "claim": {
+    "id": "01",
+    "files": [
+     "crates/sever-wal/src/lib.rs"
+    ],
+    "section": "\u00a712.3",
+    "requirement": null,
+    "behaviour": "none (stub)",
+    "why": "stub"
+   },
+   "files": [
+    "crates/sever-wal/src/lib.rs"
+   ],
+   "valid": true,
+   "caught_by_cleanroom": [],
+   "caught_by_own_suite": false,
+   "own_suite": [
+    {
+     "cmd": "cargo test --workspace -q",
+     "rc": 0,
+     "seconds": 58
+    },
+    {
+     "cmd": "uv run --no-sync pytest -q -x -m not slow -p no:cacheprovider",
+     "rc": 0,
+     "seconds": 40
+    }
+   ]
+  },
+  {
+   "id": "02",
+   "claim": {
+    "id": "02",
+    "files": [],
+    "section": "\u00a712.3",
+    "requirement": null,
+    "behaviour": "does not apply (stub)",
+    "why": "stub"
+   },
+   "files": [],
+   "valid": false,
+   "why": "empty patch"
+  }
+ ],
+ "escapes": {
+  "01": {
+   "verdict": "EQUIVALENT",
+   "section": "\u00a712.3",
+   "reason": "Stub."
+  }
+ },
+ "oracle": {
+  "pool": 123,
+  "verdicts": {
+   "01.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "02.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "03.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "04.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "05.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "06.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "07.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "08.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "09.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   },
+   "10.txt": {
+    "verdict": "AGREE",
+    "section": "\u00a70",
+    "reason": "Stub."
+   }
+  },
+  "picked": [
+   [
+    "crates/sever-txn/src/tests.rs",
+    "p2_txn_a_failed_wal_write_changes_nothing_in_memory"
+   ],
+   [
+    "crates/sever-format/src/slot.rs",
+    "p2_format_slot_layout_and_padding"
+   ],
+   [
+    "crates/sever-engine/tests/engine.rs",
+    "p2_engine_platform_checks"
+   ],
+   [
+    "crates/sever-engine/tests/engine.rs",
+    "p2_engine_passage_records_carry_increasing_sequence_numbers"
+   ],
+   [
+    "crates/sever-wal/src/tests.rs",
+    "p2_wal_remove_covered_deletes_whole_segments_only"
+   ],
+   [
+    "crates/sever-vfs/src/sim_tests.rs",
+    "p2_vfs_prop_same_seed_same_disk"
+   ],
+   [
+    "crates/sever-format/tests/paged_rules.rs",
+    "p2_format_paged_layout_is_the_spec_s"
+   ],
+   [
+    "crates/sever-appendstore/tests/spec_bytes.rs",
+    "p2_store_file_on_disk_is_the_spec_s"
+   ],
+   [
+    "crates/sever-format/src/wal.rs",
+    "p2_format_wal_every_single_bit_flip_is_detected"
+   ],
+   [
+    "crates/sever-vfs/src/sim_tests.rs",
+    "p2_vfs_sim_tears_the_crashing_write_at_the_requested_byte"
+   ]
+  ]
+ },
+ "findings": [],
+ "sessions": [
+  {
+   "role": "tester",
+   "name": "1-tester",
+   "model": "stub",
+   "rc": 0,
+   "cost_usd": null,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261008T123639Z-p2-55af7ad0-dry/logs/1-tester.json"
+  },
+  {
+   "role": "triage",
+   "name": "4-triage",
+   "model": "stub",
+   "rc": 0,
+   "cost_usd": null,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261008T123639Z-p2-55af7ad0-dry/logs/4-triage.json"
+  },
+  {
+   "role": "planter",
+   "name": "5-planter",
+   "model": "stub",
+   "rc": 0,
+   "cost_usd": null,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261008T123639Z-p2-55af7ad0-dry/logs/5-planter.json"
+  },
+  {
+   "role": "escape",
+   "name": "7-escapes",
+   "model": "stub",
+   "rc": 0,
+   "cost_usd": null,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261008T123639Z-p2-55af7ad0-dry/logs/7-escapes.json"
+  },
+  {
+   "role": "oracle",
+   "name": "8-oracle",
+   "model": "stub",
+   "rc": 0,
+   "cost_usd": null,
+   "canary": "pass",
+   "log": "/home/saiki/.sever-fair/runs/20261008T123639Z-p2-55af7ad0-dry/logs/8-oracle.json"
+  }
+ ]
+}

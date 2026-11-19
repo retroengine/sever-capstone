@@ -1,0 +1,8 @@
+# step p4-replay, 2026-10-30T05:01:19+00:00, commit 7c445b589fe3bb46765b158517fb4ccf66d4e88c
+# cmd: uv run --no-sync python -m sever_testkit_p4.gates p4-replay --data nq-10k --all-seeds --jobs 3
+{"seed": 42, "outcome": "PASS"}
+{"seed": 123, "outcome": "PASS"}
+{"seed": 777, "outcome": "PASS"}
+{"seed": 2024, "outcome": "PASS"}
+{"seed": 9999, "outcome": "PASS"}
+rc=0

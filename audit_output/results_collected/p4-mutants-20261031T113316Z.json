@@ -1,0 +1,80 @@
+{
+ "gate": "P4-T10: mutation score >= 90 % on sever-keys, sever-seal and sever-erasure; every survivor triaged",
+ "scores": {
+  "sever-erasure": {
+   "score": 0.9166666666666666,
+   "caught": 121,
+   "missed": 11,
+   "timeout": 0,
+   "unviable": 19
+  },
+  "sever-keys": {
+   "score": 0.9651162790697675,
+   "caught": 83,
+   "missed": 1,
+   "timeout": 2,
+   "unviable": 12
+  },
+  "sever-seal": {
+   "score": 0.9586206896551724,
+   "caught": 139,
+   "missed": 6,
+   "timeout": 0,
+   "unviable": 57
+  }
+ },
+ "missed": [
+  "crates/sever-erasure/src/participant.rs:164:60: replace + with -",
+  "crates/sever-erasure/src/participant.rs:167:26: replace < with <=",
+  "crates/sever-erasure/src/participant.rs:254:28: replace == with !=",
+  "crates/sever-erasure/src/participant.rs:256:50: replace || with &&",
+  "crates/sever-erasure/src/records.rs:30:29: replace + with -",
+  "crates/sever-erasure/src/records.rs:30:29: replace + with *",
+  "crates/sever-erasure/src/records.rs:30:25: replace + with -",
+  "crates/sever-erasure/src/records.rs:30:25: replace + with *",
+  "crates/sever-erasure/src/records.rs:170:67: replace < with <=",
+  "crates/sever-erasure/src/records.rs:177:74: replace < with <=",
+  "crates/sever-erasure/src/store.rs:157:27: replace += with *=",
+  "crates/sever-keys/src/lib.rs:103:25: replace == with !=",
+  "crates/sever-keys/src/file.rs:38:25: replace + with *",
+  "crates/sever-keys/src/file.rs:93:9: replace && with ||",
+  "crates/sever-seal/src/block.rs:36:9: replace <impl zeroize::Zeroize for BucketKey>::zeroize with ()",
+  "crates/sever-seal/src/ring.rs:243:32: replace match guard cfg!(feature = \"noerase\") with false",
+  "crates/sever-seal/src/ring.rs:251:36: replace match guard cfg!(feature = \"sabotage-SB-24\") with false",
+  "crates/sever-seal/src/ring.rs:547:37: replace < with <=",
+  "crates/sever-seal/src/sealer.rs:40:9: replace AeadSealer::ring -> &Arc<KeyRing> with Box::leak(Box::new(Arc::new(Default::default())))",
+  "crates/sever-seal/src/sealer.rs:54:9: replace <impl Sealer for AeadSealer>::sealer_id -> u16 with 1"
+ ],
+ "untriaged": [
+  "crates/sever-keys/src/lib.rs:103:25: replace == with !="
+ ],
+ "cargo_mutants_exit": 3,
+ "excluded_sabotage_lines": {
+  "crates/sever-seal/src/block.rs": [
+   76,
+   77,
+   78,
+   79,
+   80,
+   87,
+   88,
+   89,
+   90
+  ],
+  "crates/sever-seal/src/sealer.rs": [
+   82,
+   83,
+   84,
+   85,
+   86,
+   98,
+   100,
+   101,
+   102,
+   103,
+   104,
+   105
+  ]
+ },
+ "outcome": "FAIL"
+}

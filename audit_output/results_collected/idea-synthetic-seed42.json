@@ -1,0 +1,278 @@
+{
+  "format": "sever-demo-idea-1",
+  "data": "synthetic",
+  "seed": 42,
+  "d": 16,
+  "artefact_sha256": "f01f4165ebda056dfc03c93f4162a6b2ffec15020936e97e64172d92fef20a8c",
+  "spawn_target": 8,
+  "stream_order": "ref and live rows interleaved",
+  "build": {
+    "records": 240,
+    "accepted": 240,
+    "rejected": {},
+    "frozen": 4,
+    "spawned": 2,
+    "big_n": 238,
+    "k": 6,
+    "holding": 2,
+    "out_of_distribution": 121,
+    "ood_rate": 0.5041666666666667,
+    "seconds": 0.000895275
+  },
+  "target": {
+    "cohort": "cohort-11",
+    "record_ids": [
+      "syn-ref-011",
+      "syn-live-011",
+      "syn-ref-051",
+      "syn-live-051",
+      "syn-ref-091",
+      "syn-live-091"
+    ],
+    "groups": [
+      "frozen-0000",
+      "frozen-0001",
+      "frozen-0003",
+      "spawn-3b1aa00dc40fa816",
+      "spawn-ebfca67020772fdf"
+    ],
+    "rule": "most frozen or spawned groups touched, then most records, then first title by bytes"
+  },
+  "groups": [
+    {
+      "group": "frozen-0000",
+      "n_before": 27,
+      "n_after": 26,
+      "s_sha_before": "3c2d68873b1cd56eee0c4e4486274863e27b9da0cc3979b7982df30f4dc8d31c",
+      "s_sha_after": "7f01cb1b06c0917d46ad0cf66b8c62ca45f906fd8a0c29e7e56de10770c8e043",
+      "blob_sha_before": "be9d2dbe893dcd9fa48deade0b3a6d17ed87b4fd8ace001a1881070a8b6351b5",
+      "blob_sha_after": "a1a2992494e4d99b07e5e2fbdae34914de7b52533f71d5662e7b0c3ed0f16335",
+      "survivors_blob_sha": "a1a2992494e4d99b07e5e2fbdae34914de7b52533f71d5662e7b0c3ed0f16335",
+      "exact": true
+    },
+    {
+      "group": "frozen-0001",
+      "n_before": 27,
+      "n_after": 26,
+      "s_sha_before": "70454f4f9d73f592705e7b21b8bb8590d46111c982894f38d1dd0fbbd5e13d44",
+      "s_sha_after": "4266de5ac8186414c386669d876b0b1307355b8a32c23bb9e66822c94aa3269b",
+      "blob_sha_before": "65d90573c867e66aa9b258ff5c3c3529f62ed392015e236b7b5259fe41aee84d",
+      "blob_sha_after": "0664dade788edbc950e530915940a4f98a69bc76c04d210ec3c68cee2c5e4560",
+      "survivors_blob_sha": "0664dade788edbc950e530915940a4f98a69bc76c04d210ec3c68cee2c5e4560",
+      "exact": true
+    },
+    {
+      "group": "frozen-0003",
+      "n_before": 39,
+      "n_after": 38,
+      "s_sha_before": "1c9a6e792f5e2636c08b0992c0ff7e1d68421a21cc85f4745a5d7c20945e66ed",
+      "s_sha_after": "7353606b04ff251986b3ebec212f1f1f141796fcacd2294a52abf41ac0372b21",
+      "blob_sha_before": "b1bef03d764ea558ce0924ad5dc012b7b69cdee1b95a94de656be16efaa56412",
+      "blob_sha_after": "19b17b2d118bd12174d2a5d05ae5ad3e9c4db51591c158d2e72200e382d74486",
+      "survivors_blob_sha": "19b17b2d118bd12174d2a5d05ae5ad3e9c4db51591c158d2e72200e382d74486",
+      "exact": true
+    },
+    {
+      "group": "spawn-3b1aa00dc40fa816",
+      "n_before": 60,
+      "n_after": 59,
+      "s_sha_before": "0e501ccad91830d80f356fedaea165c539dfa70b1d62c56f1f03a87813e5382b",
+      "s_sha_after": "95af7912f5559ee791e525ae5a31d9e908442236c4c59f3b2f94a1488ad356ff",
+      "blob_sha_before": "51fd2800da27da80db91a55dc74f080c4e0cd6650c0ab0dbd2c2a26a84be1ce1",
+      "blob_sha_after": "a94b6f24b4508c3e07606e1f08277c419beb40e69f4945ca8ed96c1a5ef19370",
+      "survivors_blob_sha": "a94b6f24b4508c3e07606e1f08277c419beb40e69f4945ca8ed96c1a5ef19370",
+      "exact": true
+    },
+    {
+      "group": "spawn-ebfca67020772fdf",
+      "n_before": 59,
+      "n_after": 57,
+      "s_sha_before": "f1dfa4483102105a7a7d9ae62c2845fd19a7f8facc5eb0cd408e9838f5530544",
+      "s_sha_after": "d6f962f0c4cc6c09156e70e537b559673293d2d5711068634f3b9d86c1900e54",
+      "blob_sha_before": "9438b41ac33d1d860599ad6a053585ddea6d72dbb2fb79bfe76a26144b285919",
+      "blob_sha_after": "e4f92771406c423164197b75ae2d7ca47c5e6577d47513a52d1667f1aca8811c",
+      "survivors_blob_sha": "e4f92771406c423164197b75ae2d7ca47c5e6577d47513a52d1667f1aca8811c",
+      "exact": true
+    }
+  ],
+  "holding": {
+    "n_before": 2,
+    "n_after": 2,
+    "cohort_members": 0
+  },
+  "untouched": {
+    "groups": 1,
+    "unchanged": 1
+  },
+  "big_n": [
+    238,
+    232
+  ],
+  "outcomes": [
+    "deleted from frozen-0003",
+    "deleted from spawn-ebfca67020772fdf",
+    "deleted from frozen-0000",
+    "deleted from spawn-ebfca67020772fdf",
+    "deleted from frozen-0001",
+    "deleted from spawn-3b1aa00dc40fa816"
+  ],
+  "second_delete": {
+    "all_already_absent": true,
+    "state_unchanged": true
+  },
+  "ghost": {
+    "per_group": [
+      {
+        "group": "frozen-0000",
+        "soft_delete_distance": 0.005145926985688927,
+        "float_mean_max_abs_diff": 8.940696716308594e-8,
+        "float_mean_components_differing": 7,
+        "sever_max_abs_diff": 0
+      },
+      {
+        "group": "frozen-0001",
+        "soft_delete_distance": 0.005535063836828533,
+        "float_mean_max_abs_diff": 2.9802322387695312e-8,
+        "float_mean_components_differing": 12,
+        "sever_max_abs_diff": 0
+      },
+      {
+        "group": "frozen-0003",
+        "soft_delete_distance": 0.003964177731852974,
+        "float_mean_max_abs_diff": 1.7881393432617188e-7,
+        "float_mean_components_differing": 11,
+        "sever_max_abs_diff": 0
+      },
+      {
+        "group": "spawn-3b1aa00dc40fa816",
+        "soft_delete_distance": 0.005695887441406164,
+        "float_mean_max_abs_diff": 5.960464477539063e-8,
+        "float_mean_components_differing": 13,
+        "sever_max_abs_diff": 0
+      },
+      {
+        "group": "spawn-ebfca67020772fdf",
+        "soft_delete_distance": 0.008308473981812144,
+        "float_mean_max_abs_diff": 1.1920928955078125e-7,
+        "float_mean_components_differing": 10,
+        "sever_max_abs_diff": 0
+      }
+    ],
+    "summary": [
+      {
+        "system": "soft-delete IVF",
+        "deleted_record_still_stored": true,
+        "distance": 0.008308473981812144,
+        "measure": "L2 distance, centroid to survivors' mean"
+      },
+      {
+        "system": "float running mean",
+        "deleted_record_still_stored": false,
+        "distance": 1.7881393432617188e-7,
+        "measure": "max abs difference from the survivors-only running mean"
+      },
+      {
+        "system": "SEVER (Part 1)",
+        "deleted_record_still_stored": false,
+        "distance": 0.0,
+        "measure": "max abs difference of S from the survivors-only S (0 = bit-identical)"
+      }
+    ]
+  },
+  "search": {
+    "queries": 0,
+    "k": 10,
+    "queries_hit_before": 0,
+    "deleted_returned_after": 0,
+    "example": {
+      "query": "own vector of syn-ref-011",
+      "deleted_record": "syn-ref-011",
+      "rank_before": 1,
+      "before": [
+        [
+          "syn-ref-011",
+          4.1390502e-15
+        ],
+        [
+          "syn-ref-031",
+          0.01788061
+        ],
+        [
+          "syn-ref-086",
+          0.021966442
+        ],
+        [
+          "syn-ref-093",
+          0.024586737
+        ],
+        [
+          "syn-ref-032",
+          0.025613302
+        ],
+        [
+          "syn-ref-119",
+          0.028510176
+        ],
+        [
+          "syn-ref-003",
+          0.02916574
+        ],
+        [
+          "syn-ref-022",
+          0.02927446
+        ],
+        [
+          "syn-ref-019",
+          0.030242862
+        ],
+        [
+          "syn-ref-076",
+          0.031485394
+        ]
+      ],
+      "after": [
+        [
+          "syn-ref-031",
+          0.01788061
+        ],
+        [
+          "syn-ref-086",
+          0.021966442
+        ],
+        [
+          "syn-ref-093",
+          0.024586737
+        ],
+        [
+          "syn-ref-032",
+          0.025613302
+        ],
+        [
+          "syn-ref-119",
+          0.028510176
+        ],
+        [
+          "syn-ref-003",
+          0.02916574
+        ],
+        [
+          "syn-ref-022",
+          0.02927446
+        ],
+        [
+          "syn-ref-019",
+          0.030242862
+        ],
+        [
+          "syn-ref-076",
+          0.031485394
+        ],
+        [
+          "syn-ref-034",
+          0.03180659
+        ]
+      ]
+    }
+  },
+  "invariants": "ok"
+}

@@ -1,0 +1,4 @@
+# step p3-coverage, 2026-11-01T02:21:38Z, commit 94d0b243fe21ade2de477f857c3d5a634c556eab
+# cmd: uv run --no-sync python -m sever_testkit_p3.gates p3-coverage
+{"crates/sever-crypto/src/": 0.9542, "crates/sever-commit/src/": 0.9158, "crates/sever-log/src/": 0.9309, "crates/sever-cert/src/": 0.9589, "verifier": 0.9627, "outcome": "PASS"}
+rc=0

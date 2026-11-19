@@ -1,0 +1,1 @@
+{"fmt": "PASS", "clippy": "PASS", "clippy-sabotage": "PASS", "rust-tests": "PASS", "ruff": "PASS", "ruff-format": "PASS", "mypy": "PASS", "python-tests": "PASS", "spec-trace": "PASS", "crypto-deps": "PASS", "freeze-guard": "PASS", "rust-ignored": "PASS", "python-slow": "PASS", "sabotage": "PASS", "msrv": "PASS", "deny": "PASS", "docs": "PASS", "outcome": "PASS"}

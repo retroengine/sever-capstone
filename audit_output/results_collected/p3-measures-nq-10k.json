@@ -1,0 +1,1 @@
+{"certificate_bytes":{"max":13645,"min":1197,"predicted_group_d384":14093},"d":384,"delete_ms_simvfs":{"max":41.066043,"median":13.377894},"deletions":20,"proofs":200,"prove_ms":{"max":46.286774,"median":15.783409000000002},"verify_ms":{"max":13.741111,"median":2.744998}}

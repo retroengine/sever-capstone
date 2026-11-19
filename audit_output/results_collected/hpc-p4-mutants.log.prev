@@ -1,0 +1,6 @@
+# step p4-mutants, 2026-10-30T18:43:48+00:00, commit 7c445b589fe3bb46765b158517fb4ccf66d4e88c
+# cmd: env CARGO_BUILD_JOBS=2 uv run --no-sync python -m sever_testkit_p4.gates p4-mutants --jobs 4
+Preparing worktree (detached HEAD 7c445b5)
+HEAD is now at 7c445b5 perf(hpc): the two strict-mode steps join phase 3 beside the fuzzers' one-core tail; run ~29 h (DB-113)
+{"sever-erasure": 0.7652, "sever-keys": 0.907, "sever-seal": 0.7793, "untriaged": 71, "outcome": "FAIL"}
+rc=1

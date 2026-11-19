@@ -1,0 +1,74 @@
+Found 418 mutants to test
+ok       Unmutated baseline in 17s build + 4s test
+MISSED   crates/sever-index/src/changeset.rs:25:9: replace <impl core::fmt::Debug for Slot<E>>::fmt -> core::fmt::Result with Ok(Default::default()) in 0s build + 0s test
+MISSED   crates/sever-index/src/changeset.rs:197:13: replace && with || in ChangeSet<E>::is_noop in 1s build + 0s test
+MISSED   crates/sever-index/src/changeset.rs:196:13: replace && with || in ChangeSet<E>::is_noop in 1s build + 0s test
+MISSED   crates/sever-index/src/index.rs:207:9: replace Index<E, S>::d -> usize with 0 in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:207:9: replace Index<E, S>::d -> usize with 1 in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:271:48: replace < with > in Index<E, S>::route in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:271:48: replace < with <= in Index<E, S>::route in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:271:76: replace < with <= in Index<E, S>::route in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:315:26: replace > with == in Index<E, S>::plan_insert in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:315:26: replace > with >= in Index<E, S>::plan_insert in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:315:22: replace + with * in Index<E, S>::plan_insert in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:364:67: replace > with == in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:364:67: replace > with < in Index<E, S>::apply in 1s build + 0s test
+MISSED   crates/sever-index/src/index.rs:364:67: replace > with >= in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:366:28: replace ^= with |= in Index<E, S>::apply in 0s build + 1s test
+MISSED   crates/sever-index/src/index.rs:366:28: replace ^= with &= in Index<E, S>::apply in 1s build + 0s test
+MISSED   crates/sever-index/src/index.rs:384:49: replace && with || in Index<E, S>::apply in 1s build + 1s test
+MISSED   crates/sever-index/src/index.rs:384:33: replace < with <= in Index<E, S>::apply in 1s build + 0s test
+MISSED   crates/sever-index/src/index.rs:384:55: replace < with <= in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:387:54: replace && with || in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:387:33: replace < with <= in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:387:60: replace < with <= in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:390:56: replace + with - in Index<E, S>::apply in 1s build + 0s test
+MISSED   crates/sever-index/src/index.rs:390:56: replace + with * in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:390:52: replace * with + in Index<E, S>::apply in 1s build + 0s test
+MISSED   crates/sever-index/src/index.rs:390:52: replace * with / in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:390:68: replace + with * in Index<E, S>::apply in 1s build + 0s test
+MISSED   crates/sever-index/src/index.rs:390:64: replace * with + in Index<E, S>::apply in 1s build + 0s test
+MISSED   crates/sever-index/src/index.rs:390:64: replace * with / in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:391:55: replace && with || in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:391:38: replace < with == in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:391:38: replace < with > in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:391:38: replace < with <= in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:391:60: replace < with == in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:391:60: replace < with > in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:391:60: replace < with <= in Index<E, S>::apply in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:403:70: replace * with + in Index<E, S>::apply in 1s build + 0s test
+MISSED   crates/sever-index/src/index.rs:403:70: replace * with / in Index<E, S>::apply in 1s build + 0s test
+MISSED   crates/sever-index/src/index.rs:504:9: replace Index<E, S>::group_len -> Option<usize> with Some(0) in 1s build + 0s test
+MISSED   crates/sever-index/src/index.rs:560:26: replace > with >= in Index<E, S>::check_invariants in 1s build + 0s test
+MISSED   crates/sever-index/src/index.rs:582:17: replace && with || in Index<E, S>::check_invariants in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:578:17: replace && with || in Index<E, S>::check_invariants in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:594:13: replace > with == in Index<E, S>::check_invariants in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:594:13: replace > with >= in Index<E, S>::check_invariants in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:593:41: replace / with % in Index<E, S>::check_invariants in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:593:41: replace / with * in Index<E, S>::check_invariants in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:593:15: replace * with + in Index<E, S>::check_invariants in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:593:46: replace * with + in Index<E, S>::check_invariants in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:731:35: replace + with * in Draft<'a, E, S>::put in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:892:34: replace += with -= in Draft<'a, E, S>::flush in 0s build + 0s test
+MISSED   crates/sever-index/src/index.rs:892:34: replace += with *= in Draft<'a, E, S>::flush in 0s build + 0s test
+MISSED   crates/sever-index/src/scramble.rs:45:9: replace <impl core::fmt::Debug for HmacSha512Scrambler>::fmt -> core::fmt::Result with Ok(Default::default()) in 0s build + 0s test
+MISSED   crates/sever-quant/src/lib.rs:91:42: replace > with < in QVec::from_stored in 0s build + 0s test
+MISSED   crates/sever-quant/src/lib.rs:107:9: replace QVec::dim -> usize with 1 in 0s build + 0s test
+MISSED   crates/sever-quant/src/lib.rs:107:9: replace QVec::dim -> usize with 0 in 0s build + 0s test
+MISSED   crates/sever-quant/src/lib.rs:112:9: replace QVec::dequantise_f64 -> Vec<f64> with vec![] in 0s build + 0s test
+MISSED   crates/sever-quant/src/lib.rs:121:9: replace QVec::dequantise_f32 -> Vec<f32> with vec![] in 0s build + 0s test
+MISSED   crates/sever-quant/src/lib.rs:121:9: replace QVec::dequantise_f32 -> Vec<f32> with vec![0.0] in 0s build + 0s test
+MISSED   crates/sever-quant/src/lib.rs:121:9: replace QVec::dequantise_f32 -> Vec<f32> with vec![1.0] in 0s build + 0s test
+MISSED   crates/sever-quant/src/lib.rs:121:9: replace QVec::dequantise_f32 -> Vec<f32> with vec![-1.0] in 0s build + 0s test
+MISSED   crates/sever-search/src/lib.rs:69:57: delete ! in search in 0s build + 3s test
+MISSED   crates/sever-search/src/kernel.rs:11:22: replace + with - in reduce in 0s build + 2s test
+MISSED   crates/sever-search/src/kernel.rs:11:22: replace + with * in reduce in 0s build + 2s test
+MISSED   crates/sever-search/src/kernel.rs:11:42: replace + with * in reduce in 0s build + 2s test
+MISSED   crates/sever-search/src/kernel.rs:11:36: replace + with - in reduce in 0s build + 2s test
+MISSED   crates/sever-search/src/kernel.rs:11:36: replace + with * in reduce in 0s build + 3s test
+MISSED   crates/sever-search/src/kernel.rs:11:48: replace + with - in reduce in 0s build + 2s test
+MISSED   crates/sever-search/src/kernel.rs:11:48: replace + with * in reduce in 0s build + 2s test
+MISSED   crates/sever-search/src/kernel.rs:40:5: replace uses_avx2 -> bool with true in 0s build + 2s test
+MISSED   crates/sever-search/src/kernel.rs:62:9: replace avx2::available -> bool with true in 0s build + 2s test
+MISSED   crates/sever-search/src/kernel.rs:63:58: replace && with || in avx2::available in 0s build + 3s test
+418 mutants tested in 6m: 71 missed, 276 caught, 71 unviable

@@ -1,0 +1,439 @@
+34b4558|2026-09-27|added sha256 to ensure the intergrity , along with the config and setting of the data
+61e77b7|2026-09-27|added claude.md for ai governance
+b8fd6fc|2026-09-27|to document and gather project info
+906fba7|2026-09-27|contains scipts to reproduce the datasets used
+86d8402|2026-09-27|added .gitignore file
+2d2d3cc|2026-09-27|P0: restore corrupt SciQ passages; manifest with nq_1m embeddings (§20.2)
+90d0882|2026-09-27|update gitignore
+94e8313|2026-09-27|remove demo mode/version
+4251062|2026-09-27|creating virtual env and updating env
+b9611e0|2026-09-27|update progressfile
+6519e2e|2026-09-27|delete demo plan
+2059094|2026-09-27|adding specs
+1719154|2026-09-27|update file
+8908634|2026-09-27|adding py version details
+3581a2e|2026-09-27|dividing project into parts
+84161ca|2026-09-27|update project overview
+45cc099|2026-09-27|adding all the specifications
+a182947|2026-10-01|project parallel notes
+a246816|2026-10-01|practise files (not project files)
+7f9caa5|2026-10-01|added few docs for better notes structure
+abe7797|2026-10-01|scripts for validation and demo of project
+b592536|2026-10-01|testing scripts for data validation
+52490c5|2026-10-01|testing normalization of data embedding
+fbd4f3d|2026-10-02|adjusting the testing env'
+be7dfe8|2026-10-02|testing quantization of vectors
+9e1710f|2026-10-02|qunatization script for vector
+fff3745|2026-10-02|adding demo plan for review
+685d49d|2026-10-04|docs: service-side custody of r_t and user keys (DB-55)
+553e825|2026-10-04|chore: move the review demo into demo/ with its own environment (DB-56)
+483d62c|2026-10-04|docs: accept Part 1 decisions DB-44/45/47/49/50, add DB-56..59; close G-1, G-5, G-6, G-7; record G-8..G-10
+26b1aa3|2026-10-04|chore: Rust workspace (Build §1.2 lints, toolchain 1.98.1) and empty sever-types
+1d50f76|2026-10-04|feat(sever-types): record, group, collection and scrambled IDs; §17 errors; SecretBuf and EP-4 (§2.2, §3.2, §5.1, §17)
+fd09710|2026-10-04|docs(progress): sever-types built; next sever-quant
+b2a8951|2026-10-04|docs: §4.1 step 0, the dimension check (DB-60); close G-8
+5fa8ae5|2026-10-04|feat(sever-quant): §4.1 check (steps 0–3), Q24 ties to even, dequantise f64/f32; golden vector 5
+954fddf|2026-10-04|feat(partition): Python builder C-15 with independent Ledoit–Wolf oracle (§6.2) and Rust importer (§6.3)
+18ed175|2026-10-04|feat(refmodel-core): Part 1 reference model C-18 (§3–§8): groups, SEVERC blob, routing, flush, search; golden vectors 7, 8
+76bb293|2026-10-04|feat(index, search): sever-index (§5, §7, §9.7; EP-1, EP-2, EP-3) and sever-search (§8, scalar + AVX2)
+360eea6|2026-10-04|feat(tracekit, testkit): trace-based differential testing (Build §2.4), run ledger, gate runners
+c597010|2026-10-04|chore(ledger): record P1-T2/T5 nq-10k run (started, aborted for repository move)
+0e6ea64|2026-10-04|chore: move the working copy to the WSL ext4 filesystem (~/sever-db)
+001f481|2026-10-05|fix(testkit): gate replays with a binary built for the run; ledger records run_commit
+1bdaa1d|2026-10-05|build(deps): pin proptest ~1.6 without fork/timeout (spec §20.3 check 1)
+b94afa9|2026-10-05|feat(sever-p1): composition root, ghost baselines and sever-demo idea (Build §4.4, §4.9)
+78e3212|2026-10-05|fix(testkit): P1-T7 runner in 10,000-row blocks (fits 8 GB RAM); method label says float64, not exact
+53be86f|2026-10-05|fix(testkit): ledger dirty check ignores the ledger file itself
+4f9d0bc|2026-10-05|feat(sever_demo): one-page HTML report for sever-demo idea (Build §4.4, §4.9); CLAUDE.md commands
+522526b|2026-10-05|feat(spec-trace): #[spec] attribute, spec-trace tool, catalogue pass; tests for SR-7.1-1, SR-8.1-1, SR-5.6-2 (Build §2.2, P1-T9)
+2b2bb9a|2026-10-05|test(architecture): L13 rules for Part 1 (Build §4.4): no I/O/clock/RNG in the core, part direction, unsafe allow-list, no fitting in Rust, Python layering
+d943832|2026-10-05|perf(refmodel-core): search ranks all groups in one call, caches each group's float32 mirror, tie-sorts only candidates at or under the k-th score
+027264d|2026-10-05|feat(tracekit, testkit): replay checks P1-T1 (survivors) and P1-T4 (kernels); seeds in parallel; ledger and P1-T7 result
+5fe77e6|2026-10-05|fix(testkit): ledger entries name the dirty paths
+4574de9|2026-10-05|fix(testkit): dirty_paths keeps the first path's leading status column
+b2d57f0|2026-10-05|test(fuzz): L11 targets for the artefact and blob parsers (Build §4.7), seeds from golden files; gates p1-fuzz (P1-T12)
+2285dc0|2026-10-05|test(stateful, synthetic): L5 model-based stateful tests and the L4 synthetic stream gate (Build §4.7)
+649cef3|2026-10-05|test(spike): Part 1 proof spikes (Build §3.4): Pedersen CommitmentExtension on ristretto255 passes EP-1; EP-3 rotation reader
+86e60e1|2026-10-05|fix(testkit): p1-spikes summary types; ledger: P1-T2/T5 (+T1, T4) nq-10k PASS, five seeds
+2ab3ea9|2026-10-05|chore(spike): delete the Part 1 proof spike after its gate (Build §3.4)
+064c51d|2026-10-05|test: close the branch-coverage gaps (P1-T10); fix apply losing slots on a DrainInto to a missing group
+e7b4285|2026-10-05|fix(sever-partition): never reserve more than the remaining bytes can fill (found by fuzzing, P1-T12)
+cf7151f|2026-10-05|chore(ledger): nq-100k gate and fuzz rerun killed by the OOM killer (no result); ignore .coverage
+ebb0176|2026-10-05|chore(ledger): fuzz run lost to a WSL restart (no result)
+36bfbd8|2026-10-06|chore(ledger): fuzz run lost when the machine went down (no result)
+c2b7254|2026-10-06|docs(spec): close G-9 … G-12 with DB-61 … DB-64
+c56be61|2026-10-06|fix(sever-search): AVX2 kernel compiles warning-free on the MSRV 1.85 and on 1.98.1; rustfmt
+5f462de|2026-10-06|test(p1): kill surviving mutants; triage the rest (P1-T11)
+bb552ee|2026-10-06|ci: fast and full-checks tiers, freeze script, one-command demo; mutants and checks gate runners
+7ebe1d0|2026-10-06|chore(p0): pre-registered experiment config (Overview §12)
+0ba579e|2026-10-06|chore(ledger): P1-T12 fuzz gate PASS, 10^8 runs per parser
+57c7ff0|2026-10-06|docs: full README; Part 1 progress
+f850ae7|2026-10-06|docs: map of commit hashes rewritten on 6 Oct 2026
+57c21ba|2026-10-06|fix(demo): scripts executable
+c854c75|2026-10-06|fix(ci): make the sabotage runner executable (full-checks called it directly)
+43f5e40|2026-10-06|chore(ledger): P1-T11 mutants PASS (93.7 %), P1-T10 coverage PASS, full-checks FAIL (sabotage runner not executable)
+21c344f|2026-10-06|test(sever-search): keep the proptest case found by the SB-9 sabotage build
+22d1dce|2026-10-06|chore(ledger): full-checks PASS (P1-T8 sabotage SB-1…SB-10 red)
+3a3b17d|2026-10-06|chore(ledger): P1-T2/T5 nq-100k PASS, five seeds, 12.4 M values, 0 mismatches
+1eaa346|2026-10-06|fix(sabotage): restore proptest regression files a sabotage build writes (F-2)
+da8a30a|2026-10-06|docs: Part 1 done; final gate results in README and progress
+b1d4576|2026-10-06|chore(freeze): Part 1 freeze manifest (Build §0.3 F-1)
+dd4dd4b|2026-10-06|docs: Part 1 walkthrough (code, tests, history)
+56da6e5|2026-10-07|docs: Part 2 design review; DB-46, DB-48 accepted; DB-65 closes G-13 (§12.2, §14)
+a1a1831|2026-10-07|feat(sever-vfs): EP-5 Vfs, PosixVfs, crash-simulating SimVfs, contract suite (§12.2)
+1d99126|2026-10-07|feat(sever-format): §14 codecs, storage image, paged checkpoints; DB-66…DB-68 close G-14…G-16
+45e8808|2026-10-07|feat(sever-wal): segments, transactions, torn-tail recovery (§12.3); durability helpers with SB-12, SB-14 (§12.7)
+84c9994|2026-10-07|feat(sever-appendstore): EP-8 append-only stores with contract suite (§14.8)
+2822c53|2026-10-07|feat(sever-checkpoint): atomic storage checkpoints and MANIFEST install (§12.4, §15.6)
+db7000c|2026-10-07|feat(sever-txn): EP-6/7/9 with contract suites, change sets as after-images, commit protocol (§12.5, §15)
+4339e3b|2026-10-07|feat(sever-engine): collections, API, recovery with full invariant check, platform checks (§12.5, §12.9, §15.7, §16.1)
+f7d6362|2026-10-07|feat(sever-crashkit): crash campaign and durable oracle (EX-1); feat(sever-p2): composition root and CLI
+f874942|2026-10-07|fix(sever-txn): participant outputs carry the request index (delete_user certificates, Part 3)
+682bfac|2026-10-07|chore(ledger): p2-crash plumbing smoke run (seed 42, first 40 operations; not a gate)
+bea8ce1|2026-10-07|feat(sever-p2): sever-demo-p2 durable (Build §5.9); DB-69 closes G-17, DB-70 (E2E-2.6 without mounting)
+377a211|2026-10-07|feat(sever-py-p2, sever_db_p2): PyO3 bindings and SDK; test: E2E-2.1…2.8 and Part 2 architecture tests
+758e9de|2026-10-07|test: Part 2 traceability 46/46 (sever_testkit_p2.spec_trace), SDK quantiser test
+4a7aa7b|2026-10-07|test(fuzz-p2): Part 2 parser fuzz targets and seeds (P2-T6); docs: resume point
+ae183a0|2026-10-07|test(testkit-p2): p2-fuzz ledger runner (P2-T6)
+37a2b0e|2026-10-07|fix(testkit-p2): p2-fuzz runs from the root with --fuzz-dir fuzz-p2
+08e3b58|2026-10-07|test(spike): Part 2 proof spikes (Build §3.4): AeadSealer passes EP-6 with the §14.3/§14.4 sizes; log-leaf and key-rotation participants pass EP-7
+795aca8|2026-10-07|chore(spike): delete the Part 2 proof spike after its gate (Build §3.4); ledger: p2-spikes PASS, two p2-fuzz runner setup failures (wrong fuzz dir, fixed in 37a2b0e)
+22012b6|2026-10-07|test(crashkit): replay-p1, Part 1's frozen traces through the Part 2 engine, plain / close / crash after every rung (P2-T5, F-5); gates p2-replay
+99a98e3|2026-10-07|chore(ledger): P2-T6 fuzz PASS (10^8 runs per Part 2 parser, 0 crashes)
+da01954|2026-10-07|test(format, engine): §14.2 paged-file conformance with an independent CRC-32C; startup refusal for each §21/§5.1/§6.3/§9.7/§3.2/§14.8 invariant (P2-T9 branch coverage)
+90556b3|2026-10-07|docs: Part 2 resume point (detached runs, next steps)
+822fb44|2026-10-07|test(wal): §12.3 recovery rules on hand-written logs (structure, order, torn tail, position, segments, names)
+53a3796|2026-10-07|test(txn): one deliberately wrong sealer per EP-6 rule, a binding toy sealer, and EP-7 participants that refuse or fail their invariants (Build §3.4)
+e3adb25|2026-10-07|test(format): checkpoint streams refuse wrong collection order, unsorted locator and payload entries, missing or extra partitions, trailing bytes (§14.9)
+3196434|2026-10-07|chore(ledger): P2-T5 PASS (Part 1 traces through the Part 2 engine, 5 seeds × plain/close/crash, 0 mismatches)
+53ed933|2026-10-07|test: §9.7 scrambled IDs vs an independent HMAC of the stored key, §12.4 automatic checkpoints, placements vs Part 1, §14.6 participant types, §14.8/§12.3 size limits, DB-46/DB-48 empty fields, EP-9 clock
+90cfff5|2026-10-07|test(testkit-p2): p2-sabotage ledger runner (P2-T8)
+bdfc544|2026-10-07|ci: Part 2 spec-trace and SDK native module in the fast tier
+4822637|2026-10-07|test(crashkit): measure, P2-T11 bytes and fsyncs per operation, recovery time and memory on real files
+c73c5c9|2026-10-07|chore(ledger): P2-T8 PASS (SB-1 … SB-15 each turn a test red)
+fb799ca|2026-10-07|test(testkit-p2): p2-measures ledger runner (P2-T11)
+0fe033e|2026-10-07|test(testkit-p2): p2-coverage and p2-mutants ledger runners (P2-T9)
+f526e76|2026-10-07|test(testkit-p2): p2-checks ledger runner (Full-tier checks, P2-T10 freeze guard)
+ef30e43|2026-10-07|feat(scripts): p2-demo.sh, the Part 2 demo in one command (Build §5.9, §2.9)
+359e33d|2026-10-07|docs(readme): Part 2 usage (demo, CLI, SDK) and results table
+23a0380|2026-10-07|chore(ledger): P2-T9 coverage PASS (lines 94.8 %, branches 86.7 % on format/wal/txn/engine)
+6ccfcfb|2026-10-07|feat(crashkit): resumable crash campaigns (progress saved every 30 s, --resume cuts results back and continues); test: a resumed campaign equals an uninterrupted one
+87f01dc|2026-10-07|docs(progress): high-priority test-oracle audit before the Part 2 freeze
+2cff5d0|2026-10-07|docs(claude): test independence rules (§6.3): oracle first, declared oracle per test, no D-only requirement, labels must be able to fail
+f503759|2026-10-07|feat(testkit-p2): oracle_check, every labelled Part 2 test declares where its expected value comes from (CLAUDE.md §6.3)
+f89d666|2026-10-07|feat(testkit-p2): oracles scoped to the labels they back, so a round trip cannot earn credit for a layout rule
+c5d6dd2|2026-10-08|docs(spec): §14.9 versions are 1 and the store magic is SVDBSTOR; group_id is 32 bytes in §14.6/§14.9 (G-18, G-19, DB-71)
+303c7ce|2026-10-08|test(sever-format): declare oracles; §14.6 payloads, §14.9 headers and checkpoint streams byte for byte from the spec; drop two labels the tests could not fail for
+b8de9c6|2026-10-08|docs(progress): resume point 8 Oct 00:05 UTC
+a73ae8e|2026-10-08|test(sever-vfs): declare oracles; drop labels the tests could not fail for (path syntax is not SR-12.2-1, a fixed error enum cannot break §17, the functional contract never crashes)
+4e77666|2026-10-08|test(sever-wal): declare oracles; relabel the checkpoint-position test (SR-15.7-1) and segment names (SR-14.9-1); drop a label for a rule the spec does not state (increasing transaction IDs)
+52fcc2a|2026-10-08|feat(testkit-p2): gates p2-crash --resume (only on identical code; finished seeds kept, campaigns continue from saved progress; every attempt in the ledger)
+e09728b|2026-10-08|test(sever-appendstore): the store file on disk byte for byte from §14.8/§14.9; declare oracles; the EP-8 read-back is D, the crash test is SR-14.6-3
+a500211|2026-10-08|test(sever-checkpoint): declare oracles, scoped per requirement
+c5db1b1|2026-10-08|test(sever-txn): declare oracles (C: Part 1's frozen index); relabel the passage test (SR-14.6-2) and the plaintext-sealer test (SR-14.4-1); drop the EP-6 contract's label (a Build §3.4 contract, not SR-14-1)
+8e71e2e|2026-10-08|feat(scripts): crash-safe job queue (systemd user service, resumable jobs); p2-crash and p2-measures queue jobs; --resume exit 3 when there is nothing to resume
+b72e91e|2026-10-08|docs(progress): test-oracle audit stopped by the owner; findings so far recorded
+1d4664b|2026-10-08|feat(testkit-p2): proofs, re-runnable evidence for every claim about a test (red and green patch proofs run on HEAD in a throwaway worktree); CLAUDE.md §6.3: every claim carries a proof
+31a6c8d|2026-10-08|test: strengthen four tests a proof showed could not fail for their claim (checkpoint page CRC on unconstrained bytes, the store's torn tail, the WAL's on-disk cut, green proofs never count as coverage)
+da1c2ee|2026-10-08|chore(freeze): Part 2 ownership list (F-1)
+c348669|2026-10-08|fix(tests): the P2 architecture scan skips #[cfg(test)] items; fix(testkit-p2): parse pytest -v outcomes, parametrized tests included
+4730c1d|2026-10-08|test(wal): gaps from mutation triage: 64 MiB default, a record filling a segment, bad middle header, skipped wal_seqs refused, repeated BEGIN, removed-segment counts
+d8f5584|2026-10-08|test(proofs): 142 proofs for sever-format, -vfs, -wal, -appendstore, -checkpoint, -txn and the checkers (red: each label can fail; green: each removed label could not)
+4913bd9|2026-10-08|test: gaps from mutation triage: P2-T4 asserts the reader ran at all seven steps, group sizes and N, checkpoint frequency, passage sequence numbers, field-size guards, no-op truncate, EP-6 binding per owner field, EP-7 crash between commit and after_commit
+1d1ec04|2026-10-08|test(sever-engine): declare oracles; a search finishes while a writer is inside its commit (SR-12.5-1, moved from the single-threaded reader test, which cannot see a lock); fix(testkit-p2): absolute proof target dir
+eeaef24|2026-10-08|test: declare oracles for the engine, crashkit, CLI, SDK, architecture and e2e tests; drop labels the tests cannot fail for (SR-12.4-1 on close-and-reopen, SR-12.5-1 on the SIGKILL test); feat(testkit-p2): read Python marks with ast; proofs build the patched CLI and native module in the worktree
+3c2b44e|2026-10-08|feat(testkit-p2): limit proofs record what a test does not notice while it keeps its label
+e8b8c3d|2026-10-08|test(proofs): 205 proofs, every label of every labelled Part 2 test has a red proof; ci: oracle and proof checks in the Fast tier
+385e7c6|2026-10-08|chore(ledger): P2-T1…T3 PASS (5 seeds, nq-10k: ~344,000 crash points, 0 failures); P2-T11 recorded (nq-100k)
+37dc5f8|2026-10-08|docs: MUTANTS_P2.md, every survivor of the exploratory run triaged (P2-T9)
+c82cf33|2026-10-08|docs: Part 2 results so far (crash gate, measures, coverage, mutants triage); resume point
+4aec009|2026-10-08|fix(proofs): regenerate three checker patches the ast rewrite stranded; proofs check fails when a patch no longer applies
+5c95dbe|2026-10-08|docs(progress): freeze waits for the owner's independent test audit
+4da9286|2026-10-08|chore(ledger): P2-T9 mutants PASS (91.4 %, every survivor triaged)
+5318d56|2026-10-08|fix: Full-tier findings: fuzz-seed writer moved out of storage code (SR-12.2-1 architecture test), DB-71 licence allow-list for PyO3's build dependency, README example formatted; ledger: p2-checks FAIL (3 of 19 steps)
+7c7da66|2026-10-08|chore(ledger): Full-tier checks PASS (19/19: P2-T4, P2-T10, E2E-2.x); docs: every Part 2 gate passed, freeze waits for the audit
+5493bcb|2026-10-08|docs: renumber the format-versions decision DB-71 to DB-72 (p2-fuzz took DB-71 for the licence allow-list)
+9f9824c|2026-10-08|fix(proofs): PR-L01 rescales by 1 + 2^-22, inside the §4.1 tolerance (1 + 2^-20 is 8.08 ULPs off and the engine refuses it, so the test went red and the limit claim was false)
+5eefa94|2026-10-08|docs: TEST_ORACLES_P2 (120 labelled tests, A 112 / B 1 / C 5 / D 6, none D-only) and PROOFS_P2 (205 of 205 proofs hold at 9f9824c)
+f2dd213|2026-10-08|test(sdk): the engine alone must see the SDK's x̃ (SR-4.2-4): a vector sent straight to the engine is a retry with the same commitment; PR-L01 becomes red proof PR-X07
+20462fc|2026-10-08|test(sever-engine): a second writer waits for the first and the result is the serial one (SR-12.5-1, one writer at a time); red proof PR-E32 plans an insert before taking the writer mutex
+0980d55|2026-10-08|merge p2-test-oracles: declared test oracles (CLAUDE.md §6.3), oracle and proof checks in CI, 206 proofs, DB-72 (closes G-18, G-19)
+035d70b|2026-10-08|test: declare oracles and add red proofs for the five tests p2-fuzz added in mutation triage (PR-W15, PR-W17…W19, PR-E31)
+55af7ad|2026-10-08|chore(freeze): Part 2 owns its proofs (tests/proofs/p2), so a later part cannot change them unnoticed
+1b7477c|2026-10-08|docs: PROOFS_P2 (211 of 211 proofs hold at 035d70b) and TEST_ORACLES_P2 (126 labelled tests, none on D alone) for the merged Part 2
+7560ebf|2026-10-08|chore(ledger): Full-tier checks PASS after the test audit (21/21, oracle and proof checks included); docs: Part 2 done, test audit results, freeze
+23ac9be|2026-10-08|chore(freeze): Part 2 frozen (F-1): 246 files, its proofs included
+f4772a3|2026-10-08|feat(fair): automated fair testing in a clean room, required for a freeze (DB-73)
+fe1af70|2026-10-08|merge: fair testing (DB-73) into Part 2; Part 2 was frozen first, so its run is an audit and fixes stay out of frozen packages (F-3)
+8341123|2026-10-08|feat(fair): doctor --live makes one tiny sandboxed call; a run stops at once on a rejected credential (401)
+d76a93a|2026-10-08|feat(fair): doctor reports the credential's shape (never the token) to tell a bad paste from a revoked token
+42fc06d|2026-10-08|fix(fair): a usage limit (429) waits for its reset and retries; a failed session stops the run before anything is sealed or reported
+6f56e4b|2026-10-08|feat(fair): spend tokens only on --yes, with an estimate, per-session and per-command caps, and a stop at the usage limit (DB-74); what is tested is unchanged
+a494354|2026-10-15|test(erratum E-1): SDK searches from threads during delete_user must not deadlock (§12.5); red: the SDK deadlocks
+061d785|2026-10-15|erratum(E-1): the SDK takes the engine mutex with the GIL released, so threads no longer deadlock (§12.5)
+1e64226|2026-10-15|chore(ledger): p2-checks PASS on the first E-1 fix commit (since amended: the regression test keeps the caller's PYTHONPATH so its red proof sees the patched build); rerun on the final commit follows
+7729302|2026-10-15|chore(ledger): clean-room suite on the E-1 engine PASS (255/0/1 skipped); docs(progress): erratum E-1 done, Part 3 next
+fd7c793|2026-10-15|feat(fair): blind bugs from the cargo-mutants gate, not an AI planter (DB-75); chore: prepare Part 3 (current part, fair-testing scope, planned freeze list, plan in PROGRESS)
+e66a7a4|2026-10-15|docs(progress): Part 3 step 0 starts with its test enforcement (testkit_p3 checks, p3-mutants gate, CI steps)
+f94e838|2026-10-15|feat(testkit-p3): Part 3 spec-trace, oracle and proof checks, p3-mutants gate, CI steps (CLAUDE.md §6.3, Build 3-4 §1.9)
+712e7eb|2026-10-15|docs: Part 3 design review: DB-51, DB-52, DB-53 (EP-10) accepted; spec §9.1, §9.2, §19.1 amended; closes G-3
+8152de4|2026-10-15|docs(spec): Part 3 requirement catalogue, one SR- per normative statement of §3.3, §4.5, §9–§11, §16.2–16.3 and Part 3 rows (DB-58)
+495df61|2026-10-15|feat(testkit-p3): Part 3 attack, auditor-fault and sabotage register with a Fast-tier check; DB-76 adds AT-18…AT-20
+94014d9|2026-10-15|ci: enforce the curve25519-dalek 4.1.3 pin in every lockfile and the duplicate check in verifier/ (spec §20.3 checks 1-2); docs(progress): Part 3 step 0 done
+8d8c44c|2026-10-15|test(sever-crypto): RFC 9380 K.3 and RFC 9496 vectors extracted from the pinned RFC texts, with a Fast-tier check
+114e77e|2026-10-15|feat(sever-crypto): domain strings, expand_message_xmd (DB-52), one-way map, canonical decoding, scalar map (§2.3, §4.5, §9.2, §9.9); red proofs PR3-C01…C06; SB-19
+098f955|2026-10-15|feat(sever_refmodel_certs): pure-Python ristretto255 and expand_message_xmd from RFC 9496/9380, scalar map, generators, gdigest; golden Appendix B 1-2 (DB-51); docs: PROOFS_P3 at 114e77e
+8b82a41|2026-10-15|feat(sever-crypto): generators, gdigest and the startup self-check (§9.2, §9.6, INV-10) against golden Appendix B 1-2; red proofs PR3-C07…C11; G-20 opened
+bc4ba8a|2026-10-15|feat(sever-crypto): record and group commitments, transition check, identity C_t rejected (§9.3, §9.9, §5.4); model commitments and golden/p3_commitments.json; red proofs PR3-C12…C15
+51b0662|2026-10-15|feat(sever-crypto): proof of knowledge (§9.5): deletion context, challenge, responses, proof encoding, verifier; SB-16, SB-17, SB-23; model prover/verifier and golden/p3_posk.json (Appendix B 3); red proofs PR3-C16…C22
+d2d20bd|2026-10-15|feat(sever-crypto): hedged nonces (§9.6) and prove, which accepts only StrictProofRng (compile_fail doc tests); SB-18; red proofs PR3-C23…C25, doc-test proofs PR3-D01/D02
+46869c2|2026-10-15|fix(spec): generator self-check at any d: H, G_0, G_383, and gdigest at d = 384 (DB-77, §9.2; closes G-20); sever-crypto follows it
+219547f|2026-10-15|feat(sever-crypto): Ed25519 with verify_strict, the §9.8 signed messages and 90-day epochs; RFC 8032 vectors extracted from the pinned text; red proofs PR3-C26…C31
+de4b450|2026-10-15|test(sever-crypto): module close: SR-9.1-1 architecture test, Appendix B vector 4 golden; proofs 31/31 on 219547f, sabotage SB-16/17/18/19/23 red; TRACE_PART_3, TEST_ORACLES_P3; fair run deferred until the SDK and CLI exist
+60a8bf5|2026-10-15|chore(ledger): fair dry-run 3 --module sever-crypto (offline stub agents; stopped at the sever-p3 build, which does not exist yet)
+3204434|2026-10-15|feat(sever_refmodel_certs): group state (§5.3-5.5): S, n, r_agg, C_S together, full-form SEVERG blob and parser; golden Appendix B 8 (full form) and a group stream
+2b4b2fd|2026-10-15|feat(sever-commit): EP-1 CommitmentExtension and StoredExtension: admit (recompute C_t, verify_strict), removal check against the logged C_t, INV-3, full-form blob (§5.3, §9.3-9.4, §14.4, §15.1, §15.3); DB-78; red proofs PR3-M01…M11
+eef251b|2026-10-15|feat(sever-log): RFC 9162 Merkle tree keeping every complete subtree, inclusion and consistency proofs and verifiers (§10.1, §10.5); model Merkle and golden Appendix B 9; red proofs PR3-L01…L05
+96e7169|2026-10-15|feat(sever-log): leaves, log checkpoints, keys by epoch, cosignatures and the 4-of-5 threshold (SB-20), EP-10 Witness + SimulatedWitness + contract (§10.2-10.4, §9.8); DB-79 genesis checkpoint closes G-4; red proofs PR3-L06…L13; docs(progress): resume point
+f68f8dd|2026-10-15|chore: Cargo.lock for sever-log's sever-crypto dependency
+152733d|2026-10-15|feat(sever_refmodel_certs): pure-Python Ed25519 (RFC 8032, strict), certificate TLV, insert_inclusion and the eight-step verification (§9.8, §11.1-11.3); golden Appendix B 6; every attack AT-1…AT-20 rejected at a listed step
+a5dd553|2026-10-15|feat(sever-cert): certificate TLV encoding and strict parser, insert_inclusion, builder with epoch signing (§11.1-11.2, §9.8, §15.3 step 4); SB-22; engine = model byte for byte on golden Appendix B 6; red proofs PR3-T01…T14
+8c314a5|2026-10-15|test(erratum E-2): a participant's pre-transaction is committed on its own before the deletion, and an absent record touches nothing (§15.3 steps 1-3, Build §3.3 EP-7); red: the engine never calls pre_transaction
+a244264|2026-10-15|erratum(E-2): the engine calls EP-7 pre_transaction after planning and commits a requested pre-transaction on its own first (§15.3 steps 1-3, Build §3.3)
+d6ef6be|2026-10-15|chore(ledger): p2-checks PASS and clean-room suite PASS (255/0/1 skipped) on the E-2 engine; docs(progress): erratum E-2 done, tag left to the owner
+ff8327d|2026-10-15|feat(sever-log, sever-cert): the log as an EP-7 transaction participant: LogStore (stores, WAL records, committed-only phase-C stores, replay; passes the frozen EP-7 contract) and LogParticipant (checkpoints as pre-transactions over committed leaves, insert leaves, chained certificates); sever-commit stages what the ChangeSet lacks; OperatorKeys (§10, §14.1, §14.6, §14.8, §15.1, §15.3); DB-80 closes G-21, DB-81, DB-82 closes G-22; red proofs PR3-L14…L19, PR3-P01…P12
+707f27d|2026-10-15|docs(progress): one current resume point (Part 3, module 6 next); the Part 2 summary archived; session log
+a93ad57|2026-10-16|feat(sever-p3): Part 3 composition root: generator self-check, operator keys durable in SECRETS before first use, five simulated witnesses with durable keys and memory, the §16.1 API (database_lsn, certificates, checkpoints, proofs), verifier anchors, CLI sever-db-p3; SB-21; DB-83 closes G-23; red proofs PR3-R01…R07, PR3-P13
+93f5ddf|2026-10-16|docs(progress): module 7 starting point; how to recreate the proof helper scripts
+dac1ea9|2026-10-16|feat(sever-py-p3, sever_db_p3): Part 3 SDK: UserKey, prepare_insert (the engine's quantiser, r_t from the OS, C_t, signature; r_t unreadable, request reused for a retry), SeededNonceForbidden on any extra argument, Database with database_lsn, certificates, checkpoints, proofs and anchors (§16.2); fix(sever-p3): the insert signature binds the collection inserted into, a mismatch no longer trips IntegrityViolation (§15.1 step 2); DB-84; red proofs PR3-R08, PR3-S01…S09
+a89b900|2026-10-16|feat(verifier): sever-verify, the offline certificate verifier in its own workspace sharing no engine code: expand_message_xmd, generators and the §9.2 self-check, §11.1-11.2 strict parser, RFC 9162 inclusion, §9.5 proof check, verify_strict, the §11.3 steps naming the failed step; anchors JSON and CLI (DB-85 closes G-24); model-written attack vectors golden/p3_attacks.json (AT-1…AT-20); E2E-3.1-3.3 through the SDK in a separate process, E2E-3.7; red proofs PR3-V01…V28, PR3-E01…E04, PR3-A02
+97df356|2026-10-16|feat(audit, sever-log, sever-cert, sever-p3): sever-audit in its own workspace (nine verifier files copied byte for byte) reports AF-1…AF-5 from a log export; each leaf's placement kept beside its hash and in LOG_LEAF, recovered like the hashes; export-log / Database.export_log (DB-86 closes G-25); model auditor and golden/p3_audit.json; E2E-3.4, E2E-3.6; red proofs PR3-L20, L21, P14, R09, U01…U06, A03, E05, E06; six older patches regenerated
+5dc9e34|2026-10-16|docs(soundness): SOUNDNESS.md: completeness, special soundness with an extractor, honest-verifier zero knowledge with a simulator, the hedged nonces, limits; each claim a test against the engine's prover and verifier (posk::equation_holds factored out); red proofs PR3-C33…C35, PR3-C21 regenerated
+7e97e00|2026-10-16|feat(demo): sever-demo-p3 receipt (Build 3-4 §1.10) through the SDK, the verifier in a separate directory (new --explain lists each §11.3 step) and the auditor; the backend checks the artefact's encoder (§3.3); test: the last untraced Part 3 requirements (SR-5.5-6/7, SR-9.8-8, SR-10.5-1, SR-15.2-2, SR-3.3-1); red proofs PR3-M12, M13, R10, L22, P15, D01
+0bc41de|2026-10-16|feat(gates): Part 3 gate tooling: sever-crashkit-p3 (crash campaign with certificates P3-T4, trace replay with five fields and the commitment model P3-T5, honest and attacked certificates P3-T1/T2, measures P3-T13), gates p3-crash|replay|attacks|measures|fuzz|coverage|checks|spikes, sever-verify --batch, fuzz crates for engine, verifier and auditor, the proof spike; memo-checks (test builds) keeps INV-3 from dominating reopens; DB-87; PR3-M10 regenerated
+4c846e5|2026-10-16|feat(sever-crashkit-p3): campaign --crash-from N (smoke runs crash only from op N; the gate uses 0)
+e063204|2026-10-16|chore: pause Part 3 gate runs at the owner's request; replay per-op timing (SEVER_KIT_TIMING); ledger start lines of the interrupted runs; docs(progress): module 11 resume point
+726a2e1|2026-10-17|perf(sever-crashkit-p3): crash points from the main line's snapshots, checked against the replay method on every 50th operation; accepted certificates remembered within a run; 4 MiB segments in the trace replay (DB-88)
+5f7d56f|2026-10-17|docs(progress): module 11 resume point after DB-88; the crash gate runs on four cores
+30e4497|2026-10-18|feat(sever-crashkit-p3): the crash campaign saves its progress every 30 s; gates p3-crash --resume continues an interrupted run with identical results (DB-88)
+f9a123c|2026-10-18|docs(p4): Part 4 design review (step 0): sever_testkit_p4 checks in ci fast, 60 Part 4 requirements, registers_p4 (SB-24..30, crash rows, key-file faults, platform matrix, scan targets), RFC 8452 pinned with 26 extracted vectors, open gaps G-26..G-31
+cb2adfa|2026-10-18|docs(p4): the owner's decisions of 18 Oct: Part 4 is built before Part 3's freeze on its own branch (DB-89); the design review's fixes accepted, closing G-26 … G-31 (DB-90)
+4fed9c6|2026-10-18|feat(sever-keys): keys in secret memory, the bucket function, the two-slot key file and the INV-14 recovery rule (Part 4 module 1; spec §13.1, §13.4, §14.7, DB-90)
+c360c64|2026-10-18|docs(proofs): PROOFS_P4.md on 4fed9c6: 15 of 15 Part 4 proofs hold
+e1befa2|2026-10-18|docs(p4): survivors' re-wrapped record keys live in the wrapped-key store, not in the slots (DB-91, the owner's choice; closes G-32)
+de4ba06|2026-10-18|feat(sever-seal): AES-256-GCM-SIV sealer (EP-6 AeadSealer), the §13.2 associated data, envelopes and bucket blocks, and the key ring shared with the key-rotation participant (Part 4 module 2; spec §13.2, §13.3, §14.3-14.5, DB-91)
+0a503b5|2026-10-18|docs(p4): DB-53's EP-11 half (PlatformProbe) and DB-54 (the evaluation's build variants) accepted; every build-plan proposal is decided
+dc11f53|2026-10-18|docs(proofs): PROOFS_P4.md on 0a503b5: 31 of 31 Part 4 proofs hold
+1f1635a|2026-10-18|docs(p4): DB-92 the group key rotates in the sealer, SB-24 lives in sever-seal, GROUP_CREATE carries an empty bucket block, the stage is pruned in prepare; spec §14.6 GROUP_CREATE and EXTENSION rows
+fb280dd|2026-10-18|feat(sever-erasure): the key-rotation participant (EP-7, ID 4): rotation in prepare, KEYS writes in phase A, old-slot erasure and the wrapped-key store in phase C, INV-14 recovery, drop and compaction; KeyRing stage pruning and departed-record envelopes; 19 tests, red proofs PR4-E01…E21 (Part 4 module 3; DB-91, DB-92)
+667eef7|2026-10-18|docs(proofs): PROOFS_P4.md on fb280dd: 52 of 52 Part 4 proofs hold
+1701436|2026-10-18|docs(p4): DB-93 memory is locked process-wide at startup, the btrfs attribute before KEYS exists, core dumps off first, probes fail closed; closes G-33; spec §12.8, §12.9
+7f02344|2026-10-18|feat(sever-platform): EP-11 PlatformProbe and LinuxProbe, the §12.8-12.9 startup rules on its answers, the EP-4 MlockProvider; Zeroize on Key and BucketKey, AES key schedules zeroed; 17 tests, red proofs PR4-P01…P15 (Part 4 module 4; DB-93)
+8c7a071|2026-10-18|docs(overview): DB-94 Part 3's full gates run once on a cloud VM at the end, interim checks on the laptop until then
+6887a1c|2026-10-19|fix(sever-p3): the operator store reads SECRETS with the database's sealer (OperatorStore::load_sealed); load keeps the plaintext sealer, so an AEAD database (DB-48 sealer_id 1) can hold operator keys
+ff01d3b|2026-10-19|docs(overview): DB-93 a finite memory-lock limit counts as a failed lock (an allocation would fail once the engine grows past it); the laptop's limit is 64 MiB
+be76bbc|2026-10-19|feat(sever-db): the final composition root, Engine<CommitmentExtension, AeadSealer, (LogParticipant, KeyRotationParticipant)>, with the startup checks after ENGINE.lock, the mlock provider and the sever-db CLI; SB-28 and SB-29 in sever-seal; key-export in sever-keys (DB-54); LinuxProbe locks memory only without a finite limit; tests: certificates on the encrypted engine, delete_user keys, a crash at every write of a deletion on either disk, the plaintext scan, the lock order, the §20.1 pins; red proofs PR4-D01…D08 (Part 4 module 5)
+804afc4|2026-10-19|feat(sever-scan, sever-py): the forensic scanner (EX-2, §16.3): known-plaintext search of a raw image (x̃ as i32 and i64, f32, passage windows, r_t, retired keys), carving of WAL records and key slots, every carved key on every carved accumulator, bucket block, envelope and payload, nonce reuse; finds SB-24, SB-25, SB-26, SB-28, SB-29 and SB-30 and recovers live controls; red proofs PR4-C01…C04 (Part 4 module 6). The final Python SDK sever_db (§16.2) on the encrypted engine, with allow_unsafe_memory and the startup report; Part 3's SDK tests pass unchanged on it (Part 4 module 7)
+49738cb|2026-10-19|feat(sever-scan): sever-demo-p4, Part 4's erase demo (Build 3-4 §2.11) on simulated disks laid out as an image: the scanner's positive control, delete_user with checked certificates, a clean scan, the SB-24 leak (scripts/demo-p4.sh builds both), and a crash in phase C repaired by recovery
+52a099a|2026-10-19|feat(sever-crashkit-p4): Part 3's gate kit on the final build, with crash points on both disks (SnapVfs over data and keys, replays crash the right disk), torn key-slot writes (§15.4 row 4), no stale key slot and every live record readable after each recovery, and active-key losses at the end (INV-14); fuzz-p4: key slots, wrapped-store values, bucket blocks, envelopes, scanner targets; scripts/oomguard.sh, the memory guard service
+adb6bd1|2026-10-19|fix(sever-erasure): recovery drops a torn record at the end of the newest wrapped-key segment instead of refusing (§14.8); a damaged record in an older segment still refuses
+ffe0e0a|2026-10-19|test(sever-crashkit-p4): replays crash both disks together (a crash on one disk stops the other before its next write, as one machine would); SEVER_KIT_DEBUG prints refused opens
+79463b9|2026-10-19|test(verifier): command-line tests of sever-verify (exit codes 0-3, --hex, --explain, --batch) on the Part 3 attack set
+20f43dd|2026-10-19|docs(proofs): regenerate PROOFS_P4.md
+0d269ec|2026-10-19|chore(results): interim Part 3 laptop gate results of 19 Oct and their ledger lines (DB-94)
+2cd8b12|2026-10-19|fix(sever-crashkit-p3, sever-crashkit-p4): AT-14 flips the emptied flag instead of setting it to its own value; AT-13 deletes a record as soon as it lands in the holding area, so the set has holding certificates to attack
+0c42e2a|2026-10-19|merge p4-prep: Part 4, The Erasure (modules 1-7, scanner, demo, crash kit p4, fuzz-p4) and the Part 3 fixes found by the interim gates
+2cad2dd|2026-10-19|chore(scripts): the unattended run scripts move into scripts/ops (Part 3 gates and interim runs, Part 4 interim crash, side jobs, progress view) with repo-relative paths; the side-jobs service unit; docs(progress): one working copy after the p4-prep merge
+eb7ca7c|2026-10-19|test(architecture): sever-crashkit-p4 is Part 4 tooling; style(scripts): progress view passes ruff
+c5c03fd|2026-10-19|test(verifier): generators of another dimension are refused at step 1; odd-length hex does not decode (P3-T9 coverage 95.2 % as the gate counts it)
+2991de5|2026-10-19|chore(scripts): Part 4 interim crash check in three windows per seed (single, multi-group, inserts), two seeds at a time, so it fits in memory; docs(overview): DB-94 note
+9d1cb3d|2026-10-19|fix(sever-crashkit-p3, sever-crashkit-p4): only the first n / 10 + 1 records that land in the holding area are deleted at once, so the n certificates are not all holding certificates (the gate stopped with 'no group cert')
+0d2ae39|2026-10-19|fix(scripts): side jobs find cargo and uv (the service's PATH has neither)
+59e0a45|2026-10-19|fix(sever-crashkit-p3, sever-crashkit-p4): the AT-2, AT-3 and AT-13 donor never empties its group; docs(spec): §9.5 states that an emptied group's proof is not bound to its context (G-34, DB-95)
+a2484e0|2026-10-19|chore(results): interim Part 3 attack and coverage reruns of 19 Oct (coverage PASS; attacks FAIL on G-34) and their ledger lines
+9de3bab|2026-10-19|chore(results): interim P3-T1/T2 attacks rerun of 19 Oct after DB-95: PASS on all five seeds
+b320e20|2026-10-19|fix(sever-erasure): compaction replaces the open store before removing wrapped.old
+02fafe9|2026-10-19|feat(sever-eval, sever-scan): the evaluation's builds (DB-54, DB-96)
+b7757f7|2026-10-19|test(p4): traceability 68/68 with 85 red proofs; the scanner carves the rotation participant's stores; SB-24 … SB-30 in the sabotage runner
+add828d|2026-10-19|feat(sever_experiments, sever_testkit_p4): the Part 4 gate runners and the evaluation
+1fc1898|2026-10-19|chore(scripts): the one VM run of every Part 3 and Part 4 gate and measure (DB-94)
+0d2d7d4|2026-10-19|docs: DB-96 (EX-2 on fuse2fs with allow_unsafe_fs, closes G-35; how the evaluation's builds are made; P4-T2's planted controls); README for Parts 3 and 4 with the interim results; PROGRESS: the VM run is next
+ba17e3b|2026-10-19|chore: remove the personal Rust practice file and its compiled binary (copied to ~/rust-practice)
+010587d|2026-10-19|chore(scripts): remove the finished one-off runners (Part 2 job scripts; Part 3 laptop gate and interim runners, superseded by scripts/vm/run-all.sh)
+b3a7699|2026-10-19|docs: crates/README.md (every crate by part and role) and docs/README.md (sources of truth, evidence, guides); TRACEABILITY.md points to the generated matrices
+c877f0d|2026-10-19|docs(readme): a quick start for the final database (the sever_db SDK, verifying a receipt, the startup checks)
+193bd79|2026-10-19|docs: guides in docs/guides (Part 1 walkthrough, team handbook); README in part order with a top-level layout tree; PROGRESS: the v1.1 one-folder-per-kind layout after v1.0 (erratum E-3)
+b050175|2026-10-19|fix(ci): build the verifier and auditor with --locked, not --offline
+6a219af|2026-10-19|docs(readme): the quick-start code block passes ruff format
+d771b3a|2026-10-19|fix(sever-keys): an unambiguous doc link to the file module (cargo doc -D warnings)
+6104556|2026-10-19|feat(demo-engine): the final database used as an application uses it (DB-97, G-36, §19.2)
+92a6328|2026-10-19|docs(demo-engine): the README's code block passes ruff format; demo.sh test checks it
+fa695dd|2026-10-20|docs(progress): main holds the built tree; the VM runs on main
+bcde0a1|2026-10-20|feat(fair): Part 4's pre-registered scope, the tester told the part's SDK and the machine's platform, final ownership lists for Parts 3 and 4 (DB-98)
+1954b93|2026-10-20|fix(fair): the worktree builds every part's SDK, so the part's own suite (F-5) can run (DB-98)
+4cccfae|2026-10-20|test(fair): dry runs of Parts 3 and 4 pass the plumbing (own suites green; DB-98)
+9189b50|2026-10-20|test(fair): Part 3 bug-hunt run (FAIL: 1 engine bug, 2 spec gaps over 8 tests; DB-98)
+d3a97d2|2026-10-20|test(fair): Part 4 bug-hunt run (FAIL: 1 spec gap, the witness anchors; 145 of 146 pass; DB-98)
+dc9c9ff|2026-10-20|docs(progress): the three fair-testing findings and their planned fixes
+3667508|2026-10-20|test(sever-p3): a new database's anchors hold every witness's epoch-0 key (red; fair-testing finding)
+253642f|2026-10-20|fix(sever-p3): every witness has its epoch-0 key from the database's creation, so the anchors are complete (§11.3, G-37, DB-99)
+89f1c37|2026-10-20|test(sdk): the placement is the group's §5.1 text form (red; fair-testing finding)
+53c3b79|2026-10-20|fix(sdk): report the placement as the group's §5.1 text form, not Rust's debug form (§16.2, G-38, DB-99)
+c99f830|2026-10-20|fix(testkit-p4): proofs build Part 4's own SDK and CLI, not Part 3's (DB-99)
+5850860|2026-10-20|test(sever-p3): a log leaf past the committed WAL is refused at recovery (red; fair-testing finding)
+3f2aef5|2026-10-20|fix(sever-log): recovery refuses a stored leaf past the last committed one the WAL replayed (§12.3, INV-15, G-39, DB-99)
+4ecbd6c|2026-10-20|test(proofs): PR3-L21 regenerated for the moved replay code (G-39)
+9af7cc6|2026-10-20|test(roots): an artefact of another dimension is refused with IntegrityViolation (§6.3; red; fair-testing finding)
+45a5b78|2026-10-20|fix(roots): an artefact of another dimension is refused with IntegrityViolation naming the check (§6.3); §12.9's key-file check is Part 4's (G-40, DB-100)
+0f9fedb|2026-10-20|test(fair): Part 3 bug-hunt run 2 result (170 of 172; DB-100)
+8d0d71b|2026-10-20|test(fair): Part 4 bug-hunt run 2 result (146 of 149, 0 findings; FAIL only on DB-75's VM mutants gate)
+42cf9c2|2026-10-20|test(sever-p3): a delete whose insert leaf cannot be read names the store's check (red; §17, G-41)
+9b1fa73|2026-10-21|fix(sever-cert): a stored insert leaf that cannot be read is reported as the store's check, not as §15.3 insert leaf (§17, G-41, DB-101)
+70ebd4f|2026-10-21|test(sever-db): after an integrity violation the database stops serving, and a replaced data directory is refused (red; §17, §12.9, G-42)
+ab2fcbc|2026-10-21|fix(sever-db): the final build stops serving after an integrity violation and never writes into a replaced data directory (§17, §12.9, G-42, DB-101)
+936c3a4|2026-10-21|test(demo-engine): a work directory in use is refused before anything is wiped, and the naive copy holds every passage byte for byte (red)
+1185944|2026-10-21|fix(demo-engine): one tour or shell per work directory, locked beside it before anything is wiped; the naive copy is raw text, so chapter 5 finds every passage (DB-101)
+0078fc5|2026-10-21|fix(sever-db): one constructor for Opened records the lock's identity, used by open and EX-2's traced build (G-42); PR4-D07 regenerated
+3de67e9|2026-10-21|docs(progress): the 5,000-row tour failure and its fixes (DB-101, G-41, G-42); open questions
+05c2da5|2026-10-21|test(testkit-p4): a split #[spec(…)] attribute is refused, and the fast tier traces Parts 3 and 4 completely (red; BH-1)
+1e8e4b7|2026-10-21|fix(testkit): spec-trace refuses a #[spec(…)] split over lines outside frozen files; the plaintext test's six labels on one-line attributes, Part 4 traced 70/70; TRACE_PART_3/4 and TEST_ORACLES_P4 regenerated (BH-1, BH-4)
+bb4dc26|2026-10-21|fix(ci): the §20.3 check 1 step fails when cargo tree fails, and covers audit/ (BH-3)
+4f2f725|2026-10-21|test(sever-db): a storage checkpoint after a crash and recovery keeps every rotated key's bucket block (red: INV-14 at the reopen; §15.6, §15.7, G-43, BH-5)
+449927f|2026-10-21|fix(sever-erasure): recovery appends to the wrapped-key store what it replays from the WAL tail, so a later storage checkpoint never deletes the only copy of a rotated key's bucket block (§15.7, G-43, DB-102, BH-5)
+508e83e|2026-10-21|test(proofs): PR4-E22, recovery that keeps the replayed bucket blocks in memory only fails the checkpoint-after-recovery test (G-43, BH-5)
+548ed37|2026-10-21|docs(bug-hunt): BH-1 … BH-5 recorded
+7f2179a|2026-10-21|test(sever-erasure): a crash anywhere in a deletion that compacts the wrapped-key store recovers, and a checkpoint then a reopen keep its state (§14.8, §15.7; scale path; red proofs PR4-E23, PR4-E24)
+96cbc0b|2026-10-21|fix(freeze): Part 4 owns golden/p4_* (the RFC 8452 vectors were in no part's list; BH-6, DB-102)
+4245c56|2026-10-21|test(sdk): a record ID with no UTF-8 encoding is InvalidRecordId, and the error holds no part of it (red; §3.2, §17, BH-7)
+7b45088|2026-10-21|test(sdk-p3): a record ID with no UTF-8 encoding is InvalidRecordId, and the error holds no part of it (red; §3.2, §17, BH-7)
+e22a495|2026-10-21|fix(sdk): a record ID with no UTF-8 encoding raises InvalidRecordId with no part of the ID, in the SDKs of Parts 3 and 4 (§3.2 rule 1, §17, BH-7)
+a5d8e21|2026-10-21|docs(bug-hunt): BH-6, BH-7, erratum proposals E-2 and E-3, clean checks
+d8c6064|2026-10-21|fix(testkit-p4): the split-attribute test imports split_attributes from where it is defined (mypy --strict; BH-1)
+3475ae0|2026-10-21|test(bug-hunt): the SIGKILL loop, the SDK edge-input run and the metadata-only key-file and bucket-block readers used for BH-5 and BH-7
+ab6d39d|2026-10-21|docs(bug-hunt): the report
+0b4cb45|2026-10-21|test(sever-p3): after an integrity violation the database stops serving, and a replaced data directory is refused (red; §17, §12.9, G-42)
+436f35d|2026-10-21|fix(sever-p3): Part 3's root stops serving after an integrity violation and never writes into a replaced data directory (§17, §12.9, G-42, DB-103); the frozen Part 2 fixes become errata E-4 … E-6, applied with E-3 after v1.0 (L-28)
+c092727|2026-10-21|feat(crashkit-p4): P4-T3 closes and reopens a copy after every recovery, zero-gated as reopen_mismatches (DB-104, BH-5)
+e5a600e|2026-10-21|fix(sever-cert): a consistency proof the operator's own tree cannot give is an IntegrityViolation, not an empty proof a witness refuses (§10.4; unreachable with a sound tree); BH-2 won't fix (frozen extension point)
+6332a83|2026-10-21|docs(progress): laptop checks before the VM run (full-checks 42/42, every demo, fuzz smoke)
+3dace38|2026-10-21|docs: progress, bug-hunt follow-up, regenerated traces and oracle reports (SR-17-8, SR-12.9-5 now Part 3's)
+afd540d|2026-10-22|docs(progress): settle the stale open questions (G-42, the registered proposals, the CLIs need no guard)
+8852033|2026-10-22|docs(spec): §13.2 names group_id(32, zero-padded) in every group-bound AD; closes G-2 (DB-105); progress refreshed
+063642d|2026-10-22|feat(studio): SEVER-DB Studio, a desktop demo of every feature (DB-106)
+6315b9a|2026-10-22|docs: Studio replaces demo/ and demo-engine/ (DB-106, G-44)
+9583cf2|2026-10-22|feat(studio): v2, a light, simpler window that fits any screen, with four live demos (DB-106)
+c2c49c7|2026-10-22|docs(progress): Studio v2 and its full-tier result
+21d83c6|2026-10-22|feat(studio): the map by group, each group a disc of its own colour
+fcac0c8|2026-10-23|fix(studio): hover card and search by name
+60c0a9b|2026-10-23|feat(studio): the map as the database groups it
+f6be0d2|2026-10-23|feat(vm): a machine check, a no-admin setup mode and a step-by-step guide for the campus run
+6b96198|2026-10-23|docs: an inspect build, sever-explain and Studio's provenance rule (G-45, DB-107, DB-108, DB-109)
+f42aa6f|2026-10-23|fix(studio): each record's group is the engine log's, checked record by record (M2, DB-109)
+dd7bd59|2026-10-23|fix(studio): a recording is shown, never ticked; three rows only show (C1, M9, DB-109)
+9fefcc8|2026-10-23|fix(studio): the disk search looks for the stored integers too (C2)
+9d2f26c|2026-10-23|fix(studio): the float race is labelled a model; Part 1's program ticks its row (C3)
+74997db|2026-10-23|fix(studio): the group card shows the engine's n and published commitment (M3)
+f9e953c|2026-10-23|fix(studio): the live demos never run out of passages; a reset button (H2)
+162a7ed|2026-10-23|fix(studio): kill-a-delete says only what the kills showed; crash kills land inside inserts (H3, M5)
+b114522|2026-10-23|fix(studio): a real encoder check, amber on a refused machine, receipts keep names, any named step catches (H6, H7, M6, M7)
+e0a48a2|2026-10-23|fix(studio): one group count from the engine on every screen; the tour bar clears the add button (Low)
+63633e5|2026-10-23|feat(sever-db): an inspect build reports each committed change's public fields (DB-107)
+6942e35|2026-10-23|test(sever-db): red proofs for the inspect participant (DB-107)
+9da8a3f|2026-10-23|feat(sever-py): Database.events in the inspect build (DB-107)
+bb3c122|2026-10-23|feat(studio): numbers from the engine's own events; a spawned centre is the engine's (H1, DB-107)
+ff84352|2026-10-23|fix(studio): the killed-deletion child records the engine's events too
+5feeacc|2026-10-23|feat(sever-explain): why a record went where it did, in the engine's own arithmetic (DB-108)
+64d81c4|2026-10-23|docs: DB-108 says exactly what sever-explain writes itself
+3bf52a2|2026-10-23|feat(studio): every insert's route predicted by the engine's code beside its placement (H4, H5)
+9986a93|2026-10-23|feat(studio): the map is the passages by meaning; By group and its invented discs removed (C4, H8, M1, M4)
+491e70c|2026-10-23|feat(studio): search shows each hit's score and the quarter of the groups the engine opened (3.4)
+84dcb44|2026-10-23|feat(studio): how the frozen groups were made: C-15's k-means, step by step, labelled offline (3.5)
+597e36f|2026-10-23|feat(studio): the operator cheats: Part 3's 20 forgeries with the operator's keys (M8, 3.6)
+97ba456|2026-10-23|feat(studio): the beginner diagrams, each with the engine's own numbers (Phase 4)
+bbc3606|2026-10-23|chore(studio): dead code out, README for the engine-wired Studio, tests for H7 and the one group count
+4d80475|2026-10-23|fix(studio): the selected record's x̃ is the engine's quantiser output (DB-109)
+596e036|2026-10-23|fix(studio): a route with a lost spawned centre is unknown, not wrong; places use laid-out rows only
+3fc6359|2026-10-23|test(architecture): sever-explain is Part 4 tooling (DB-108)
+f716e25|2026-10-23|fix(studio): the window draws while a demo has the database closed; the smoke counts uncaught exceptions
+ad9a5ac|2026-10-23|feat(studio): each group its own colour, the kind as the dot's shape; the legend clears the search box
+7a42e3d|2026-10-23|feat(studio): frozen groups in their own colours, spawned ones grey until lit; Colour every group
+527e5bb|2026-10-23|docs: the Studio audit, its plan and its after table in studio/audit; progress
+529d565|2026-10-23|feat(studio): a 3-D mode beside the 2-D map; the groups' separation measured in 384-D
+2f1d243|2026-10-23|feat(studio): Groups made measures the clusters in 384-D
+d3cdbc4|2026-10-23|docs(studio): the 2-D and 3-D modes and the 384-D measurement; the smoke walks both
+09d6658|2026-10-23|docs(progress): Studio's 2-D and 3-D modes and the 384-D measurement, verified
+392a34a|2026-10-23|docs(studio): audit 2, what is still faked, overstated or only explained, with experiments E1-E6
+6769a30|2026-10-23|Merge branch 'main' into studio-raw
+5918472|2026-10-23|docs: the inspect build reads a stored passage (G-46, DB-110; spec §16.1, §16.2)
+5a655fc|2026-10-23|feat(sever-db): the inspect build reads a stored passage (DB-110, §3.4, §16.1)
+0573b5f|2026-10-23|docs: handoff to a new chat on the VPS/HPC, with the approved v1-then-demo plan
+858a578|2026-10-24|docs: the v1.0 gate run is on the college HPC in WSL2 Ubuntu, at full size (G-47, DB-111; spec §20.4, L-8)
+91ac672|2026-10-24|docs: nothing planned after v1.0; PROGRESS cut to the current state (DB-112)
+95b7d24|2026-10-24|docs(progress): the erase demo shows S_pre − S_post (Build 3-4 §2.11 step 4, added to Stage 1); the partition stays fitted on SciQ (DB-41)
+724fae7|2026-10-24|feat(hpc): the gate run as a supervised systemd user unit, set up by Claude from one prompt, with failure drills (DB-111)
+37bf88f|2026-10-24|test(sever-db): red proofs PRI-5 … PRI-7 for the inspect build's passage read (DB-110)
+2acd91d|2026-10-24|feat(sever-py): Database.passage and sever_db.Explainer in the inspect build (DB-110)
+dc29088|2026-10-24|feat(sever-scan): the erase demo prints the deleted vector rebuilt as S_pre − S_post (Build 3-4 §2.11 step 4)
+3417b7f|2026-10-24|test(sever-scan): red proofs PRS-1 … PRS-4 for the S_pre − S_post reconstruction; progress: Stage 1 done
+7360f67|2026-10-24|docs(progress): Stage 2 done, main = 3417b7f; Studio full tier deferred to Stage 6
+71b6a0f|2026-10-29|feat(hpc): the v1.0 run moves to the laptop, every step scoped to ~33 h (DB-113, G-48)
+9b959a0|2026-10-29|fix(hpc): laptop-env.sh: an empty job queue is one with no job files
+14b6f58|2026-10-29|fix(hpc): launch.sh asks for the memory lock only once the unit has it; install.sh notes the wait (DB-113)
+1656d24|2026-10-29|fix(hpc): on-exit.sh lists a step as failed by its final result, not an interrupted attempt (DB-113)
+4dcfbe0|2026-10-29|test(hpc): the lockwait drill waits up to 240 s and shows the summary when it fails
+7c445b5|2026-10-29|perf(hpc): the two strict-mode steps join phase 3 beside the fuzzers' one-core tail; run ~29 h (DB-113)
+bd0a847|2026-10-30|fix(testkit-p3): p3-mutants mirrors the verifier's out-of-tree path dependency into cargo-mutants' scratch folder
+1db3046|2026-10-30|test(sever-cert): kill seven p3-mutants survivors with tests from the spec (§10.3, §10.4, §11.1, §15.1, §9.8)
+fc66c9e|2026-10-30|fix(testkit): the mutant gates exclude lines only the sabotage builds compile (DB-114)
+dc5b37a|2026-10-30|fix(testkit-p3): the verifier's scratch mirror also carries the golden files its sources compile in
+13549af|2026-10-30|fix(ex6): reduce the FAISS k-means seed mod 2^31, faiss's signed int32; DB-114
+7f0b39c|2026-10-30|chore(hpc): for the reruns of DB-114, p4-ex6 runs beside p3-mutants (phase 2)
+8f6cbc1|2026-10-30|test(verifier): --explain step statuses, KAT damage, golden single-generator mismatch, exactly four cosignatures, xmd 255-block bound (§11.3, §9.2, §9.6; kills p3-mutants survivors)
+53de2d8|2026-10-30|docs(mutants): MUTANTS_P3.md triages every survivor of the p3-mutants gate (P3-T9, DB-114)
+11f00f2|2026-10-30|docs(overview): DB-114: p3-mutants and p4-ex6 rerun early on the laptop beside the run's later phases, with a guard
+4810d8f|2026-10-30|fix(ex6): a spawned placement is the group's ID (spawn-…), so the tracked holding area empties on a flush (§7.4; DB-114)
+fd40dfe|2026-10-30|docs(mutants): triage witness.rs:233 ^= → |=, caught or missed by the random low bit of the operator's signature (P3-T9, DB-114)
+0bf116b|2026-10-30|docs(overview): DB-114 records the early p3-mutants rerun: a void first attempt, one chance survivor triaged, then PASS
+5ec9388|2026-10-30|fix(sever-crashkit-p4): the method check reads the wrapped-key store by its meaning after recovery, not by segment sizes (§15.7 step 3, §14.8; DB-114)
+8d7865f|2026-10-30|test(sever-seal,sever-erasure,sever-keys): tests from §13.3, §14.8, §15.9 for the Part 4 mutant survivors; MUTANTS_P4.md triage (P4-T10, DB-114)
+9c9b1ec|2026-10-30|test(sever-erasure): the four-times compaction rule and recovery into the merged state kill three more survivors; MUTANTS_P4.md lists every first-run survivor (P4-T10, DB-114)
+9e11156|2026-10-30|fix(sever-crashkit-p4): the method check compares the wrapped store's durable key versions, not key bytes drawn anew by a replayed rotation (§9, §14.8; DB-114)
+e94345a|2026-10-31|docs(overview): DB-114: EX-8 runs alone after the out-of-memory stop of phase 12 on 31 October
+9dd87a2|2026-10-31|test(sever-erasure): the torn-active-slot test flips a key byte instead of writing 0xFF, which left 1 run in about 200 intact (§13.4 INV-14; DB-114)
+c342ee5|2026-10-31|test(sever-keys): the short key file, slots outside the file, a slot record's printing and the key-export sink (§13.1, §14.7, Build 3-4 §2.7; P4-T10, DB-114)
+96f9370|2026-10-31|test(sever-erasure): strict value parsing, a drop is final, replay reads only its own record types, a length past the file's end is a cut-off tail (§12.2, §14.6, §14.8; P4-T10, DB-114)
+01c77fe|2026-10-31|docs(mutants-p4): triage the rerun's one timeout, Key::eq inverted, killed at once by two sever-keys tests when they get to run (P4-T10, DB-114)
+7c3c313|2026-10-31|docs: the laptop run is over: 16 of 17 gates pass, P4-T10 accepted by the owner on one untriaged timeout, five measures recorded, EX-8 not completed (out of memory at 10.39 GB) (DB-114)
+1479019|2026-10-31|docs: one page per part, every test and every result indexed by part, a map of the documents; nothing moves (G-49, DB-115)
+cecd26e|2026-10-31|docs(fair): Part 3 fair run 20261031T225306Z FAIL, two engine findings in sever-log (F-1 §14.9 checkpoint CRC, F-2 §10.1 consistency proof); Part 3 not frozen
+a35c5c2|2026-11-01|fix(sever-cert): a damaged log checkpoint store refuses to open: every stored certificate's tag-6 checkpoint must be in the log (§17, §14.9, E-2; BH-7, fair F-1)
+c629c6a|2026-11-01|fix(sever-log, sever-erasure): an older store segment cut short is IntegrityViolation, not a silently shorter store (§14.9, §17; BH-6)
+f9e9de6|2026-11-01|docs(spec): §10.1 states which size pairs have a consistency proof, as RFC 9162 does (G-50, DB-116; BH-8, fair F-2)
+d5e41db|2026-11-01|fix(sever-log): a lost checkpoint store is IntegrityViolation, not a reason to re-create (and erase) the whole log (§17, §10.5; BH-9)
+0e2a7d4|2026-11-01|docs(spec): §12.3 states the one log-store damage that is not seen (a store's last record, like a torn append) and what is refused (G-51, DB-116)
+6ce6b73|2026-11-01|docs(bughunt): round 1 of the silent-fallback audit and the corruption sweeps (BH-6, BH-7, BH-9 fixed; the rest is G-51)
+cdc9652|2026-11-01|docs(bughunt): searches 1.3-1.7 and rounds 2-3 find nothing new; the hunt ends by its stopping rule
+829a75e|2026-11-01|chore(hpc): rerun-final.sh, the gates the November fixes reach, rerun once on the final commit (DB-116)
+09ecb78|2026-11-01|refactor(sever-log): one BH-6 check, after the scan (the check inside it was redundant; a mutant of it survived)
+94d0b24|2026-11-01|docs(mutants): triaged survivors moved to their new lines after the November fixes (same mutants, same reasons; DB-116)
+5fee0df|2026-11-01|docs(db-116): the final rerun on 94d0b24, eight steps passed; the owner stopped it during p4-crash-a (0 mismatches so far)
+f05d581|2026-11-01|docs(spec): every IntegrityViolation stops the engine; close() after a stop fails (§17, G-52, DB-117; Part 3 fair run F-1, F-2)
+bb4bac5|2026-11-01|chore(fair): Part 3 fair run 20261101T130254Z result (FAIL: two spec gaps, G-52)
+12d4b83|2026-11-01|chore(fair): Part 3 fair run 20261101T134211Z PASS (0 findings)
+a304014|2026-11-01|freeze: Part 3, The Receipt (F-1; FT-10 fair run 20261101T134211Z-p3-bb4bac5e PASS)
+e00e31d|2026-11-01|chore(fair): Part 4 fair run 20261101T142251Z: 110/110 tests, 0 findings; FAIL only on DB-75 (no p4-mutants PASS in the ledger yet)
+77ca977|2026-11-01|docs(mutants-p4): triage the 1 November run's one new timeout, parse_wal's guard inverted, killed at once by a sever-erasure test when it gets to run (P4-T10)
+587aa09|2026-11-01|chore(gates): p4-mutants PASS (sever-erasure 90.4 %, sever-keys 97.7 %, sever-seal 95.9 %; 0 untriaged; P4-T10)
+36291ae|2026-11-01|fix(sever-py): prepare_insert refuses an empty vector with WrongDimension (§4.1 step 0; Part 4 fair run F-1; DB-118)
+fb27417|2026-11-01|chore(fair): Part 4 fair run 20261101T192712Z PASS (101/101, 0 findings)
+7942c1d|2026-11-01|freeze: Part 4, The Erasure (F-1; FT-10 fair run 20261101T192712Z-p4-36291aec PASS); v1.0.0
+4a03951|2026-11-01|docs(progress): v1.0.0, Parts 3 and 4 frozen (1 Nov 2026)
+635a8c9|2026-11-06|docs: project report (17 chapters, background, research notes); progress after v1.0.0
+69a33f4|2026-11-06|fix(ci): keep the sealed clean-room runs out of ruff and the shared pytest run; run each kept run in its own process (FT-10)
+0d6482b|2026-11-06|fix(ci): run each kept clean-room run with its part's CLI and the SDK path
+b51404a|2026-11-06|feat(studio): the company demo on the frozen engine (Stage 6, DB-119)
+6010482|2026-11-06|fix(studio): the full tier's three failures (Stage 6)
+294f1e3|2026-11-09|fix(studio): the Forget-me report painted over the window behind it
+0d71615|2026-11-09|docs: research-paper documentation set (background, method, results, limitations, open questions)
+9ca1756|2026-11-09|fix(studio): Groq retired llama-3.1-8b-instant; use openai/gpt-oss-20b
+af8fed2|2026-11-09|feat(studio): a simpler Assistant and Forget-me report; the map laid out once

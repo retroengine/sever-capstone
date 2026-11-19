@@ -1,0 +1,72 @@
+# Pre-registration (Overview §3.4, §12): copied verbatim from the overview's §12 block, fixed
+# 27 September 2026, with the PIN_IN_P0 placeholders filled from datasets/PINS.json (pinned
+# 2026-09-27T12:11 UTC). Committed once and never changed afterwards (Overview P0.G4).
+format_version: "exp-1.0"
+seeds: [42, 123, 777, 2024, 9999]
+sub_seed: "first8(sha256(u64be(seed) || label))"
+labels: [kmeans, stream, cohort-order]
+corpus_seed: {seed: 42, label: corpus}
+
+datasets:
+  reference: {name: allenai/sciq, splits: [train, validation, test], text: support_else_question,
+              licence: CC-BY-NC-3.0, revision: 2c94ad3e1aafab77146f384e23536f97a4849815}
+  live_corpus: {name: BeIR/nq, text: "title + ' ' + text", id: _id,
+                licence: CC-BY-SA-3.0, revision: b7253e6c379163d024ddb1d6948152a91a2e3b46}
+  live_queries: {name: BeIR/nq-qrels, split: test, queries: 3452, judgements: 4201,
+                 revision: 519acd4e48bb3e5da22b2b888ce36c614f4f2bc9}
+encoder: {name: sentence-transformers/all-MiniLM-L6-v2, revision: 1110a243fdf4706b3f48f1d95db1a4f5529b4d41,
+          max_tokens: 256, truncate: true, normalise: true, device: cpu, dtype: float32}
+corpora:
+  nq-100k: {size: 100000, keep_all_judged: true}
+  nq-1m:   {size: 1000000, keep_all_judged: true}
+non_overlap_checks: [id, sha256_normalised_text]
+
+cohorts: {by: title}
+deletion_rungs: [0.10, 0.25, 0.50, 0.75, 0.90]
+stream_fractions: [0.25, 0.50, 0.75, 1.00]
+arms: [sever_db, frozen_only, soft_delete_ivf, rebuild_ivf]
+baseline_ivf: {library: faiss-cpu, index: IndexIVFFlat, nlist: match_sever_total_groups,
+               nprobe: ceil_25_percent, training: kmeans_on_streamed_corpus}
+
+metrics:
+  recall_k: [10, 100]
+  ground_truth: brute_force_original_float32
+  exclude_holding_area: true
+  ndcg_at: 10
+  drift_statistic: stddev_recall10_across_rungs
+  ddof_primary: 0
+  ddof_also_reported: 1
+  balance: coefficient_of_variation_by_population   # frozen, spawned separately
+
+targets:
+  T1_crash_violations: 0
+  T2_forensic_findings: 0
+  T3_engine_vs_reference_mismatches: 0
+  T4_honest_accept: 1.0
+  T4_attack_accept: 0.0
+  T5_max_drift_stddev_per_seed: 0.005
+  T6_min_quantised_recall10: 0.999
+
+statistics:
+  confirmatory_test: {name: welch_t, alpha: 0.005, sides: 2,
+                      compare: [sever_db, soft_delete_ivf], unit: seed}
+  equivalence: {name: tost, delta: 0.005, expectation: likely_underpowered_at_n5}
+  descriptive: {bootstrap_resamples: 10000, interval: percentile_95, p_values: false}
+
+ex1_crash:
+  operations_per_seed: 20000
+  passages_used: 10000
+  crash_at_every_protocol_step: true
+  sampled_wal_writes: 200
+  byte_offset_step: 512
+  random_crash_points: 1000
+ex2_forensic:
+  image_size_gb: 16
+  filesystem: ext4
+  mount: fuse2fs
+  scan_free_space: true
+  text_window_bytes: 32
+ex4_attacks:
+  honest_certificates_per_seed: 1000
+run_ledger: required
+pythonhashseed: 0

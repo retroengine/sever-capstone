@@ -1,0 +1,44 @@
+{
+ "data": "nq-10k",
+ "seed": 42,
+ "encoder": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+ "inserted": 10000,
+ "account": {
+  "records": 4,
+  "most_in_one_group": 4
+ },
+ "insert_leaf": {
+  "index": 3459,
+  "type": 1,
+  "user_public_key": "964b2bd586e22c07378d65ec56879bb0c7aeb7923852d173b8fc99f07d0471bb"
+ },
+ "certificate": {
+  "database_lsn": 10000,
+  "bytes": 13869
+ },
+ "verify": {
+  "accepted": true,
+  "files": [
+   "anchors.json",
+   "certificate.bin"
+  ]
+ },
+ "flipped": {
+  "byte": 13690,
+  "verdict": "REJECT (step 2: the operator signature does not verify)"
+ },
+ "does_not_prove": [
+  "that the operator kept no copy of the deleted data: no cryptography can prove that (overview L-2; spec \u00a711.3)",
+  "that the user personally authorised the deletion: the application backend holds the account key and decides who may delete (overview L-27; spec \u00a73.3)",
+  "that the deletion leaf itself was appended, that a group's certificates chain, and that the log is consistent: the auditor checks these with log access (spec \u00a711.3)"
+ ],
+ "delete_user": {
+  "certificates": 3,
+  "chained": 2,
+  "audit": {
+   "checkpoints": 3,
+   "findings": [],
+   "leaves": 10004
+  }
+ }
+}
